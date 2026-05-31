@@ -1,0 +1,42 @@
+import { Routes, Route, Navigate } from 'react-router-dom';
+import { Suspense, lazy } from 'react';
+import { AppLayout } from '@/layouts/AppLayout';
+import { ProtectedRoute } from '@/routes/ProtectedRoute';
+import { PageLoader } from '@/components/ui/Spinner';
+
+const LoginPage = lazy(() => import('@/features/auth/LoginPage'));
+const RegisterPage = lazy(() => import('@/features/auth/RegisterPage'));
+const DashboardPage = lazy(() => import('@/features/dashboard/DashboardPage'));
+const LeasesPage = lazy(() => import('@/features/leases/LeasesPage'));
+const LeaseDetailPage = lazy(() => import('@/features/leases/LeaseDetailPage'));
+const PropertiesPage = lazy(() => import('@/features/properties/PropertiesPage'));
+const FinancePage = lazy(() => import('@/features/finance/FinancePage'));
+const AnalyticsPage = lazy(() => import('@/features/analytics/AnalyticsPage'));
+const AlertsPage = lazy(() => import('@/features/alerts/AlertsPage'));
+
+export default function App() {
+  return (
+    <Suspense fallback={<div className="flex h-screen items-center justify-center bg-surface-0"><PageLoader /></div>}>
+      <Routes>
+        {/* Auth */}
+        <Route path="/auth/login" element={<LoginPage />} />
+        <Route path="/auth/register" element={<RegisterPage />} />
+
+        {/* Protected */}
+        <Route element={<ProtectedRoute />}>
+          <Route element={<AppLayout />}>
+            <Route index element={<DashboardPage />} />
+            <Route path="leases" element={<LeasesPage />} />
+            <Route path="leases/:id" element={<LeaseDetailPage />} />
+            <Route path="properties" element={<PropertiesPage />} />
+            <Route path="finance" element={<FinancePage />} />
+            <Route path="analytics" element={<AnalyticsPage />} />
+            <Route path="alerts" element={<AlertsPage />} />
+          </Route>
+        </Route>
+
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </Suspense>
+  );
+}

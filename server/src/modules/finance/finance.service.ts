@@ -1,0 +1,152 @@
+import { Prisma } from '@prisma/client';
+import { prisma } from '../../infrastructure/database';
+import { NotFoundError } from '../../utils/errors';
+import { subMonths, startOfMonth, endOfMonth, parseISO, format } from 'date-fns';
+import type {
+  CreateFinancialRecordInput,
+  UpdateFinancialRecordInput,
+  FinanceQuery,
+  RevenueTrendQuery,
+} from './finance.schemas';
+
+export async function getFinancialRecords(query: FinanceQuery) {
+  const { page, limit, type, status, propertyId, leaseId, from, to } = query;
+  const skip = (page - 1) * limit;
+
+  const where: Prisma.FinancialRecordWhereInput = {
+    ...(type && { type }),
+    ...(status && { status }),
+    ...(propertyId && { propertyId }),
+    ...(leaseId && { leaseId }),
+    ...(from || to) && {
+      periodStart: {
+        ...(from && { gte: parseISO(from) }),
+        ...(to && { lte: parseISO(to) }),
+      },
+    },
+  };
+
+  const [records, total] = await Promise.all([
+    prisma.financialRecord.findMany({
+      where,
+      skip,
+      take: limit,
+      orderBy: { periodStart: 'desc' },
+      include: {
+        property: { select: { id: true, name: true, code: true } },
+        lease: { select: { id: true, leaseNumber: true } },
+      },
+    }),
+    prisma.financialRecord.count({ where }),
+  ]);
+
+  return { records, total };
+}
+
+export async function getFinancialRecordById(id: string) {
+  const record = await prisma.financialRecord.findUnique({
+    where: { id },
+    include: {
+      property: true,
+      lease: { include: { tenant: true } },
+    },
+  });
+  if (!record) throw new NotFoundError('Financial record');
+  return record;
+}
+
+export async function createFinancialRecord(input: CreateFinancialRecordInput) {
+  return prisma.financialRecord.create({
+    data: {
+      ...input,
+      periodStart: parseISO(input.periodStart),
+      periodEnd: parseISO(input.periodEnd),
+      dueDate: input.dueDate ? parseISO(input.dueDate) : undefined,
+      paidDate: input.paidDate ? parseISO(input.paidDate) : undefined,
+    },
+    include: {
+      property: { select: { id: true, name: true, code: true } },
+    },
+  });
+}
+
+export async function updateFinancialRecord(id: string, input: UpdateFinancialRecordInput) {
+  await getFinancialRecordById(id);
+  return prisma.financialRecord.update({
+    where: { id },
+    data: {
+      ...input,
+      ...(input.periodStart && { periodStart: parseISO(input.periodStart) }),
+      ...(input.periodEnd && { periodEnd: parseISO(input.periodEnd) }),
+      ...(input.dueDate && { dueDate: parseISO(input.dueDate) }),
+      ...(input.paidDate && { paidDate: parseISO(input.paidDate) }),
+    },
+  });
+}
+
+export async function getRevenueTrend(query: RevenueTrendQuery) {
+  const { propertyId, months } = query;
+  const now = new Date();
+
+  const trend: Array<{ month: string; revenue: number; expenses: number; net: number }> = [];
+
+  for (let i = months - 1; i >= 0; i--) {
+    const monthDate = subMonths(now, i);
+    const start = startOfMonth(monthDate);
+    const end = endOfMonth(monthDate);
+
+    const where: Prisma.FinancialRecordWhereInput = {
+      ...(propertyId && { propertyId }),
+      periodStart: { gte: start, lte: end },
+      status: { not: 'VOID' },
+    };
+
+    const [revenue, expenses] = await Promise.all([
+      prisma.financialRecord.aggregate({
+        where: { ...where, type: 'REVENUE' },
+        _sum: { amount: true },
+      }),
+      prisma.financialRecord.aggregate({
+        where: { ...where, type: 'EXPENSE' },
+        _sum: { amount: true },
+      }),
+    ]);
+
+    const rev = Number(revenue._sum.amount ?? 0);
+    const exp = Number(expenses._sum.amount ?? 0);
+
+    trend.push({
+      month: format(monthDate, 'MMM yyyy'),
+      revenue: rev,
+      expenses: exp,
+      net: rev - exp,
+    });
+  }
+
+  return trend;
+}
+
+export async function getFinancialSummary(propertyId?: string) {
+  const where: Prisma.FinancialRecordWhereInput = {
+    ...(propertyId && { propertyId }),
+    status: { not: 'VOID' },
+  };
+
+  const [revenue, expenses, flagged, pending] = await Promise.all([
+    prisma.financialRecord.aggregate({ where: { ...where, type: 'REVENUE' }, _sum: { amount: true } }),
+    prisma.financialRecord.aggregate({ where: { ...where, type: 'EXPENSE' }, _sum: { amount: true } }),
+    prisma.financialRecord.count({ where: { ...where, status: 'FLAGGED' } }),
+    prisma.financialRecord.count({ where: { ...where, status: 'PENDING' } }),
+  ]);
+
+  const totalRevenue = Number(revenue._sum.amount ?? 0);
+  const totalExpenses = Number(expenses._sum.amount ?? 0);
+
+  return {
+    totalRevenue,
+    totalExpenses,
+    netIncome: totalRevenue - totalExpenses,
+    flaggedRecords: flagged,
+    pendingRecords: pending,
+  };
+}

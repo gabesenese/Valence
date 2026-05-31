@@ -1,0 +1,40 @@
+import type { Request, Response, NextFunction } from 'express';
+import * as service from './finance.service';
+import { sendSuccess, sendPaginated } from '../../utils/response';
+
+export async function list(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const { records, total } = await service.getFinancialRecords(req.query as never);
+    sendPaginated(res, records, total, Number(req.query.page) || 1, Number(req.query.limit) || 20);
+  } catch (err) { next(err); }
+}
+
+export async function show(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    sendSuccess(res, await service.getFinancialRecordById(req.params.id));
+  } catch (err) { next(err); }
+}
+
+export async function create(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    sendSuccess(res, await service.createFinancialRecord(req.body), 201);
+  } catch (err) { next(err); }
+}
+
+export async function update(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    sendSuccess(res, await service.updateFinancialRecord(req.params.id, req.body));
+  } catch (err) { next(err); }
+}
+
+export async function trend(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    sendSuccess(res, await service.getRevenueTrend(req.query as never));
+  } catch (err) { next(err); }
+}
+
+export async function summary(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    sendSuccess(res, await service.getFinancialSummary(req.query.propertyId as string | undefined));
+  } catch (err) { next(err); }
+}

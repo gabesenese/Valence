@@ -1,0 +1,314 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ────────────────────────────────────────────────────────────────────
+
+enum UserRole {
+  SUPER_ADMIN
+  ADMIN
+  ANALYST
+  VIEWER
+}
+
+enum PropertyType {
+  RESIDENTIAL
+  COMMERCIAL
+  MIXED_USE
+  INDUSTRIAL
+  RETAIL
+  OFFICE
+}
+
+enum PropertyStatus {
+  ACTIVE
+  INACTIVE
+  UNDER_RENOVATION
+  DISPOSED
+}
+
+enum LeaseStatus {
+  ACTIVE
+  EXPIRED
+  PENDING
+  TERMINATED
+  RENEWED
+}
+
+enum LeaseType {
+  GROSS
+  NET
+  MODIFIED_GROSS
+  PERCENTAGE
+  GROUND
+}
+
+enum RenewalRisk {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum FinancialRecordType {
+  REVENUE
+  EXPENSE
+  ADJUSTMENT
+  REFUND
+  DEPOSIT
+}
+
+enum FinancialRecordStatus {
+  PENDING
+  RECONCILED
+  FLAGGED
+  DISPUTED
+  VOID
+}
+
+enum AlertType {
+  LEASE_EXPIRATION
+  RENEWAL_RISK
+  PAYMENT_ANOMALY
+  DATA_MISSING
+  FINANCIAL_DISCREPANCY
+  OCCUPANCY_CHANGE
+  COMPLIANCE_FLAG
+}
+
+enum AlertSeverity {
+  INFO
+  WARNING
+  CRITICAL
+}
+
+enum AlertStatus {
+  OPEN
+  ACKNOWLEDGED
+  RESOLVED
+  SUPPRESSED
+}
+
+enum InsightCategory {
+  FINANCIAL
+  OPERATIONAL
+  LEASE
+  RISK
+  FORECAST
+}
+
+// ─── Models ───────────────────────────────────────────────────────────────────
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  firstName    String   @map("first_name")
+  lastName     String   @map("last_name")
+  role         UserRole @default(ANALYST)
+  isActive     Boolean  @default(true) @map("is_active")
+  lastLoginAt  DateTime? @map("last_login_at")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  refreshTokens RefreshToken[]
+  alerts        Alert[]         @relation("AlertCreatedBy")
+  insights      Insight[]       @relation("InsightCreatedBy")
+
+  @@index([email])
+  @@index([role])
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String   @map("user_id")
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  revokedAt DateTime? @map("revoked_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([userId])
+  @@map("refresh_tokens")
+}
+
+model Property {
+  id           String         @id @default(uuid())
+  name         String
+  code         String         @unique
+  type         PropertyType
+  status       PropertyStatus @default(ACTIVE)
+  address      String
+  city         String
+  state        String
+  zipCode      String         @map("zip_code")
+  country      String         @default("US")
+  totalUnits   Int            @map("total_units")
+  totalSqft    Decimal        @map("total_sqft") @db.Decimal(12, 2)
+  yearBuilt    Int?           @map("year_built")
+  purchaseDate DateTime?      @map("purchase_date")
+  purchasePrice Decimal?      @map("purchase_price") @db.Decimal(15, 2)
+  currentValue  Decimal?      @map("current_value") @db.Decimal(15, 2)
+  metadata     Json?
+  createdAt    DateTime       @default(now()) @map("created_at")
+  updatedAt    DateTime       @updatedAt @map("updated_at")
+
+  leases           Lease[]
+  financialRecords FinancialRecord[]
+  alerts           Alert[]
+  insights         Insight[]
+
+  @@index([status])
+  @@index([type])
+  @@index([city, state])
+  @@map("properties")
+}
+
+model Tenant {
+  id          String   @id @default(uuid())
+  name        String
+  email       String?  @unique
+  phone       String?
+  company     String?
+  taxId       String?  @map("tax_id")
+  creditScore Int?     @map("credit_score")
+  notes       String?
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  leases Lease[]
+
+  @@index([name])
+  @@index([email])
+  @@map("tenants")
+}
+
+model Lease {
+  id               String      @id @default(uuid())
+  leaseNumber      String      @unique @map("lease_number")
+  propertyId       String      @map("property_id")
+  tenantId         String      @map("tenant_id")
+  unitNumber       String?     @map("unit_number")
+  type             LeaseType   @default(GROSS)
+  status           LeaseStatus @default(ACTIVE)
+  renewalRisk      RenewalRisk @default(LOW) @map("renewal_risk")
+  startDate        DateTime    @map("start_date")
+  endDate          DateTime    @map("end_date")
+  renewalDate      DateTime?   @map("renewal_date")
+  baseRent         Decimal     @map("base_rent") @db.Decimal(12, 2)
+  rentEscalation   Decimal     @default(0) @map("rent_escalation") @db.Decimal(5, 4)
+  securityDeposit  Decimal?    @map("security_deposit") @db.Decimal(12, 2)
+  sqft             Decimal?    @db.Decimal(10, 2)
+  terms            Json?
+  notes            String?
+  terminatedAt     DateTime?   @map("terminated_at")
+  terminationReason String?    @map("termination_reason")
+  createdAt        DateTime    @default(now()) @map("created_at")
+  updatedAt        DateTime    @updatedAt @map("updated_at")
+
+  property         Property          @relation(fields: [propertyId], references: [id])
+  tenant           Tenant            @relation(fields: [tenantId], references: [id])
+  financialRecords FinancialRecord[]
+  alerts           Alert[]
+
+  @@index([propertyId])
+  @@index([tenantId])
+  @@index([status])
+  @@index([endDate])
+  @@index([renewalRisk])
+  @@map("leases")
+}
+
+model FinancialRecord {
+  id           String                @id @default(uuid())
+  propertyId   String                @map("property_id")
+  leaseId      String?               @map("lease_id")
+  type         FinancialRecordType
+  status       FinancialRecordStatus @default(PENDING)
+  amount       Decimal               @db.Decimal(15, 2)
+  currency     String                @default("USD")
+  periodStart  DateTime              @map("period_start")
+  periodEnd    DateTime              @map("period_end")
+  dueDate      DateTime?             @map("due_date")
+  paidDate     DateTime?             @map("paid_date")
+  description  String?
+  category     String?
+  referenceId  String?               @map("reference_id")
+  discrepancy  Decimal?              @db.Decimal(15, 2)
+  notes        String?
+  metadata     Json?
+  createdAt    DateTime              @default(now()) @map("created_at")
+  updatedAt    DateTime              @updatedAt @map("updated_at")
+
+  property Property @relation(fields: [propertyId], references: [id])
+  lease    Lease?   @relation(fields: [leaseId], references: [id])
+
+  @@index([propertyId])
+  @@index([leaseId])
+  @@index([type])
+  @@index([status])
+  @@index([periodStart, periodEnd])
+  @@index([dueDate])
+  @@map("financial_records")
+}
+
+model Alert {
+  id          String        @id @default(uuid())
+  type        AlertType
+  severity    AlertSeverity
+  status      AlertStatus   @default(OPEN)
+  title       String
+  description String
+  propertyId  String?       @map("property_id")
+  leaseId     String?       @map("lease_id")
+  createdById String?       @map("created_by_id")
+  resolvedAt  DateTime?     @map("resolved_at")
+  resolvedBy  String?       @map("resolved_by")
+  metadata    Json?
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+
+  property  Property? @relation(fields: [propertyId], references: [id])
+  lease     Lease?    @relation(fields: [leaseId], references: [id])
+  createdBy User?     @relation("AlertCreatedBy", fields: [createdById], references: [id])
+
+  @@index([type])
+  @@index([severity])
+  @@index([status])
+  @@index([propertyId])
+  @@index([leaseId])
+  @@index([createdAt])
+  @@map("alerts")
+}
+
+model Insight {
+  id          String          @id @default(uuid())
+  category    InsightCategory
+  title       String
+  summary     String
+  body        Json
+  propertyId  String?         @map("property_id")
+  createdById String?         @map("created_by_id")
+  confidence  Decimal?        @db.Decimal(4, 3)
+  validUntil  DateTime?       @map("valid_until")
+  metadata    Json?
+  createdAt   DateTime        @default(now()) @map("created_at")
+  updatedAt   DateTime        @updatedAt @map("updated_at")
+
+  property  Property? @relation(fields: [propertyId], references: [id])
+  createdBy User?     @relation("InsightCreatedBy", fields: [createdById], references: [id])
+
+  @@index([category])
+  @@index([propertyId])
+  @@index([createdAt])
+  @@map("insights")
+}
