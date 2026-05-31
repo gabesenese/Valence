@@ -1,76 +1,31 @@
 # Valence
 
-**Operational Intelligence Platform for Real Estate & Property Management**
+**Operational intelligence for real estate and property management.**
 
-Valence delivers financial visibility, lease intelligence, anomaly detection, renewal risk monitoring, and decision-support infrastructure for enterprise property management firms.
-
----
-
-## Stack
-
-| Layer | Technology |
-|-------|-----------|
-| Frontend | React 19, TypeScript, Vite, TailwindCSS, Zustand, TanStack Query, Recharts |
-| Backend | Node.js, Express, TypeScript, Prisma ORM, Zod |
-| Database | PostgreSQL |
-| Auth | JWT (access + refresh), bcrypt |
+Valence gives property management firms a single platform to understand their portfolio — financially, operationally, and contractually — in real time.
 
 ---
 
-## Prerequisites
+## What Valence does
 
-- Node.js ≥ 20
-- npm ≥ 10
-- Docker + Docker Compose (for local Postgres)
+### Financial Visibility
+Track revenue and expenses across every property. Reconcile records, surface discrepancies automatically, and maintain an accurate picture of net income without manual reporting.
 
----
+### Lease Intelligence
+Full visibility into every lease in your portfolio. Valence tracks expiration dates, renewal windows, and contractual obligations — and surfaces risk before it becomes a problem.
 
-## Local Development
+### Renewal Risk Monitoring
+Leases are scored by renewal risk in real time. Critical, high, medium, and low risk designations update automatically as expiration windows close, so your team always knows where to focus.
 
-```bash
-# 1. Clone and install
-git clone <repo>
-cd valence
-npm install
+### Anomaly Detection & Alerts
+Valence monitors for financial discrepancies, missed payments, data gaps, and operational anomalies. Alerts surface with severity levels so the right issues get immediate attention.
 
-# 2. Environment
-cp .env.example server/.env
+### Executive Dashboard
+A single view of portfolio health — occupancy rates, monthly revenue, expiring leases, open alerts, and property performance — updated live without building a report.
 
-# 3. Start database
-docker compose up -d
-
-# 4. Migrate + seed
-npm run db:migrate
-npm run db:seed
-
-# 5. Run dev servers
-npm run dev
-```
-
-- Client: http://localhost:5173
-- Server: http://localhost:3001
-- Prisma Studio: `npm run db:studio`
+### Operational Analytics
+Understand how your portfolio is performing over time. Revenue trends, expense tracking, occupancy by property, and lease distribution give operators the context to make better decisions faster.
 
 ---
 
-## Architecture
-
-```
-valence/
-├── client/          # React 19 frontend (feature-driven)
-├── server/          # Express backend (domain-driven modules)
-├── shared/          # Shared TypeScript types + Zod schemas
-└── docs/            # Architecture decision records
-```
-
----
-
-## Modules
-
-- **Auth** — JWT registration, login, refresh, role-based access
-- **Properties** — Property lifecycle management
-- **Leases** — Lease intelligence, expiration tracking, renewal risk
-- **Finance** — Revenue tracking, expense records, discrepancy detection
-- **Analytics** — KPIs, trend forecasting, operational summaries
-- **Alerts** — Anomaly detection, expiration alerts, data quality flags
-- **AI** — Pluggable intelligence layer (mock → LLM-ready)
+Valence is purpose-built for firms that manage multiple properties and need operational clarity without the overhead of disconnected systems.
