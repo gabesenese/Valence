@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { AlertTriangle, CheckCircle, Eye, Bell } from 'lucide-react';
+import { AlertTriangle, CheckCircle, Bell } from 'lucide-react';
 import { alertsService } from '@/services/alerts.service';
 import { Card, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
@@ -26,11 +26,6 @@ export default function AlertsPage() {
   const { data, isLoading } = useQuery({
     queryKey: ['alerts', statusFilter],
     queryFn: () => alertsService.getAlerts({ status: statusFilter || undefined, limit: 50 }),
-  });
-
-  const ackMutation = useMutation({
-    mutationFn: alertsService.acknowledge,
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['alerts'] }),
   });
 
   const resolveMutation = useMutation({
@@ -75,7 +70,7 @@ export default function AlertsPage() {
 
       {/* Filter tabs */}
       <div className="flex gap-2">
-        {['OPEN', 'ACKNOWLEDGED', 'RESOLVED', ''].map((s) => (
+        {['OPEN', 'RESOLVED', ''].map((s) => (
           <button
             key={s}
             onClick={() => setStatusFilter(s)}
@@ -124,16 +119,7 @@ export default function AlertsPage() {
                   </div>
                 </div>
                 {alert.status === 'OPEN' && (
-                  <div className="flex items-center gap-2 shrink-0">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => ackMutation.mutate(alert.id)}
-                      loading={ackMutation.isPending && ackMutation.variables === alert.id}
-                    >
-                      <Eye className="h-3.5 w-3.5" />
-                      Ack
-                    </Button>
+                  <div className="shrink-0">
                     <Button
                       variant="outline"
                       size="sm"
@@ -145,8 +131,8 @@ export default function AlertsPage() {
                     </Button>
                   </div>
                 )}
-                {alert.status !== 'OPEN' && (
-                  <Badge variant={alert.status === 'RESOLVED' ? 'success' : 'neutral'}>{alert.status}</Badge>
+                {alert.status === 'RESOLVED' && (
+                  <Badge variant="success">RESOLVED</Badge>
                 )}
               </div>
             ))}

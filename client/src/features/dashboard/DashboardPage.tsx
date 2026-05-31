@@ -7,14 +7,15 @@ import {
 } from 'recharts';
 import {
   Building2, FileText, TrendingUp, AlertTriangle, DollarSign, Users,
-  ArrowUp, ArrowDown, CheckCircle2, ChevronRight,
+  ArrowUp, ArrowDown, CheckCircle2, ChevronRight, Calendar, Activity,
 } from 'lucide-react';
 import { analyticsService } from '@/services/analytics.service';
 import { alertsService } from '@/services/alerts.service';
+import { leasesService } from '@/services/leases.service';
 import { Card, CardHeader, CardTitle, CardBody } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { PageLoader } from '@/components/ui/Spinner';
-import { formatCurrency, formatPercent, compactCurrency, formatRelative } from '@/utils/format';
+import { formatCurrency, compactCurrency, formatRelative, daysUntil, formatDate } from '@/utils/format';
 import { useAuthStore } from '@/state/auth.store';
 
 function getGreeting(): string {
@@ -36,6 +37,7 @@ const TREND_OPTIONS = [
   { label: '6M', value: 6 },
   { label: '12M', value: 12 },
 ];
+
 
 export default function DashboardPage() {
   const user = useAuthStore((s) => s.user);
@@ -67,12 +69,19 @@ export default function DashboardPage() {
     queryFn: analyticsService.getPropertyPerformance,
   });
 
+  const { data: expiringLeases } = useQuery({
+    queryKey: ['leases', 'expiring-90'],
+    queryFn: () => leasesService.getLeases({ expiringWithinDays: 90, status: 'ACTIVE', limit: 6 }),
+  });
+
   if (summaryLoading) return <PageLoader />;
 
   const riskPieData = distribution?.byRisk.map((r) => ({
     name: r.renewalRisk,
     value: r._count,
   })) ?? [];
+
+  const latestNOI = trend && trend.length > 0 ? trend[trend.length - 1].net : null;
 
   const kpis = summary
     ? [
@@ -90,8 +99,12 @@ export default function DashboardPage() {
           icon: FileText,
           color: 'text-success',
           bg: 'bg-success/10',
-          sub: `${summary.leases.expiringIn30} expiring soon`,
-          subColor: summary.leases.expiringIn30 > 0 ? 'text-warning' : 'text-slate-600',
+          sub: summary.leases.expiringIn30 > 0
+            ? `${summary.leases.expiringIn30} expiring in 30d`
+            : summary.leases.expiringIn90 > 0
+            ? `${summary.leases.expiringIn90} expiring in 90d`
+            : 'All stable',
+          subColor: summary.leases.expiringIn30 > 0 ? 'text-danger' : summary.leases.expiringIn90 > 0 ? 'text-warning' : 'text-success',
           href: '/leases',
         },
         {
@@ -104,34 +117,34 @@ export default function DashboardPage() {
           href: '/finance',
         },
         {
+          label: 'Net Income',
+          value: latestNOI != null ? compactCurrency(latestNOI) : '—',
+          icon: TrendingUp,
+          color: latestNOI != null && latestNOI >= 0 ? 'text-success' : 'text-danger',
+          bg: latestNOI != null && latestNOI >= 0 ? 'bg-success/10' : 'bg-danger/10',
+          sub: 'This month (NOI)',
+          subColor: 'text-slate-500',
+          href: '/finance',
+        },
+        {
           label: 'Occupancy Rate',
           value: `${summary.occupancy.rate}%`,
           icon: Users,
-          color: 'text-brand-400',
-          bg: 'bg-brand-600/10',
+          color: summary.occupancy.rate >= 90 ? 'text-success' : summary.occupancy.rate >= 75 ? 'text-warning' : 'text-danger',
+          bg: summary.occupancy.rate >= 90 ? 'bg-success/10' : summary.occupancy.rate >= 75 ? 'bg-warning/10' : 'bg-danger/10',
           sub: `${summary.occupancy.occupied}/${summary.occupancy.total} units`,
-          subColor: 'text-slate-600',
+          subColor: 'text-slate-500',
           href: '/properties',
         },
         {
           label: 'Open Alerts',
           value: summary.alerts.open,
           icon: AlertTriangle,
-          color: summary.alerts.critical > 0 ? 'text-danger' : 'text-warning',
-          bg: summary.alerts.critical > 0 ? 'bg-danger/10' : 'bg-warning/10',
-          sub: summary.alerts.critical > 0 ? `${summary.alerts.critical} critical` : 'No critical',
-          subColor: summary.alerts.critical > 0 ? 'text-danger' : 'text-slate-600',
+          color: summary.alerts.critical > 0 ? 'text-danger' : summary.alerts.open > 0 ? 'text-warning' : 'text-success',
+          bg: summary.alerts.critical > 0 ? 'bg-danger/10' : summary.alerts.open > 0 ? 'bg-warning/10' : 'bg-success/10',
+          sub: summary.alerts.critical > 0 ? `${summary.alerts.critical} critical` : summary.alerts.open === 0 ? 'All clear' : 'No critical',
+          subColor: summary.alerts.critical > 0 ? 'text-danger' : summary.alerts.open === 0 ? 'text-success' : 'text-slate-500',
           href: '/alerts',
-        },
-        {
-          label: 'Revenue Growth',
-          value: formatPercent(summary.revenue.growthPct),
-          icon: TrendingUp,
-          color: summary.revenue.growthPct >= 0 ? 'text-success' : 'text-danger',
-          bg: summary.revenue.growthPct >= 0 ? 'bg-success/10' : 'bg-danger/10',
-          sub: 'vs last month',
-          subColor: 'text-slate-600',
-          href: '/analytics',
         },
       ]
     : [];
@@ -171,7 +184,7 @@ export default function DashboardPage() {
                 <p className="text-2xl font-bold text-white tabular-nums">{kpi.value}</p>
                 <p className="mt-0.5 text-xs text-slate-500">{kpi.label}</p>
                 {kpi.sub && (
-                  <p className={`mt-1 text-xs ${kpi.subColor}`}>{kpi.sub}</p>
+                  <p className={`mt-1 text-xs font-medium ${kpi.subColor}`}>{kpi.sub}</p>
                 )}
               </div>
               <ChevronRight className="absolute right-3 bottom-3 h-3.5 w-3.5 text-slate-700 opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -298,10 +311,9 @@ export default function DashboardPage() {
         <Card>
           <CardHeader>
             <CardTitle>Renewal Risk</CardTitle>
-            <span className="text-xs text-slate-600">Active leases</span>
+            <span className="text-xs text-slate-500">Active leases</span>
           </CardHeader>
           <CardBody className="flex flex-col items-center gap-4 pb-5">
-            {/* Donut with center label */}
             <div className="relative w-full">
               <ResponsiveContainer width="100%" height={220}>
                 <PieChart>
@@ -334,7 +346,6 @@ export default function DashboardPage() {
                   />
                 </PieChart>
               </ResponsiveContainer>
-              {/* Center label */}
               <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
                 <p className="text-3xl font-bold text-white tabular-nums leading-none">
                   {riskPieData.reduce((s, d) => s + d.value, 0)}
@@ -343,7 +354,6 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* Legend grid with count + percentage */}
             <div className="w-full grid grid-cols-2 gap-x-6 gap-y-2.5 px-1">
               {riskPieData.map((entry) => {
                 const total = riskPieData.reduce((s, d) => s + d.value, 0);
@@ -369,12 +379,91 @@ export default function DashboardPage() {
         </Card>
       </div>
 
-      {/* Bottom row */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+      {/* Bottom row — 3 cards */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        {/* Upcoming Renewals */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <Calendar className="h-4 w-4 text-brand-400" />
+              <CardTitle>Upcoming Renewals</CardTitle>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => navigate('/leases')}
+                className="text-xs text-slate-500 hover:text-brand-400 transition-colors"
+              >
+                View all →
+              </button>
+            </div>
+          </CardHeader>
+
+          {/* 30 / 90 day bucket strip */}
+          <div className="grid grid-cols-2 border-b border-surface-400/30 divide-x divide-surface-400/30">
+            <div className="flex flex-col items-center py-3">
+              <p className={`text-2xl font-bold tabular-nums ${
+                (summary?.leases.expiringIn30 ?? 0) > 0 ? 'text-danger' : 'text-slate-500'
+              }`}>
+                {summary?.leases.expiringIn30 ?? 0}
+              </p>
+              <p className="mt-0.5 text-xs text-slate-500">Expiring ≤ 30 days</p>
+            </div>
+            <div className="flex flex-col items-center py-3">
+              <p className={`text-2xl font-bold tabular-nums ${
+                (summary?.leases.expiringIn90 ?? 0) > 0 ? 'text-warning' : 'text-slate-500'
+              }`}>
+                {summary?.leases.expiringIn90 ?? 0}
+              </p>
+              <p className="mt-0.5 text-xs text-slate-500">Expiring ≤ 90 days</p>
+            </div>
+          </div>
+
+          <div className="divide-y divide-surface-400/30">
+            {expiringLeases?.data.length === 0 ? (
+              <div className="flex flex-col items-center gap-2 px-5 py-8">
+                <CheckCircle2 className="h-7 w-7 text-success/50" />
+                <p className="text-sm font-medium text-slate-400">No upcoming expirations</p>
+                <p className="text-xs text-slate-600">All leases stable beyond 90 days</p>
+              </div>
+            ) : (
+              expiringLeases?.data.map((lease) => {
+                const days = daysUntil(lease.endDate);
+                const urgencyColor = days <= 30 ? 'text-danger' : days <= 60 ? 'text-warning' : 'text-slate-400';
+                const urgencyBg = days <= 30 ? 'bg-danger/10 border-danger/20' : days <= 60 ? 'bg-warning/10 border-warning/20' : 'bg-surface-300/50 border-surface-400/40';
+                return (
+                  <button
+                    key={lease.id}
+                    onClick={() => navigate(`/leases/${lease.id}`)}
+                    className="flex w-full items-center gap-3 px-4 py-3 hover:bg-surface-200/40 transition-colors group text-left"
+                  >
+                    <div className={`shrink-0 rounded-lg border px-2 py-1 text-center min-w-[44px] ${urgencyBg}`}>
+                      <p className={`text-sm font-bold tabular-nums leading-none ${urgencyColor}`}>{days}</p>
+                      <p className={`text-[10px] ${urgencyColor} opacity-80`}>days</p>
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium text-slate-200 group-hover:text-brand-300 transition-colors">
+                        {lease.tenant.name}
+                      </p>
+                      <p className="text-xs text-slate-500 truncate">{lease.property.name}</p>
+                    </div>
+                    <div className="shrink-0 text-right">
+                      <p className="text-xs font-medium text-slate-300 tabular-nums">{compactCurrency(Number(lease.baseRent))}/mo</p>
+                      <p className="text-xs text-slate-500">{formatDate(lease.endDate)}</p>
+                    </div>
+                  </button>
+                );
+              })
+            )}
+          </div>
+        </Card>
+
         {/* Alert stream */}
         <Card>
           <CardHeader>
-            <CardTitle>Active Alerts</CardTitle>
+            <div className="flex items-center gap-2">
+              <Activity className="h-4 w-4 text-warning" />
+              <CardTitle>Active Alerts</CardTitle>
+            </div>
             <div className="flex items-center gap-2">
               <Badge variant={summary && summary.alerts.critical > 0 ? 'danger' : 'warning'}>
                 {summary?.alerts.open ?? 0} open
@@ -419,9 +508,12 @@ export default function DashboardPage() {
         {/* Property performance */}
         <Card>
           <CardHeader>
-            <CardTitle>Property Performance</CardTitle>
             <div className="flex items-center gap-2">
-              <span className="text-xs text-slate-600">This month</span>
+              <Building2 className="h-4 w-4 text-brand-400" />
+              <CardTitle>Property Performance</CardTitle>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-slate-500">This month</span>
               <button
                 onClick={() => navigate('/properties')}
                 className="text-xs text-slate-500 hover:text-brand-400 transition-colors"
@@ -435,14 +527,22 @@ export default function DashboardPage() {
               <button
                 key={p.id}
                 onClick={() => navigate(`/properties/${p.id}`)}
-                className="flex w-full items-center gap-3 px-5 py-3 hover:bg-surface-200/40 transition-colors group"
+                className="flex w-full items-center gap-3 px-4 py-3 hover:bg-surface-200/40 transition-colors group"
               >
                 <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-300 text-xs font-bold text-slate-400">
                   {p.code.slice(0, 3)}
                 </div>
                 <div className="min-w-0 flex-1 text-left">
                   <p className="truncate text-sm font-medium text-slate-200 group-hover:text-brand-300 transition-colors">{p.name}</p>
-                  <p className="text-xs text-slate-500">{p.occupancyRate}% occupied</p>
+                  <div className="mt-1 flex items-center gap-2">
+                    <div className="relative h-1 flex-1 overflow-hidden rounded-full bg-surface-400/40">
+                      <div
+                        className="absolute inset-y-0 left-0 rounded-full bg-brand-500/70"
+                        style={{ width: `${p.occupancyRate}%` }}
+                      />
+                    </div>
+                    <span className="shrink-0 text-xs text-slate-500 tabular-nums">{p.occupancyRate}%</span>
+                  </div>
                 </div>
                 <div className="text-right shrink-0">
                   <p className="text-sm font-semibold text-white tabular-nums">{compactCurrency(p.monthlyRevenue)}</p>
