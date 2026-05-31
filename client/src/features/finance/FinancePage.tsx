@@ -101,14 +101,14 @@ export default function FinancePage() {
             <thead>
               <tr className="border-b border-surface-400/40">
                 {['Property', 'Type', 'Amount', 'Period', 'Due Date', 'Status'].map(h => (
-                  <th key={h} className="px-4 py-3 text-left text-2xs font-medium uppercase tracking-wider text-slate-600">{h}</th>
+                  <th key={h} className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400">{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody className="divide-y divide-surface-400/30">
               {records?.data.map((r) => (
                 <tr key={r.id} className="hover:bg-surface-200/30 transition-colors">
-                  <td className="px-4 py-3 text-sm text-slate-400">{r.property.name}</td>
+                  <td className="px-4 py-3 text-sm text-slate-300">{r.property.name}</td>
                   <td className="px-4 py-3">
                     <Badge variant={r.type === 'REVENUE' ? 'success' : 'danger'}>{r.type}</Badge>
                   </td>

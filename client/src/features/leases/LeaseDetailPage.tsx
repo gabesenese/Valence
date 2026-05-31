@@ -57,7 +57,7 @@ export default function LeaseDetailPage() {
           <p className={`text-3xl font-bold tabular-nums ${days <= 30 ? 'text-danger' : days <= 60 ? 'text-warning' : 'text-white'}`}>
             {days > 0 ? days : 0}
           </p>
-          <p className="text-2xs text-slate-500">days remaining</p>
+          <p className="text-xs text-slate-400">days remaining</p>
         </div>
       </div>
 
@@ -70,7 +70,7 @@ export default function LeaseDetailPage() {
               <Building2 className="h-4 w-4 text-brand-400" />
               <span className="text-sm text-slate-200">{lease.property.name}</span>
             </div>
-            <div className="text-2xs text-slate-600 font-mono">{lease.property.code}</div>
+            <div className="text-xs text-slate-500 font-mono">{lease.property.code}</div>
           </CardBody>
         </Card>
 

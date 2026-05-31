@@ -59,17 +59,17 @@ export default function PropertiesPage() {
               <div className="mt-4 grid grid-cols-3 gap-2 border-t border-surface-400/30 pt-3">
                 <div className="text-center">
                   <p className="text-base font-bold text-white">{p.totalUnits}</p>
-                  <p className="text-2xs text-slate-600">Units</p>
+                  <p className="text-xs text-slate-400">Units</p>
                 </div>
                 <div className="text-center">
                   <p className="text-base font-bold text-success">{p._count.leases}</p>
-                  <p className="text-2xs text-slate-600">Active Leases</p>
+                  <p className="text-xs text-slate-400">Active Leases</p>
                 </div>
                 <div className="text-center">
                   <p className="text-base font-bold text-brand-400">
                     {p.currentValue ? `$${(p.currentValue / 1_000_000).toFixed(1)}M` : '—'}
                   </p>
-                  <p className="text-2xs text-slate-600">Value</p>
+                  <p className="text-xs text-slate-400">Value</p>
                 </div>
               </div>
             </CardBody>

@@ -47,19 +47,19 @@ export default function SettingsPage() {
             {/* Fields */}
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
-                <p className="mb-1.5 text-2xs font-medium uppercase tracking-wider text-slate-600">First Name</p>
+                <p className="mb-1.5 text-xs font-medium uppercase tracking-wider text-slate-400">First Name</p>
                 <div className="rounded-lg border border-surface-400/40 bg-surface-200/50 px-3 py-2.5 text-sm text-slate-300">
                   {user?.firstName}
                 </div>
               </div>
               <div>
-                <p className="mb-1.5 text-2xs font-medium uppercase tracking-wider text-slate-600">Last Name</p>
+                <p className="mb-1.5 text-xs font-medium uppercase tracking-wider text-slate-400">Last Name</p>
                 <div className="rounded-lg border border-surface-400/40 bg-surface-200/50 px-3 py-2.5 text-sm text-slate-300">
                   {user?.lastName}
                 </div>
               </div>
               <div className="sm:col-span-2">
-                <p className="mb-1.5 text-2xs font-medium uppercase tracking-wider text-slate-600">Email</p>
+                <p className="mb-1.5 text-xs font-medium uppercase tracking-wider text-slate-400">Email</p>
                 <div className="flex items-center gap-2 rounded-lg border border-surface-400/40 bg-surface-200/50 px-3 py-2.5">
                   <Mail className="h-4 w-4 text-slate-600 shrink-0" />
                   <span className="text-sm text-slate-300">{user?.email}</span>
@@ -81,7 +81,7 @@ export default function SettingsPage() {
               </div>
               <div>
                 <p className="text-xs font-medium text-slate-300">Role</p>
-                <p className="text-2xs text-slate-500">{user?.role}</p>
+                <p className="text-xs text-slate-400">{user?.role}</p>
               </div>
             </div>
 
@@ -95,7 +95,7 @@ export default function SettingsPage() {
               ].map(({ label, enabled }) => (
                 <div key={label} className="flex items-center justify-between">
                   <span className={enabled ? 'text-slate-400' : 'text-slate-600'}>{label}</span>
-                  <span className={`text-2xs font-medium ${enabled ? 'text-success' : 'text-slate-600'}`}>
+                  <span className={`text-xs font-medium ${enabled ? 'text-success' : 'text-slate-500'}`}>
                     {enabled ? '✓' : '—'}
                   </span>
                 </div>
@@ -123,7 +123,7 @@ export default function SettingsPage() {
                 </div>
                 <div>
                   <p className="text-sm font-medium text-slate-300">{label}</p>
-                  <p className="text-2xs text-slate-600">{description}</p>
+                  <p className="text-xs text-slate-500">{description}</p>
                   <p className="mt-0.5 text-xs font-semibold text-brand-400">{value}</p>
                 </div>
               </div>

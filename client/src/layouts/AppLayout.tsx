@@ -98,7 +98,7 @@ export function AppLayout() {
           {!sidebarCollapsed && user && (
             <div className="mb-2 rounded-lg px-3 py-2">
               <p className="truncate text-xs font-medium text-slate-300">{user.firstName} {user.lastName}</p>
-              <p className="truncate text-2xs text-slate-600">{user.role}</p>
+              <p className="truncate text-xs text-slate-500">{user.role}</p>
             </div>
           )}
           <button

@@ -106,7 +106,7 @@ export default function LeasesPage() {
               <thead>
                 <tr className="border-b border-surface-400/40">
                   {['Lease', 'Property', 'Tenant', 'Base Rent', 'Expiry', 'Days Left', 'Risk', 'Status'].map((h) => (
-                    <th key={h} className="px-4 py-3 text-left text-2xs font-medium uppercase tracking-wider text-slate-600">{h}</th>
+                    <th key={h} className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400">{h}</th>
                   ))}
                   <th className="px-4 py-3" />
                 </tr>
@@ -125,7 +125,7 @@ export default function LeasesPage() {
                           <FileText className="h-3.5 w-3.5 text-slate-600 shrink-0" />
                           <span className="text-sm font-medium text-slate-200 font-mono">{lease.leaseNumber}</span>
                         </div>
-                        {lease.unitNumber && <p className="ml-5.5 text-2xs text-slate-600 mt-0.5">{lease.unitNumber}</p>}
+                        {lease.unitNumber && <p className="ml-5.5 text-xs text-slate-500 mt-0.5">{lease.unitNumber}</p>}
                       </td>
                       <td className="px-4 py-3 text-sm text-slate-400">{lease.property.name}</td>
                       <td className="px-4 py-3 text-sm text-slate-400">{lease.tenant.name}</td>

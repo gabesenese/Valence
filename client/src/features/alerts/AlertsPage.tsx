@@ -117,7 +117,7 @@ export default function AlertsPage() {
                     <Badge variant="neutral">{alert.type.replace(/_/g, ' ')}</Badge>
                   </div>
                   <p className="mt-1 text-xs text-slate-500">{alert.description}</p>
-                  <div className="mt-1.5 flex items-center gap-3 text-2xs text-slate-600">
+                  <div className="mt-1.5 flex items-center gap-3 text-xs text-slate-500">
                     {alert.property && <span>{alert.property.name}</span>}
                     {alert.lease && <span>Lease {alert.lease.leaseNumber}</span>}
                     <span>{formatRelative(alert.createdAt)}</span>

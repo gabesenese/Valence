@@ -113,9 +113,9 @@ export default function LoginPage() {
           </div>
 
           <div className="mt-5 rounded-lg border border-surface-400/40 bg-surface-200/50 p-3">
-            <p className="text-2xs font-medium text-slate-500 mb-1.5">Demo credentials</p>
-            <p className="text-2xs text-slate-600 font-mono">admin@valence.dev</p>
-            <p className="text-2xs text-slate-600 font-mono">Admin1234!</p>
+            <p className="text-xs font-medium text-slate-400 mb-1.5">Demo credentials</p>
+            <p className="text-xs text-slate-300 font-mono">admin@valence.dev</p>
+            <p className="text-xs text-slate-300 font-mono">Admin1234!</p>
           </div>
         </div>
       </div>

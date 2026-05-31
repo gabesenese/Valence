@@ -171,7 +171,7 @@ export default function DashboardPage() {
                 <p className="text-2xl font-bold text-white tabular-nums">{kpi.value}</p>
                 <p className="mt-0.5 text-xs text-slate-500">{kpi.label}</p>
                 {kpi.sub && (
-                  <p className={`mt-1 text-2xs ${kpi.subColor}`}>{kpi.sub}</p>
+                  <p className={`mt-1 text-xs ${kpi.subColor}`}>{kpi.sub}</p>
                 )}
               </div>
               <ChevronRight className="absolute right-3 bottom-3 h-3.5 w-3.5 text-slate-700 opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -190,15 +190,15 @@ export default function DashboardPage() {
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-1.5">
                   <div className="h-2.5 w-2.5 rounded-full bg-[#6366f1]" />
-                  <span className="text-2xs text-slate-500">Revenue</span>
+                  <span className="text-xs text-slate-400">Revenue</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <div className="h-0 w-4 border-t-2 border-dashed border-[#ef4444]" />
-                  <span className="text-2xs text-slate-500">Expenses</span>
+                  <span className="text-xs text-slate-400">Expenses</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <div className="h-2.5 w-2.5 rounded-full bg-[#10b981]/70" />
-                  <span className="text-2xs text-slate-500">Net Income</span>
+                  <span className="text-xs text-slate-400">Net Income</span>
                 </div>
               </div>
             </div>
@@ -339,7 +339,7 @@ export default function DashboardPage() {
                 <p className="text-3xl font-bold text-white tabular-nums leading-none">
                   {riskPieData.reduce((s, d) => s + d.value, 0)}
                 </p>
-                <p className="mt-1 text-2xs text-slate-500 tracking-wide uppercase">leases</p>
+                <p className="mt-1 text-xs text-slate-400 tracking-wide uppercase">leases</p>
               </div>
             </div>
 
@@ -360,7 +360,7 @@ export default function DashboardPage() {
                     />
                     <span className="flex-1 text-left text-xs text-slate-400">{entry.name}</span>
                     <span className="tabular-nums text-xs font-semibold text-white">{entry.value}</span>
-                    <span className="w-8 text-right tabular-nums text-2xs text-slate-600">{pct}%</span>
+                    <span className="w-8 text-right tabular-nums text-xs text-slate-500">{pct}%</span>
                   </button>
                 );
               })}
@@ -381,7 +381,7 @@ export default function DashboardPage() {
               </Badge>
               <button
                 onClick={() => navigate('/alerts')}
-                className="text-2xs text-slate-600 hover:text-brand-400 transition-colors"
+                className="text-xs text-slate-500 hover:text-brand-400 transition-colors"
               >
                 View all →
               </button>
@@ -409,7 +409,7 @@ export default function DashboardPage() {
                     <p className="text-sm font-medium text-slate-200 truncate">{alert.title}</p>
                     <p className="mt-0.5 text-xs text-slate-500 line-clamp-1">{alert.description}</p>
                   </div>
-                  <span className="shrink-0 text-2xs text-slate-600">{formatRelative(alert.createdAt)}</span>
+                  <span className="shrink-0 text-xs text-slate-500">{formatRelative(alert.createdAt)}</span>
                 </button>
               ))
             )}
@@ -424,7 +424,7 @@ export default function DashboardPage() {
               <span className="text-xs text-slate-600">This month</span>
               <button
                 onClick={() => navigate('/properties')}
-                className="text-2xs text-slate-600 hover:text-brand-400 transition-colors"
+                className="text-xs text-slate-500 hover:text-brand-400 transition-colors"
               >
                 View all →
               </button>
@@ -442,11 +442,11 @@ export default function DashboardPage() {
                 </div>
                 <div className="min-w-0 flex-1 text-left">
                   <p className="truncate text-sm font-medium text-slate-200 group-hover:text-brand-300 transition-colors">{p.name}</p>
-                  <p className="text-2xs text-slate-600">{p.occupancyRate}% occupied</p>
+                  <p className="text-xs text-slate-500">{p.occupancyRate}% occupied</p>
                 </div>
                 <div className="text-right shrink-0">
                   <p className="text-sm font-semibold text-white tabular-nums">{compactCurrency(p.monthlyRevenue)}</p>
-                  <p className="text-2xs text-slate-600">{p.activeLeases} leases</p>
+                  <p className="text-xs text-slate-500">{p.activeLeases} leases</p>
                 </div>
                 <ChevronRight className="h-3.5 w-3.5 text-slate-700 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
               </button>

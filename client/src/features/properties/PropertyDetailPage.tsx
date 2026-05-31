@@ -53,7 +53,7 @@ export default function PropertyDetailPage() {
   if (isLoading) return <PageLoader />;
   if (!property) return <div className="p-6 text-slate-500">Property not found</div>;
 
-  const monthlyRevenue = property.leases.reduce((sum, l) => sum + l.baseRent, 0);
+  const monthlyRevenue = property.leases.reduce((sum, l) => sum + Number(l.baseRent), 0);
 
   return (
     <div className="flex flex-col gap-6 p-6 animate-fade-in">
@@ -100,7 +100,7 @@ export default function PropertyDetailPage() {
         ].map((kpi) => (
           <Card key={kpi.label} className="p-4 text-center">
             <p className={`text-xl font-bold tabular-nums ${kpi.color}`}>{kpi.value}</p>
-            <p className="mt-0.5 text-2xs text-slate-600">{kpi.label}</p>
+            <p className="mt-0.5 text-xs text-slate-400">{kpi.label}</p>
           </Card>
         ))}
       </div>
@@ -166,7 +166,7 @@ export default function PropertyDetailPage() {
               <thead>
                 <tr className="border-b border-surface-400/40">
                   {['Lease', 'Tenant', 'Unit', 'Base Rent', 'Expiry', 'Risk'].map((h) => (
-                    <th key={h} className="px-4 py-3 text-left text-2xs font-medium uppercase tracking-wider text-slate-600">{h}</th>
+                    <th key={h} className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400">{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -188,13 +188,13 @@ export default function PropertyDetailPage() {
                       </td>
                       <td className="px-4 py-3">
                         <p className="text-sm text-slate-400">{lease.tenant.name}</p>
-                        {lease.tenant.email && <p className="text-2xs text-slate-600">{lease.tenant.email}</p>}
+                        {lease.tenant.email && <p className="text-xs text-slate-500">{lease.tenant.email}</p>}
                       </td>
                       <td className="px-4 py-3 text-sm text-slate-500">{lease.unitNumber ?? '—'}</td>
                       <td className="px-4 py-3 text-sm font-medium text-white tabular-nums">{formatCurrency(lease.baseRent)}/mo</td>
                       <td className="px-4 py-3">
                         <p className="text-sm text-slate-400">{formatDate(lease.endDate)}</p>
-                        <p className={`text-2xs font-semibold tabular-nums ${
+                        <p className={`text-xs font-semibold tabular-nums ${
                           days <= 30 ? 'text-danger' : days <= 90 ? 'text-warning' : 'text-slate-600'
                         }`}>{days > 0 ? `${days}d left` : 'Expired'}</p>
                       </td>
