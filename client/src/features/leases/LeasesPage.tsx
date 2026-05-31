@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
-import { Search, Filter, FileText, ChevronRight } from 'lucide-react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Search, Filter, FileText, ChevronRight, X } from 'lucide-react';
 import { leasesService } from '@/services/leases.service';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
@@ -27,10 +27,12 @@ export default function LeasesPage() {
   const [riskFilter, setRiskFilter] = useState('');
   const [page, setPage] = useState(1);
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const propertyId = searchParams.get('propertyId') ?? undefined;
 
   const { data, isLoading } = useQuery({
-    queryKey: ['leases', { search, renewalRisk: riskFilter, page }],
-    queryFn: () => leasesService.getLeases({ search: search || undefined, renewalRisk: riskFilter || undefined, page, limit: 20 }),
+    queryKey: ['leases', { search, renewalRisk: riskFilter, page, propertyId }],
+    queryFn: () => leasesService.getLeases({ search: search || undefined, renewalRisk: riskFilter || undefined, propertyId, page, limit: 20 }),
     placeholderData: (prev) => prev,
   });
 
@@ -63,6 +65,20 @@ export default function LeasesPage() {
               <p className="mt-0.5 text-xs text-slate-500">{s.label}</p>
             </Card>
           ))}
+        </div>
+      )}
+
+      {/* Active property filter chip */}
+      {propertyId && (
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-slate-500">Filtered by property</span>
+          <button
+            onClick={() => setSearchParams({})}
+            className="flex items-center gap-1 rounded-full bg-brand-600/20 border border-brand-600/30 px-2.5 py-0.5 text-xs text-brand-300 hover:bg-danger/20 hover:text-danger hover:border-danger/30 transition-colors"
+          >
+            <X className="h-3 w-3" />
+            Clear filter
+          </button>
         </div>
       )}
 

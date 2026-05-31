@@ -7,16 +7,14 @@ import {
 } from 'recharts';
 import {
   Building2, FileText, TrendingUp, AlertTriangle, DollarSign, Users,
-  ArrowUp, ArrowDown, CheckCircle2, ChevronRight, Calendar, Activity,
+  ArrowUp, ArrowDown, CheckCircle2, ChevronRight, Calendar,
   Zap,
 } from 'lucide-react';
 import { analyticsService } from '@/services/analytics.service';
-import { alertsService } from '@/services/alerts.service';
 import { leasesService } from '@/services/leases.service';
 import { Card, CardHeader, CardTitle, CardBody } from '@/components/ui/Card';
-import { Badge } from '@/components/ui/Badge';
 import { PageLoader } from '@/components/ui/Spinner';
-import { formatCurrency, compactCurrency, formatRelative, daysUntil, formatDate } from '@/utils/format';
+import { formatCurrency, compactCurrency, daysUntil, formatDate } from '@/utils/format';
 import { useAuthStore } from '@/state/auth.store';
 
 function getGreeting(): string {
@@ -60,11 +58,6 @@ export default function DashboardPage() {
     queryFn: analyticsService.getLeaseDistribution,
   });
 
-  const { data: alertsData } = useQuery({
-    queryKey: ['alerts', { status: 'OPEN', limit: 5 }],
-    queryFn: () => alertsService.getAlerts({ status: 'OPEN', limit: 5 }),
-  });
-
   const { data: performance } = useQuery({
     queryKey: ['analytics', 'property-performance'],
     queryFn: analyticsService.getPropertyPerformance,
@@ -106,12 +99,6 @@ export default function DashboardPage() {
           icon: FileText,
           color: 'text-success',
           bg: 'bg-success/10',
-          sub: summary.leases.expiringIn30 > 0
-            ? `${summary.leases.expiringIn30} expiring in 30d`
-            : summary.leases.expiringIn90 > 0
-            ? `${summary.leases.expiringIn90} expiring in 90d`
-            : 'All stable',
-          subColor: summary.leases.expiringIn30 > 0 ? 'text-danger' : summary.leases.expiringIn90 > 0 ? 'text-warning' : 'text-success',
           href: '/leases',
         },
         {
@@ -425,8 +412,8 @@ export default function DashboardPage() {
         </Card>
       </div>
 
-      {/* Bottom row — 3 cards */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+      {/* Bottom row — 2 cards */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {/* Upcoming Renewals */}
         <Card>
           <CardHeader>
@@ -443,26 +430,6 @@ export default function DashboardPage() {
               </button>
             </div>
           </CardHeader>
-
-          {/* 30 / 90 day bucket strip */}
-          <div className="grid grid-cols-2 border-b border-surface-400/30 divide-x divide-surface-400/30">
-            <div className="flex flex-col items-center py-3">
-              <p className={`text-2xl font-bold tabular-nums ${
-                (summary?.leases.expiringIn30 ?? 0) > 0 ? 'text-danger' : 'text-slate-500'
-              }`}>
-                {summary?.leases.expiringIn30 ?? 0}
-              </p>
-              <p className="mt-0.5 text-xs text-slate-500">Expiring ≤ 30 days</p>
-            </div>
-            <div className="flex flex-col items-center py-3">
-              <p className={`text-2xl font-bold tabular-nums ${
-                (summary?.leases.expiringIn90 ?? 0) > 0 ? 'text-warning' : 'text-slate-500'
-              }`}>
-                {summary?.leases.expiringIn90 ?? 0}
-              </p>
-              <p className="mt-0.5 text-xs text-slate-500">Expiring ≤ 90 days</p>
-            </div>
-          </div>
 
           <div className="divide-y divide-surface-400/30">
             {expiringLeases?.data.length === 0 ? (
@@ -499,54 +466,6 @@ export default function DashboardPage() {
                   </button>
                 );
               })
-            )}
-          </div>
-        </Card>
-
-        {/* Alert stream */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <Activity className="h-4 w-4 text-warning" />
-              <CardTitle>Active Alerts</CardTitle>
-            </div>
-            <div className="flex items-center gap-2">
-              <Badge variant={summary && summary.alerts.critical > 0 ? 'danger' : 'warning'}>
-                {summary?.alerts.open ?? 0} open
-              </Badge>
-              <button
-                onClick={() => navigate('/alerts')}
-                className="text-xs text-slate-500 hover:text-brand-400 transition-colors"
-              >
-                View all →
-              </button>
-            </div>
-          </CardHeader>
-          <div className="divide-y divide-surface-400/30">
-            {alertsData?.data.length === 0 ? (
-              <div className="flex flex-col items-center gap-2 px-5 py-10">
-                <CheckCircle2 className="h-8 w-8 text-success/50" />
-                <p className="text-sm font-medium text-slate-400">All clear</p>
-                <p className="text-xs text-slate-600">No open alerts at this time</p>
-              </div>
-            ) : (
-              alertsData?.data.map((alert) => (
-                <button
-                  key={alert.id}
-                  onClick={() => navigate('/alerts')}
-                  className="flex w-full items-start gap-3 px-5 py-3.5 hover:bg-surface-200/40 transition-colors text-left"
-                >
-                  <div className={`mt-1.5 h-2 w-2 rounded-full shrink-0 ${
-                    alert.severity === 'CRITICAL' ? 'bg-danger' :
-                    alert.severity === 'WARNING' ? 'bg-warning' : 'bg-info'
-                  }`} />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium text-slate-200 truncate">{alert.title}</p>
-                    <p className="mt-0.5 text-xs text-slate-500 line-clamp-1">{alert.description}</p>
-                  </div>
-                  <span className="shrink-0 text-xs text-slate-500">{formatRelative(alert.createdAt)}</span>
-                </button>
-              ))
             )}
           </div>
         </Card>
@@ -592,7 +511,13 @@ export default function DashboardPage() {
                 </div>
                 <div className="text-right shrink-0">
                   <p className="text-sm font-semibold text-white tabular-nums">{compactCurrency(p.monthlyRevenue)}</p>
-                  <p className="text-xs text-slate-500">{p.activeLeases} leases</p>
+                  <p className={`text-xs tabular-nums ${
+                    p.revenueDeltaPct == null ? 'text-slate-500' :
+                    p.revenueDeltaPct >= 0 ? 'text-success' : 'text-danger'
+                  }`}>
+                    {p.revenueDeltaPct == null ? `${p.activeLeases} leases` :
+                      `${p.revenueDeltaPct >= 0 ? '+' : ''}${p.revenueDeltaPct}% vs last mo`}
+                  </p>
                 </div>
                 <ChevronRight className="h-3.5 w-3.5 text-slate-700 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
               </button>

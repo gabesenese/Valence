@@ -89,8 +89,11 @@ enum AlertSeverity {
 
 enum AlertStatus {
   OPEN
-  ACKNOWLEDGED
+  IN_PROGRESS
   RESOLVED
+  DISMISSED
+  // Legacy values — kept for backward compat, no new records will use these
+  ACKNOWLEDGED
   SUPPRESSED
 }
 
@@ -116,9 +119,11 @@ model User {
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
-  refreshTokens RefreshToken[]
-  alerts        Alert[]         @relation("AlertCreatedBy")
-  insights      Insight[]       @relation("InsightCreatedBy")
+  refreshTokens   RefreshToken[]
+  alerts          Alert[]         @relation("AlertCreatedBy")
+  assignedAlerts  Alert[]         @relation("AlertAssignee")
+  alertActivities AlertActivity[] @relation("AlertActivityActor")
+  insights        Insight[]       @relation("InsightCreatedBy")
 
   @@index([email])
   @@index([role])
@@ -277,9 +282,14 @@ model Alert {
   createdAt   DateTime      @default(now()) @map("created_at")
   updatedAt   DateTime      @updatedAt @map("updated_at")
 
-  property  Property? @relation(fields: [propertyId], references: [id])
-  lease     Lease?    @relation(fields: [leaseId], references: [id])
-  createdBy User?     @relation("AlertCreatedBy", fields: [createdById], references: [id])
+  assigneeUserId String?   @map("assignee_user_id")
+  resolutionNote String?   @map("resolution_note")
+
+  property    Property?       @relation(fields: [propertyId], references: [id])
+  lease       Lease?          @relation(fields: [leaseId], references: [id])
+  createdBy   User?           @relation("AlertCreatedBy", fields: [createdById], references: [id])
+  assignee    User?           @relation("AlertAssignee", fields: [assigneeUserId], references: [id])
+  activities  AlertActivity[]
 
   @@index([type])
   @@index([severity])
@@ -288,6 +298,30 @@ model Alert {
   @@index([leaseId])
   @@index([createdAt])
   @@map("alerts")
+}
+
+model AlertActivity {
+  id          String   @id @default(uuid())
+  alertId     String   @map("alert_id")
+  action      String   // CREATED, PROGRESSED, RESOLVED, DISMISSED, ASSIGNED, SCAN_CREATED
+  actorUserId String?  @map("actor_user_id")
+  metadata    Json?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  alert Alert @relation(fields: [alertId], references: [id], onDelete: Cascade)
+  actor User? @relation("AlertActivityActor", fields: [actorUserId], references: [id])
+
+  @@index([alertId])
+  @@index([createdAt])
+  @@map("alert_activities")
+}
+
+model JobLock {
+  id          String   @id
+  lockedAt    DateTime @map("locked_at")
+  lockedUntil DateTime @map("locked_until")
+
+  @@map("job_locks")
 }
 
 model Insight {

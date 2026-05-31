@@ -1,6 +1,39 @@
 import { prisma } from '../../infrastructure/database';
-import { addDays, startOfMonth, endOfMonth, subMonths } from 'date-fns';
-import { generateLeaseExpirationAlerts } from './alerts.service';
+import { addDays, addMinutes, startOfMonth, endOfMonth, subMonths } from 'date-fns';
+import { generateLeaseExpirationAlerts, logAlertActivity } from './alerts.service';
+
+// ─── Median helper (more robust than plain average against outlier months) ─────
+function median(values: number[]): number {
+  if (values.length === 0) return 0;
+  const sorted = [...values].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 !== 0 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+}
+
+// ─── Job lock — prevents concurrent scans across instances ────────────────────
+async function tryAcquireLock(): Promise<boolean> {
+  const now = new Date();
+  const until = addMinutes(now, 30);
+
+  // Attempt to claim an expired lock
+  const updated = await prisma.jobLock.updateMany({
+    where: { id: 'anomaly_scan', lockedUntil: { lt: now } },
+    data: { lockedAt: now, lockedUntil: until },
+  });
+  if (updated.count > 0) return true;
+
+  // Try to create if no lock exists
+  try {
+    await prisma.jobLock.create({ data: { id: 'anomaly_scan', lockedAt: now, lockedUntil: until } });
+    return true;
+  } catch {
+    return false; // unique constraint — another instance holds the lock
+  }
+}
+
+async function releaseLock(): Promise<void> {
+  await prisma.jobLock.deleteMany({ where: { id: 'anomaly_scan' } });
+}
 
 // ─── Detector: Leases expiring with no renewal action ─────────────────────────
 async function detectUnactionedExpirations(): Promise<number> {
@@ -15,7 +48,7 @@ async function detectUnactionedExpirations(): Promise<number> {
       alerts: {
         none: {
           type: 'RENEWAL_RISK',
-          status: { in: ['OPEN', 'ACKNOWLEDGED'] },
+          status: { in: ['OPEN', 'IN_PROGRESS', 'ACKNOWLEDGED'] },
         },
       },
     },
@@ -24,7 +57,7 @@ async function detectUnactionedExpirations(): Promise<number> {
 
   for (const lease of leases) {
     const daysLeft = Math.ceil((lease.endDate.getTime() - now.getTime()) / 86400000);
-    await prisma.alert.create({
+    const alert = await prisma.alert.create({
       data: {
         type: 'RENEWAL_RISK',
         severity: 'CRITICAL',
@@ -35,13 +68,19 @@ async function detectUnactionedExpirations(): Promise<number> {
         metadata: { leaseNumber: lease.leaseNumber, daysLeft, tenantName: lease.tenant.name, action: 'renewal_required' },
       },
     });
+    await logAlertActivity(alert.id, 'SCAN_CREATED', undefined, {
+      source: 'anomaly_scan',
+      detector: 'unactioned_expiration',
+      daysLeft,
+      explanation: { leaseNumber: lease.leaseNumber, endDate: lease.endDate, renewalDate: null },
+    });
     created++;
   }
 
   return created;
 }
 
-// ─── Detector: Revenue deviates from 3-month baseline ────────────────────────
+// ─── Detector: Revenue deviates from 3-month median baseline ─────────────────
 async function detectPaymentAnomalies(): Promise<number> {
   const now = new Date();
   const thisMonthStart = startOfMonth(now);
@@ -53,7 +92,6 @@ async function detectPaymentAnomalies(): Promise<number> {
   });
 
   for (const property of properties) {
-    // 3-month historical average
     const historical: number[] = [];
     for (let i = 1; i <= 3; i++) {
       const mo = subMonths(now, i);
@@ -69,7 +107,7 @@ async function detectPaymentAnomalies(): Promise<number> {
       historical.push(Number(agg._sum.amount ?? 0));
     }
 
-    const baseline = historical.reduce((s, v) => s + v, 0) / 3;
+    const baseline = median(historical); // median, not mean — outlier-resistant
     if (baseline === 0) continue;
 
     const currentAgg = await prisma.financialRecord.aggregate({
@@ -84,31 +122,45 @@ async function detectPaymentAnomalies(): Promise<number> {
     const current = Number(currentAgg._sum.amount ?? 0);
     const deviationPct = ((current - baseline) / baseline) * 100;
 
-    if (deviationPct >= -15) continue; // within acceptable range
+    if (deviationPct >= -15) continue;
 
     const existing = await prisma.alert.findFirst({
       where: {
         propertyId: property.id,
         type: 'PAYMENT_ANOMALY',
-        status: { in: ['OPEN', 'ACKNOWLEDGED'] },
+        status: { in: ['OPEN', 'IN_PROGRESS', 'ACKNOWLEDGED'] },
         createdAt: { gte: addDays(now, -7) },
       },
     });
     if (existing) continue;
 
     const severity = deviationPct <= -30 ? 'CRITICAL' : 'WARNING';
-    await prisma.alert.create({
+    const alert = await prisma.alert.create({
       data: {
         type: 'PAYMENT_ANOMALY',
         severity,
         title: `Potential revenue leakage — ${Math.abs(Math.round(deviationPct))}% below baseline`,
-        description: `${property.name} current month revenue of $${Math.round(current).toLocaleString()} is ${Math.abs(Math.round(deviationPct))}% below the 3-month average of $${Math.round(baseline).toLocaleString()}. Possible revenue leakage or missing records.`,
+        description: `${property.name} current month revenue of $${Math.round(current).toLocaleString()} is ${Math.abs(Math.round(deviationPct))}% below the 3-month median of $${Math.round(baseline).toLocaleString()}. Possible revenue leakage or missing records.`,
         propertyId: property.id,
         metadata: {
           currentRevenue: Math.round(current),
           baselineRevenue: Math.round(baseline),
+          baselineMethod: 'median_3mo',
           deviationPct: Math.round(deviationPct),
+          thresholdWarning: -15,
+          thresholdCritical: -30,
         },
+      },
+    });
+    await logAlertActivity(alert.id, 'SCAN_CREATED', undefined, {
+      source: 'anomaly_scan',
+      detector: 'payment_anomaly',
+      explanation: {
+        baseline: Math.round(baseline),
+        current: Math.round(current),
+        deviationPct: Math.round(deviationPct),
+        historicalMonths: historical.map(Math.round),
+        baselineMethod: 'median_3mo',
       },
     });
     created++;
@@ -141,13 +193,13 @@ async function detectOccupancyDrops(): Promise<number> {
       where: {
         propertyId: property.id,
         type: 'OCCUPANCY_CHANGE',
-        status: { in: ['OPEN', 'ACKNOWLEDGED'] },
+        status: { in: ['OPEN', 'IN_PROGRESS', 'ACKNOWLEDGED'] },
         createdAt: { gte: addDays(now, -1) },
       },
     });
     if (existing) continue;
 
-    await prisma.alert.create({
+    const alert = await prisma.alert.create({
       data: {
         type: 'OCCUPANCY_CHANGE',
         severity: rate < 40 ? 'CRITICAL' : 'WARNING',
@@ -158,7 +210,18 @@ async function detectOccupancyDrops(): Promise<number> {
           occupancyRate: Math.round(rate),
           activeLeases: property._count.leases,
           totalUnits: property.totalUnits,
+          thresholdWarning: 70,
+          thresholdCritical: 40,
         },
+      },
+    });
+    await logAlertActivity(alert.id, 'SCAN_CREATED', undefined, {
+      source: 'anomaly_scan',
+      detector: 'occupancy_drop',
+      explanation: {
+        rate: Math.round(rate),
+        activeLeases: property._count.leases,
+        totalUnits: property.totalUnits,
       },
     });
     created++;
@@ -182,13 +245,13 @@ async function detectFinancialDiscrepancies(): Promise<number> {
       where: {
         propertyId: record.propertyId,
         type: 'FINANCIAL_DISCREPANCY',
-        status: { in: ['OPEN', 'ACKNOWLEDGED'] },
+        status: { in: ['OPEN', 'IN_PROGRESS', 'ACKNOWLEDGED'] },
         metadata: { path: ['recordId'], equals: record.id },
       },
     });
     if (existing) continue;
 
-    await prisma.alert.create({
+    const alert = await prisma.alert.create({
       data: {
         type: 'FINANCIAL_DISCREPANCY',
         severity: 'WARNING',
@@ -199,6 +262,11 @@ async function detectFinancialDiscrepancies(): Promise<number> {
         metadata: { recordId: record.id, amount: Number(record.amount), recordType: record.type },
       },
     });
+    await logAlertActivity(alert.id, 'SCAN_CREATED', undefined, {
+      source: 'anomaly_scan',
+      detector: 'financial_discrepancy',
+      explanation: { recordId: record.id, amount: Number(record.amount), type: record.type },
+    });
     created++;
   }
 
@@ -207,15 +275,24 @@ async function detectFinancialDiscrepancies(): Promise<number> {
 
 // ─── Orchestrator ─────────────────────────────────────────────────────────────
 export async function runAnomalyScan(): Promise<{ total: number; breakdown: Record<string, number> }> {
-  const [renewalRisk, leaseExpiration, paymentAnomalies, occupancy, discrepancies] = await Promise.all([
-    detectUnactionedExpirations(),
-    generateLeaseExpirationAlerts(),
-    detectPaymentAnomalies(),
-    detectOccupancyDrops(),
-    detectFinancialDiscrepancies(),
-  ]);
+  const acquired = await tryAcquireLock();
+  if (!acquired) {
+    return { total: 0, breakdown: { skipped: 1, reason: 'lock_held' } as never };
+  }
 
-  const breakdown = { renewalRisk, leaseExpiration, paymentAnomalies, occupancy, discrepancies };
-  const total = Object.values(breakdown).reduce((s, v) => s + v, 0);
-  return { total, breakdown };
+  try {
+    const [renewalRisk, leaseExpiration, paymentAnomalies, occupancy, discrepancies] = await Promise.all([
+      detectUnactionedExpirations(),
+      generateLeaseExpirationAlerts(),
+      detectPaymentAnomalies(),
+      detectOccupancyDrops(),
+      detectFinancialDiscrepancies(),
+    ]);
+
+    const breakdown = { renewalRisk, leaseExpiration, paymentAnomalies, occupancy, discrepancies };
+    const total = Object.values(breakdown).reduce((s, v) => s + v, 0);
+    return { total, breakdown };
+  } finally {
+    await releaseLock();
+  }
 }

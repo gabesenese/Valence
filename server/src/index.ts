@@ -20,6 +20,7 @@ import { analyticsRouter } from './modules/analytics/analytics.routes';
 import { alertsRouter } from './modules/alerts/alerts.routes';
 import { aiRouter } from './modules/ai/ai.routes';
 import { tenantsRouter } from './modules/tenants/tenants.routes';
+import cron from 'node-cron';
 import { runAnomalyScan } from './modules/alerts/anomaly.service';
 
 const app = express();
@@ -80,14 +81,16 @@ async function start() {
     logger.info(`Valence API running on port ${env.PORT} [${env.NODE_ENV}]`);
   });
 
-  // Run anomaly detection after startup — non-blocking
-  setTimeout(() => {
+  // Anomaly scan — runs every 6 hours; job lock prevents concurrent execution
+  const scan = () =>
     runAnomalyScan()
       .then(({ total, breakdown }) => {
         if (total > 0) logger.info(`Anomaly scan: ${total} new alerts`, breakdown);
       })
       .catch((err) => logger.warn('Anomaly scan failed', { error: err }));
-  }, 3000);
+
+  cron.schedule('0 */6 * * *', scan);
+  scan(); // run once at startup (non-blocking — lock prevents doubles)
 
   const shutdown = async (signal: string) => {
     logger.info(`${signal} received, shutting down gracefully`);
