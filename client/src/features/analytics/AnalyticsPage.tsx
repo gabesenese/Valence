@@ -55,7 +55,7 @@ export default function AnalyticsPage() {
               <XAxis dataKey="month" tick={{ fill: '#475569', fontSize: 11 }} tickLine={false} axisLine={false} />
               <YAxis tick={{ fill: '#475569', fontSize: 11 }} tickLine={false} axisLine={false} tickFormatter={compactCurrency} />
               <Tooltip
-                contentStyle={{ background: '#13131e', border: '1px solid #252540', borderRadius: 8, fontSize: 12 }}
+                contentStyle={{ background: '#13131e', border: '1px solid #252540', borderRadius: 8, fontSize: 12, color: '#e2e8f0' }}
                 formatter={(v: number) => formatCurrency(v)}
               />
               <Area type="monotone" dataKey="net" stroke="#6366f1" strokeWidth={2} fill="url(#netGrad)" name="Net Income" />
@@ -73,9 +73,9 @@ export default function AnalyticsPage() {
               <BarChart data={performance ?? []} layout="vertical" margin={{ top: 0, right: 20, left: 10, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#1e1e32" horizontal={false} />
                 <XAxis type="number" tick={{ fill: '#475569', fontSize: 11 }} tickLine={false} axisLine={false} tickFormatter={compactCurrency} />
-                <YAxis type="category" dataKey="code" tick={{ fill: '#94a3b8', fontSize: 11 }} tickLine={false} axisLine={false} width={70} />
+                <YAxis type="category" dataKey="name" tick={{ fill: '#94a3b8', fontSize: 11 }} tickLine={false} axisLine={false} width={180} />
                 <Tooltip
-                  contentStyle={{ background: '#13131e', border: '1px solid #252540', borderRadius: 8, fontSize: 12 }}
+                  contentStyle={{ background: '#13131e', border: '1px solid #252540', borderRadius: 8, fontSize: 12, color: '#e2e8f0' }}
                   formatter={(v: number) => formatCurrency(v)}
                 />
                 <Bar dataKey="monthlyRevenue" name="Monthly Revenue" fill="#6366f1" radius={[0, 4, 4, 0]} maxBarSize={24} />
@@ -95,7 +95,7 @@ export default function AnalyticsPage() {
                     <Cell key={i} fill={COLORS[i % COLORS.length]} />
                   ))}
                 </Pie>
-                <Tooltip contentStyle={{ background: '#13131e', border: '1px solid #252540', borderRadius: 8, fontSize: 12 }} />
+                <Tooltip contentStyle={{ background: '#13131e', border: '1px solid #252540', borderRadius: 8, fontSize: 12, color: '#e2e8f0' }} />
               </PieChart>
             </ResponsiveContainer>
             <div className="flex flex-wrap justify-center gap-x-3 gap-y-1 mt-2">

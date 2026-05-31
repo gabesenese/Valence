@@ -72,3 +72,7 @@ coverage/
 *.bak
 *.tmp
 *.swp
+
+# Local debug / exploration artifacts
+screenshots/
+*.mjs.bak
