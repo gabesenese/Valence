@@ -1,8 +1,21 @@
 import { api, extractData } from './api';
 
+export interface PortfolioInsight {
+  id: string;
+  category: 'LEASE' | 'FINANCIAL' | 'OPERATIONAL' | 'RISK';
+  severity: 'critical' | 'warning' | 'info';
+  message: string;
+  context: string;
+  href: string;
+  value?: string;
+}
+
 export const analyticsService = {
   getSummary: () =>
     api.get('/analytics/summary').then(extractData<ExecutiveSummary>),
+
+  getInsights: () =>
+    api.get('/analytics/insights').then(extractData<PortfolioInsight[]>),
 
   getLeaseDistribution: () =>
     api.get('/analytics/lease-distribution').then(extractData<LeaseDistribution>),

@@ -47,7 +47,7 @@ export default function TenantsPage() {
               <thead>
                 <tr className="border-b border-surface-400/40">
                   {['Tenant', 'Company', 'Contact', 'Active Leases', 'Credit Score', 'Status'].map((h) => (
-                    <th key={h} className="px-4 py-3 text-left text-2xs font-medium uppercase tracking-wider text-slate-600">{h}</th>
+                    <th key={h} className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400">{h}</th>
                   ))}
                 </tr>
               </thead>

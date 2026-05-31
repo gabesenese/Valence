@@ -27,4 +27,8 @@ router.get('/revenue-trend', async (req: Request, res: Response, next: NextFunct
   } catch (e) { next(e); }
 });
 
+router.get('/insights', async (_req: Request, res: Response, next: NextFunction) => {
+  try { sendSuccess(res, await service.getInsights()); } catch (e) { next(e); }
+});
+
 export { router as analyticsRouter };

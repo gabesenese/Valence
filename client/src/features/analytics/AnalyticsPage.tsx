@@ -102,7 +102,7 @@ export default function AnalyticsPage() {
               {statusPie.map((s, i) => (
                 <div key={s.name} className="flex items-center gap-1.5">
                   <div className="h-2 w-2 rounded-full" style={{ background: COLORS[i % COLORS.length] }} />
-                  <span className="text-2xs text-slate-500">{s.name} <span className="text-slate-400">{s.value}</span></span>
+                  <span className="text-xs text-slate-400">{s.name} <span className="text-white font-medium">{s.value}</span></span>
                 </div>
               ))}
             </div>
@@ -124,7 +124,7 @@ export default function AnalyticsPage() {
                 <div className="flex items-center gap-3">
                   <div className="w-32 h-1.5 rounded-full bg-surface-400">
                     <div
-                      className="h-full rounded-full bg-brand-500 transition-all"
+                      className="h-full rounded-full bg-brand-500 transition-[width]"
                       style={{ width: `${Math.min(100, p.occupancyRate)}%` }}
                     />
                   </div>
