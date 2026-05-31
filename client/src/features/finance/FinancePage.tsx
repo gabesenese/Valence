@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
@@ -18,6 +19,8 @@ const STATUS_VARIANT: Record<string, 'success' | 'warning' | 'danger' | 'neutral
 };
 
 export default function FinancePage() {
+  const [recordsPage, setRecordsPage] = useState(1);
+
   const { data: summary, isLoading: summaryLoading } = useQuery({
     queryKey: ['finance', 'summary'],
     queryFn: () => financeService.getSummary(),
@@ -29,8 +32,9 @@ export default function FinancePage() {
   });
 
   const { data: records } = useQuery({
-    queryKey: ['finance', 'records'],
-    queryFn: () => financeService.getRecords({ limit: 20 }),
+    queryKey: ['finance', 'records', recordsPage],
+    queryFn: () => financeService.getRecords({ limit: 20, page: recordsPage }),
+    placeholderData: (prev) => prev,
   });
 
   if (summaryLoading) return <PageLoader />;
@@ -75,7 +79,7 @@ export default function FinancePage() {
               <XAxis dataKey="month" tick={{ fill: '#475569', fontSize: 11 }} tickLine={false} axisLine={false} />
               <YAxis tick={{ fill: '#475569', fontSize: 11 }} tickLine={false} axisLine={false} tickFormatter={(v) => compactCurrency(v)} />
               <Tooltip
-                contentStyle={{ background: '#13131e', border: '1px solid #252540', borderRadius: 8, fontSize: 12 }}
+                contentStyle={{ background: '#13131e', border: '1px solid #252540', borderRadius: 8, fontSize: 12, color: '#e2e8f0' }}
                 formatter={(v: number) => formatCurrency(v)}
               />
               <Legend wrapperStyle={{ fontSize: 12, color: '#64748b' }} />
@@ -123,6 +127,28 @@ export default function FinancePage() {
             </tbody>
           </table>
         </div>
+        {records && records.meta.pages > 1 && (
+          <div className="flex items-center justify-between border-t border-surface-400/40 px-5 py-3">
+            <p className="text-xs text-slate-600">{records.meta.total} total records</p>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setRecordsPage((p) => Math.max(1, p - 1))}
+                disabled={!records.meta.hasPrev}
+                className="rounded px-3 py-1.5 text-xs text-slate-400 disabled:opacity-30 hover:bg-surface-300 hover:text-white transition-colors"
+              >
+                Previous
+              </button>
+              <span className="text-xs text-slate-600">{recordsPage} / {records.meta.pages}</span>
+              <button
+                onClick={() => setRecordsPage((p) => p + 1)}
+                disabled={!records.meta.hasNext}
+                className="rounded px-3 py-1.5 text-xs text-slate-400 disabled:opacity-30 hover:bg-surface-300 hover:text-white transition-colors"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        )}
       </Card>
     </div>
   );

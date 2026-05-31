@@ -19,6 +19,7 @@ import { financeRouter } from './modules/finance/finance.routes';
 import { analyticsRouter } from './modules/analytics/analytics.routes';
 import { alertsRouter } from './modules/alerts/alerts.routes';
 import { aiRouter } from './modules/ai/ai.routes';
+import { tenantsRouter } from './modules/tenants/tenants.routes';
 
 const app = express();
 
@@ -64,6 +65,7 @@ app.use('/api/finance', financeRouter);
 app.use('/api/analytics', analyticsRouter);
 app.use('/api/alerts', alertsRouter);
 app.use('/api/ai', aiRouter);
+app.use('/api/tenants', tenantsRouter);
 
 // ─── Error Handling ───────────────────────────────────────────────────────────
 app.use(notFoundHandler);

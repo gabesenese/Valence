@@ -10,9 +10,12 @@ const DashboardPage = lazy(() => import('@/features/dashboard/DashboardPage'));
 const LeasesPage = lazy(() => import('@/features/leases/LeasesPage'));
 const LeaseDetailPage = lazy(() => import('@/features/leases/LeaseDetailPage'));
 const PropertiesPage = lazy(() => import('@/features/properties/PropertiesPage'));
+const PropertyDetailPage = lazy(() => import('@/features/properties/PropertyDetailPage'));
 const FinancePage = lazy(() => import('@/features/finance/FinancePage'));
 const AnalyticsPage = lazy(() => import('@/features/analytics/AnalyticsPage'));
 const AlertsPage = lazy(() => import('@/features/alerts/AlertsPage'));
+const TenantsPage = lazy(() => import('@/features/tenants/TenantsPage'));
+const SettingsPage = lazy(() => import('@/features/settings/SettingsPage'));
 
 export default function App() {
   return (
@@ -29,9 +32,12 @@ export default function App() {
             <Route path="leases" element={<LeasesPage />} />
             <Route path="leases/:id" element={<LeaseDetailPage />} />
             <Route path="properties" element={<PropertiesPage />} />
+            <Route path="properties/:id" element={<PropertyDetailPage />} />
             <Route path="finance" element={<FinancePage />} />
             <Route path="analytics" element={<AnalyticsPage />} />
             <Route path="alerts" element={<AlertsPage />} />
+            <Route path="tenants" element={<TenantsPage />} />
+            <Route path="settings" element={<SettingsPage />} />
           </Route>
         </Route>
 

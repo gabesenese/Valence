@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import { Building2, MapPin } from 'lucide-react';
 import { api, extractPaginated } from '@/services/api';
 import { Card, CardBody } from '@/components/ui/Card';
@@ -21,6 +22,7 @@ interface Property {
 }
 
 export default function PropertiesPage() {
+  const navigate = useNavigate();
   const { data, isLoading } = useQuery({
     queryKey: ['properties'],
     queryFn: () => api.get('/properties', { params: { limit: 50 } }).then(extractPaginated<Property>),
@@ -37,7 +39,7 @@ export default function PropertiesPage() {
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {data?.data.map((p) => (
-          <Card key={p.id} hover className="overflow-hidden">
+          <Card key={p.id} hover className="overflow-hidden cursor-pointer" onClick={() => navigate(`/properties/${p.id}`)}>
             <div className="h-1.5 bg-gradient-to-r from-brand-600 to-brand-800" />
             <CardBody>
               <div className="flex items-start justify-between mb-3">
