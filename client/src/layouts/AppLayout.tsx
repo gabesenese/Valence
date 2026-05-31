@@ -76,7 +76,7 @@ export function AppLayout() {
                   end={exact}
                   className={({ isActive }) =>
                     cn(
-                      'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-100',
+                      'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors duration-100',
                       isActive
                         ? 'bg-brand-600/20 text-brand-300 shadow-inner'
                         : 'text-slate-500 hover:bg-surface-200 hover:text-slate-200',
@@ -104,7 +104,7 @@ export function AppLayout() {
           <button
             onClick={handleLogout}
             className={cn(
-              'flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-slate-500 transition-all hover:bg-danger/10 hover:text-danger',
+              'flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-slate-500 transition-colors hover:bg-danger/10 hover:text-danger',
               sidebarCollapsed && 'justify-center px-0 py-2.5'
             )}
             title="Sign out"
@@ -117,7 +117,7 @@ export function AppLayout() {
         {/* Collapse toggle */}
         <button
           onClick={toggleSidebar}
-          className="absolute -right-3 top-[70px] z-10 flex h-6 w-6 items-center justify-center rounded-full border border-surface-400/60 bg-surface-100 text-slate-500 shadow-card transition-all hover:border-brand-500/40 hover:text-brand-400"
+          className="absolute -right-3 top-[70px] z-10 flex h-6 w-6 items-center justify-center rounded-full border border-surface-400/60 bg-surface-100 text-slate-500 shadow-card transition-colors hover:border-brand-500/40 hover:text-brand-400"
         >
           <ChevronLeft className={cn('h-3 w-3 transition-transform duration-200', sidebarCollapsed && 'rotate-180')} />
         </button>

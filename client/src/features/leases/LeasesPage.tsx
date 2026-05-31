@@ -84,7 +84,7 @@ export default function LeasesPage() {
             <button
               key={risk}
               onClick={() => { setRiskFilter(risk); setPage(1); }}
-              className={`rounded-md px-2.5 py-1 text-xs font-medium transition-all ${
+              className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
                 riskFilter === risk
                   ? 'bg-brand-600/30 text-brand-300 border border-brand-600/40'
                   : 'text-slate-500 hover:text-slate-300 border border-transparent hover:border-surface-500'

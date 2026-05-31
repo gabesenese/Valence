@@ -74,7 +74,7 @@ export default function AlertsPage() {
           <button
             key={s}
             onClick={() => setStatusFilter(s)}
-            className={`rounded-md px-3 py-1.5 text-xs font-medium transition-all ${
+            className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
               statusFilter === s
                 ? 'bg-brand-600/30 text-brand-300 border border-brand-600/40'
                 : 'text-slate-500 border border-transparent hover:border-surface-500 hover:text-slate-300'

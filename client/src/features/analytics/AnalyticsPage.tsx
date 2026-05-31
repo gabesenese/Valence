@@ -124,7 +124,7 @@ export default function AnalyticsPage() {
                 <div className="flex items-center gap-3">
                   <div className="w-32 h-1.5 rounded-full bg-surface-400">
                     <div
-                      className="h-full rounded-full bg-brand-500 transition-all"
+                      className="h-full rounded-full bg-brand-500 transition-[width]"
                       style={{ width: `${Math.min(100, p.occupancyRate)}%` }}
                     />
                   </div>

@@ -220,7 +220,7 @@ export default function DashboardPage() {
                 <button
                   key={opt.value}
                   onClick={() => setTrendMonths(opt.value)}
-                  className={`rounded px-2.5 py-1 text-xs font-medium transition-all ${
+                  className={`rounded px-2.5 py-1 text-xs font-medium transition-colors ${
                     trendMonths === opt.value
                       ? 'bg-brand-600/30 text-brand-300 border border-brand-600/40'
                       : 'text-slate-500 hover:text-slate-300 border border-transparent'
