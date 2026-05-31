@@ -20,6 +20,7 @@ import { analyticsRouter } from './modules/analytics/analytics.routes';
 import { alertsRouter } from './modules/alerts/alerts.routes';
 import { aiRouter } from './modules/ai/ai.routes';
 import { tenantsRouter } from './modules/tenants/tenants.routes';
+import { runAnomalyScan } from './modules/alerts/anomaly.service';
 
 const app = express();
 
@@ -78,6 +79,15 @@ async function start() {
   const server = app.listen(env.PORT, () => {
     logger.info(`Valence API running on port ${env.PORT} [${env.NODE_ENV}]`);
   });
+
+  // Run anomaly detection after startup — non-blocking
+  setTimeout(() => {
+    runAnomalyScan()
+      .then(({ total, breakdown }) => {
+        if (total > 0) logger.info(`Anomaly scan: ${total} new alerts`, breakdown);
+      })
+      .catch((err) => logger.warn('Anomaly scan failed', { error: err }));
+  }, 3000);
 
   const shutdown = async (signal: string) => {
     logger.info(`${signal} received, shutting down gracefully`);

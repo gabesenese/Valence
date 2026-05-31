@@ -8,6 +8,7 @@ import {
 import {
   Building2, FileText, TrendingUp, AlertTriangle, DollarSign, Users,
   ArrowUp, ArrowDown, CheckCircle2, ChevronRight, Calendar, Activity,
+  Zap,
 } from 'lucide-react';
 import { analyticsService } from '@/services/analytics.service';
 import { alertsService } from '@/services/alerts.service';
@@ -72,6 +73,12 @@ export default function DashboardPage() {
   const { data: expiringLeases } = useQuery({
     queryKey: ['leases', 'expiring-90'],
     queryFn: () => leasesService.getLeases({ expiringWithinDays: 90, status: 'ACTIVE', limit: 6 }),
+  });
+
+  const { data: insights } = useQuery({
+    queryKey: ['analytics', 'insights'],
+    queryFn: analyticsService.getInsights,
+    staleTime: 60_000,
   });
 
   if (summaryLoading) return <PageLoader />;
@@ -192,6 +199,45 @@ export default function DashboardPage() {
           </Card>
         ))}
       </div>
+
+      {/* Operational Insights */}
+      {insights && insights.length > 0 && (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <Zap className="h-4 w-4 text-brand-400" />
+              <CardTitle>Operational Insights</CardTitle>
+            </div>
+            <span className="text-xs text-slate-500">{insights.length} active insight{insights.length !== 1 ? 's' : ''}</span>
+          </CardHeader>
+          <div className="divide-y divide-surface-400/30">
+            {insights.map((insight) => {
+              const severityLeft = insight.severity === 'critical'
+                ? 'border-l-danger bg-danger/5'
+                : insight.severity === 'warning'
+                ? 'border-l-warning bg-warning/5'
+                : 'border-l-info bg-info/5';
+              const valueColor = insight.severity === 'critical' ? 'text-danger' : insight.severity === 'warning' ? 'text-warning' : 'text-info';
+              return (
+                <button
+                  key={insight.id}
+                  onClick={() => navigate(insight.href)}
+                  className={`flex w-full items-start gap-4 border-l-2 px-5 py-3.5 hover:brightness-110 transition-[filter] text-left ${severityLeft}`}
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium text-slate-100">{insight.message}</p>
+                    <p className="mt-0.5 text-xs text-slate-500">{insight.context}</p>
+                  </div>
+                  {insight.value && (
+                    <span className={`shrink-0 text-sm font-bold tabular-nums ${valueColor}`}>{insight.value}</span>
+                  )}
+                  <ChevronRight className="h-4 w-4 shrink-0 text-slate-600 mt-0.5" />
+                </button>
+              );
+            })}
+          </div>
+        </Card>
+      )}
 
       {/* Charts row */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">

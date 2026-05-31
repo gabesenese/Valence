@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import type { Request, Response, NextFunction } from 'express';
 import * as service from './alerts.service';
+import { runAnomalyScan } from './anomaly.service';
 import { authenticate } from '../../middleware/authenticate';
 import { sendSuccess, sendPaginated } from '../../utils/response';
 
@@ -39,10 +40,10 @@ router.post('/:id/resolve', async (req: Request, res: Response, next: NextFuncti
   } catch (e) { next(e); }
 });
 
-router.post('/generate-lease-alerts', async (_req: Request, res: Response, next: NextFunction) => {
+router.post('/scan', async (_req: Request, res: Response, next: NextFunction) => {
   try {
-    const count = await service.generateLeaseExpirationAlerts();
-    sendSuccess(res, { generated: count });
+    const result = await runAnomalyScan();
+    sendSuccess(res, result);
   } catch (e) { next(e); }
 });
 
