@@ -300,31 +300,70 @@ export default function DashboardPage() {
             <CardTitle>Renewal Risk</CardTitle>
             <span className="text-xs text-slate-600">Active leases</span>
           </CardHeader>
-          <CardBody className="flex flex-col items-center">
-            <ResponsiveContainer width="100%" height={180}>
-              <PieChart>
-                <Pie data={riskPieData} cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={3} dataKey="value">
-                  {riskPieData.map((entry) => (
-                    <Cell key={entry.name} fill={RISK_COLORS[entry.name] ?? '#6b7280'} />
-                  ))}
-                </Pie>
-                <Tooltip
-                  contentStyle={{ background: '#13131e', border: '1px solid #252540', borderRadius: 8, fontSize: 12, color: '#e2e8f0' }}
-                  itemStyle={{ color: '#e2e8f0' }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-            <div className="flex flex-wrap justify-center gap-x-4 gap-y-1.5 mt-2">
-              {riskPieData.map((entry) => (
-                <button
-                  key={entry.name}
-                  onClick={() => navigate(`/leases?risk=${entry.name}`)}
-                  className="flex items-center gap-1.5 hover:opacity-80 transition-opacity"
-                >
-                  <div className="h-2 w-2 rounded-full" style={{ background: RISK_COLORS[entry.name] ?? '#6b7280' }} />
-                  <span className="text-2xs text-slate-500">{entry.name} <span className="text-slate-400 font-medium">{entry.value}</span></span>
-                </button>
-              ))}
+          <CardBody className="flex flex-col items-center gap-4 pb-5">
+            {/* Donut with center label */}
+            <div className="relative w-full">
+              <ResponsiveContainer width="100%" height={220}>
+                <PieChart>
+                  <Pie
+                    data={riskPieData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={68}
+                    outerRadius={98}
+                    paddingAngle={4}
+                    dataKey="value"
+                    stroke="none"
+                  >
+                    {riskPieData.map((entry) => (
+                      <Cell
+                        key={entry.name}
+                        fill={RISK_COLORS[entry.name] ?? '#6b7280'}
+                        opacity={0.92}
+                      />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    contentStyle={{ background: '#0f0f1a', border: '1px solid #2d2d50', borderRadius: 10, fontSize: 12, color: '#e2e8f0', padding: '10px 14px' }}
+                    itemStyle={{ color: '#e2e8f0' }}
+                    formatter={(value: number, name: string) => {
+                      const total = riskPieData.reduce((s, d) => s + d.value, 0);
+                      const pct = total > 0 ? Math.round((value / total) * 100) : 0;
+                      return [`${value} leases (${pct}%)`, name];
+                    }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+              {/* Center label */}
+              <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+                <p className="text-3xl font-bold text-white tabular-nums leading-none">
+                  {riskPieData.reduce((s, d) => s + d.value, 0)}
+                </p>
+                <p className="mt-1 text-2xs text-slate-500 tracking-wide uppercase">leases</p>
+              </div>
+            </div>
+
+            {/* Legend grid with count + percentage */}
+            <div className="w-full grid grid-cols-2 gap-x-6 gap-y-2.5 px-1">
+              {riskPieData.map((entry) => {
+                const total = riskPieData.reduce((s, d) => s + d.value, 0);
+                const pct = total > 0 ? Math.round((entry.value / total) * 100) : 0;
+                return (
+                  <button
+                    key={entry.name}
+                    onClick={() => navigate(`/leases?risk=${entry.name}`)}
+                    className="flex items-center gap-2 hover:opacity-75 transition-opacity"
+                  >
+                    <div
+                      className="h-2.5 w-2.5 shrink-0 rounded-full"
+                      style={{ background: RISK_COLORS[entry.name] ?? '#6b7280' }}
+                    />
+                    <span className="flex-1 text-left text-xs text-slate-400">{entry.name}</span>
+                    <span className="tabular-nums text-xs font-semibold text-white">{entry.value}</span>
+                    <span className="w-8 text-right tabular-nums text-2xs text-slate-600">{pct}%</span>
+                  </button>
+                );
+              })}
             </div>
           </CardBody>
         </Card>
