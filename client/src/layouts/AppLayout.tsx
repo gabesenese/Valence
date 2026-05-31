@@ -26,7 +26,9 @@ const navItems = [
 ];
 
 export function AppLayout() {
-  const { user, refreshToken, logout } = useAuthStore();
+  const user = useAuthStore((s) => s.user);
+  const refreshToken = useAuthStore((s) => s.refreshToken);
+  const logout = useAuthStore((s) => s.logout);
   const { sidebarCollapsed, toggleSidebar } = useUIStore();
   const navigate = useNavigate();
 

@@ -22,8 +22,8 @@ export async function getLeases(query: LeaseQuery) {
     ...(propertyId && { propertyId }),
     ...(tenantId && { tenantId }),
     ...(expiringWithinDays && {
-      endDate: { lte: addDays(new Date(), expiringWithinDays) },
-      status: 'ACTIVE',
+      endDate: { gte: new Date(), lte: addDays(new Date(), expiringWithinDays) },
+      ...(!status && { status: 'ACTIVE' }),
     }),
     ...(search && {
       OR: [
@@ -98,10 +98,10 @@ export async function createLease(input: CreateLeaseInput) {
 export async function updateLease(id: string, input: UpdateLeaseInput) {
   await getLeaseById(id);
 
-  const endDate = input.endDate ? parseISO(input.endDate) : undefined;
-  const renewalRisk = endDate ? computeRenewalRisk(endDate) : input.renewalRisk;
-
   const { startDate, endDate: endDateStr, renewalDate, propertyId, tenantId, terms, ...rest } = input;
+  const endDate = endDateStr ? parseISO(endDateStr) : undefined;
+  const renewalRisk = endDate ? computeRenewalRisk(endDate) : rest.renewalRisk;
+
   return prisma.lease.update({
     where: { id },
     data: {
@@ -128,8 +128,8 @@ export async function getLeaseStats() {
   const [byStatus, byRisk, expiringIn30, expiringIn90, totalActive] = await Promise.all([
     prisma.lease.groupBy({ by: ['status'], _count: true }),
     prisma.lease.groupBy({ by: ['renewalRisk'], where: { status: 'ACTIVE' }, _count: true }),
-    prisma.lease.count({ where: { status: 'ACTIVE', endDate: { lte: addDays(now, 30) } } }),
-    prisma.lease.count({ where: { status: 'ACTIVE', endDate: { lte: addDays(now, 90) } } }),
+    prisma.lease.count({ where: { status: 'ACTIVE', endDate: { gte: now, lte: addDays(now, 30) } } }),
+    prisma.lease.count({ where: { status: 'ACTIVE', endDate: { gte: now, lte: addDays(now, 90) } } }),
     prisma.lease.count({ where: { status: 'ACTIVE' } }),
   ]);
 

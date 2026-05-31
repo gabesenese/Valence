@@ -18,12 +18,12 @@ export async function getFinancialRecords(query: FinanceQuery) {
     ...(status && { status }),
     ...(propertyId && { propertyId }),
     ...(leaseId && { leaseId }),
-    ...(from || to) && {
+    ...((from || to) && {
       periodStart: {
         ...(from && { gte: parseISO(from) }),
         ...(to && { lte: parseISO(to) }),
       },
-    },
+    }),
   };
 
   const [records, total] = await Promise.all([
@@ -56,13 +56,14 @@ export async function getFinancialRecordById(id: string) {
 }
 
 export async function createFinancialRecord(input: CreateFinancialRecordInput) {
+  const { periodStart, periodEnd, dueDate, paidDate, ...rest } = input;
   return prisma.financialRecord.create({
     data: {
-      ...input,
-      periodStart: parseISO(input.periodStart),
-      periodEnd: parseISO(input.periodEnd),
-      dueDate: input.dueDate ? parseISO(input.dueDate) : undefined,
-      paidDate: input.paidDate ? parseISO(input.paidDate) : undefined,
+      ...rest,
+      periodStart: parseISO(periodStart),
+      periodEnd: parseISO(periodEnd),
+      dueDate: dueDate ? parseISO(dueDate) : undefined,
+      paidDate: paidDate ? parseISO(paidDate) : undefined,
     },
     include: {
       property: { select: { id: true, name: true, code: true } },
@@ -72,14 +73,15 @@ export async function createFinancialRecord(input: CreateFinancialRecordInput) {
 
 export async function updateFinancialRecord(id: string, input: UpdateFinancialRecordInput) {
   await getFinancialRecordById(id);
+  const { periodStart, periodEnd, dueDate, paidDate, ...rest } = input;
   return prisma.financialRecord.update({
     where: { id },
     data: {
-      ...input,
-      ...(input.periodStart && { periodStart: parseISO(input.periodStart) }),
-      ...(input.periodEnd && { periodEnd: parseISO(input.periodEnd) }),
-      ...(input.dueDate && { dueDate: parseISO(input.dueDate) }),
-      ...(input.paidDate && { paidDate: parseISO(input.paidDate) }),
+      ...rest,
+      ...(periodStart && { periodStart: parseISO(periodStart) }),
+      ...(periodEnd && { periodEnd: parseISO(periodEnd) }),
+      ...(dueDate && { dueDate: parseISO(dueDate) }),
+      ...(paidDate && { paidDate: parseISO(paidDate) }),
     },
   });
 }

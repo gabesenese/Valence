@@ -82,7 +82,7 @@ export async function login(input: LoginInput): Promise<{ user: AuthUser; tokens
     data: { lastLoginAt: new Date() },
   });
 
-  const { passwordHash: _, ...authUser } = user;
+  const { passwordHash: _, isActive: __, ...authUser } = user;
   const tokens = await createTokenPair(authUser);
   return { user: authUser, tokens };
 }

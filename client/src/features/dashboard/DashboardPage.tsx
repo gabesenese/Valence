@@ -12,6 +12,13 @@ import { PageLoader } from '@/components/ui/Spinner';
 import { formatCurrency, formatPercent, compactCurrency, formatRelative } from '@/utils/format';
 import { useAuthStore } from '@/state/auth.store';
 
+function getGreeting(): string {
+  const h = new Date().getHours();
+  if (h < 12) return 'Good morning';
+  if (h < 17) return 'Good afternoon';
+  return 'Good evening';
+}
+
 const RISK_COLORS: Record<string, string> = {
   LOW: '#10b981',
   MEDIUM: '#f59e0b',
@@ -116,7 +123,7 @@ export default function DashboardPage() {
       {/* Header */}
       <div>
         <h1 className="text-xl font-bold text-white tracking-tight">
-          Good morning, {user?.firstName}
+          {getGreeting()}, {user?.firstName}
         </h1>
         <p className="mt-0.5 text-sm text-slate-500">Portfolio intelligence overview</p>
       </div>

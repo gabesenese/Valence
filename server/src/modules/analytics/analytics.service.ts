@@ -30,8 +30,8 @@ export async function getExecutiveSummary() {
     }),
     prisma.alert.count({ where: { status: 'OPEN' } }),
     prisma.alert.count({ where: { status: 'OPEN', severity: 'CRITICAL' } }),
-    prisma.lease.count({ where: { status: 'ACTIVE', endDate: { lte: addDays(now, 30) } } }),
-    prisma.lease.count({ where: { status: 'ACTIVE', endDate: { lte: addDays(now, 90) } } }),
+    prisma.lease.count({ where: { status: 'ACTIVE', endDate: { gte: now, lte: addDays(now, 30) } } }),
+    prisma.lease.count({ where: { status: 'ACTIVE', endDate: { gte: now, lte: addDays(now, 90) } } }),
     prisma.property.findMany({
       where: { status: 'ACTIVE' },
       select: {
