@@ -1,40 +1,14 @@
+import { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft, Building2, MapPin, FileText, AlertTriangle, DollarSign, Layers } from 'lucide-react';
-import { api, extractData } from '@/services/api';
+import { ArrowLeft, Building2, MapPin, FileText, AlertTriangle, DollarSign, Layers, Pencil } from 'lucide-react';
+import { propertiesService, type PropertyDetail } from '@/services/properties.service';
 import { Card, CardHeader, CardTitle, CardBody } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { PageLoader } from '@/components/ui/Spinner';
 import { formatCurrency, formatDate, daysUntil } from '@/utils/format';
-
-interface PropertyDetail {
-  id: string;
-  name: string;
-  code: string;
-  type: string;
-  status: string;
-  address: string;
-  city: string;
-  state: string;
-  zipCode: string;
-  totalUnits: number;
-  totalSqft: number;
-  yearBuilt?: number;
-  currentValue?: number;
-  purchasePrice?: number;
-  _count: { leases: number; alerts: number };
-  leases: Array<{
-    id: string;
-    leaseNumber: string;
-    unitNumber?: string;
-    status: string;
-    renewalRisk: string;
-    baseRent: number;
-    endDate: string;
-    tenant: { id: string; name: string; email?: string };
-  }>;
-}
+import PropertyFormModal from './PropertyFormModal';
 
 const RISK_VARIANT: Record<string, 'success' | 'info' | 'warning' | 'danger'> = {
   LOW: 'success', MEDIUM: 'info', HIGH: 'warning', CRITICAL: 'danger',
@@ -43,10 +17,11 @@ const RISK_VARIANT: Record<string, 'success' | 'info' | 'warning' | 'danger'> = 
 export default function PropertyDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [editOpen, setEditOpen] = useState(false);
 
   const { data: property, isLoading } = useQuery({
     queryKey: ['properties', id],
-    queryFn: () => api.get(`/properties/${id}`).then(extractData<PropertyDetail>),
+    queryFn: () => propertiesService.getProperty(id!),
     enabled: !!id,
   });
 
@@ -85,7 +60,13 @@ export default function PropertyDetailPage() {
             </div>
           </div>
         </div>
-        <span className="font-mono text-xs text-slate-600 bg-surface-300 px-2 py-1 rounded">{property.code}</span>
+        <div className="flex items-center gap-2">
+          <span className="font-mono text-xs text-slate-600 bg-surface-300 px-2 py-1 rounded">{property.code}</span>
+          <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
+            <Pencil className="h-3.5 w-3.5" />
+            Edit
+          </Button>
+        </div>
       </div>
 
       {/* KPI strip */}
@@ -211,6 +192,12 @@ export default function PropertyDetailPage() {
           </div>
         </Card>
       )}
+
+      <PropertyFormModal
+        open={editOpen}
+        onClose={() => setEditOpen(false)}
+        property={property as PropertyDetail}
+      />
     </div>
   );
 }

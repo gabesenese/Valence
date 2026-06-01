@@ -292,7 +292,6 @@ export async function setRenewalDateAction(id: string, userId: string, renewalDa
     data: {
       renewalDate: parsed,
       renewalScheduledAt: parsed,
-      renewalStage: 'SCHEDULED_RENEWAL',
     },
     include: {
       property: { select: { id: true, name: true, code: true } },

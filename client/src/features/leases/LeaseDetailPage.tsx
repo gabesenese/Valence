@@ -136,6 +136,7 @@ export default function LeaseDetailPage() {
 
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ['leases', id] });
+    qc.invalidateQueries({ queryKey: ['leases', id, 'activity'] });
     qc.invalidateQueries({ queryKey: ['alerts'] });
   };
 
