@@ -1,25 +1,46 @@
-import { Prisma, AlertType, AlertSeverity } from '@prisma/client';
+import { Prisma, AlertType, AlertSeverity, AlertStatus } from '@prisma/client';
 import { prisma } from '../../infrastructure/database';
 import { NotFoundError } from '../../utils/errors';
 import { addDays } from 'date-fns';
 import { computeRenewalRisk } from '../leases/leases.service';
+
+export async function logAlertActivity(
+  alertId: string,
+  action: string,
+  actorUserId?: string,
+  metadata?: Record<string, unknown>,
+) {
+  return prisma.alertActivity.create({
+    data: { alertId, action, actorUserId: actorUserId ?? null, metadata: (metadata ?? undefined) as Prisma.InputJsonObject | undefined },
+  });
+}
 
 export async function getAlerts(query: {
   page: number;
   limit: number;
   type?: AlertType;
   severity?: AlertSeverity;
-  status?: 'OPEN' | 'ACKNOWLEDGED' | 'RESOLVED' | 'SUPPRESSED';
+  status?: AlertStatus;
+  statuses?: AlertStatus[];
   propertyId?: string;
+  leaseId?: string;
 }) {
-  const { page = 1, limit = 20, type, severity, status, propertyId } = query;
+  const { page = 1, limit = 20, type, severity, status, statuses, propertyId, leaseId } = query;
   const skip = (page - 1) * limit;
 
+  const statusFilter: Prisma.AlertWhereInput =
+    statuses && statuses.length > 0
+      ? { status: { in: statuses } }
+      : status
+      ? { status }
+      : {};
+
   const where: Prisma.AlertWhereInput = {
+    ...statusFilter,
     ...(type && { type }),
     ...(severity && { severity }),
-    ...(status && { status }),
     ...(propertyId && { propertyId }),
+    ...(leaseId && { leaseId }),
   };
 
   const [alerts, total] = await Promise.all([
@@ -31,6 +52,7 @@ export async function getAlerts(query: {
       include: {
         property: { select: { id: true, name: true, code: true } },
         lease: { select: { id: true, leaseNumber: true } },
+        assignee: { select: { id: true, firstName: true, lastName: true } },
       },
     }),
     prisma.alert.count({ where }),
@@ -39,23 +61,70 @@ export async function getAlerts(query: {
   return { alerts, total };
 }
 
-export async function acknowledgeAlert(id: string, userId: string) {
+export async function progressAlert(id: string, userId: string) {
   const alert = await prisma.alert.findUnique({ where: { id } });
   if (!alert) throw new NotFoundError('Alert');
 
-  return prisma.alert.update({
+  const updated = await prisma.alert.update({
     where: { id },
-    data: { status: 'ACKNOWLEDGED', resolvedBy: userId },
+    data: { status: 'IN_PROGRESS' },
   });
+  await logAlertActivity(id, 'PROGRESSED', userId);
+  return updated;
 }
 
-export async function resolveAlert(id: string, userId: string) {
+export async function resolveAlert(id: string, userId: string, note?: string) {
   const alert = await prisma.alert.findUnique({ where: { id } });
   if (!alert) throw new NotFoundError('Alert');
 
-  return prisma.alert.update({
+  const updated = await prisma.alert.update({
     where: { id },
-    data: { status: 'RESOLVED', resolvedAt: new Date(), resolvedBy: userId },
+    data: {
+      status: 'RESOLVED',
+      resolvedAt: new Date(),
+      resolvedBy: userId,
+      ...(note && { resolutionNote: note }),
+    },
+  });
+  await logAlertActivity(id, 'RESOLVED', userId, note ? { note } : undefined);
+  return updated;
+}
+
+export async function dismissAlert(id: string, userId: string, note?: string) {
+  const alert = await prisma.alert.findUnique({ where: { id } });
+  if (!alert) throw new NotFoundError('Alert');
+
+  const updated = await prisma.alert.update({
+    where: { id },
+    data: {
+      status: 'DISMISSED',
+      ...(note && { resolutionNote: note }),
+    },
+  });
+  await logAlertActivity(id, 'DISMISSED', userId, note ? { note } : undefined);
+  return updated;
+}
+
+export async function assignAlert(id: string, assigneeUserId: string, actorUserId: string) {
+  const alert = await prisma.alert.findUnique({ where: { id } });
+  if (!alert) throw new NotFoundError('Alert');
+
+  const updated = await prisma.alert.update({
+    where: { id },
+    data: { assigneeUserId, status: alert.status === 'OPEN' ? 'IN_PROGRESS' : alert.status },
+  });
+  await logAlertActivity(id, 'ASSIGNED', actorUserId, { assigneeUserId });
+  return updated;
+}
+
+export async function getAlertActivity(alertId: string) {
+  const alert = await prisma.alert.findUnique({ where: { id: alertId } });
+  if (!alert) throw new NotFoundError('Alert');
+
+  return prisma.alertActivity.findMany({
+    where: { alertId },
+    orderBy: { createdAt: 'asc' },
+    include: { actor: { select: { id: true, firstName: true, lastName: true } } },
   });
 }
 
@@ -76,7 +145,7 @@ export async function generateLeaseExpirationAlerts(): Promise<number> {
         alerts: {
           none: {
             type: 'LEASE_EXPIRATION',
-            status: { in: ['OPEN', 'ACKNOWLEDGED'] },
+            status: { in: ['OPEN', 'IN_PROGRESS', 'ACKNOWLEDGED'] },
             createdAt: { gte: addDays(new Date(), -1) },
           },
         },
@@ -88,7 +157,7 @@ export async function generateLeaseExpirationAlerts(): Promise<number> {
       const risk = computeRenewalRisk(lease.endDate);
       const daysLeft = Math.ceil((lease.endDate.getTime() - Date.now()) / 86400000);
 
-      await prisma.alert.create({
+      const alert = await prisma.alert.create({
         data: {
           type: 'LEASE_EXPIRATION',
           severity,
@@ -99,6 +168,7 @@ export async function generateLeaseExpirationAlerts(): Promise<number> {
           metadata: { leaseNumber: lease.leaseNumber, daysLeft, renewalRisk: risk },
         },
       });
+      await logAlertActivity(alert.id, 'SCAN_CREATED', undefined, { source: 'anomaly_scan', daysLeft });
       created++;
     }
   }
@@ -115,4 +185,21 @@ export async function getAlertSummary() {
   ]);
 
   return { openTotal: total, bySeverity, byType, byStatus };
+}
+
+export async function reopenAlert(id: string, userId: string) {
+  const alert = await prisma.alert.findUnique({ where: { id } });
+  if (!alert) throw new NotFoundError('Alert');
+
+  const updated = await prisma.alert.update({
+    where: { id },
+    data: { status: 'OPEN', resolvedAt: null, resolvedBy: null, resolutionNote: null },
+  });
+  await logAlertActivity(id, 'REOPENED', userId);
+  return updated;
+}
+
+// Legacy — kept for any existing callers
+export async function acknowledgeAlert(id: string, userId: string) {
+  return progressAlert(id, userId);
 }

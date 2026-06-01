@@ -120,6 +120,14 @@ export async function getMe(userId: string): Promise<AuthUser> {
   return user;
 }
 
+export async function listUsers(): Promise<AuthUser[]> {
+  return prisma.user.findMany({
+    where: { isActive: true },
+    select: { id: true, email: true, firstName: true, lastName: true, role: true },
+    orderBy: [{ firstName: 'asc' }, { lastName: 'asc' }],
+  });
+}
+
 async function createTokenPair(user: AuthUser): Promise<TokenPair> {
   const accessToken = signAccessToken(user);
   const refreshToken = signRefreshToken();

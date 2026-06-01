@@ -30,4 +30,7 @@ export const authService = {
 
   getMe: (): Promise<AuthUser> =>
     api.get('/auth/me').then(extractData<AuthUser>),
+
+  getUsers: (): Promise<AuthUser[]> =>
+    api.get('/auth/users').then(extractData<AuthUser[]>),
 };

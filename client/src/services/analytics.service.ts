@@ -56,4 +56,5 @@ export interface PropertyPerformance {
   activeLeases: number;
   occupancyRate: number;
   monthlyRevenue: number;
+  revenueDeltaPct: number | null;
 }

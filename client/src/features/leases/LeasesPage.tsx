@@ -1,36 +1,416 @@
-import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
-import { Search, Filter, FileText, ChevronRight } from 'lucide-react';
-import { leasesService } from '@/services/leases.service';
+import { useState, useMemo, useCallback } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import {
+  Search, FileText, ChevronRight, X, ChevronUp, ChevronDown,
+  LayoutList, Zap, CheckSquare, Square, RefreshCw, Phone,
+  BellOff, Download, SlidersHorizontal, Users,
+} from 'lucide-react';
+import { leasesService, type RenewalStage, type PriorityLease, type Lease, type LeaseAlert } from '@/services/leases.service';
+import { authService } from '@/services/auth.service';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
+import { Button } from '@/components/ui/Button';
 import { PageLoader } from '@/components/ui/Spinner';
 import { formatCurrency, formatDate, daysUntil } from '@/utils/format';
+import LeaseDrawer from './LeaseDrawer';
+
+// ─── Constants ────────────────────────────────────────────────────────────────
 
 const RISK_VARIANT: Record<string, 'success' | 'info' | 'warning' | 'danger'> = {
-  LOW: 'success',
-  MEDIUM: 'info',
-  HIGH: 'warning',
-  CRITICAL: 'danger',
+  LOW: 'success', MEDIUM: 'info', HIGH: 'warning', CRITICAL: 'danger',
 };
 
 const STATUS_VARIANT: Record<string, 'success' | 'neutral' | 'brand' | 'danger'> = {
-  ACTIVE: 'success',
-  EXPIRED: 'neutral',
-  PENDING: 'brand',
-  TERMINATED: 'danger',
+  ACTIVE: 'success', EXPIRED: 'neutral', PENDING: 'brand', TERMINATED: 'danger',
 };
 
-export default function LeasesPage() {
-  const [search, setSearch] = useState('');
-  const [riskFilter, setRiskFilter] = useState('');
-  const [page, setPage] = useState(1);
-  const navigate = useNavigate();
+const STAGE_LABEL: Record<RenewalStage, string> = {
+  NOT_STARTED: 'Not started',
+  CONTACTED: 'Contacted',
+  NEGOTIATING: 'Negotiating',
+  DRAFT_SENT: 'Draft sent',
+  SCHEDULED_RENEWAL: 'Scheduled',
+  SIGNED: 'Signed',
+};
+
+const STAGE_VARIANT: Record<RenewalStage, 'neutral' | 'info' | 'warning' | 'brand' | 'success'> = {
+  NOT_STARTED: 'neutral',
+  CONTACTED: 'info',
+  NEGOTIATING: 'warning',
+  DRAFT_SENT: 'brand',
+  SCHEDULED_RENEWAL: 'brand',
+  SIGNED: 'success',
+};
+
+const STATUS_TABS = [
+  { label: 'All', value: '' },
+  { label: 'Active', value: 'ACTIVE' },
+  { label: 'Expired', value: 'EXPIRED' },
+  { label: 'Pending', value: 'PENDING' },
+  { label: 'Terminated', value: 'TERMINATED' },
+];
+
+const EXPIRY_FILTERS = [
+  { label: 'Any', value: '' },
+  { label: '30d', value: '30' },
+  { label: '60d', value: '60' },
+  { label: '90d', value: '90' },
+  { label: '180d', value: '180' },
+];
+
+type SortField = 'endDate' | 'baseRent';
+type ViewMode = 'table' | 'priority';
+
+// ─── Sub-components ───────────────────────────────────────────────────────────
+
+function SortIcon({ active, order }: { active: boolean; order: 'asc' | 'desc' }) {
+  if (!active) return <ChevronUp className="h-3 w-3 opacity-0 group-hover/th:opacity-60 transition-opacity" />;
+  return order === 'asc'
+    ? <ChevronUp className="h-3 w-3 text-brand-400" />
+    : <ChevronDown className="h-3 w-3 text-brand-400" />;
+}
+
+function FilterTab({
+  active, onClick, children,
+}: { active: boolean; onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+        active
+          ? 'bg-brand-600/30 text-brand-300 border border-brand-600/40'
+          : 'text-slate-500 border border-transparent hover:border-surface-500 hover:text-slate-300'
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
+function DaysCell({ endDate, status }: { endDate: string; status: string }) {
+  const days = daysUntil(endDate);
+  const color = status !== 'ACTIVE' ? 'text-slate-600'
+    : days <= 30 ? 'text-danger'
+    : days <= 60 ? 'text-warning'
+    : days <= 90 ? 'text-yellow-400'
+    : 'text-slate-500';
+  return (
+    <td className="px-4 py-3">
+      <p className="text-sm text-slate-300">{formatDate(endDate)}</p>
+      <p className={`text-xs font-semibold tabular-nums mt-0.5 ${color}`}>
+        {status !== 'ACTIVE' ? '—' : days > 0 ? `${days}d left` : 'Expired'}
+      </p>
+    </td>
+  );
+}
+
+function PriorityBar({ score }: { score: number }) {
+  const pct = Math.min(100, Math.round((score / 2500) * 100));
+  const color = pct >= 70 ? 'bg-danger' : pct >= 40 ? 'bg-warning' : 'bg-brand-500';
+  return (
+    <div className="flex items-center gap-2">
+      <div className="w-16 h-1.5 rounded-full bg-surface-400 overflow-hidden">
+        <div className={`h-full rounded-full ${color}`} style={{ width: `${pct}%` }} />
+      </div>
+      <span className="text-xs tabular-nums text-slate-500">{score}</span>
+    </div>
+  );
+}
+
+// ─── Priority Queue View ──────────────────────────────────────────────────────
+
+function PriorityQueueView({
+  onOpenDrawer,
+}: {
+  onOpenDrawer: (id: string) => void;
+}) {
+  const qc = useQueryClient();
 
   const { data, isLoading } = useQuery({
-    queryKey: ['leases', { search, renewalRisk: riskFilter, page }],
-    queryFn: () => leasesService.getLeases({ search: search || undefined, renewalRisk: riskFilter || undefined, page, limit: 20 }),
+    queryKey: ['leases', 'priority-queue'],
+    queryFn: leasesService.getPriorityQueue,
+  });
+
+  const invalidate = useCallback(() => qc.invalidateQueries({ queryKey: ['leases'] }), [qc]);
+
+  const startRenewal = useMutation({
+    mutationFn: (id: string) => leasesService.startRenewal(id),
+    onSuccess: invalidate,
+  });
+  const markContacted = useMutation({
+    mutationFn: (id: string) => leasesService.markContacted(id),
+    onSuccess: invalidate,
+  });
+  const snooze = useMutation({
+    mutationFn: (id: string) => leasesService.snooze(id),
+    onSuccess: invalidate,
+  });
+
+  if (isLoading) return <PageLoader />;
+
+  if (!data || data.length === 0) {
+    return (
+      <Card className="py-16 text-center">
+        <Zap className="mx-auto h-8 w-8 text-slate-700" />
+        <p className="mt-3 text-sm text-slate-500">No leases need immediate attention</p>
+      </Card>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-3">
+      {data.map((lease: PriorityLease, idx: number) => {
+        const days = daysUntil(lease.endDate);
+        const isActionBusy = startRenewal.isPending || markContacted.isPending || snooze.isPending;
+        return (
+          <Card key={lease.id} className="p-0 overflow-hidden">
+            <div className="flex items-start gap-4 p-4">
+              {/* Rank */}
+              <div className="shrink-0 w-7 h-7 rounded-full bg-surface-300 border border-surface-400/60 flex items-center justify-center">
+                <span className="text-xs font-bold text-slate-400">#{idx + 1}</span>
+              </div>
+
+              {/* Main info */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-start justify-between gap-3 flex-wrap">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-sm font-semibold text-white">{lease.tenant.name}</span>
+                      <span className="text-xs text-slate-500 font-mono">{lease.leaseNumber}</span>
+                      <Badge variant={RISK_VARIANT[lease.renewalRisk] ?? 'neutral'} dot>
+                        {lease.renewalRisk}
+                      </Badge>
+                      <Badge variant={STAGE_VARIANT[lease.renewalStage]}>
+                        {STAGE_LABEL[lease.renewalStage]}
+                      </Badge>
+                    </div>
+                    <p className="mt-0.5 text-xs text-slate-500">
+                      {lease.property.name}
+                      {lease.unitNumber ? ` · Unit ${lease.unitNumber}` : ''}
+                      {' · '}
+                      {formatCurrency(Number(lease.baseRent))}/mo
+                    </p>
+                    <p className="mt-1 text-xs text-slate-600 italic">{lease.whyThisIsHere}</p>
+                  </div>
+
+                  {/* Days + priority */}
+                  <div className="shrink-0 text-right">
+                    <p className={`text-2xl font-bold tabular-nums ${
+                      days <= 30 ? 'text-danger' : days <= 60 ? 'text-warning' : 'text-white'
+                    }`}>
+                      {Math.max(0, days)}
+                    </p>
+                    <p className="text-xs text-slate-500">days left</p>
+                    <div className="mt-1 flex justify-end">
+                      <PriorityBar score={lease.priorityScore} />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {lease.renewalStage === 'NOT_STARTED' && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => startRenewal.mutate(lease.id)}
+                      loading={startRenewal.isPending}
+                    >
+                      <RefreshCw className="h-3.5 w-3.5" />
+                      Start Renewal
+                    </Button>
+                  )}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => markContacted.mutate(lease.id)}
+                    loading={markContacted.isPending}
+                    disabled={isActionBusy}
+                  >
+                    <Phone className="h-3.5 w-3.5" />
+                    Mark Contacted
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => snooze.mutate(lease.id)}
+                    loading={snooze.isPending}
+                    disabled={isActionBusy}
+                  >
+                    <BellOff className="h-3.5 w-3.5" />
+                    Snooze 7d
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onOpenDrawer(lease.id)}
+                  >
+                    <ChevronRight className="h-3.5 w-3.5" />
+                    Preview
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </Card>
+        );
+      })}
+    </div>
+  );
+}
+
+// ─── Bulk Action Bar ──────────────────────────────────────────────────────────
+
+function BulkBar({
+  count, onAssignOwner, onStartRenewal, onExport, onClear,
+  busy,
+}: {
+  count: number;
+  onAssignOwner: (userId: string) => void;
+  onStartRenewal: () => void;
+  onExport: () => void;
+  onClear: () => void;
+  busy: boolean;
+}) {
+  const [showAssign, setShowAssign] = useState(false);
+
+  const { data: users } = useQuery({
+    queryKey: ['users'],
+    queryFn: authService.getUsers,
+    staleTime: 5 * 60 * 1000,
+    enabled: count > 0,
+  });
+
+  if (count === 0) return null;
+  return (
+    <div className="fixed bottom-6 left-1/2 z-30 -translate-x-1/2 flex items-center gap-3 rounded-xl border border-surface-400/60 bg-surface-100/95 px-5 py-3 shadow-2xl backdrop-blur">
+      <span className="text-sm font-medium text-white">{count} selected</span>
+      <div className="h-4 w-px bg-surface-400/60" />
+      <div className="relative">
+        <Button variant="ghost" size="sm" onClick={() => setShowAssign((v) => !v)} disabled={busy}>
+          <Users className="h-3.5 w-3.5" />
+          Assign Owner
+        </Button>
+        {showAssign && (
+          <div className="absolute bottom-full left-0 mb-2 w-52 rounded-lg border border-surface-400/60 bg-surface-100 p-2 shadow-xl">
+            <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-500 px-1">Select owner</p>
+            {users?.map((u) => (
+              <button
+                key={u.id}
+                className="w-full rounded-md px-2.5 py-1.5 text-left text-sm text-slate-300 hover:bg-surface-300 hover:text-white transition-colors"
+                onClick={() => { onAssignOwner(u.id); setShowAssign(false); }}
+              >
+                {u.firstName} {u.lastName}
+                <span className="ml-1.5 text-[10px] text-slate-600">{u.role}</span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+      <Button variant="ghost" size="sm" onClick={onStartRenewal} disabled={busy} loading={busy}>
+        <RefreshCw className="h-3.5 w-3.5" />
+        Start Renewal
+      </Button>
+      <Button variant="ghost" size="sm" onClick={onExport} disabled={busy}>
+        <Download className="h-3.5 w-3.5" />
+        Export CSV
+      </Button>
+      <button onClick={onClear} className="ml-1 rounded-md p-1 text-slate-500 hover:text-white transition-colors">
+        <X className="h-4 w-4" />
+      </button>
+    </div>
+  );
+}
+
+// ─── Filter chip ─────────────────────────────────────────────────────────────
+
+function Chip({ label, onRemove }: { label: string; onRemove: () => void }) {
+  return (
+    <span className="flex items-center gap-1 rounded-full border border-brand-600/30 bg-brand-600/10 px-2.5 py-0.5 text-xs text-brand-300">
+      {label}
+      <button onClick={onRemove} className="hover:text-white transition-colors">
+        <X className="h-3 w-3" />
+      </button>
+    </span>
+  );
+}
+
+// ─── Main page ────────────────────────────────────────────────────────────────
+
+export default function LeasesPage() {
+  const [viewMode, setViewMode] = useState<ViewMode>('table');
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('ACTIVE');
+  const [riskFilter, setRiskFilter] = useState('');
+  const [stageFilter, setStageFilter] = useState('');
+  const [expiryFilter, setExpiryFilter] = useState('');
+  const [hasAlertsFilter, setHasAlertsFilter] = useState<'' | 'true' | 'false'>('');
+  const [sortBy, setSortBy] = useState<SortField>('endDate');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [page, setPage] = useState(1);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [drawerLeaseId, setDrawerLeaseId] = useState<string | null>(null);
+  const [showFilters, setShowFilters] = useState(false);
+
+  const navigate = useNavigate();
+  const qc = useQueryClient();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const propertyId = searchParams.get('propertyId') ?? undefined;
+
+  const bulkMutation = useMutation({
+    mutationFn: async (payload: { action: 'startRenewal' | 'exportCsv' | 'assignOwner'; ownerUserId?: string }) => {
+      const { action, ownerUserId } = payload;
+      if (action === 'exportCsv') {
+        await leasesService.bulkExportCsv([...selectedIds]);
+      } else {
+        await leasesService.bulk({ ids: [...selectedIds], action, ownerUserId });
+      }
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['leases'] });
+      setSelectedIds(new Set());
+    },
+  });
+
+  function handleSort(field: SortField) {
+    if (sortBy === field) setSortOrder((o) => (o === 'asc' ? 'desc' : 'asc'));
+    else { setSortBy(field); setSortOrder('asc'); }
+    setPage(1);
+  }
+
+  function toggleRow(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  }
+
+  function toggleAll(ids: string[]) {
+    if (ids.every((id) => selectedIds.has(id))) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(ids));
+    }
+  }
+
+  const queryParams = useMemo(() => ({
+    search: search || undefined,
+    status: statusFilter || undefined,
+    renewalRisk: riskFilter || undefined,
+    renewalStage: (stageFilter || undefined) as RenewalStage | undefined,
+    propertyId,
+    expiringWithinDays: expiryFilter ? Number(expiryFilter) : undefined,
+    hasAlerts: hasAlertsFilter ? hasAlertsFilter === 'true' : undefined,
+    page,
+    limit: 20,
+    sortBy,
+    sortOrder,
+  }), [search, statusFilter, riskFilter, stageFilter, propertyId, expiryFilter, hasAlertsFilter, page, sortBy, sortOrder]);
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['leases', queryParams],
+    queryFn: () => leasesService.getLeases(queryParams),
     placeholderData: (prev) => prev,
   });
 
@@ -39,13 +419,46 @@ export default function LeasesPage() {
     queryFn: leasesService.getStats,
   });
 
+  const activeFilters = useMemo(() => {
+    const chips: Array<{ label: string; clear: () => void }> = [];
+    if (riskFilter) chips.push({ label: `Risk: ${riskFilter}`, clear: () => setRiskFilter('') });
+    if (stageFilter) chips.push({ label: `Stage: ${STAGE_LABEL[stageFilter as RenewalStage] ?? stageFilter}`, clear: () => setStageFilter('') });
+    if (expiryFilter) chips.push({ label: `Expiring: ≤${expiryFilter}d`, clear: () => setExpiryFilter('') });
+    if (hasAlertsFilter) chips.push({ label: `Alerts: ${hasAlertsFilter === 'true' ? 'Yes' : 'No'}`, clear: () => setHasAlertsFilter('') });
+    if (propertyId) chips.push({ label: 'Filtered by property', clear: () => setSearchParams({}) });
+    return chips;
+  }, [riskFilter, stageFilter, expiryFilter, hasAlertsFilter, propertyId, setSearchParams]);
+
+  const leaseIds = data?.data.map((l) => l.id) ?? [];
+  const allSelected = leaseIds.length > 0 && leaseIds.every((id) => selectedIds.has(id));
+
   return (
-    <div className="flex flex-col gap-6 p-6 animate-fade-in">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+    <div className="flex flex-col gap-6 p-6 animate-fade-in pb-24">
+      {/* Header + view toggle */}
+      <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-xl font-bold text-white tracking-tight">Lease Intelligence</h1>
-          <p className="mt-0.5 text-sm text-slate-500">Contract visibility & renewal risk monitoring</p>
+          <p className="mt-0.5 text-sm text-slate-500">Contract visibility & renewal operating console</p>
+        </div>
+        <div className="flex items-center gap-1 rounded-lg border border-surface-400/60 bg-surface-200 p-1">
+          <button
+            onClick={() => setViewMode('table')}
+            className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+              viewMode === 'table' ? 'bg-surface-400 text-white' : 'text-slate-500 hover:text-slate-300'
+            }`}
+          >
+            <LayoutList className="h-3.5 w-3.5" />
+            Table
+          </button>
+          <button
+            onClick={() => setViewMode('priority')}
+            className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+              viewMode === 'priority' ? 'bg-surface-400 text-white' : 'text-slate-500 hover:text-slate-300'
+            }`}
+          >
+            <Zap className="h-3.5 w-3.5" />
+            Priority Queue
+          </button>
         </div>
       </div>
 
@@ -53,12 +466,12 @@ export default function LeasesPage() {
       {stats && (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           {[
-            { label: 'Active', value: stats.totalActive, color: 'text-success' },
-            { label: 'Expiring 30d', value: stats.expiringIn30, color: 'text-danger' },
-            { label: 'Expiring 90d', value: stats.expiringIn90, color: 'text-warning' },
-            { label: 'Critical Risk', value: stats.byRisk.find(r => r.renewalRisk === 'CRITICAL')?._count ?? 0, color: 'text-danger' },
+            { label: 'Active', value: stats.totalActive, color: 'text-success', onClick: () => { setStatusFilter('ACTIVE'); setViewMode('table'); } },
+            { label: 'Expiring 30d', value: stats.expiringIn30, color: 'text-danger', onClick: () => { setStatusFilter('ACTIVE'); setExpiryFilter('30'); setViewMode('table'); } },
+            { label: 'Expiring 90d', value: stats.expiringIn90, color: 'text-warning', onClick: () => { setStatusFilter('ACTIVE'); setExpiryFilter('90'); setViewMode('table'); } },
+            { label: 'Critical Risk', value: stats.byRisk.find((r) => r.renewalRisk === 'CRITICAL')?._count ?? 0, color: 'text-danger', onClick: () => { setRiskFilter('CRITICAL'); setViewMode('table'); } },
           ].map((s) => (
-            <Card key={s.label} className="text-center p-4">
+            <Card key={s.label} className="text-center p-4 cursor-pointer" hover onClick={s.onClick}>
               <p className={`text-2xl font-bold tabular-nums ${s.color}`}>{s.value}</p>
               <p className="mt-0.5 text-xs text-slate-500">{s.label}</p>
             </Card>
@@ -66,130 +479,307 @@ export default function LeasesPage() {
         </div>
       )}
 
-      {/* Filters */}
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="relative flex-1 min-w-[200px] max-w-xs">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-600" />
-          <input
-            type="text"
-            placeholder="Search leases..."
-            value={search}
-            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-            className="h-9 w-full rounded-lg border border-surface-400 bg-surface-200 pl-9 pr-3 text-sm text-slate-100 placeholder:text-slate-600 focus:border-brand-500/60 focus:outline-none focus:ring-1 focus:ring-brand-500/30"
-          />
-        </div>
-        <div className="flex items-center gap-1.5">
-          <Filter className="h-4 w-4 text-slate-600" />
-          {['', 'LOW', 'MEDIUM', 'HIGH', 'CRITICAL'].map((risk) => (
-            <button
-              key={risk}
-              onClick={() => { setRiskFilter(risk); setPage(1); }}
-              className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
-                riskFilter === risk
-                  ? 'bg-brand-600/30 text-brand-300 border border-brand-600/40'
-                  : 'text-slate-500 hover:text-slate-300 border border-transparent hover:border-surface-500'
-              }`}
-            >
-              {risk || 'All'}
-            </button>
+      {/* Active filter chips */}
+      {activeFilters.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2">
+          {activeFilters.map((f) => (
+            <Chip key={f.label} label={f.label} onRemove={f.clear} />
           ))}
+          <button
+            onClick={() => { setRiskFilter(''); setStageFilter(''); setExpiryFilter(''); setHasAlertsFilter(''); setSearchParams({}); }}
+            className="text-xs text-slate-600 hover:text-slate-400 transition-colors"
+          >
+            Clear all
+          </button>
         </div>
-      </div>
+      )}
 
-      {/* Table */}
-      <Card>
-        {isLoading ? (
-          <PageLoader />
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-surface-400/40">
-                  {['Lease', 'Property', 'Tenant', 'Base Rent', 'Expiry', 'Days Left', 'Risk', 'Status'].map((h) => (
-                    <th key={h} className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400">{h}</th>
-                  ))}
-                  <th className="px-4 py-3" />
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-surface-400/30">
-                {data?.data.map((lease) => {
-                  const days = daysUntil(lease.endDate);
-                  return (
-                    <tr
-                      key={lease.id}
-                      onClick={() => navigate(`/leases/${lease.id}`)}
-                      className="cursor-pointer hover:bg-surface-200/40 transition-colors group"
-                    >
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-2">
-                          <FileText className="h-3.5 w-3.5 text-slate-600 shrink-0" />
-                          <span className="text-sm font-medium text-slate-200 font-mono">{lease.leaseNumber}</span>
-                        </div>
-                        {lease.unitNumber && <p className="ml-5.5 text-xs text-slate-500 mt-0.5">{lease.unitNumber}</p>}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-slate-400">{lease.property.name}</td>
-                      <td className="px-4 py-3 text-sm text-slate-400">{lease.tenant.name}</td>
-                      <td className="px-4 py-3 text-sm font-medium text-white tabular-nums">{formatCurrency(lease.baseRent)}/mo</td>
-                      <td className="px-4 py-3 text-sm text-slate-400">{formatDate(lease.endDate)}</td>
-                      <td className="px-4 py-3">
-                        <span className={`text-sm font-semibold tabular-nums ${
-                          days <= 30 ? 'text-danger' : days <= 60 ? 'text-warning' : days <= 90 ? 'text-yellow-400' : 'text-slate-400'
-                        }`}>
-                          {days > 0 ? `${days}d` : 'Expired'}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <Badge variant={RISK_VARIANT[lease.renewalRisk] ?? 'neutral'} dot>
-                          {lease.renewalRisk}
-                        </Badge>
-                      </td>
-                      <td className="px-4 py-3">
-                        <Badge variant={STATUS_VARIANT[lease.status] ?? 'neutral'}>
-                          {lease.status}
-                        </Badge>
-                      </td>
-                      <td className="px-4 py-3">
-                        <ChevronRight className="h-4 w-4 text-slate-600 opacity-0 group-hover:opacity-100 transition-opacity" />
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+      {/* Priority Queue */}
+      {viewMode === 'priority' && (
+        <PriorityQueueView onOpenDrawer={setDrawerLeaseId} />
+      )}
 
-            {data?.data.length === 0 && (
-              <div className="py-16 text-center">
-                <FileText className="mx-auto h-8 w-8 text-slate-700" />
-                <p className="mt-3 text-sm text-slate-500">No leases found</p>
+      {/* Table view */}
+      {viewMode === 'table' && (
+        <>
+          {/* Filters */}
+          <div className="flex flex-col gap-3">
+            {/* Status tabs */}
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {STATUS_TABS.map((tab) => (
+                <FilterTab
+                  key={tab.value}
+                  active={statusFilter === tab.value}
+                  onClick={() => { setStatusFilter(tab.value); setPage(1); }}
+                >
+                  {tab.label}
+                  {tab.value === 'ACTIVE' && stats && (
+                    <span className="ml-1.5 text-slate-500">{stats.totalActive}</span>
+                  )}
+                  {tab.value === 'EXPIRED' && stats && (
+                    <span className="ml-1.5 text-slate-500">
+                      {stats.byStatus.find((s) => s.status === 'EXPIRED')?._count ?? 0}
+                    </span>
+                  )}
+                </FilterTab>
+              ))}
+            </div>
+
+            {/* Search + filter toggle */}
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="relative flex-1 min-w-[200px] max-w-xs">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-600" />
+                <input
+                  type="text"
+                  placeholder="Search tenant, property, lease #…"
+                  value={search}
+                  onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+                  className="h-9 w-full rounded-lg border border-surface-400 bg-surface-200 pl-9 pr-3 text-sm text-slate-100 placeholder:text-slate-600 focus:border-brand-500/60 focus:outline-none focus:ring-1 focus:ring-brand-500/30"
+                />
               </div>
-            )}
+              <button
+                onClick={() => setShowFilters((v) => !v)}
+                className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium border transition-colors ${
+                  showFilters || activeFilters.length > 0
+                    ? 'border-brand-600/40 bg-brand-600/20 text-brand-300'
+                    : 'border-surface-500 text-slate-500 hover:text-slate-300 hover:border-surface-400'
+                }`}
+              >
+                <SlidersHorizontal className="h-3.5 w-3.5" />
+                Filters{activeFilters.length > 0 ? ` (${activeFilters.length})` : ''}
+              </button>
+            </div>
 
-            {/* Pagination */}
-            {data && data.meta.pages > 1 && (
-              <div className="flex items-center justify-between border-t border-surface-400/40 px-5 py-3">
-                <p className="text-xs text-slate-600">{data.meta.total} total leases</p>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setPage(p => Math.max(1, p - 1))}
-                    disabled={!data.meta.hasPrev}
-                    className="rounded px-3 py-1.5 text-xs text-slate-400 disabled:opacity-30 hover:bg-surface-300 hover:text-white transition-colors"
-                  >
-                    Previous
-                  </button>
-                  <span className="text-xs text-slate-600">{page} / {data.meta.pages}</span>
-                  <button
-                    onClick={() => setPage(p => p + 1)}
-                    disabled={!data.meta.hasNext}
-                    className="rounded px-3 py-1.5 text-xs text-slate-400 disabled:opacity-30 hover:bg-surface-300 hover:text-white transition-colors"
-                  >
-                    Next
-                  </button>
-                </div>
+            {/* Expanded filter panel */}
+            {showFilters && (
+              <div className="grid grid-cols-2 gap-4 rounded-lg border border-surface-400/40 bg-surface-200/40 px-4 py-3 sm:grid-cols-4">
+                <FilterGroup label="Risk">
+                  {['', 'LOW', 'MEDIUM', 'HIGH', 'CRITICAL'].map((r) => (
+                    <FilterTab key={r} active={riskFilter === r} onClick={() => { setRiskFilter(r); setPage(1); }}>
+                      {r || 'All'}
+                    </FilterTab>
+                  ))}
+                </FilterGroup>
+                <FilterGroup label="Expiring">
+                  {EXPIRY_FILTERS.map((f) => (
+                    <FilterTab key={f.value} active={expiryFilter === f.value} onClick={() => { setExpiryFilter(f.value); setPage(1); }}>
+                      {f.label}
+                    </FilterTab>
+                  ))}
+                </FilterGroup>
+                <FilterGroup label="Renewal Stage">
+                  {(['', 'NOT_STARTED', 'CONTACTED', 'NEGOTIATING', 'DRAFT_SENT', 'SCHEDULED_RENEWAL', 'SIGNED'] as const).map((s) => (
+                    <FilterTab key={s} active={stageFilter === s} onClick={() => { setStageFilter(s); setPage(1); }}>
+                      {s ? STAGE_LABEL[s as RenewalStage] : 'All'}
+                    </FilterTab>
+                  ))}
+                </FilterGroup>
+                <FilterGroup label="Has Alerts">
+                  {([['', 'All'], ['true', 'Yes'], ['false', 'No']] as const).map(([v, l]) => (
+                    <FilterTab key={v} active={hasAlertsFilter === v} onClick={() => { setHasAlertsFilter(v); setPage(1); }}>
+                      {l}
+                    </FilterTab>
+                  ))}
+                </FilterGroup>
               </div>
             )}
           </div>
+
+          {/* Table */}
+          <Card>
+            {isLoading ? (
+              <PageLoader />
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-surface-400/40">
+                      {/* Bulk select */}
+                      <th className="px-4 py-3 w-8">
+                        <button onClick={() => toggleAll(leaseIds)} className="text-slate-500 hover:text-white transition-colors">
+                          {allSelected ? <CheckSquare className="h-4 w-4 text-brand-400" /> : <Square className="h-4 w-4" />}
+                        </button>
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400">Tenant</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400">Property</th>
+                      <th
+                        className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400 cursor-pointer select-none group/th"
+                        onClick={() => handleSort('endDate')}
+                      >
+                        <div className="flex items-center gap-1">
+                          Expiry
+                          <SortIcon active={sortBy === 'endDate'} order={sortOrder} />
+                        </div>
+                      </th>
+                      <th
+                        className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400 cursor-pointer select-none group/th"
+                        onClick={() => handleSort('baseRent')}
+                      >
+                        <div className="flex items-center gap-1">
+                          Rent / mo
+                          <SortIcon active={sortBy === 'baseRent'} order={sortOrder} />
+                        </div>
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400">Stage</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400">Owner</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400">Risk</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400">Status</th>
+                      <th className="px-4 py-3 w-8" />
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-surface-400/30">
+                    {data?.data.map((lease) => (
+                      <LeaseRow
+                        key={lease.id}
+                        lease={lease}
+                        selected={selectedIds.has(lease.id)}
+                        onToggle={() => toggleRow(lease.id)}
+                        onRowClick={() => setDrawerLeaseId(lease.id)}
+                        onNavigate={() => navigate(`/leases/${lease.id}`)}
+                      />
+                    ))}
+                  </tbody>
+                </table>
+
+                {data?.data.length === 0 && (
+                  <div className="py-16 text-center">
+                    <FileText className="mx-auto h-8 w-8 text-slate-700" />
+                    <p className="mt-3 text-sm text-slate-500">No leases found</p>
+                  </div>
+                )}
+
+                {data && data.meta.pages > 1 && (
+                  <div className="flex items-center justify-between border-t border-surface-400/40 px-5 py-3">
+                    <p className="text-xs text-slate-600">{data.meta.total} leases</p>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setPage((p) => Math.max(1, p - 1))}
+                        disabled={!data.meta.hasPrev}
+                        className="rounded px-3 py-1.5 text-xs text-slate-400 disabled:opacity-30 hover:bg-surface-300 hover:text-white transition-colors"
+                      >
+                        Previous
+                      </button>
+                      <span className="text-xs text-slate-600">{page} / {data.meta.pages}</span>
+                      <button
+                        onClick={() => setPage((p) => p + 1)}
+                        disabled={!data.meta.hasNext}
+                        className="rounded px-3 py-1.5 text-xs text-slate-400 disabled:opacity-30 hover:bg-surface-300 hover:text-white transition-colors"
+                      >
+                        Next
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </Card>
+        </>
+      )}
+
+      {/* Bulk action bar */}
+      <BulkBar
+        count={selectedIds.size}
+        busy={bulkMutation.isPending}
+        onAssignOwner={(userId) => bulkMutation.mutate({ action: 'assignOwner', ownerUserId: userId })}
+        onStartRenewal={() => bulkMutation.mutate({ action: 'startRenewal' })}
+        onExport={() => bulkMutation.mutate({ action: 'exportCsv' })}
+        onClear={() => setSelectedIds(new Set())}
+      />
+
+      {/* Drawer */}
+      <LeaseDrawer leaseId={drawerLeaseId} onClose={() => setDrawerLeaseId(null)} />
+    </div>
+  );
+}
+
+const SEVERITY_DOT: Record<string, string> = {
+  CRITICAL: 'text-danger',
+  WARNING: 'text-warning',
+  INFO: 'text-brand-400',
+};
+
+function AlertTooltip({ alerts }: { alerts: LeaseAlert[] }) {
+  return (
+    <div className="absolute top-full left-0 z-50 mt-1.5 w-72 rounded-lg border border-surface-400/60 bg-surface-100 p-2.5 shadow-2xl pointer-events-none">
+      <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-500">Open Alerts</p>
+      <div className="flex flex-col gap-1.5">
+        {alerts.map((a) => (
+          <div key={a.id} className="flex items-start gap-2">
+            <span className={`mt-0.5 shrink-0 text-[10px] leading-none ${SEVERITY_DOT[a.severity] ?? 'text-slate-400'}`}>●</span>
+            <span className="text-xs text-slate-300 leading-snug">{a.title ?? a.type}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function LeaseRow({
+  lease, selected, onToggle, onRowClick, onNavigate,
+}: {
+  lease: Lease;
+  selected: boolean;
+  onToggle: () => void;
+  onRowClick: () => void;
+  onNavigate: () => void;
+}) {
+  const openAlerts = lease.alerts?.length ?? 0;
+  return (
+    <tr
+      className={`cursor-pointer transition-colors group ${selected ? 'bg-brand-600/10' : 'hover:bg-surface-200/40'}`}
+    >
+      <td className="px-4 py-3" onClick={(e) => { e.stopPropagation(); onToggle(); }}>
+        {selected
+          ? <CheckSquare className="h-4 w-4 text-brand-400" />
+          : <Square className="h-4 w-4 text-slate-600 group-hover:text-slate-400" />}
+      </td>
+      <td className="px-4 py-3" onClick={onRowClick}>
+        <p className="text-sm font-medium text-slate-200">{lease.tenant.name}</p>
+        <p className="text-xs text-slate-500 font-mono mt-0.5">
+          {lease.leaseNumber}{lease.unitNumber ? ` · ${lease.unitNumber}` : ''}
+        </p>
+        {openAlerts > 0 && (
+          <span className="group/alert relative mt-0.5 inline-flex items-center gap-1 text-xs text-danger cursor-default">
+            ● {openAlerts} alert{openAlerts > 1 ? 's' : ''}
+            <span className="opacity-0 group-hover/alert:opacity-100 transition-opacity duration-150 pointer-events-none">
+              <AlertTooltip alerts={lease.alerts!} />
+            </span>
+          </span>
         )}
-      </Card>
+      </td>
+      <td className="px-4 py-3 text-sm text-slate-400" onClick={onRowClick}>{lease.property.name}</td>
+      <DaysCell endDate={lease.endDate} status={lease.status} />
+      <td className="px-4 py-3 text-sm font-medium text-white tabular-nums" onClick={onRowClick}>
+        {formatCurrency(Number(lease.baseRent))}
+      </td>
+      <td className="px-4 py-3" onClick={onRowClick}>
+        <Badge variant={STAGE_VARIANT[lease.renewalStage] ?? 'neutral'}>
+          {STAGE_LABEL[lease.renewalStage] ?? lease.renewalStage}
+        </Badge>
+      </td>
+      <td className="px-4 py-3 text-xs text-slate-400" onClick={onRowClick}>
+        {lease.owner ? `${lease.owner.firstName} ${lease.owner.lastName}` : <span className="text-slate-600">—</span>}
+      </td>
+      <td className="px-4 py-3" onClick={onRowClick}>
+        <Badge variant={RISK_VARIANT[lease.renewalRisk] ?? 'neutral'} dot>
+          {lease.renewalRisk}
+        </Badge>
+      </td>
+      <td className="px-4 py-3" onClick={onRowClick}>
+        <Badge variant={STATUS_VARIANT[lease.status] ?? 'neutral'}>{lease.status}</Badge>
+      </td>
+      <td className="px-4 py-3" onClick={onNavigate}>
+        <ChevronRight className="h-4 w-4 text-slate-600 opacity-0 group-hover:opacity-100 transition-opacity" />
+      </td>
+    </tr>
+  );
+}
+
+function FilterGroup({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <p className="mb-1.5 text-xs font-medium text-slate-500">{label}</p>
+      <div className="flex flex-wrap gap-1">{children}</div>
     </div>
   );
 }
