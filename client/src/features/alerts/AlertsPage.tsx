@@ -87,12 +87,14 @@ function WorkflowActions({
   onResolve,
   onDismiss,
   onProgress,
+  onReopen,
   busy,
 }: {
   alert: { id: string; type: string; severity: string; status: string; lease?: { id: string; leaseNumber: string } | null; property?: { id: string } | null };
   onResolve: (id: string) => void;
   onDismiss: (id: string) => void;
   onProgress: (id: string) => void;
+  onReopen: (id: string) => void;
   busy: boolean;
 }) {
   const navigate = useNavigate();
@@ -107,6 +109,14 @@ function WorkflowActions({
     actions.push(
       <Button key="progress" variant="outline" size="sm" onClick={() => onProgress(alert.id)} loading={busy}>
         Start Review
+      </Button>
+    );
+  }
+
+  if (isInProgress) {
+    actions.push(
+      <Button key="undo-progress" variant="ghost" size="sm" onClick={() => onReopen(alert.id)} loading={busy} title="Undo review — revert to open">
+        ↩ Undo Review
       </Button>
     );
   }
@@ -213,6 +223,11 @@ export default function AlertsPage() {
 
   const progressMutation = useMutation({
     mutationFn: (id: string) => alertsService.progress(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['alerts'] }),
+  });
+
+  const reopenMutation = useMutation({
+    mutationFn: (id: string) => alertsService.reopen(id),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['alerts'] }),
   });
 
@@ -361,6 +376,7 @@ export default function AlertsPage() {
                         onResolve={(id) => resolveMutation.mutate(id)}
                         onDismiss={(id) => dismissMutation.mutate(id)}
                         onProgress={(id) => progressMutation.mutate(id)}
+                        onReopen={(id) => reopenMutation.mutate(id)}
                         busy={isBusy}
                       />
                       <button

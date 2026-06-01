@@ -21,16 +21,26 @@ export async function getAlerts(query: {
   type?: AlertType;
   severity?: AlertSeverity;
   status?: AlertStatus;
+  statuses?: AlertStatus[];
   propertyId?: string;
+  leaseId?: string;
 }) {
-  const { page = 1, limit = 20, type, severity, status, propertyId } = query;
+  const { page = 1, limit = 20, type, severity, status, statuses, propertyId, leaseId } = query;
   const skip = (page - 1) * limit;
 
+  const statusFilter: Prisma.AlertWhereInput =
+    statuses && statuses.length > 0
+      ? { status: { in: statuses } }
+      : status
+      ? { status }
+      : {};
+
   const where: Prisma.AlertWhereInput = {
+    ...statusFilter,
     ...(type && { type }),
     ...(severity && { severity }),
-    ...(status && { status }),
     ...(propertyId && { propertyId }),
+    ...(leaseId && { leaseId }),
   };
 
   const [alerts, total] = await Promise.all([
@@ -175,6 +185,18 @@ export async function getAlertSummary() {
   ]);
 
   return { openTotal: total, bySeverity, byType, byStatus };
+}
+
+export async function reopenAlert(id: string, userId: string) {
+  const alert = await prisma.alert.findUnique({ where: { id } });
+  if (!alert) throw new NotFoundError('Alert');
+
+  const updated = await prisma.alert.update({
+    where: { id },
+    data: { status: 'OPEN', resolvedAt: null, resolvedBy: null, resolutionNote: null },
+  });
+  await logAlertActivity(id, 'REOPENED', userId);
+  return updated;
 }
 
 // Legacy — kept for any existing callers

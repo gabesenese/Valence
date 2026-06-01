@@ -21,7 +21,11 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
       type: req.query.type as never,
       severity: req.query.severity as never,
       status: req.query.status as never,
+      statuses: req.query.statuses
+        ? (req.query.statuses as string).split(',') as never[]
+        : undefined,
       propertyId: req.query.propertyId as string | undefined,
+      leaseId: req.query.leaseId as string | undefined,
     };
     const { alerts, total } = await service.getAlerts(query);
     sendPaginated(res, alerts, total, query.page, query.limit);
@@ -56,6 +60,12 @@ router.post('/:id/assign', async (req: Request, res: Response, next: NextFunctio
   try {
     const { assigneeUserId } = req.body as { assigneeUserId: string };
     sendSuccess(res, await service.assignAlert(req.params.id, assigneeUserId, req.user!.id));
+  } catch (e) { next(e); }
+});
+
+router.post('/:id/reopen', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    sendSuccess(res, await service.reopenAlert(req.params.id, req.user!.id));
   } catch (e) { next(e); }
 });
 

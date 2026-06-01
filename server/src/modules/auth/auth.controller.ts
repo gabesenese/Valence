@@ -46,3 +46,11 @@ export async function getMe(req: Request, res: Response, next: NextFunction): Pr
     next(err);
   }
 }
+
+export async function listUsers(_req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    sendSuccess(res, await authService.listUsers());
+  } catch (err) {
+    next(err);
+  }
+}

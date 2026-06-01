@@ -11,5 +11,6 @@ router.post('/login', validate(loginSchema), controller.login);
 router.post('/refresh', validate(refreshSchema), controller.refresh);
 router.post('/logout', validate(refreshSchema), controller.logout);
 router.get('/me', authenticate, controller.getMe);
+router.get('/users', authenticate, controller.listUsers);
 
 export { router as authRouter };

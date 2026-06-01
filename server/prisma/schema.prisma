@@ -97,6 +97,15 @@ enum AlertStatus {
   SUPPRESSED
 }
 
+enum RenewalStage {
+  NOT_STARTED
+  CONTACTED
+  NEGOTIATING
+  DRAFT_SENT
+  SCHEDULED_RENEWAL
+  SIGNED
+}
+
 enum InsightCategory {
   FINANCIAL
   OPERATIONAL
@@ -124,6 +133,9 @@ model User {
   assignedAlerts  Alert[]         @relation("AlertAssignee")
   alertActivities AlertActivity[] @relation("AlertActivityActor")
   insights        Insight[]       @relation("InsightCreatedBy")
+  ownedLeases     Lease[]         @relation("LeaseOwner")
+  leaseActivities LeaseActivity[] @relation("LeaseActivityActor")
+  leaseNotes      LeaseNote[]     @relation("LeaseNoteAuthor")
 
   @@index([email])
   @@index([role])
@@ -213,23 +225,35 @@ model Lease {
   rentEscalation   Decimal     @default(0) @map("rent_escalation") @db.Decimal(5, 4)
   securityDeposit  Decimal?    @map("security_deposit") @db.Decimal(12, 2)
   sqft             Decimal?    @db.Decimal(10, 2)
-  terms            Json?
-  notes            String?
-  terminatedAt     DateTime?   @map("terminated_at")
-  terminationReason String?    @map("termination_reason")
-  createdAt        DateTime    @default(now()) @map("created_at")
-  updatedAt        DateTime    @updatedAt @map("updated_at")
+  terms              Json?
+  notes              String?
+  terminatedAt       DateTime?    @map("terminated_at")
+  terminationReason  String?      @map("termination_reason")
+  ownerUserId        String?      @map("owner_user_id")
+  renewalStage       RenewalStage @default(NOT_STARTED) @map("renewal_stage")
+  renewalScheduledAt DateTime?    @map("renewal_scheduled_at")
+  lastContactedAt    DateTime?    @map("last_contacted_at")
+  snoozedUntil       DateTime?    @map("snoozed_until")
+  reviewedAt         DateTime?    @map("reviewed_at")
+  createdAt          DateTime     @default(now()) @map("created_at")
+  updatedAt          DateTime     @updatedAt @map("updated_at")
 
   property         Property          @relation(fields: [propertyId], references: [id])
   tenant           Tenant            @relation(fields: [tenantId], references: [id])
+  owner            User?             @relation("LeaseOwner", fields: [ownerUserId], references: [id])
   financialRecords FinancialRecord[]
   alerts           Alert[]
+  activities       LeaseActivity[]
+  leaseNotes       LeaseNote[]
 
   @@index([propertyId])
   @@index([tenantId])
   @@index([status])
   @@index([endDate])
   @@index([renewalRisk])
+  @@index([ownerUserId])
+  @@index([renewalStage])
+  @@index([snoozedUntil])
   @@map("leases")
 }
 
@@ -322,6 +346,36 @@ model JobLock {
   lockedUntil DateTime @map("locked_until")
 
   @@map("job_locks")
+}
+
+model LeaseActivity {
+  id          String   @id @default(uuid())
+  leaseId     String   @map("lease_id")
+  actorUserId String?  @map("actor_user_id")
+  actionType  String   @map("action_type")
+  metadata    Json?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  lease Lease @relation(fields: [leaseId], references: [id], onDelete: Cascade)
+  actor User? @relation("LeaseActivityActor", fields: [actorUserId], references: [id])
+
+  @@index([leaseId])
+  @@index([createdAt])
+  @@map("lease_activities")
+}
+
+model LeaseNote {
+  id           String   @id @default(uuid())
+  leaseId      String   @map("lease_id")
+  authorUserId String?  @map("author_user_id")
+  body         String
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  lease  Lease @relation(fields: [leaseId], references: [id], onDelete: Cascade)
+  author User? @relation("LeaseNoteAuthor", fields: [authorUserId], references: [id])
+
+  @@index([leaseId])
+  @@map("lease_notes")
 }
 
 model Insight {
