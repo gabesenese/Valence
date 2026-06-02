@@ -4,7 +4,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Search, FileText, ChevronRight, X, ChevronUp, ChevronDown,
   LayoutList, Zap, CheckSquare, Square, RefreshCw, Phone,
-  BellOff, Download, SlidersHorizontal, Users,
+  BellOff, Download, SlidersHorizontal, Users, Plus,
 } from 'lucide-react';
 import { leasesService, type RenewalStage, type PriorityLease, type Lease, type LeaseAlert } from '@/services/leases.service';
 import { authService } from '@/services/auth.service';
@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/Button';
 import { PageLoader } from '@/components/ui/Spinner';
 import { formatCurrency, formatDate, daysUntil } from '@/utils/format';
 import LeaseDrawer from './LeaseDrawer';
+import LeaseFormModal from './LeaseFormModal';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -351,6 +352,7 @@ export default function LeasesPage() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [drawerLeaseId, setDrawerLeaseId] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(false);
+  const [addOpen, setAddOpen] = useState(false);
 
   const navigate = useNavigate();
   const qc = useQueryClient();
@@ -440,7 +442,12 @@ export default function LeasesPage() {
           <h1 className="text-xl font-bold text-white tracking-tight">Lease Intelligence</h1>
           <p className="mt-0.5 text-sm text-slate-500">Contract visibility & renewal operating console</p>
         </div>
-        <div className="flex items-center gap-1 rounded-lg border border-surface-400/60 bg-surface-200 p-1">
+        <div className="flex items-center gap-2">
+          <Button size="sm" onClick={() => setAddOpen(true)}>
+            <Plus className="h-4 w-4" />
+            New Lease
+          </Button>
+          <div className="flex items-center gap-1 rounded-lg border border-surface-400/60 bg-surface-200 p-1">
           <button
             onClick={() => setViewMode('table')}
             className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
@@ -460,6 +467,7 @@ export default function LeasesPage() {
             Priority Queue
           </button>
         </div>
+          </div>
       </div>
 
       {/* Stats strip */}
@@ -688,6 +696,8 @@ export default function LeasesPage() {
 
       {/* Drawer */}
       <LeaseDrawer leaseId={drawerLeaseId} onClose={() => setDrawerLeaseId(null)} />
+
+      <LeaseFormModal open={addOpen} onClose={() => setAddOpen(false)} />
     </div>
   );
 }

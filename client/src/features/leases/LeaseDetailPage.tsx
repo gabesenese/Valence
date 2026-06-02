@@ -8,6 +8,7 @@ import {
   ChevronUp, ChevronDown, Eye, RotateCcw,
 } from 'lucide-react';
 import { leasesService, type RenewalStage } from '@/services/leases.service';
+import LeaseFormModal from './LeaseFormModal';
 import { alertsService } from '@/services/alerts.service';
 import { authService } from '@/services/auth.service';
 import { Card, CardHeader, CardTitle, CardBody } from '@/components/ui/Card';
@@ -132,6 +133,7 @@ export default function LeaseDetailPage() {
   const [editNoteInput, setEditNoteInput] = useState('');
   const [showClosedAlerts, setShowClosedAlerts] = useState(false);
   const [assigningOwner, setAssigningOwner] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
   const noteRef = useRef<HTMLTextAreaElement>(null);
 
   const invalidate = () => {
@@ -266,8 +268,13 @@ export default function LeaseDetailPage() {
             {lease.property.name}{lease.unitNumber ? ` · Unit ${lease.unitNumber}` : ''} · {lease.tenant.name}
           </p>
         </div>
-        {isActive && (
-          <div className={`shrink-0 text-right px-4 py-2 rounded-xl border ${
+        <div className="flex items-center gap-2 shrink-0">
+          <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
+            <Pencil className="h-3.5 w-3.5" />
+            Edit Lease
+          </Button>
+          {isActive && (
+          <div className={`text-right px-4 py-2 rounded-xl border ${
             days <= 30 ? 'border-danger/30 bg-danger/10' :
             days <= 60 ? 'border-warning/30 bg-warning/10' :
             'border-surface-400/40 bg-surface-200'
@@ -277,7 +284,8 @@ export default function LeaseDetailPage() {
             </p>
             <p className="text-xs text-slate-400">days remaining</p>
           </div>
-        )}
+          )}
+        </div>
       </div>
 
       {/* Info grid */}
@@ -762,6 +770,8 @@ export default function LeaseDetailPage() {
           </CardBody>
         </Card>
       )}
+
+      <LeaseFormModal open={editOpen} onClose={() => setEditOpen(false)} lease={lease} />
     </div>
   );
 }

@@ -113,6 +113,20 @@ export interface BulkActionPayload {
   note?: string;
 }
 
+export interface CreateLeaseInput {
+  propertyId: string;
+  tenantId: string;
+  unitNumber?: string;
+  type: string;
+  startDate: string;
+  endDate: string;
+  baseRent: number;
+  rentEscalation?: number;
+  securityDeposit?: number;
+  sqft?: number;
+  notes?: string;
+}
+
 export const leasesService = {
   getLeases: (query: LeaseQuery = {}): Promise<PaginatedResult<Lease>> =>
     api.get('/leases', { params: query }).then(extractPaginated<Lease>),
@@ -132,7 +146,10 @@ export const leasesService = {
   getNotes: (id: string): Promise<LeaseNoteDTO[]> =>
     api.get(`/leases/${id}/notes`).then(extractData<LeaseNoteDTO[]>),
 
-  updateLease: (id: string, data: Partial<Lease>): Promise<Lease> =>
+  createLease: (input: CreateLeaseInput): Promise<Lease> =>
+    api.post('/leases', input).then(extractData<Lease>),
+
+  updateLease: (id: string, data: Partial<Lease> & Partial<CreateLeaseInput>): Promise<Lease> =>
     api.patch(`/leases/${id}`, data).then(extractData<Lease>),
 
   setRenewalDate: (id: string, renewalDate: string): Promise<Lease> =>
