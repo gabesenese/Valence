@@ -8,7 +8,7 @@ import {
 import {
   Building2, FileText, TrendingUp, AlertTriangle, DollarSign, Users,
   ArrowUp, ArrowDown, CheckCircle2, ChevronRight, Calendar,
-  Zap,
+  Zap, Rocket,
 } from 'lucide-react';
 import { analyticsService } from '@/services/analytics.service';
 import { leasesService } from '@/services/leases.service';
@@ -143,6 +143,8 @@ export default function DashboardPage() {
       ]
     : [];
 
+  const isEmpty = summary && summary.properties.total === 0 && summary.leases.active === 0;
+
   return (
     <div className="flex flex-col gap-6 p-6 animate-fade-in">
       {/* Header */}
@@ -152,6 +154,27 @@ export default function DashboardPage() {
         </h1>
         <p className="mt-0.5 text-sm text-slate-500">Portfolio intelligence overview</p>
       </div>
+
+      {/* Onboarding banner — shown when account has no data */}
+      {isEmpty && (
+        <div className="flex items-center justify-between gap-4 rounded-xl border border-brand-600/40 bg-brand-600/10 px-5 py-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand-600/20">
+              <Rocket className="h-4 w-4 text-brand-400" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-white">Your portfolio is empty</p>
+              <p className="text-xs text-slate-400 mt-0.5">Add your properties, tenants, and leases to start tracking your portfolio.</p>
+            </div>
+          </div>
+          <button
+            onClick={() => navigate('/setup')}
+            className="shrink-0 inline-flex items-center gap-1.5 rounded-lg bg-brand-600 hover:bg-brand-500 px-4 py-2 text-xs font-semibold text-white transition-colors"
+          >
+            Get Started <ChevronRight className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      )}
 
       {/* KPI Grid */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-6">

@@ -1,0 +1,208 @@
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import {
+  Building2, Users, FileText, CheckCircle2, Circle,
+  ArrowRight, Activity, ChevronRight,
+} from 'lucide-react';
+import { useAuthStore } from '@/state/auth.store';
+import { propertiesService } from '@/services/properties.service';
+import { tenantsService } from '@/services/tenants.service';
+import { leasesService } from '@/services/leases.service';
+import { Button } from '@/components/ui/Button';
+import PropertyFormModal from '@/features/properties/PropertyFormModal';
+import TenantFormModal from '@/features/tenants/TenantFormModal';
+import LeaseFormModal from '@/features/leases/LeaseFormModal';
+
+function getGreeting() {
+  const h = new Date().getHours();
+  if (h < 12) return 'Good morning';
+  if (h < 17) return 'Good afternoon';
+  return 'Good evening';
+}
+
+export default function SetupPage() {
+  const navigate = useNavigate();
+  const user = useAuthStore((s) => s.user);
+
+  const [propertyOpen, setPropertyOpen] = useState(false);
+  const [tenantOpen, setTenantOpen] = useState(false);
+  const [leaseOpen, setLeaseOpen] = useState(false);
+
+  const { data: properties, refetch: refetchProperties } = useQuery({
+    queryKey: ['setup', 'properties'],
+    queryFn: () => propertiesService.getProperties({ limit: 1 }),
+  });
+
+  const { data: tenants, refetch: refetchTenants } = useQuery({
+    queryKey: ['setup', 'tenants'],
+    queryFn: () => tenantsService.getTenants({ limit: 1 }),
+  });
+
+  const { data: leases, refetch: refetchLeases } = useQuery({
+    queryKey: ['setup', 'leases'],
+    queryFn: () => leasesService.getLeases({ limit: 1 }),
+  });
+
+  const hasProperty = (properties?.meta.total ?? 0) > 0;
+  const hasTenant = (tenants?.meta.total ?? 0) > 0;
+  const hasLease = (leases?.meta.total ?? 0) > 0;
+
+  const stepsComplete = [hasProperty, hasTenant, hasLease].filter(Boolean).length;
+  const allDone = stepsComplete === 3;
+
+  const steps = [
+    {
+      number: 1,
+      icon: Building2,
+      title: 'Add your properties',
+      description: 'Start by adding the buildings and locations your company owns or manages. Each property is a trackable asset in your portfolio.',
+      cta: hasProperty ? 'Add Another' : 'Add Property',
+      done: hasProperty,
+      doneLabel: `${properties?.meta.total ?? 1} propert${(properties?.meta.total ?? 1) === 1 ? 'y' : 'ies'} added`,
+      onAction: () => setPropertyOpen(true),
+      disabled: false,
+    },
+    {
+      number: 2,
+      icon: Users,
+      title: 'Add your tenants',
+      description: 'Add the businesses or individuals who rent space in your properties. You\'ll need at least one tenant before creating a lease.',
+      cta: hasTenant ? 'Add Another' : 'Add Tenant',
+      done: hasTenant,
+      doneLabel: `${tenants?.meta.total ?? 1} tenant${(tenants?.meta.total ?? 1) === 1 ? '' : 's'} added`,
+      onAction: () => setTenantOpen(true),
+      disabled: false,
+    },
+    {
+      number: 3,
+      icon: FileText,
+      title: 'Create your first lease',
+      description: 'Connect a tenant to a property with a lease agreement — including rent amount, term dates, escalation, and deposit.',
+      cta: hasLease ? 'Add Another' : 'Create Lease',
+      done: hasLease,
+      doneLabel: `${leases?.meta.total ?? 1} lease${(leases?.meta.total ?? 1) === 1 ? '' : 's'} created`,
+      onAction: () => setLeaseOpen(true),
+      disabled: !hasProperty || !hasTenant,
+      disabledReason: !hasProperty ? 'Add a property first' : 'Add a tenant first',
+    },
+  ];
+
+  return (
+    <div className="min-h-screen bg-surface-0 flex flex-col items-center px-4 py-16 animate-fade-in">
+      {/* Logo */}
+      <div className="flex items-center gap-2.5 mb-12">
+        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-600 shadow-glow-brand">
+          <Activity className="h-5 w-5 text-white" />
+        </div>
+        <span className="text-lg font-bold text-white tracking-tight">Valence</span>
+      </div>
+
+      {/* Welcome */}
+      <div className="text-center mb-10 max-w-lg">
+        <h1 className="text-2xl font-bold text-white tracking-tight">
+          {getGreeting()}, {user?.firstName}!
+        </h1>
+        <p className="mt-2 text-slate-400">
+          Let's get your portfolio set up. Follow these three steps and you'll be up and running in minutes.
+        </p>
+      </div>
+
+      {/* Progress */}
+      <div className="w-full max-w-lg mb-8">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-xs font-medium text-slate-500">{stepsComplete} of 3 steps complete</span>
+          {allDone && <span className="text-xs font-semibold text-success">All done!</span>}
+        </div>
+        <div className="h-1.5 w-full rounded-full bg-surface-400 overflow-hidden">
+          <div
+            className="h-full rounded-full bg-brand-500 transition-all duration-500"
+            style={{ width: `${(stepsComplete / 3) * 100}%` }}
+          />
+        </div>
+      </div>
+
+      {/* Steps */}
+      <div className="w-full max-w-lg flex flex-col gap-3 mb-8">
+        {steps.map((step) => {
+          const Icon = step.icon;
+          return (
+            <div
+              key={step.number}
+              className={`rounded-xl border p-5 transition-colors ${
+                step.done
+                  ? 'border-success/30 bg-success/5'
+                  : step.disabled
+                  ? 'border-surface-400/40 bg-surface-100/50 opacity-60'
+                  : 'border-surface-400/60 bg-surface-100'
+              }`}
+            >
+              <div className="flex items-start gap-4">
+                {/* Status icon */}
+                <div className="mt-0.5 shrink-0">
+                  {step.done
+                    ? <CheckCircle2 className="h-5 w-5 text-success" />
+                    : <Circle className="h-5 w-5 text-slate-600" />
+                  }
+                </div>
+
+                {/* Content */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Icon className={`h-4 w-4 shrink-0 ${step.done ? 'text-success' : 'text-brand-400'}`} />
+                    <h3 className="text-sm font-semibold text-white">{step.title}</h3>
+                    {step.done && (
+                      <span className="ml-auto text-xs text-success font-medium">{step.doneLabel}</span>
+                    )}
+                  </div>
+                  <p className="text-xs text-slate-500 leading-relaxed mb-3">{step.description}</p>
+
+                  {step.disabled && step.disabledReason ? (
+                    <span className="text-xs text-slate-600 italic">{step.disabledReason}</span>
+                  ) : (
+                    <button
+                      onClick={step.onAction}
+                      className={`inline-flex items-center gap-1.5 text-xs font-medium transition-colors ${
+                        step.done
+                          ? 'text-slate-500 hover:text-slate-300'
+                          : 'text-brand-400 hover:text-brand-300'
+                      }`}
+                    >
+                      {step.cta}
+                      <ChevronRight className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Go to dashboard */}
+      <div className="flex flex-col items-center gap-2">
+        <Button onClick={() => navigate('/')} size="md">
+          {allDone ? 'Go to Dashboard' : 'Skip for Now'}
+          <ArrowRight className="h-4 w-4" />
+        </Button>
+        {!allDone && (
+          <p className="text-xs text-slate-600">You can finish setup anytime from the dashboard.</p>
+        )}
+      </div>
+
+      {/* Modals */}
+      <PropertyFormModal
+        open={propertyOpen}
+        onClose={() => { setPropertyOpen(false); refetchProperties(); }}
+      />
+      <TenantFormModal
+        open={tenantOpen}
+        onClose={() => { setTenantOpen(false); refetchTenants(); }}
+      />
+      <LeaseFormModal
+        open={leaseOpen}
+        onClose={() => { setLeaseOpen(false); refetchLeases(); }}
+      />
+    </div>
+  );
+}

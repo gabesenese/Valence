@@ -33,6 +33,34 @@ export async function getTenants(query: { page?: number; limit?: number; search?
   return { tenants, total };
 }
 
+export interface CreateTenantInput {
+  name: string;
+  email?: string;
+  phone?: string;
+  company?: string;
+  taxId?: string;
+  creditScore?: number;
+  notes?: string;
+  isActive?: boolean;
+}
+
+export async function createTenant(input: CreateTenantInput) {
+  if (input.email) {
+    const existing = await prisma.tenant.findUnique({ where: { email: input.email } });
+    if (existing) throw new Error(`A tenant with email "${input.email}" already exists`);
+  }
+  return prisma.tenant.create({ data: input });
+}
+
+export async function updateTenant(id: string, input: Partial<CreateTenantInput>) {
+  await getTenantById(id);
+  if (input.email) {
+    const conflict = await prisma.tenant.findFirst({ where: { email: input.email, NOT: { id } } });
+    if (conflict) throw new Error(`A tenant with email "${input.email}" already exists`);
+  }
+  return prisma.tenant.update({ where: { id }, data: input });
+}
+
 export async function getTenantById(id: string) {
   const tenant = await prisma.tenant.findUnique({
     where: { id },

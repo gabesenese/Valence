@@ -16,6 +16,7 @@ const AnalyticsPage = lazy(() => import('@/features/analytics/AnalyticsPage'));
 const AlertsPage = lazy(() => import('@/features/alerts/AlertsPage'));
 const TenantsPage = lazy(() => import('@/features/tenants/TenantsPage'));
 const SettingsPage = lazy(() => import('@/features/settings/SettingsPage'));
+const SetupPage = lazy(() => import('@/features/setup/SetupPage'));
 
 export default function App() {
   return (
@@ -24,6 +25,11 @@ export default function App() {
         {/* Auth */}
         <Route path="/auth/login" element={<LoginPage />} />
         <Route path="/auth/register" element={<RegisterPage />} />
+
+        {/* Protected — setup outside AppLayout so it has its own full-page look */}
+        <Route element={<ProtectedRoute />}>
+          <Route path="setup" element={<SetupPage />} />
+        </Route>
 
         {/* Protected */}
         <Route element={<ProtectedRoute />}>
