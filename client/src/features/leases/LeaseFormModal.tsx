@@ -108,6 +108,21 @@ export default function LeaseFormModal({ open, onClose, lease }: Props) {
     setErrors(err => ({ ...err, [field]: undefined }));
   };
 
+  const setMoney = (field: keyof FormData) => (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const raw = e.target.value.replace(/[^0-9.]/g, '');
+    setForm(f => ({ ...f, [field]: raw }));
+    setErrors(err => ({ ...err, [field]: undefined }));
+  };
+
+  const fmtMoney = (val: string) => {
+    if (!val) return '';
+    const [int, dec] = val.split('.');
+    const formatted = int.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    return dec !== undefined ? `${formatted}.${dec}` : formatted;
+  };
+
   const setDate = (field: 'startDate' | 'endDate') => (val: string) => {
     setForm(f => ({ ...f, [field]: val }));
     setErrors(err => ({ ...err, [field]: undefined }));
@@ -256,12 +271,10 @@ export default function LeaseFormModal({ open, onClose, lease }: Props) {
           <div className="grid grid-cols-2 gap-4 mb-4">
             <Input
               label="Monthly Base Rent *"
-              type="number"
-              value={form.baseRent}
-              onChange={set('baseRent')}
+              value={fmtMoney(form.baseRent)}
+              onChange={setMoney('baseRent')}
               error={errors.baseRent}
-              placeholder="5000"
-              min={0}
+              placeholder="5,000"
               prefix={<DollarSign className="h-3.5 w-3.5" />}
             />
             <div className="flex flex-col gap-1.5">
@@ -283,11 +296,9 @@ export default function LeaseFormModal({ open, onClose, lease }: Props) {
             </div>
             <Input
               label="Security Deposit"
-              type="number"
-              value={form.securityDeposit}
-              onChange={set('securityDeposit')}
-              placeholder="10000"
-              min={0}
+              value={fmtMoney(form.securityDeposit)}
+              onChange={setMoney('securityDeposit')}
+              placeholder="10,000"
               prefix={<DollarSign className="h-3.5 w-3.5" />}
             />
             <Input
