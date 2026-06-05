@@ -323,18 +323,30 @@ export default function LeaseDetailPage() {
             <Pencil className="h-3.5 w-3.5" />
             Edit Lease
           </Button>
-          {isActive && (
-          <div className={`text-right px-4 py-2 rounded-xl border ${
-            days <= 30 ? 'border-danger/30 bg-danger/10' :
-            days <= 60 ? 'border-warning/30 bg-warning/10' :
-            'border-surface-400/40 bg-surface-200'
-          }`}>
-            <p className={`text-3xl font-bold tabular-nums ${days <= 30 ? 'text-danger' : days <= 60 ? 'text-warning' : 'text-white'}`}>
-              {days > 0 ? days : 0}
-            </p>
-            <p className="text-xs text-slate-400">days remaining</p>
-          </div>
-          )}
+          {isActive && (() => {
+            const signed = lease.renewalStage === 'SIGNED';
+            const urgent = !signed && days <= 30;
+            const warn   = !signed && !urgent && days <= 60;
+            return (
+              <div className={`text-right px-4 py-2 rounded-xl border ${
+                signed ? 'border-success/25 bg-success/10' :
+                urgent ? 'border-danger/30 bg-danger/10' :
+                warn   ? 'border-warning/30 bg-warning/10' :
+                         'border-surface-400/40 bg-surface-200'
+              }`}>
+                <p className={`text-3xl font-bold tabular-nums ${
+                  signed ? 'text-success' :
+                  urgent ? 'text-danger' :
+                  warn   ? 'text-warning' : 'text-white'
+                }`}>
+                  {days > 0 ? days : 0}
+                </p>
+                <p className="text-xs text-slate-400">
+                  {signed ? 'days · renewed' : 'days remaining'}
+                </p>
+              </div>
+            );
+          })()}
         </div>
       </div>
 
