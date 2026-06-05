@@ -20,7 +20,7 @@ export default function RegisterPage() {
     try {
       const result = await authService.register(form);
       setAuth(result.user, result.tokens.accessToken, result.tokens.refreshToken);
-      navigate('/');
+      navigate('/setup');
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
       setError(msg ?? 'Registration failed');

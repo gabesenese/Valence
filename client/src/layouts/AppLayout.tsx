@@ -12,6 +12,7 @@ import {
   Cpu,
   Users,
   Settings,
+  Inbox,
 } from 'lucide-react';
 import { cn } from '@/utils/cn';
 import { useAuthStore } from '@/state/auth.store';
@@ -19,7 +20,8 @@ import { useUIStore } from '@/state/ui.store';
 import { authService } from '@/services/auth.service';
 
 const navItems = [
-  { to: '/', icon: LayoutDashboard, label: 'Dashboard', exact: true },
+  { to: '/', icon: Inbox, label: 'Work Queue', exact: true },
+  { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/leases', icon: FileText, label: 'Leases' },
   { to: '/properties', icon: Building2, label: 'Properties' },
   { to: '/tenants', icon: Users, label: 'Tenants' },

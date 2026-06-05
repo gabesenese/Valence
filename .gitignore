@@ -76,3 +76,4 @@ coverage/
 # Local debug / exploration artifacts
 screenshots/
 *.mjs.bak
+claude_email.txt

@@ -34,10 +34,27 @@ export interface TenantQuery {
   isActive?: boolean;
 }
 
+export interface CreateTenantInput {
+  name: string;
+  email?: string;
+  phone?: string;
+  company?: string;
+  taxId?: string;
+  creditScore?: number;
+  notes?: string;
+  isActive?: boolean;
+}
+
 export const tenantsService = {
   getTenants: (query: TenantQuery = {}): Promise<PaginatedResult<Tenant>> =>
     api.get('/tenants', { params: query }).then(extractPaginated<Tenant>),
 
   getTenant: (id: string): Promise<TenantDetail> =>
     api.get(`/tenants/${id}`).then(extractData<TenantDetail>),
+
+  createTenant: (input: CreateTenantInput): Promise<Tenant> =>
+    api.post('/tenants', input).then(extractData<Tenant>),
+
+  updateTenant: (id: string, input: Partial<CreateTenantInput>): Promise<Tenant> =>
+    api.patch(`/tenants/${id}`, input).then(extractData<Tenant>),
 };

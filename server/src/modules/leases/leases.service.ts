@@ -26,6 +26,7 @@ const STAGE_MULTIPLIER: Record<string, number> = {
   CONTACTED: 1.2,
   NEGOTIATING: 1.0,
   DRAFT_SENT: 0.8,
+  LEGAL_REVIEW: 0.65,
   SCHEDULED_RENEWAL: 0.5,
   SIGNED: 0.1,
 };
@@ -292,7 +293,6 @@ export async function setRenewalDateAction(id: string, userId: string, renewalDa
     data: {
       renewalDate: parsed,
       renewalScheduledAt: parsed,
-      renewalStage: 'SCHEDULED_RENEWAL',
     },
     include: {
       property: { select: { id: true, name: true, code: true } },
@@ -513,6 +513,55 @@ export async function getLeaseStats() {
     prisma.lease.count({ where: { status: 'ACTIVE' } }),
   ]);
   return { byStatus, byRisk, expiringIn30, expiringIn90, totalActive };
+}
+
+const KANBAN_STAGES: RenewalStage[] = [
+  'NOT_STARTED',
+  'CONTACTED',
+  'NEGOTIATING',
+  'DRAFT_SENT',
+  'LEGAL_REVIEW',
+  'SCHEDULED_RENEWAL',
+  'SIGNED',
+];
+
+export async function getKanban() {
+  const leases = await prisma.lease.findMany({
+    where: { status: 'ACTIVE' },
+    include: {
+      property: { select: { id: true, name: true, code: true } },
+      tenant: { select: { id: true, name: true } },
+      owner: { select: { id: true, firstName: true, lastName: true } },
+      alerts: {
+        where: { status: { in: ['OPEN', 'IN_PROGRESS'] } },
+        select: { id: true, severity: true },
+      },
+    },
+    orderBy: { endDate: 'asc' },
+  });
+
+  return KANBAN_STAGES.map((stage) => {
+    const items = leases.filter((l) => l.renewalStage === stage);
+    return {
+      stage,
+      count: items.length,
+      totalRent: items.reduce((s, l) => s + Number(l.baseRent), 0),
+      leases: items.map((l) => ({
+        id: l.id,
+        leaseNumber: l.leaseNumber,
+        tenantName: l.tenant.name,
+        propertyName: l.property.name,
+        unitNumber: l.unitNumber,
+        endDate: l.endDate.toISOString(),
+        renewalRisk: l.renewalRisk as string,
+        renewalStage: l.renewalStage,
+        baseRent: Number(l.baseRent),
+        owner: l.owner,
+        openAlerts: l.alerts.length,
+        criticalAlerts: l.alerts.filter((a) => a.severity === 'CRITICAL').length,
+      })),
+    };
+  });
 }
 
 export async function refreshRenewalRisks(): Promise<number> {

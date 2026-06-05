@@ -8,6 +8,7 @@ import {
   ChevronUp, ChevronDown, Eye, RotateCcw,
 } from 'lucide-react';
 import { leasesService, type RenewalStage } from '@/services/leases.service';
+import LeaseFormModal from './LeaseFormModal';
 import { alertsService } from '@/services/alerts.service';
 import { authService } from '@/services/auth.service';
 import { Card, CardHeader, CardTitle, CardBody } from '@/components/ui/Card';
@@ -65,57 +66,65 @@ function ChevronToggle({ open }: { open: boolean }) {
     : <ChevronDown className="h-3 w-3" />;
 }
 
-// ─── Timeline step ────────────────────────────────────────────────────────────
+// ─── Pipeline step ────────────────────────────────────────────────────────────
 
-function TimelineStep({
-  step, completed, current, onAdvance, onUndo, loading,
+function PipelineStep({
+  step, index, completed, current, canUndo, onAdvance, onUndo, loading,
 }: {
   step: typeof PIPELINE[0];
+  index: number;
   completed: boolean;
   current: boolean;
+  canUndo: boolean;
   onAdvance: () => void;
   onUndo: () => void;
   loading: boolean;
 }) {
   return (
-    <div className={`group/step flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors ${
-      current
-        ? 'bg-brand-600/20 border border-brand-600/40'
-        : completed
-        ? 'border border-transparent hover:bg-surface-300/20'
-        : 'border border-transparent hover:bg-surface-300/40'
+    <div className={`group/step flex items-center gap-3 rounded-xl px-4 py-3 transition-all duration-150 ${
+      current ? 'bg-brand-600/15 border border-brand-500/30' : 'border border-transparent'
     }`}>
-      {/* Check circle — clicking a completed step un-does it */}
-      <button
-        onClick={completed ? onUndo : onAdvance}
-        disabled={loading}
-        className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 transition-colors disabled:opacity-40 ${
-          completed
-            ? 'border-success bg-success/20 text-success hover:border-danger/60 hover:bg-danger/10 hover:text-danger'
-            : current
-            ? 'border-brand-400 bg-brand-600/20 text-brand-300 hover:bg-brand-600/30'
-            : 'border-surface-500 text-slate-500 hover:border-slate-400'
-        }`}
-        title={completed ? 'Undo this step' : 'Mark complete'}
-      >
+      {/* Status circle — only two states: number or check. Never changes on hover. */}
+      <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 transition-colors ${
+        completed
+          ? 'border-success bg-success/20 text-success'
+          : current
+          ? 'border-brand-400 bg-brand-600/20 text-brand-300'
+          : 'border-surface-500/50 text-slate-600'
+      }`}>
         {loading
           ? <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent" />
-          : completed ? <CheckCircle2 className="h-4 w-4" /> : step.icon}
-      </button>
+          : completed
+          ? <Check className="h-3.5 w-3.5" />
+          : <span className="text-xs font-semibold tabular-nums">{index + 1}</span>
+        }
+      </div>
 
       <span className={`flex-1 text-sm font-medium ${
-        completed ? 'line-through text-slate-500' : current ? 'text-white' : 'text-slate-400'
+        completed ? 'text-slate-500' : current ? 'text-white' : 'text-slate-600'
       }`}>
         {step.label}
       </span>
 
-      {completed && (
-        <span className="opacity-0 group-hover/step:opacity-100 transition-opacity text-xs text-slate-600">
-          click ✓ to undo
-        </span>
+      {/* Undo — separate from the circle, only last completed step */}
+      {canUndo && (
+        <button
+          onClick={onUndo}
+          disabled={loading}
+          className="opacity-0 group-hover/step:opacity-100 transition-opacity flex items-center gap-1 text-xs text-slate-500 hover:text-danger disabled:opacity-40 shrink-0"
+        >
+          <RotateCcw className="h-3 w-3" /> undo
+        </button>
       )}
-      {current && !loading && (
-        <span className="text-xs text-brand-400">click to advance →</span>
+
+      {current && (
+        <button
+          onClick={onAdvance}
+          disabled={loading}
+          className="shrink-0 flex items-center gap-1 text-xs text-brand-400 hover:text-brand-300 transition-colors disabled:opacity-40"
+        >
+          Mark complete <Check className="h-3 w-3" />
+        </button>
       )}
     </div>
   );
@@ -132,10 +141,12 @@ export default function LeaseDetailPage() {
   const [editNoteInput, setEditNoteInput] = useState('');
   const [showClosedAlerts, setShowClosedAlerts] = useState(false);
   const [assigningOwner, setAssigningOwner] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
   const noteRef = useRef<HTMLTextAreaElement>(null);
 
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ['leases', id] });
+    qc.invalidateQueries({ queryKey: ['leases', id, 'activity'] });
     qc.invalidateQueries({ queryKey: ['alerts'] });
   };
 
@@ -265,8 +276,13 @@ export default function LeaseDetailPage() {
             {lease.property.name}{lease.unitNumber ? ` · Unit ${lease.unitNumber}` : ''} · {lease.tenant.name}
           </p>
         </div>
-        {isActive && (
-          <div className={`shrink-0 text-right px-4 py-2 rounded-xl border ${
+        <div className="flex items-center gap-2 shrink-0">
+          <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
+            <Pencil className="h-3.5 w-3.5" />
+            Edit Lease
+          </Button>
+          {isActive && (
+          <div className={`text-right px-4 py-2 rounded-xl border ${
             days <= 30 ? 'border-danger/30 bg-danger/10' :
             days <= 60 ? 'border-warning/30 bg-warning/10' :
             'border-surface-400/40 bg-surface-200'
@@ -276,7 +292,8 @@ export default function LeaseDetailPage() {
             </p>
             <p className="text-xs text-slate-400">days remaining</p>
           </div>
-        )}
+          )}
+        </div>
       </div>
 
       {/* Info grid */}
@@ -409,7 +426,7 @@ export default function LeaseDetailPage() {
         </Card>
       </div>
 
-      {/* ── Renewal Cockpit ───────────────────────────────────────────────────── */}
+      {/* ── Renewal Pipeline ─────────────────────────────────────────────────── */}
       {isActive && (
         <Card>
           <CardHeader>
@@ -417,30 +434,51 @@ export default function LeaseDetailPage() {
               <RefreshCw className="h-4 w-4 text-brand-400" />
               <CardTitle>Renewal Pipeline</CardTitle>
             </div>
-            <Badge variant={
-              lease.renewalStage === 'SIGNED' ? 'success' :
-              lease.renewalStage === 'NOT_STARTED' ? 'neutral' : 'brand'
-            }>
-              {lease.renewalStage.replace(/_/g, ' ')}
-            </Badge>
+            <div className="flex items-center gap-3">
+              <span className="text-xs text-slate-500">
+                {PIPELINE.filter(s => STAGE_ORDER.indexOf(s.stage) <= currentStageIdx && lease.renewalStage !== 'NOT_STARTED').length}
+                /{PIPELINE.length} steps
+              </span>
+              <Badge variant={
+                lease.renewalStage === 'SIGNED' ? 'success' :
+                lease.renewalStage === 'NOT_STARTED' ? 'neutral' : 'brand'
+              }>
+                {lease.renewalStage.replace(/_/g, ' ')}
+              </Badge>
+            </div>
           </CardHeader>
           <CardBody>
-            <div className="flex flex-col gap-2">
-              {PIPELINE.map((step) => {
+            {/* Progress bar */}
+            <div className="mb-4 h-1.5 rounded-full bg-surface-400/40 overflow-hidden">
+              <div
+                className="h-full rounded-full bg-brand-500 transition-all duration-500"
+                style={{
+                  width: `${lease.renewalStage === 'NOT_STARTED' ? 0 : Math.round((currentStageIdx / PIPELINE.length) * 100)}%`,
+                }}
+              />
+            </div>
+
+            <div className="flex flex-col gap-1">
+              {PIPELINE.map((step, i) => {
                 const stepIdx = STAGE_ORDER.indexOf(step.stage);
                 const completed = stepIdx <= currentStageIdx && lease.renewalStage !== 'NOT_STARTED';
                 const isCurrent = stepIdx === currentStageIdx + 1;
-                // The stage to revert to when undoing this step is the one before it in STAGE_ORDER
+                const canUndo = completed && stepIdx === currentStageIdx;
                 const prevStage = STAGE_ORDER[stepIdx - 1] ?? 'NOT_STARTED';
                 return (
-                  <TimelineStep
+                  <PipelineStep
                     key={step.stage}
                     step={step}
+                    index={i}
                     completed={completed}
                     current={isCurrent}
+                    canUndo={canUndo}
                     onAdvance={() => stageMutation.mutate(step.stage)}
                     onUndo={() => stageMutation.mutate(prevStage as RenewalStage)}
-                    loading={stageMutation.isPending && stageMutation.variables === step.stage}
+                    loading={stageMutation.isPending && (
+                      stageMutation.variables === step.stage ||
+                      stageMutation.variables === prevStage
+                    )}
                   />
                 );
               })}
@@ -761,6 +799,8 @@ export default function LeaseDetailPage() {
           </CardBody>
         </Card>
       )}
+
+      <LeaseFormModal open={editOpen} onClose={() => setEditOpen(false)} lease={lease} />
     </div>
   );
 }

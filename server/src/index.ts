@@ -20,6 +20,7 @@ import { analyticsRouter } from './modules/analytics/analytics.routes';
 import { alertsRouter } from './modules/alerts/alerts.routes';
 import { aiRouter } from './modules/ai/ai.routes';
 import { tenantsRouter } from './modules/tenants/tenants.routes';
+import { workQueueRouter } from './modules/workQueue/work-queue.routes';
 import cron from 'node-cron';
 import { runAnomalyScan } from './modules/alerts/anomaly.service';
 
@@ -68,6 +69,7 @@ app.use('/api/analytics', analyticsRouter);
 app.use('/api/alerts', alertsRouter);
 app.use('/api/ai', aiRouter);
 app.use('/api/tenants', tenantsRouter);
+app.use('/api/work-queue', workQueueRouter);
 
 // ─── Error Handling ───────────────────────────────────────────────────────────
 app.use(notFoundHandler);

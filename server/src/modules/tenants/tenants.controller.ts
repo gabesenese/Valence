@@ -20,3 +20,15 @@ export async function show(req: Request, res: Response, next: NextFunction): Pro
     sendSuccess(res, await service.getTenantById(req.params.id));
   } catch (err) { next(err); }
 }
+
+export async function create(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    sendSuccess(res, await service.createTenant(req.body), 201);
+  } catch (err) { next(err); }
+}
+
+export async function update(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    sendSuccess(res, await service.updateTenant(req.params.id, req.body));
+  } catch (err) { next(err); }
+}

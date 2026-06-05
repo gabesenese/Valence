@@ -83,6 +83,28 @@ export interface LeasePreview {
   whyThisIsHere: string;
 }
 
+export interface KanbanLease {
+  id: string;
+  leaseNumber: string;
+  tenantName: string;
+  propertyName: string;
+  unitNumber?: string | null;
+  endDate: string;
+  renewalRisk: string;
+  renewalStage: RenewalStage;
+  baseRent: number;
+  owner: { id: string; firstName: string; lastName: string } | null;
+  openAlerts: number;
+  criticalAlerts: number;
+}
+
+export interface KanbanColumn {
+  stage: RenewalStage;
+  count: number;
+  totalRent: number;
+  leases: KanbanLease[];
+}
+
 export interface LeaseStats {
   byStatus: Array<{ status: string; _count: number }>;
   byRisk: Array<{ renewalRisk: string; _count: number }>;
@@ -113,12 +135,29 @@ export interface BulkActionPayload {
   note?: string;
 }
 
+export interface CreateLeaseInput {
+  propertyId: string;
+  tenantId: string;
+  unitNumber?: string;
+  type: string;
+  startDate: string;
+  endDate: string;
+  baseRent: number;
+  rentEscalation?: number;
+  securityDeposit?: number;
+  sqft?: number;
+  notes?: string;
+}
+
 export const leasesService = {
   getLeases: (query: LeaseQuery = {}): Promise<PaginatedResult<Lease>> =>
     api.get('/leases', { params: query }).then(extractPaginated<Lease>),
 
   getPriorityQueue: (): Promise<PriorityLease[]> =>
     api.get('/leases/priority-queue').then(extractData<PriorityLease[]>),
+
+  getKanban: (): Promise<KanbanColumn[]> =>
+    api.get('/leases/kanban').then(extractData<KanbanColumn[]>),
 
   getLease: (id: string): Promise<Lease> =>
     api.get(`/leases/${id}`).then(extractData<Lease>),
@@ -132,7 +171,10 @@ export const leasesService = {
   getNotes: (id: string): Promise<LeaseNoteDTO[]> =>
     api.get(`/leases/${id}/notes`).then(extractData<LeaseNoteDTO[]>),
 
-  updateLease: (id: string, data: Partial<Lease>): Promise<Lease> =>
+  createLease: (input: CreateLeaseInput): Promise<Lease> =>
+    api.post('/leases', input).then(extractData<Lease>),
+
+  updateLease: (id: string, data: Partial<Lease> & Partial<CreateLeaseInput>): Promise<Lease> =>
     api.patch(`/leases/${id}`, data).then(extractData<Lease>),
 
   setRenewalDate: (id: string, renewalDate: string): Promise<Lease> =>
