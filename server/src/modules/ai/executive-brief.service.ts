@@ -132,7 +132,7 @@ export async function generateExecutiveBrief(): Promise<ExecutiveBrief> {
   const contextBlock = JSON.stringify(ctx, null, 2);
 
   const message = await client.messages.create({
-    model: 'claude-opus-4-8',
+    model: 'claude-haiku-4-5-20251001',
     max_tokens: 3000,
     tools: [
       {
