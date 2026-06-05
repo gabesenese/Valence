@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { analyticsService } from '@/services/analytics.service';
 import { leasesService } from '@/services/leases.service';
+import ExecutiveBriefCard from './ExecutiveBrief';
 import { Card, CardHeader, CardTitle, CardBody } from '@/components/ui/Card';
 import { PageLoader } from '@/components/ui/Spinner';
 import { formatCurrency, compactCurrency, daysUntil, formatDate } from '@/utils/format';
@@ -154,6 +155,9 @@ export default function DashboardPage() {
         </h1>
         <p className="mt-0.5 text-sm text-slate-500">Portfolio intelligence overview</p>
       </div>
+
+      {/* Executive Intelligence Brief */}
+      {!isEmpty && <ExecutiveBriefCard />}
 
       {/* Onboarding banner — shown when account has no data */}
       {isEmpty && (

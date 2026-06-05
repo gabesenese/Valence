@@ -3,6 +3,7 @@ import type { Request, Response, NextFunction } from 'express';
 import multer from 'multer';
 import { insightEngine, riskEvaluator } from './ai.service';
 import { extractLeaseFromPDF } from './lease-extractor.service';
+import { generateExecutiveBrief } from './executive-brief.service';
 import { authenticate } from '../../middleware/authenticate';
 import { sendSuccess } from '../../utils/response';
 
@@ -26,6 +27,12 @@ router.post('/extract-lease', upload.single('file'), async (req: Request, res: R
     const result = await extractLeaseFromPDF(req.file.buffer);
     sendSuccess(res, result);
   } catch (e) { next(e); }
+});
+
+// ─── Executive brief ─────────────────────────────────────────────────────────
+
+router.get('/executive-brief', async (_req: Request, res: Response, next: NextFunction) => {
+  try { sendSuccess(res, await generateExecutiveBrief()); } catch (e) { next(e); }
 });
 
 // ─── Insights ─────────────────────────────────────────────────────────────────
