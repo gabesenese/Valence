@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   ArrowLeft, Building2, MapPin, FileText, AlertTriangle,
-  DollarSign, Layers, Pencil, CheckCircle, XCircle,
+  DollarSign, Layers, Pencil, X,
 } from 'lucide-react';
 import { propertiesService, type PropertyDetail } from '@/services/properties.service';
 import { alertsService } from '@/services/alerts.service';
@@ -14,8 +14,8 @@ import { PageLoader } from '@/components/ui/Spinner';
 import { formatCurrency, formatDate, daysUntil } from '@/utils/format';
 import PropertyFormModal from './PropertyFormModal';
 
-const SEVERITY_VARIANT: Record<string, 'danger' | 'warning' | 'info'> = {
-  CRITICAL: 'danger', WARNING: 'warning', INFO: 'info',
+const SEVERITY_DOT: Record<string, string> = {
+  CRITICAL: 'bg-danger', WARNING: 'bg-warning', INFO: 'bg-info',
 };
 
 const RISK_VARIANT: Record<string, 'success' | 'info' | 'warning' | 'danger'> = {
@@ -195,58 +195,52 @@ export default function PropertyDetailPage() {
                   {property._count.alerts} Open Alert{property._count.alerts !== 1 ? 's' : ''}
                 </span>
               </div>
-              <div className="divide-y divide-surface-400/30">
+              <div className="divide-y divide-surface-400/20">
                 {alertsLoading ? (
                   <div className="px-4 py-4 text-xs text-slate-500">Loading…</div>
                 ) : (
                   alertsData?.data.map((alert) => (
                     <div
                       key={alert.id}
-                      className={`px-4 py-2.5 flex flex-col gap-1.5 border-l-2 ${
-                        alert.severity === 'CRITICAL' ? 'border-l-danger/60' :
-                        alert.severity === 'WARNING'  ? 'border-l-warning/40' : 'border-l-info/30'
-                      }`}
+                      className="group px-4 py-3 hover:bg-white/[0.03] transition-colors"
                     >
-                      {/* Row 1: title + icon actions */}
-                      <div className="flex items-center justify-between gap-2">
-                        <p className="text-xs font-medium text-slate-200 truncate">{alert.title}</p>
-                        <div className="flex items-center shrink-0">
-                          <button
-                            onClick={() => resolveMutation.mutate(alert.id)}
-                            title="Resolve"
-                            className="p-1 rounded text-slate-500 hover:text-success hover:bg-success/10 transition-colors"
-                          >
-                            <CheckCircle className="h-3.5 w-3.5" />
-                          </button>
-                          <button
-                            onClick={() => dismissMutation.mutate(alert.id)}
-                            title="Dismiss"
-                            className="p-1 rounded text-slate-500 hover:text-danger hover:bg-danger/10 transition-colors"
-                          >
-                            <XCircle className="h-3.5 w-3.5" />
-                          </button>
-                        </div>
+                      {/* Title row */}
+                      <div className="flex items-start gap-2">
+                        <span className={`mt-[5px] h-1.5 w-1.5 rounded-full shrink-0 ${SEVERITY_DOT[alert.severity] ?? 'bg-slate-500'}`} />
+                        <p className="flex-1 text-[13px] font-medium text-slate-200 leading-snug">{alert.title}</p>
+                        <button
+                          onClick={() => dismissMutation.mutate(alert.id)}
+                          className="opacity-0 group-hover:opacity-100 transition-opacity mt-0.5 shrink-0 text-slate-600 hover:text-slate-300"
+                          title="Dismiss"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
                       </div>
 
-                      {/* Row 2: badge + action link */}
-                      <div className="flex items-center justify-between">
-                        <Badge variant={SEVERITY_VARIANT[alert.severity] ?? 'neutral'}>{alert.severity}</Badge>
+                      {/* Actions — reveal on hover */}
+                      <div className="mt-2 pl-3.5 flex items-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
                         {alert.status === 'OPEN' ? (
                           <button
                             onClick={() => progressMutation.mutate(alert.id)}
-                            className="text-[11px] text-slate-500 hover:text-brand-400 transition-colors"
+                            className="text-[11px] font-medium text-brand-400 hover:text-brand-300 transition-colors"
                           >
-                            Mark in Review →
+                            Start review
                           </button>
                         ) : (
                           <button
                             onClick={() => reopenMutation.mutate(alert.id)}
-                            title="Undo — revert to Open"
-                            className="text-[11px] text-info/70 hover:text-slate-400 transition-colors"
+                            className="text-[11px] text-slate-500 hover:text-slate-300 transition-colors"
                           >
-                            In Review · undo
+                            In review · undo
                           </button>
                         )}
+                        <span className="text-slate-700">·</span>
+                        <button
+                          onClick={() => resolveMutation.mutate(alert.id)}
+                          className="text-[11px] font-medium text-success/70 hover:text-success transition-colors"
+                        >
+                          Resolve
+                        </button>
                       </div>
                     </div>
                   ))
