@@ -83,6 +83,28 @@ export interface LeasePreview {
   whyThisIsHere: string;
 }
 
+export interface KanbanLease {
+  id: string;
+  leaseNumber: string;
+  tenantName: string;
+  propertyName: string;
+  unitNumber?: string | null;
+  endDate: string;
+  renewalRisk: string;
+  renewalStage: RenewalStage;
+  baseRent: number;
+  owner: { id: string; firstName: string; lastName: string } | null;
+  openAlerts: number;
+  criticalAlerts: number;
+}
+
+export interface KanbanColumn {
+  stage: RenewalStage;
+  count: number;
+  totalRent: number;
+  leases: KanbanLease[];
+}
+
 export interface LeaseStats {
   byStatus: Array<{ status: string; _count: number }>;
   byRisk: Array<{ renewalRisk: string; _count: number }>;
@@ -133,6 +155,9 @@ export const leasesService = {
 
   getPriorityQueue: (): Promise<PriorityLease[]> =>
     api.get('/leases/priority-queue').then(extractData<PriorityLease[]>),
+
+  getKanban: (): Promise<KanbanColumn[]> =>
+    api.get('/leases/kanban').then(extractData<KanbanColumn[]>),
 
   getLease: (id: string): Promise<Lease> =>
     api.get(`/leases/${id}`).then(extractData<Lease>),

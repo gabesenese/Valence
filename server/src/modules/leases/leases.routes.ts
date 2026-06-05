@@ -16,6 +16,7 @@ router.use(authenticate);
 // List + priority queue (before /:id to avoid capture)
 router.get('/stats', controller.stats);
 router.get('/priority-queue', controller.priorityQueue);
+router.get('/kanban', controller.kanban);
 router.get('/', validate(leaseQuerySchema, 'query'), controller.list);
 
 // Bulk action

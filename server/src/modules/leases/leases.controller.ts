@@ -58,6 +58,12 @@ export async function remove(req: Request, res: Response, next: NextFunction): P
   } catch (err) { next(err); }
 }
 
+export async function kanban(_req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    sendSuccess(res, await service.getKanban());
+  } catch (err) { next(err); }
+}
+
 export async function stats(_req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     sendSuccess(res, await service.getLeaseStats());

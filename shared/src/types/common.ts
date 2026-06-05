@@ -11,6 +11,7 @@ export type RenewalStage =
   | 'CONTACTED'
   | 'NEGOTIATING'
   | 'DRAFT_SENT'
+  | 'LEGAL_REVIEW'
   | 'SCHEDULED_RENEWAL'
   | 'SIGNED';
 

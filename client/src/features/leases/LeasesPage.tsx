@@ -4,8 +4,9 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Search, FileText, ChevronRight, X, ChevronUp, ChevronDown,
   LayoutList, Zap, CheckSquare, Square, RefreshCw, Phone,
-  BellOff, Download, SlidersHorizontal, Users, Plus,
+  BellOff, Download, SlidersHorizontal, Users, Plus, Columns3,
 } from 'lucide-react';
+import RenewalKanban from './RenewalKanban';
 import { leasesService, type RenewalStage, type PriorityLease, type Lease, type LeaseAlert } from '@/services/leases.service';
 import { authService } from '@/services/auth.service';
 import { Card } from '@/components/ui/Card';
@@ -31,6 +32,7 @@ const STAGE_LABEL: Record<RenewalStage, string> = {
   CONTACTED: 'Contacted',
   NEGOTIATING: 'Negotiating',
   DRAFT_SENT: 'Draft sent',
+  LEGAL_REVIEW: 'Legal review',
   SCHEDULED_RENEWAL: 'Scheduled',
   SIGNED: 'Signed',
 };
@@ -40,6 +42,7 @@ const STAGE_VARIANT: Record<RenewalStage, 'neutral' | 'info' | 'warning' | 'bran
   CONTACTED: 'info',
   NEGOTIATING: 'warning',
   DRAFT_SENT: 'brand',
+  LEGAL_REVIEW: 'warning',
   SCHEDULED_RENEWAL: 'brand',
   SIGNED: 'success',
 };
@@ -61,7 +64,7 @@ const EXPIRY_FILTERS = [
 ];
 
 type SortField = 'endDate' | 'baseRent';
-type ViewMode = 'table' | 'priority';
+type ViewMode = 'table' | 'priority' | 'kanban';
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
@@ -339,7 +342,7 @@ function Chip({ label, onRemove }: { label: string; onRemove: () => void }) {
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function LeasesPage() {
-  const [viewMode, setViewMode] = useState<ViewMode>('table');
+  const [viewMode, setViewMode] = useState<ViewMode>('kanban');
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('ACTIVE');
   const [riskFilter, setRiskFilter] = useState('');
@@ -448,25 +451,28 @@ export default function LeasesPage() {
             New Lease
           </Button>
           <div className="flex items-center gap-1 rounded-lg border border-surface-400/60 bg-surface-200 p-1">
-          <button
-            onClick={() => setViewMode('table')}
-            className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
-              viewMode === 'table' ? 'bg-surface-400 text-white' : 'text-slate-500 hover:text-slate-300'
-            }`}
-          >
-            <LayoutList className="h-3.5 w-3.5" />
-            Table
-          </button>
-          <button
-            onClick={() => setViewMode('priority')}
-            className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
-              viewMode === 'priority' ? 'bg-surface-400 text-white' : 'text-slate-500 hover:text-slate-300'
-            }`}
-          >
-            <Zap className="h-3.5 w-3.5" />
-            Priority Queue
-          </button>
-        </div>
+            <button
+              onClick={() => setViewMode('kanban')}
+              className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${viewMode === 'kanban' ? 'bg-surface-400 text-white' : 'text-slate-500 hover:text-slate-300'}`}
+            >
+              <Columns3 className="h-3.5 w-3.5" />
+              Pipeline
+            </button>
+            <button
+              onClick={() => setViewMode('table')}
+              className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${viewMode === 'table' ? 'bg-surface-400 text-white' : 'text-slate-500 hover:text-slate-300'}`}
+            >
+              <LayoutList className="h-3.5 w-3.5" />
+              Table
+            </button>
+            <button
+              onClick={() => setViewMode('priority')}
+              className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${viewMode === 'priority' ? 'bg-surface-400 text-white' : 'text-slate-500 hover:text-slate-300'}`}
+            >
+              <Zap className="h-3.5 w-3.5" />
+              Priority
+            </button>
+          </div>
           </div>
       </div>
 
@@ -474,10 +480,10 @@ export default function LeasesPage() {
       {stats && (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           {[
-            { label: 'Active', value: stats.totalActive, color: 'text-success', onClick: () => { setStatusFilter('ACTIVE'); setViewMode('table'); } },
+            { label: 'Active', value: stats.totalActive, color: 'text-success', onClick: () => { setStatusFilter('ACTIVE'); setExpiryFilter(''); setViewMode('table'); } },
             { label: 'Expiring 30d', value: stats.expiringIn30, color: 'text-danger', onClick: () => { setStatusFilter('ACTIVE'); setExpiryFilter('30'); setViewMode('table'); } },
             { label: 'Expiring 90d', value: stats.expiringIn90, color: 'text-warning', onClick: () => { setStatusFilter('ACTIVE'); setExpiryFilter('90'); setViewMode('table'); } },
-            { label: 'Critical Risk', value: stats.byRisk.find((r) => r.renewalRisk === 'CRITICAL')?._count ?? 0, color: 'text-danger', onClick: () => { setRiskFilter('CRITICAL'); setViewMode('table'); } },
+            { label: 'Critical Risk', value: stats.byRisk.find((r) => r.renewalRisk === 'CRITICAL')?._count ?? 0, color: 'text-danger', onClick: () => { setRiskFilter('CRITICAL'); setExpiryFilter(''); setViewMode('table'); } },
           ].map((s) => (
             <Card key={s.label} className="text-center p-4 cursor-pointer" hover onClick={s.onClick}>
               <p className={`text-2xl font-bold tabular-nums ${s.color}`}>{s.value}</p>
@@ -501,6 +507,9 @@ export default function LeasesPage() {
           </button>
         </div>
       )}
+
+      {/* Pipeline (Kanban) */}
+      {viewMode === 'kanban' && <RenewalKanban />}
 
       {/* Priority Queue */}
       {viewMode === 'priority' && (
@@ -576,7 +585,7 @@ export default function LeasesPage() {
                   ))}
                 </FilterGroup>
                 <FilterGroup label="Renewal Stage">
-                  {(['', 'NOT_STARTED', 'CONTACTED', 'NEGOTIATING', 'DRAFT_SENT', 'SCHEDULED_RENEWAL', 'SIGNED'] as const).map((s) => (
+                  {(['', 'NOT_STARTED', 'CONTACTED', 'NEGOTIATING', 'DRAFT_SENT', 'LEGAL_REVIEW', 'SCHEDULED_RENEWAL', 'SIGNED'] as const).map((s) => (
                     <FilterTab key={s} active={stageFilter === s} onClick={() => { setStageFilter(s); setPage(1); }}>
                       {s ? STAGE_LABEL[s as RenewalStage] : 'All'}
                     </FilterTab>
