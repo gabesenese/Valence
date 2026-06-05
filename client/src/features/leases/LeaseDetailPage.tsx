@@ -153,9 +153,9 @@ function PipelineStep({
         <button
           onClick={onUndo}
           disabled={loading}
-          className="opacity-0 group-hover/step:opacity-100 transition-opacity flex items-center gap-1 text-xs text-slate-500 hover:text-danger disabled:opacity-40 shrink-0"
+          className="opacity-0 group-hover/step:opacity-100 transition-opacity inline-flex items-center gap-1.5 rounded-full bg-surface-300/60 border border-surface-400/40 px-2.5 py-1 text-xs font-medium text-slate-400 hover:text-danger hover:border-danger/30 hover:bg-danger/10 disabled:opacity-40 shrink-0"
         >
-          <RotateCcw className="h-3 w-3" /> undo
+          <RotateCcw className="h-3 w-3" /> Undo
         </button>
       )}
 
@@ -163,9 +163,9 @@ function PipelineStep({
         <button
           onClick={onAdvance}
           disabled={loading}
-          className="shrink-0 flex items-center gap-1 text-xs text-brand-400 hover:text-brand-300 transition-colors disabled:opacity-40"
+          className="shrink-0 inline-flex items-center gap-1.5 rounded-full bg-brand-600/25 border border-brand-500/30 px-3 py-1 text-xs font-medium text-brand-300 hover:bg-brand-600/40 hover:border-brand-500/50 transition-all disabled:opacity-40"
         >
-          Mark complete <Check className="h-3 w-3" />
+          <Check className="h-3 w-3" /> Mark complete
         </button>
       )}
     </div>
