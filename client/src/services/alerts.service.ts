@@ -1,6 +1,12 @@
 import { api, extractData, extractPaginated, type PaginatedResult } from './api';
 
-export type AlertStatus = 'OPEN' | 'IN_PROGRESS' | 'RESOLVED' | 'DISMISSED' | 'ACKNOWLEDGED' | 'SUPPRESSED';
+export type AlertStatus = 'OPEN' | 'ACKNOWLEDGED' | 'IN_PROGRESS' | 'RESOLVED' | 'DISMISSED' | 'SUPPRESSED';
+
+export interface AlertUser {
+  id: string;
+  firstName: string;
+  lastName: string;
+}
 
 export interface Alert {
   id: string;
@@ -13,11 +19,17 @@ export interface Alert {
   leaseId?: string;
   property?: { id: string; name: string; code: string };
   lease?: { id: string; leaseNumber: string };
-  assignee?: { id: string; firstName: string; lastName: string } | null;
+  assignee?: AlertUser | null;
   resolutionNote?: string | null;
   metadata?: Record<string, unknown>;
   createdAt: string;
-  resolvedAt?: string;
+  // Lifecycle timestamps + actors
+  acknowledgedAt?: string | null;
+  acknowledgedByUser?: AlertUser | null;
+  resolvedAt?: string | null;
+  resolvedByUser?: AlertUser | null;
+  dismissedAt?: string | null;
+  dismissedByUser?: AlertUser | null;
 }
 
 export interface AlertActivity {
@@ -25,13 +37,14 @@ export interface AlertActivity {
   alertId: string;
   action: string;
   actorUserId?: string | null;
-  actor?: { id: string; firstName: string; lastName: string } | null;
+  actor?: AlertUser | null;
   metadata?: Record<string, unknown> | null;
   createdAt: string;
 }
 
 export interface AlertSummary {
   openTotal: number;
+  acknowledgedTotal: number;
   bySeverity: Array<{ severity: string; _count: number }>;
   byType: Array<{ type: string; _count: number }>;
   byStatus: Array<{ status: string; _count: number }>;
@@ -52,6 +65,9 @@ export const alertsService = {
   getActivity: (id: string): Promise<AlertActivity[]> =>
     api.get(`/alerts/${id}/activity`).then(extractData<AlertActivity[]>),
 
+  acknowledge: (id: string): Promise<Alert> =>
+    api.post(`/alerts/${id}/acknowledge`).then(extractData<Alert>),
+
   progress: (id: string): Promise<Alert> =>
     api.post(`/alerts/${id}/progress`).then(extractData<Alert>),
 
@@ -64,7 +80,6 @@ export const alertsService = {
   reopen: (id: string): Promise<Alert> =>
     api.post(`/alerts/${id}/reopen`).then(extractData<Alert>),
 
-  // Legacy
-  acknowledge: (id: string): Promise<Alert> =>
-    api.post(`/alerts/${id}/acknowledge`).then(extractData<Alert>),
+  assign: (id: string, assigneeUserId: string): Promise<Alert> =>
+    api.post(`/alerts/${id}/assign`, { assigneeUserId }).then(extractData<Alert>),
 };
