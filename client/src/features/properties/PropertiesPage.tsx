@@ -119,15 +119,18 @@ export default function PropertiesPage() {
                   <MapPin className="h-3 w-3" />
                   {p.city}, {p.state}
                 </div>
-                <div className="mt-4 grid grid-cols-3 gap-2 border-t border-surface-400/30 pt-3">
-                  <div className="text-center">
-                    <p className="text-base font-bold text-white">{p.totalUnits}</p>
-                    <p className="text-xs text-slate-400">Units</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-base font-bold text-success">{p._count.leases}</p>
-                    <p className="text-xs text-slate-400">Leases</p>
-                  </div>
+                <div className="mt-4 grid grid-cols-2 gap-2 border-t border-surface-400/30 pt-3">
+                  {(() => {
+                    const pct = p.totalUnits > 0 ? Math.round((p._count.leases / p.totalUnits) * 100) : null;
+                    return (
+                      <div className="text-center">
+                        <p className={`text-base font-bold ${pct === null ? 'text-slate-500' : pct >= 80 ? 'text-success' : pct >= 60 ? 'text-warning' : 'text-danger'}`}>
+                          {pct !== null ? `${pct}%` : '—'}
+                        </p>
+                        <p className="text-xs text-slate-400">Occupancy</p>
+                      </div>
+                    );
+                  })()}
                   <div className="text-center">
                     <p className="text-base font-bold text-brand-400">
                       {p.currentValue ? `$${(p.currentValue / 1_000_000).toFixed(1)}M` : '—'}
