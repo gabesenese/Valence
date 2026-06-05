@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   ArrowLeft, Building2, MapPin, FileText, AlertTriangle,
-  DollarSign, Layers, Pencil, X,
+  DollarSign, Layers, Pencil, X, Play, Check, RotateCcw,
 } from 'lucide-react';
 import { propertiesService, type PropertyDetail } from '@/services/properties.service';
 import { alertsService } from '@/services/alerts.service';
@@ -200,48 +200,48 @@ export default function PropertyDetailPage() {
                   <div className="px-4 py-4 text-xs text-slate-500">Loading…</div>
                 ) : (
                   alertsData?.data.map((alert) => (
-                    <div
-                      key={alert.id}
-                      className="group px-4 py-3 hover:bg-white/[0.03] transition-colors"
-                    >
-                      {/* Title row */}
-                      <div className="flex items-start gap-2">
+                    <div key={alert.id} className="group px-4 py-3 hover:bg-white/[0.02] transition-colors">
+
+                      {/* Title + dismiss */}
+                      <div className="flex items-start gap-2 mb-2.5">
                         <span className={`mt-[5px] h-1.5 w-1.5 rounded-full shrink-0 ${SEVERITY_DOT[alert.severity] ?? 'bg-slate-500'}`} />
                         <p className="flex-1 text-[13px] font-medium text-slate-200 leading-snug">{alert.title}</p>
                         <button
                           onClick={() => dismissMutation.mutate(alert.id)}
                           className="opacity-0 group-hover:opacity-100 transition-opacity mt-0.5 shrink-0 text-slate-600 hover:text-slate-300"
-                          title="Dismiss"
                         >
-                          <X className="h-3.5 w-3.5" />
+                          <X className="h-3 w-3" />
                         </button>
                       </div>
 
-                      {/* Actions — reveal on hover */}
-                      <div className="mt-2 pl-3.5 flex items-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                      {/* Action buttons */}
+                      <div className="pl-3.5 flex items-center gap-1.5">
                         {alert.status === 'OPEN' ? (
                           <button
                             onClick={() => progressMutation.mutate(alert.id)}
-                            className="text-[11px] font-medium text-brand-400 hover:text-brand-300 transition-colors"
+                            className="inline-flex items-center gap-1 rounded-full bg-brand-600/20 border border-brand-500/25 px-2.5 py-1 text-[11px] font-medium text-brand-300 hover:bg-brand-600/35 hover:border-brand-500/40 transition-all"
                           >
-                            Start review
+                            <Play className="h-2.5 w-2.5" />
+                            Review
                           </button>
                         ) : (
                           <button
                             onClick={() => reopenMutation.mutate(alert.id)}
-                            className="text-[11px] text-slate-500 hover:text-slate-300 transition-colors"
+                            className="inline-flex items-center gap-1 rounded-full bg-surface-300/60 border border-surface-400/40 px-2.5 py-1 text-[11px] font-medium text-slate-400 hover:text-slate-200 hover:bg-surface-300/80 transition-all"
                           >
-                            In review · undo
+                            <RotateCcw className="h-2.5 w-2.5" />
+                            In Review
                           </button>
                         )}
-                        <span className="text-slate-700">·</span>
                         <button
                           onClick={() => resolveMutation.mutate(alert.id)}
-                          className="text-[11px] font-medium text-success/70 hover:text-success transition-colors"
+                          className="inline-flex items-center gap-1 rounded-full bg-success/15 border border-success/20 px-2.5 py-1 text-[11px] font-medium text-success/80 hover:bg-success/25 hover:text-success hover:border-success/35 transition-all"
                         >
+                          <Check className="h-2.5 w-2.5" />
                           Resolve
                         </button>
                       </div>
+
                     </div>
                   ))
                 )}
