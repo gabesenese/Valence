@@ -1,6 +1,6 @@
-import Anthropic from '@anthropic-ai/sdk';
+import Groq from 'groq-sdk';
 import { prisma } from '../../infrastructure/database';
-import { differenceInDays, addDays } from 'date-fns';
+import { differenceInDays } from 'date-fns';
 
 // ─── Output types ─────────────────────────────────────────────────────────────
 
@@ -109,8 +109,8 @@ async function gatherContext() {
       propertyName: a.property?.name ?? null,
     })),
     flaggedFinancials: flaggedFinancials.map(r => ({
-      leaseNumber: r.lease.leaseNumber,
-      tenantName:  r.lease.tenant.name,
+      leaseNumber: r.lease?.leaseNumber ?? 'unknown',
+      tenantName:  r.lease?.tenant.name ?? 'unknown',
       amount:      Number(r.amount),
       status:      r.status,
     })),
@@ -122,81 +122,19 @@ async function gatherContext() {
   };
 }
 
-// ─── Claude call ──────────────────────────────────────────────────────────────
+// ─── OpenAI call ──────────────────────────────────────────────────────────────
 
-const client = new Anthropic();
+const client = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 export async function generateExecutiveBrief(): Promise<ExecutiveBrief> {
   const ctx = await gatherContext();
-
   const contextBlock = JSON.stringify(ctx, null, 2);
 
-  const message = await client.messages.create({
-    model: 'claude-haiku-4-5-20251001',
-    max_tokens: 3000,
-    tools: [
-      {
-        name: 'generate_executive_brief',
-        description: 'Generate a structured executive intelligence brief for a commercial real estate portfolio.',
-        input_schema: {
-          type: 'object' as const,
-          required: ['portfolioHealth', 'headline', 'summary', 'revenueRisk', 'actions'],
-          properties: {
-            portfolioHealth: {
-              type: 'string',
-              enum: ['critical', 'at_risk', 'stable', 'healthy'],
-              description: 'Overall portfolio health based on risks identified',
-            },
-            headline: {
-              type: 'string',
-              description: 'One powerful sentence describing the most urgent portfolio situation. Must include a specific dollar amount or percentage and a specific action needed.',
-            },
-            summary: {
-              type: 'string',
-              description: 'Two to three sentences of executive context. Mention specific tenants, revenue figures, and the single most important thing the executive needs to know today.',
-            },
-            revenueRisk: {
-              type: 'array',
-              description: 'Top 3-5 revenue risk items, ordered by severity and dollar impact.',
-              items: {
-                type: 'object',
-                required: ['title', 'description', 'severity'],
-                properties: {
-                  title:         { type: 'string',  description: 'Short risk label (e.g. "Vertex Consulting — 20 days")' },
-                  description:   { type: 'string',  description: 'One sentence with specific amounts and stakes' },
-                  severity:      { type: 'string', enum: ['critical', 'high', 'medium'] },
-                  monthlyRevenue:{ type: 'number',  description: 'Monthly revenue at risk in USD' },
-                  leaseNumber:   { type: 'string' },
-                  tenantName:    { type: 'string' },
-                  daysRemaining: { type: 'number' },
-                },
-              },
-            },
-            actions: {
-              type: 'array',
-              description: 'Three to six recommended actions ordered by urgency. Every action must name a specific tenant or record.',
-              items: {
-                type: 'object',
-                required: ['action', 'context', 'urgency', 'category'],
-                properties: {
-                  action:      { type: 'string', description: 'Imperative verb phrase — what to do (e.g. "Contact Vertex Consulting CEO")' },
-                  context:     { type: 'string', description: 'Why this matters right now, with specific numbers' },
-                  urgency:     { type: 'string', enum: ['immediate', 'this_week', 'this_month'] },
-                  category:    { type: 'string', enum: ['contact_tenant', 'start_renewal', 'send_document', 'financial_review', 'investigate'] },
-                  entityName:  { type: 'string' },
-                  leaseNumber: { type: 'string' },
-                },
-              },
-            },
-          },
-        },
-      },
-    ],
-    tool_choice: { type: 'tool', name: 'generate_executive_brief' },
-    messages: [
-      {
-        role: 'user',
-        content: `You are an executive intelligence assistant for Valence, a commercial real estate portfolio management platform.
+  const response = await client.chat.completions.create({
+    model: 'llama-3.3-70b-versatile',
+    messages: [{
+      role: 'user',
+      content: `You are an executive intelligence assistant for Valence, a commercial real estate portfolio management platform.
 
 Analyze this real-time portfolio snapshot and generate an executive brief. Be specific — use real tenant names, lease numbers, and dollar figures from the data. Every recommendation must be actionable and tied to real data.
 
@@ -210,16 +148,97 @@ Rules:
 - Revenue risk items must mention the specific monthly revenue at stake
 - Actions must be concrete: who to contact, what to do, why it matters now
 - If a lease has daysRemaining <= 30 and no renewalDate, this is your top priority
-- For flagged financials, name the tenant and amount`,
+- For flagged financials, name the tenant and amount
+- portfolioHealth must be one of: critical, at_risk, stable, healthy
+- urgency must be one of: immediate, this_week, this_month
+- category must be one of: contact_tenant, start_renewal, send_document, financial_review, investigate`,
+    }],
+    tools: [{
+      type: 'function',
+      function: {
+        name: 'generate_executive_brief',
+        description: 'Generate a structured executive intelligence brief for a commercial real estate portfolio.',
+        parameters: {
+          type: 'object',
+          required: ['portfolioHealth', 'headline', 'summary', 'revenueRisk', 'actions'],
+          properties: {
+            portfolioHealth: {
+              type: 'string',
+              description: 'Overall portfolio health: critical, at_risk, stable, or healthy',
+            },
+            headline: {
+              type: 'string',
+              description: 'One powerful sentence with a specific dollar amount and the single most urgent action.',
+            },
+            summary: {
+              type: 'string',
+              description: 'Two to three sentences. Mention specific tenants, revenue figures, and the single most important thing to know today.',
+            },
+            revenueRisk: {
+              type: 'array',
+              description: 'Top 3-5 revenue risk items ordered by severity and dollar impact.',
+              items: {
+                type: 'object',
+                properties: {
+                  title:         { type: 'string' },
+                  description:   { type: 'string' },
+                  severity:      { type: 'string' },
+                  monthlyRevenue:{ type: 'number' },
+                  leaseNumber:   { type: 'string' },
+                  tenantName:    { type: 'string' },
+                  daysRemaining: { type: 'number' },
+                },
+              },
+            },
+            actions: {
+              type: 'array',
+              description: 'Three to six recommended actions ordered by urgency.',
+              items: {
+                type: 'object',
+                properties: {
+                  action:      { type: 'string' },
+                  context:     { type: 'string' },
+                  urgency:     { type: 'string' },
+                  category:    { type: 'string' },
+                  entityName:  { type: 'string' },
+                  leaseNumber: { type: 'string' },
+                },
+              },
+            },
+          },
+        },
       },
-    ],
+    }],
+    tool_choice: { type: 'function', function: { name: 'generate_executive_brief' } },
   });
 
-  const toolUse = message.content.find((b) => b.type === 'tool_use');
-  if (!toolUse || toolUse.type !== 'tool_use') {
+  const toolCall = response.choices[0]?.message?.tool_calls?.[0];
+  if (!toolCall || toolCall.type !== 'function') {
     throw new Error('Executive brief generation failed');
   }
 
-  const result = toolUse.input as Omit<ExecutiveBrief, 'generatedAt'>;
-  return { ...result, generatedAt: new Date().toISOString() };
+  const r = JSON.parse(toolCall.function.arguments) as Omit<ExecutiveBrief, 'generatedAt'>;
+
+  const validHealth = new Set(['critical', 'at_risk', 'stable', 'healthy']);
+  const validSeverity = new Set(['critical', 'high', 'medium']);
+  const validUrgency = new Set(['immediate', 'this_week', 'this_month']);
+  const validCategory = new Set(['contact_tenant', 'start_renewal', 'send_document', 'financial_review', 'investigate']);
+
+  const normalize = (val: string, valid: Set<string>, fallback: string) =>
+    valid.has(val?.toLowerCase()) ? val.toLowerCase() : fallback;
+
+  return {
+    ...r,
+    portfolioHealth: normalize(r.portfolioHealth, validHealth, 'stable') as ExecutiveBrief['portfolioHealth'],
+    revenueRisk: (r.revenueRisk ?? []).map(item => ({
+      ...item,
+      severity: normalize(item.severity, validSeverity, 'medium') as RiskItem['severity'],
+    })),
+    actions: (r.actions ?? []).map(item => ({
+      ...item,
+      urgency:  normalize(item.urgency,  validUrgency,   'this_month') as ActionItem['urgency'],
+      category: normalize(item.category, validCategory,  'investigate') as ActionItem['category'],
+    })),
+    generatedAt: new Date().toISOString(),
+  };
 }

@@ -2,17 +2,20 @@ import { api, extractData } from './api';
 
 export type WorkItemSeverity = 'CRITICAL' | 'WARNING' | 'INFO';
 export type WorkItemStatus = 'OPEN' | 'IN_PROGRESS';
+export type WorkItemSource = 'alert' | 'lease' | 'finance';
 
 export interface WorkItem {
   id: string;
-  source: 'alert' | 'lease';
+  source: WorkItemSource;
   alertId: string | null;
   leaseId: string | null;
+  financialRecordId: string | null;
   type: string;
   severity: WorkItemSeverity;
   status: WorkItemStatus;
   title: string;
   description: string;
+  suggestedAction: string;
   priorityScore: number;
   monthlyRisk: number;
   daysUntilExpiry: number | null;

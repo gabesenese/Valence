@@ -87,7 +87,7 @@ export default function ExecutiveBriefCard() {
     retry: 1,
   });
 
-  const health = brief ? HEALTH_CONFIG[brief.portfolioHealth] : null;
+  const health = brief ? (HEALTH_CONFIG[brief.portfolioHealth] ?? HEALTH_CONFIG.stable) : null;
 
   // Not yet generated
   if (!enabled && !brief) {
@@ -182,7 +182,7 @@ export default function ExecutiveBriefCard() {
           </div>
           <div className="flex flex-col gap-3">
             {brief.revenueRisk.map((item, i) => {
-              const cfg = SEVERITY_CONFIG[item.severity];
+              const cfg = SEVERITY_CONFIG[item.severity] ?? SEVERITY_CONFIG.medium;
               return (
                 <div key={i} className="flex items-start gap-3 rounded-xl bg-surface-200/40 px-3.5 py-3">
                   <span className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${cfg.dot}`} />
@@ -212,7 +212,7 @@ export default function ExecutiveBriefCard() {
           </div>
           <div className="flex flex-col gap-3">
             {brief.actions.map((item, i) => {
-              const urgency = URGENCY_CONFIG[item.urgency];
+              const urgency = URGENCY_CONFIG[item.urgency] ?? URGENCY_CONFIG.this_month;
               const Icon = CATEGORY_ICON[item.category] ?? ChevronRight;
               return (
                 <div key={i} className="flex items-start gap-3 rounded-xl bg-surface-200/40 px-3.5 py-3">

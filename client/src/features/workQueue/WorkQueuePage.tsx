@@ -31,6 +31,7 @@ const TYPE_LABEL: Record<string, string> = {
   OCCUPANCY_CHANGE: 'Occupancy Change',
   DATA_MISSING: 'Data Missing',
   COMPLIANCE_FLAG: 'Compliance',
+  OVERDUE_INVOICE: 'Overdue Invoice',
 };
 
 function formatDollars(n: number) {
@@ -67,7 +68,13 @@ function ItemActions({
   if (!item.alertId) {
     return (
       <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
-        {item.leaseId && (
+        {item.source === 'finance' && item.property && (
+          <Button variant="outline" size="sm" onClick={() => navigate('/finance')}>
+            <DollarSign className="h-3.5 w-3.5" />
+            Review Invoice
+          </Button>
+        )}
+        {item.source === 'lease' && item.leaseId && (
           <Button variant="outline" size="sm" onClick={() => navigate(`/leases/${item.leaseId}`)}>
             <RefreshCw className="h-3.5 w-3.5" />
             Start Renewal
@@ -193,6 +200,13 @@ function WorkItemCard({
         </div>
 
         <p className="mt-1 text-xs text-slate-500">{item.description}</p>
+
+        {item.suggestedAction && (
+          <div className="mt-1.5 flex items-start gap-1.5">
+            <ChevronRight className="h-3 w-3 text-brand-400/70 shrink-0 mt-0.5" />
+            <p className="text-xs text-brand-300/80">{item.suggestedAction}</p>
+          </div>
+        )}
 
         <div className="mt-2 flex items-center gap-4 flex-wrap">
           {item.monthlyRisk > 0 && (
