@@ -316,10 +316,19 @@ export async function setRenewalDateAction(id: string, userId: string, renewalDa
       tenant: { select: { id: true, name: true, email: true } },
     },
   });
-  // Auto-resolve any open RENEWAL_RISK alerts for this lease
+  // Auto-resolve open RENEWAL_RISK alerts — tag with note so clearRenewalDate can undo this
   await prisma.alert.updateMany({
-    where: { leaseId: id, type: 'RENEWAL_RISK', status: { in: ['OPEN', 'IN_PROGRESS'] } },
-    data: { status: 'RESOLVED', resolvedAt: new Date(), resolvedBy: userId },
+    where: {
+      leaseId: id,
+      type: { in: ['RENEWAL_RISK', 'LEASE_EXPIRATION'] },
+      status: { in: ['OPEN', 'ACKNOWLEDGED', 'IN_PROGRESS'] },
+    },
+    data: {
+      status: 'RESOLVED',
+      resolvedAt: new Date(),
+      resolvedBy: userId,
+      resolutionNote: 'Auto-resolved: renewal date scheduled',
+    },
   });
   await logActivity(id, 'RENEWAL_DATE_SET', userId, { renewalDate });
   return updated;
@@ -370,12 +379,36 @@ export async function snoozeLease(id: string, userId: string, days = 7) {
 }
 
 export async function clearRenewalDate(id: string, userId: string) {
-  const exists = await prisma.lease.findUnique({ where: { id }, select: { id: true } });
-  if (!exists) throw new NotFoundError('Lease');
+  const lease = await prisma.lease.findUnique({
+    where: { id },
+    select: { id: true, endDate: true, renewalStage: true },
+  });
+  if (!lease) throw new NotFoundError('Lease');
+
+  // Recalculate risk without the scheduled renewal
+  const renewalRisk = computeRenewalRisk(lease.endDate, lease.renewalStage);
+
   const updated = await prisma.lease.update({
     where: { id },
-    data: { renewalDate: null, renewalScheduledAt: null },
+    data: { renewalDate: null, renewalScheduledAt: null, renewalRisk },
   });
+
+  // Reopen alerts that were auto-resolved when the renewal date was set
+  await prisma.alert.updateMany({
+    where: {
+      leaseId: id,
+      type: { in: ['RENEWAL_RISK', 'LEASE_EXPIRATION'] },
+      status: 'RESOLVED',
+      resolutionNote: 'Auto-resolved: renewal date scheduled',
+    },
+    data: {
+      status: 'OPEN',
+      resolvedAt: null,
+      resolvedBy: null,
+      resolutionNote: null,
+    },
+  });
+
   await logActivity(id, 'RENEWAL_DATE_CLEARED', userId);
   return updated;
 }
