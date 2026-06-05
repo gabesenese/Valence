@@ -29,6 +29,7 @@ interface Props {
   open: boolean;
   onClose: () => void;
   lease?: Lease;
+  initialValues?: Partial<FormData>;
 }
 
 interface FormData {
@@ -75,7 +76,7 @@ const SELECT_CLASS = 'h-9 w-full rounded-lg border border-surface-400 bg-surface
 const LABEL_CLASS = 'text-xs font-medium text-slate-400 tracking-wide uppercase';
 const SECTION_CLASS = 'mb-3 border-t border-surface-400/30 pt-4 text-xs font-semibold uppercase tracking-wider text-slate-500';
 
-export default function LeaseFormModal({ open, onClose, lease }: Props) {
+export default function LeaseFormModal({ open, onClose, lease, initialValues }: Props) {
   const qc = useQueryClient();
   const isEdit = !!lease;
 
@@ -96,10 +97,10 @@ export default function LeaseFormModal({ open, onClose, lease }: Props) {
 
   useEffect(() => {
     if (open) {
-      setForm(lease ? toForm(lease) : emptyForm);
+      setForm(lease ? toForm(lease) : initialValues ? { ...emptyForm, ...initialValues } : emptyForm);
       setErrors({});
     }
-  }, [open, lease]);
+  }, [open, lease]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const set = (field: keyof FormData) => (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>

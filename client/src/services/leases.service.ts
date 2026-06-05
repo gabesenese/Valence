@@ -174,7 +174,7 @@ export const leasesService = {
   createLease: (input: CreateLeaseInput): Promise<Lease> =>
     api.post('/leases', input).then(extractData<Lease>),
 
-  updateLease: (id: string, data: Partial<Lease> & Partial<CreateLeaseInput>): Promise<Lease> =>
+  updateLease: (id: string, data: Record<string, unknown>): Promise<Lease> =>
     api.patch(`/leases/${id}`, data).then(extractData<Lease>),
 
   setRenewalDate: (id: string, renewalDate: string): Promise<Lease> =>

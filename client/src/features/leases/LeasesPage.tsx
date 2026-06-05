@@ -4,7 +4,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Search, FileText, ChevronRight, X, ChevronUp, ChevronDown,
   LayoutList, Zap, CheckSquare, Square, RefreshCw, Phone,
-  BellOff, Download, SlidersHorizontal, Users, Plus, Columns3,
+  BellOff, Download, SlidersHorizontal, Users, Plus, Columns3, Sparkles,
 } from 'lucide-react';
 import RenewalKanban from './RenewalKanban';
 import { leasesService, type RenewalStage, type PriorityLease, type Lease, type LeaseAlert } from '@/services/leases.service';
@@ -16,6 +16,8 @@ import { PageLoader } from '@/components/ui/Spinner';
 import { formatCurrency, formatDate, daysUntil } from '@/utils/format';
 import LeaseDrawer from './LeaseDrawer';
 import LeaseFormModal from './LeaseFormModal';
+import LeaseImportModal from './LeaseImportModal';
+import type { ExtractedLease } from '@/services/ai.service';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -356,6 +358,8 @@ export default function LeasesPage() {
   const [drawerLeaseId, setDrawerLeaseId] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
+  const [importedValues, setImportedValues] = useState<Partial<Record<string, string>> | null>(null);
 
   const navigate = useNavigate();
   const qc = useQueryClient();
@@ -446,6 +450,10 @@ export default function LeasesPage() {
           <p className="mt-0.5 text-sm text-slate-500">Contract visibility & renewal operating console</p>
         </div>
         <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => setImportOpen(true)}>
+            <Sparkles className="h-3.5 w-3.5" />
+            Import PDF
+          </Button>
           <Button size="sm" onClick={() => setAddOpen(true)}>
             <Plus className="h-4 w-4" />
             New Lease
@@ -706,7 +714,34 @@ export default function LeasesPage() {
       {/* Drawer */}
       <LeaseDrawer leaseId={drawerLeaseId} onClose={() => setDrawerLeaseId(null)} />
 
-      <LeaseFormModal open={addOpen} onClose={() => setAddOpen(false)} />
+      <LeaseFormModal
+        open={addOpen}
+        onClose={() => { setAddOpen(false); setImportedValues(null); }}
+        initialValues={importedValues ?? undefined}
+      />
+      <LeaseImportModal
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        onConfirm={(extracted: ExtractedLease) => {
+          const notes = [
+            extracted.renewalOptions ? `Renewal Options: ${extracted.renewalOptions}` : '',
+            extracted.obligations    ? `Obligations: ${extracted.obligations}`         : '',
+            extracted.notes          ? extracted.notes                                  : '',
+          ].filter(Boolean).join('\n\n');
+          setImportedValues({
+            unitNumber:      extracted.unitNumber      ?? '',
+            type:            extracted.leaseType       ?? 'GROSS',
+            startDate:       extracted.startDate       ?? '',
+            endDate:         extracted.endDate         ?? '',
+            baseRent:        extracted.baseRent        != null ? String(extracted.baseRent)        : '',
+            rentEscalation:  extracted.rentEscalation  != null ? String(extracted.rentEscalation)  : '0',
+            securityDeposit: extracted.securityDeposit != null ? String(extracted.securityDeposit) : '',
+            sqft:            extracted.sqft            != null ? String(extracted.sqft)            : '',
+            notes,
+          });
+          setAddOpen(true);
+        }}
+      />
     </div>
   );
 }

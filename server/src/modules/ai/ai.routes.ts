@@ -1,12 +1,34 @@
 import { Router } from 'express';
 import type { Request, Response, NextFunction } from 'express';
+import multer from 'multer';
 import { insightEngine, riskEvaluator } from './ai.service';
+import { extractLeaseFromPDF } from './lease-extractor.service';
 import { authenticate } from '../../middleware/authenticate';
 import { sendSuccess } from '../../utils/response';
 
 const router = Router();
-
 router.use(authenticate);
+
+// ─── PDF lease extraction ─────────────────────────────────────────────────────
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 20 * 1024 * 1024 }, // 20 MB
+  fileFilter: (_req, file, cb) => {
+    if (file.mimetype === 'application/pdf') cb(null, true);
+    else cb(new Error('Only PDF files are accepted'));
+  },
+});
+
+router.post('/extract-lease', upload.single('file'), async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    if (!req.file) return next(new Error('No file uploaded'));
+    const result = await extractLeaseFromPDF(req.file.buffer);
+    sendSuccess(res, result);
+  } catch (e) { next(e); }
+});
+
+// ─── Insights ─────────────────────────────────────────────────────────────────
 
 router.get('/insights/portfolio', async (_req: Request, res: Response, next: NextFunction) => {
   try { sendSuccess(res, await insightEngine.analyzePortfolio()); } catch (e) { next(e); }
@@ -19,6 +41,8 @@ router.get('/insights/property/:id', async (req: Request, res: Response, next: N
 router.get('/insights/lease/:id', async (req: Request, res: Response, next: NextFunction) => {
   try { sendSuccess(res, await insightEngine.analyzeLease(req.params.id)); } catch (e) { next(e); }
 });
+
+// ─── Risk ─────────────────────────────────────────────────────────────────────
 
 router.get('/risk/lease/:id', async (req: Request, res: Response, next: NextFunction) => {
   try { sendSuccess(res, await riskEvaluator.evaluateLeaseRisk(req.params.id)); } catch (e) { next(e); }
