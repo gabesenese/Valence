@@ -1,14 +1,22 @@
-import { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft, Building2, MapPin, FileText, AlertTriangle, DollarSign, Layers, Pencil } from 'lucide-react';
+import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import {
+  ArrowLeft, Building2, MapPin, FileText, AlertTriangle,
+  DollarSign, Layers, Pencil, CheckCircle, XCircle,
+} from 'lucide-react';
 import { propertiesService, type PropertyDetail } from '@/services/properties.service';
+import { alertsService } from '@/services/alerts.service';
 import { Card, CardHeader, CardTitle, CardBody } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { PageLoader } from '@/components/ui/Spinner';
 import { formatCurrency, formatDate, daysUntil } from '@/utils/format';
 import PropertyFormModal from './PropertyFormModal';
+
+const SEVERITY_VARIANT: Record<string, 'danger' | 'warning' | 'info'> = {
+  CRITICAL: 'danger', WARNING: 'warning', INFO: 'info',
+};
 
 const RISK_VARIANT: Record<string, 'success' | 'info' | 'warning' | 'danger'> = {
   LOW: 'success', MEDIUM: 'info', HIGH: 'warning', CRITICAL: 'danger',
@@ -18,6 +26,7 @@ export default function PropertyDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [editOpen, setEditOpen] = useState(false);
+  const qc = useQueryClient();
 
   const { data: property, isLoading } = useQuery({
     queryKey: ['properties', id],
@@ -25,13 +34,33 @@ export default function PropertyDetailPage() {
     enabled: !!id,
   });
 
+  const { data: alertsData, isLoading: alertsLoading } = useQuery({
+    queryKey: ['properties', id, 'alerts'],
+    queryFn: () => alertsService.getAlerts({ propertyId: id, statuses: ['OPEN', 'IN_PROGRESS'], limit: 50 }),
+    enabled: !!id && !!property && property._count.alerts > 0,
+  });
+
+  const invalidateAlerts = () => {
+    qc.invalidateQueries({ queryKey: ['properties', id, 'alerts'] });
+    qc.invalidateQueries({ queryKey: ['properties', id] });
+  };
+
+  const resolveMutation = useMutation({ mutationFn: (aid: string) => alertsService.resolve(aid), onSuccess: invalidateAlerts });
+  const dismissMutation = useMutation({ mutationFn: (aid: string) => alertsService.dismiss(aid), onSuccess: invalidateAlerts });
+  const progressMutation = useMutation({ mutationFn: (aid: string) => alertsService.progress(aid), onSuccess: invalidateAlerts });
+  const reopenMutation = useMutation({ mutationFn: (aid: string) => alertsService.reopen(aid), onSuccess: invalidateAlerts });
+
   if (isLoading) return <PageLoader />;
   if (!property) return <div className="p-6 text-slate-500">Property not found</div>;
 
   const monthlyRevenue = property.leases.reduce((sum, l) => sum + Number(l.baseRent), 0);
+  const occupancyPct = property.totalUnits > 0
+    ? Math.round((property.leases.length / property.totalUnits) * 100)
+    : null;
 
   return (
     <div className="flex flex-col gap-6 p-6 animate-fade-in">
+
       {/* Breadcrumb */}
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="sm" onClick={() => navigate('/properties')}>
@@ -70,14 +99,17 @@ export default function PropertyDetailPage() {
       </div>
 
       {/* KPI strip */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-6">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
         {[
-          { label: 'Total Units', value: property.totalUnits, color: 'text-white' },
+          {
+            label: 'Occupancy',
+            value: occupancyPct !== null ? `${occupancyPct}%` : '—',
+            color: occupancyPct === null ? 'text-slate-500' : occupancyPct >= 80 ? 'text-success' : occupancyPct >= 60 ? 'text-warning' : 'text-danger',
+          },
           { label: 'Active Leases', value: property.leases.length, color: 'text-success' },
           { label: 'Monthly Revenue', value: formatCurrency(monthlyRevenue), color: 'text-success' },
           { label: 'Open Alerts', value: property._count.alerts, color: property._count.alerts > 0 ? 'text-danger' : 'text-slate-500' },
           { label: 'Current Value', value: property.currentValue ? `$${(property.currentValue / 1_000_000).toFixed(1)}M` : '—', color: 'text-brand-400' },
-          { label: 'Year Built', value: property.yearBuilt ?? '—', color: 'text-slate-400' },
         ].map((kpi) => (
           <Card key={kpi.label} className="p-4 text-center">
             <p className={`text-xl font-bold tabular-nums ${kpi.color}`}>{kpi.value}</p>
@@ -86,112 +118,165 @@ export default function PropertyDetailPage() {
         ))}
       </div>
 
-      {/* Detail cards */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <Card>
-          <CardHeader><CardTitle>Building Details</CardTitle></CardHeader>
-          <CardBody className="flex flex-col gap-3">
-            {[
-              { label: 'Total Sq. Ft.', value: Number(property.totalSqft).toLocaleString(), icon: Layers },
-              { label: 'Total Units', value: property.totalUnits, icon: Building2 },
-              ...(property.purchasePrice ? [{ label: 'Purchase Price', value: formatCurrency(property.purchasePrice), icon: DollarSign }] : []),
-              ...(property.currentValue ? [{ label: 'Current Value', value: formatCurrency(property.currentValue), icon: DollarSign }] : []),
-            ].map(({ label, value, icon: Icon }) => (
-              <div key={label} className="flex items-center justify-between">
-                <span className="flex items-center gap-1.5 text-xs text-slate-500">
-                  <Icon className="h-3.5 w-3.5" />{label}
-                </span>
-                <span className="text-sm font-medium text-slate-300">{String(value)}</span>
-              </div>
-            ))}
-          </CardBody>
-        </Card>
+      {/* Body: main content + sidebar */}
+      <div className="flex gap-5 items-start">
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Lease Summary</CardTitle>
-            <span className="text-xs text-slate-600">{property.leases.length} active</span>
-          </CardHeader>
-          <CardBody className="flex flex-col gap-3">
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-slate-500 flex items-center gap-1.5">
-                <DollarSign className="h-3.5 w-3.5" />Monthly Revenue
-              </span>
-              <span className="text-sm font-semibold text-success">{formatCurrency(monthlyRevenue)}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-slate-500">Occupancy</span>
-              <span className="text-sm font-semibold text-white">
-                {property.totalUnits > 0 ? `${Math.round((property.leases.length / property.totalUnits) * 100)}%` : '—'}
-              </span>
-            </div>
-            {property._count.alerts > 0 && (
-              <div className="flex items-center gap-2 rounded-lg bg-danger/10 border border-danger/20 px-3 py-2 mt-1">
-                <AlertTriangle className="h-4 w-4 text-danger shrink-0" />
-                <span className="text-xs text-danger">{property._count.alerts} open alert{property._count.alerts !== 1 ? 's' : ''} on this property</span>
+        {/* Main: Active Leases */}
+        <div className="flex-1 min-w-0">
+          <Card>
+            <CardHeader>
+              <CardTitle>Active Leases</CardTitle>
+              <span className="text-xs text-slate-600">{property.leases.length} leases</span>
+            </CardHeader>
+            {property.leases.length === 0 ? (
+              <div className="py-16 text-center">
+                <FileText className="mx-auto h-8 w-8 text-slate-700 mb-3" />
+                <p className="text-sm text-slate-500">No active leases on this property</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-surface-400/40">
+                      {['Lease', 'Tenant', 'Unit', 'Base Rent', 'Expiry', 'Risk'].map((h) => (
+                        <th key={h} className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400">{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-surface-400/30">
+                    {property.leases.map((lease) => {
+                      const days = daysUntil(lease.endDate);
+                      return (
+                        <tr key={lease.id} className="group hover:bg-surface-200/40 transition-colors">
+                          <td className="px-4 py-3">
+                            <Link to={`/leases/${lease.id}`} className="flex items-center gap-2 hover:text-brand-300 transition-colors">
+                              <FileText className="h-3.5 w-3.5 text-slate-600 shrink-0" />
+                              <span className="text-sm font-medium text-slate-200 font-mono group-hover:text-brand-300">
+                                {lease.leaseNumber}
+                              </span>
+                            </Link>
+                          </td>
+                          <td className="px-4 py-3">
+                            <p className="text-sm text-slate-300">{lease.tenant.name}</p>
+                            {lease.tenant.email && <p className="text-xs text-slate-500">{lease.tenant.email}</p>}
+                          </td>
+                          <td className="px-4 py-3 text-sm text-slate-500">{lease.unitNumber ?? '—'}</td>
+                          <td className="px-4 py-3 text-sm font-medium text-white tabular-nums">{formatCurrency(lease.baseRent)}/mo</td>
+                          <td className="px-4 py-3">
+                            <p className="text-sm text-slate-400">{formatDate(lease.endDate)}</p>
+                            <p className={`text-xs font-semibold tabular-nums ${
+                              days <= 30 ? 'text-danger' : days <= 90 ? 'text-warning' : 'text-slate-600'
+                            }`}>{days > 0 ? `${days}d left` : 'Expired'}</p>
+                          </td>
+                          <td className="px-4 py-3">
+                            <Badge variant={RISK_VARIANT[lease.renewalRisk] ?? 'neutral'} dot>
+                              {lease.renewalRisk}
+                            </Badge>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
             )}
-          </CardBody>
-        </Card>
-      </div>
+          </Card>
+        </div>
 
-      {/* Active leases */}
-      {property.leases.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Active Leases</CardTitle>
-            <span className="text-xs text-slate-600">{property.leases.length} leases</span>
-          </CardHeader>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-surface-400/40">
-                  {['Lease', 'Tenant', 'Unit', 'Base Rent', 'Expiry', 'Risk'].map((h) => (
-                    <th key={h} className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400">{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-surface-400/30">
-                {property.leases.map((lease) => {
-                  const days = daysUntil(lease.endDate);
-                  return (
-                    <tr key={lease.id} className="group hover:bg-surface-200/40 transition-colors">
-                      <td className="px-4 py-3">
-                        <Link
-                          to={`/leases/${lease.id}`}
-                          className="flex items-center gap-2 hover:text-brand-300 transition-colors"
-                        >
-                          <FileText className="h-3.5 w-3.5 text-slate-600 shrink-0" />
-                          <span className="text-sm font-medium text-slate-200 font-mono group-hover:text-brand-300">
-                            {lease.leaseNumber}
-                          </span>
-                        </Link>
-                      </td>
-                      <td className="px-4 py-3">
-                        <p className="text-sm text-slate-400">{lease.tenant.name}</p>
-                        {lease.tenant.email && <p className="text-xs text-slate-500">{lease.tenant.email}</p>}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-slate-500">{lease.unitNumber ?? '—'}</td>
-                      <td className="px-4 py-3 text-sm font-medium text-white tabular-nums">{formatCurrency(lease.baseRent)}/mo</td>
-                      <td className="px-4 py-3">
-                        <p className="text-sm text-slate-400">{formatDate(lease.endDate)}</p>
-                        <p className={`text-xs font-semibold tabular-nums ${
-                          days <= 30 ? 'text-danger' : days <= 90 ? 'text-warning' : 'text-slate-600'
-                        }`}>{days > 0 ? `${days}d left` : 'Expired'}</p>
-                      </td>
-                      <td className="px-4 py-3">
-                        <Badge variant={RISK_VARIANT[lease.renewalRisk] ?? 'neutral'} dot>
-                          {lease.renewalRisk}
-                        </Badge>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </Card>
-      )}
+        {/* Sidebar */}
+        <div className="w-72 shrink-0 flex flex-col gap-4">
+
+          {/* Open alerts */}
+          {property._count.alerts > 0 && (
+            <div className="rounded-lg border border-danger/20 overflow-hidden">
+              <div className="flex items-center gap-2 bg-danger/10 px-4 py-3">
+                <AlertTriangle className="h-4 w-4 text-danger shrink-0" />
+                <span className="text-xs font-semibold text-danger">
+                  {property._count.alerts} Open Alert{property._count.alerts !== 1 ? 's' : ''}
+                </span>
+              </div>
+              <div className="divide-y divide-surface-400/30">
+                {alertsLoading ? (
+                  <div className="px-4 py-4 text-xs text-slate-500">Loading…</div>
+                ) : (
+                  alertsData?.data.map((alert) => (
+                    <div
+                      key={alert.id}
+                      className={`px-4 py-2.5 flex flex-col gap-1.5 border-l-2 ${
+                        alert.severity === 'CRITICAL' ? 'border-l-danger/60' :
+                        alert.severity === 'WARNING'  ? 'border-l-warning/40' : 'border-l-info/30'
+                      }`}
+                    >
+                      {/* Row 1: title + icon actions */}
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-xs font-medium text-slate-200 truncate">{alert.title}</p>
+                        <div className="flex items-center shrink-0">
+                          <button
+                            onClick={() => resolveMutation.mutate(alert.id)}
+                            title="Resolve"
+                            className="p-1 rounded text-slate-500 hover:text-success hover:bg-success/10 transition-colors"
+                          >
+                            <CheckCircle className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            onClick={() => dismissMutation.mutate(alert.id)}
+                            title="Dismiss"
+                            className="p-1 rounded text-slate-500 hover:text-danger hover:bg-danger/10 transition-colors"
+                          >
+                            <XCircle className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Row 2: badge + action link */}
+                      <div className="flex items-center justify-between">
+                        <Badge variant={SEVERITY_VARIANT[alert.severity] ?? 'neutral'}>{alert.severity}</Badge>
+                        {alert.status === 'OPEN' ? (
+                          <button
+                            onClick={() => progressMutation.mutate(alert.id)}
+                            className="text-[11px] text-slate-500 hover:text-brand-400 transition-colors"
+                          >
+                            Mark in Review →
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => reopenMutation.mutate(alert.id)}
+                            title="Undo — revert to Open"
+                            className="text-[11px] text-info/70 hover:text-slate-400 transition-colors"
+                          >
+                            In Review · undo
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Building details */}
+          <Card>
+            <CardHeader><CardTitle>Building Details</CardTitle></CardHeader>
+            <CardBody className="flex flex-col gap-3">
+              {[
+                { label: 'Total Sq. Ft.', value: Number(property.totalSqft).toLocaleString(), icon: Layers },
+                { label: 'Total Units', value: property.totalUnits, icon: Building2 },
+                ...(property.yearBuilt ? [{ label: 'Year Built', value: property.yearBuilt, icon: Building2 }] : []),
+                ...(property.purchasePrice ? [{ label: 'Purchase Price', value: formatCurrency(property.purchasePrice), icon: DollarSign }] : []),
+              ].map(({ label, value, icon: Icon }) => (
+                <div key={label} className="flex items-center justify-between">
+                  <span className="flex items-center gap-1.5 text-xs text-slate-500">
+                    <Icon className="h-3.5 w-3.5" />{label}
+                  </span>
+                  <span className="text-sm font-medium text-slate-300">{String(value)}</span>
+                </div>
+              ))}
+            </CardBody>
+          </Card>
+
+        </div>
+      </div>
 
       <PropertyFormModal
         open={editOpen}
