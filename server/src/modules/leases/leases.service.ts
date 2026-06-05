@@ -193,8 +193,12 @@ export async function getLeaseById(id: string) {
       owner: { select: { id: true, firstName: true, lastName: true } },
       financialRecords: { orderBy: { periodStart: 'desc' }, take: 12 },
       alerts: {
-        where: { status: { in: ['OPEN', 'IN_PROGRESS'] } },
+        where: { status: { in: ['OPEN', 'IN_PROGRESS', 'ACKNOWLEDGED'] } },
         orderBy: [{ severity: 'desc' }, { createdAt: 'desc' }],
+        select: {
+          id: true, type: true, severity: true, status: true,
+          title: true, description: true, createdAt: true,
+        },
       },
     },
   });
