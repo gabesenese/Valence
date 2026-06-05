@@ -4,12 +4,25 @@ import { NotFoundError } from '../../utils/errors';
 import type { CreateLeaseInput, UpdateLeaseInput, LeaseQuery, BulkActionInput, AddNoteInput } from './leases.schemas';
 import { addDays, differenceInDays, parseISO } from 'date-fns';
 
-export function computeRenewalRisk(endDate: Date): RenewalRisk {
-  const daysUntilExpiry = differenceInDays(endDate, new Date());
-  if (daysUntilExpiry <= 30) return 'CRITICAL';
-  if (daysUntilExpiry <= 60) return 'HIGH';
-  if (daysUntilExpiry <= 90) return 'MEDIUM';
-  return 'LOW';
+export function computeRenewalRisk(endDate: Date, stage?: RenewalStage | null): RenewalRisk {
+  // A signed lease has no renewal risk regardless of days remaining
+  if (stage === 'SIGNED') return 'LOW';
+
+  const days = differenceInDays(endDate, new Date());
+  const raw: RenewalRisk =
+    days <= 30 ? 'CRITICAL' :
+    days <= 60 ? 'HIGH' :
+    days <= 90 ? 'MEDIUM' : 'LOW';
+
+  // Late-stage renewals: committed to the path, cap risk accordingly
+  if (stage === 'SCHEDULED_RENEWAL' || stage === 'LEGAL_REVIEW') {
+    if (raw === 'CRITICAL' || raw === 'HIGH') return 'MEDIUM';
+  }
+  if (stage === 'DRAFT_SENT') {
+    if (raw === 'CRITICAL') return 'HIGH';
+  }
+
+  return raw;
 }
 
 // ─── Priority scoring ─────────────────────────────────────────────────────────
@@ -368,10 +381,38 @@ export async function clearRenewalDate(id: string, userId: string) {
 }
 
 export async function advanceRenewalStage(id: string, userId: string, stage: RenewalStage) {
-  const lease = await prisma.lease.findUnique({ where: { id }, select: { id: true, renewalStage: true } });
+  const lease = await prisma.lease.findUnique({
+    where: { id },
+    select: { id: true, renewalStage: true, endDate: true },
+  });
   if (!lease) throw new NotFoundError('Lease');
-  const updated = await prisma.lease.update({ where: { id }, data: { renewalStage: stage } });
+
+  const renewalRisk = computeRenewalRisk(lease.endDate, stage);
+
+  const updated = await prisma.lease.update({
+    where: { id },
+    data: { renewalStage: stage, renewalRisk },
+  });
+
   await logActivity(id, 'STAGE_ADVANCED', userId, { newStage: stage, previousStage: lease.renewalStage });
+
+  // Signed = renewal complete — auto-resolve any open expiration/risk alerts
+  if (stage === 'SIGNED') {
+    await prisma.alert.updateMany({
+      where: {
+        leaseId: id,
+        type: { in: ['LEASE_EXPIRATION', 'RENEWAL_RISK'] },
+        status: { in: ['OPEN', 'ACKNOWLEDGED', 'IN_PROGRESS'] },
+      },
+      data: {
+        status: 'RESOLVED',
+        resolvedAt: new Date(),
+        resolvedBy: userId,
+        resolutionNote: 'Auto-resolved: renewal pipeline completed (Signed)',
+      },
+    });
+  }
+
   return updated;
 }
 
@@ -488,7 +529,10 @@ export async function updateLease(id: string, input: UpdateLeaseInput) {
   await getLeaseById(id);
   const { startDate, endDate: endDateStr, renewalDate, propertyId, tenantId, terms, ...rest } = input;
   const endDate = endDateStr ? parseISO(endDateStr) : undefined;
-  const renewalRisk = endDate ? computeRenewalRisk(endDate) : rest.renewalRisk;
+  // Fetch current stage so risk stays stage-aware when only endDate changes
+  const currentStage = rest.renewalStage
+    ?? (await prisma.lease.findUnique({ where: { id }, select: { renewalStage: true } }))?.renewalStage;
+  const renewalRisk = endDate ? computeRenewalRisk(endDate, currentStage) : rest.renewalRisk;
 
   return prisma.lease.update({
     where: { id },
@@ -575,11 +619,11 @@ export async function getKanban() {
 export async function refreshRenewalRisks(): Promise<number> {
   const activeLeases = await prisma.lease.findMany({
     where: { status: 'ACTIVE' },
-    select: { id: true, endDate: true },
+    select: { id: true, endDate: true, renewalStage: true },
   });
   let updated = 0;
   for (const lease of activeLeases) {
-    const newRisk = computeRenewalRisk(lease.endDate);
+    const newRisk = computeRenewalRisk(lease.endDate, lease.renewalStage);
     await prisma.lease.update({ where: { id: lease.id }, data: { renewalRisk: newRisk } });
     updated++;
   }
