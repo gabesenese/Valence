@@ -50,13 +50,13 @@ export interface ExtractedLease {
 
 export const aiService = {
   getExecutiveBrief: (): Promise<ExecutiveBrief> =>
-    api.get('/ai/executive-brief').then(extractData<ExecutiveBrief>),
+    api.get('/ai/executive-brief', { timeout: 120_000 }).then(extractData<ExecutiveBrief>),
 
   extractLease: (file: File): Promise<ExtractedLease> => {
     const form = new FormData();
     form.append('file', file);
     return api
-      .post('/ai/extract-lease', form, { headers: { 'Content-Type': 'multipart/form-data' } })
+      .post('/ai/extract-lease', form, { headers: { 'Content-Type': 'multipart/form-data' }, timeout: 120_000 })
       .then(extractData<ExtractedLease>);
   },
 };
