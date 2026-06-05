@@ -154,9 +154,18 @@ export default function LeaseFormModal({ open, onClose, lease }: Props) {
     endDate: toDatetime(form.endDate),
     baseRent: Number(form.baseRent),
     rentEscalation: Number(form.rentEscalation) / 100,
-    ...(form.securityDeposit && { securityDeposit: Number(form.securityDeposit) }),
-    ...(form.sqft && { sqft: Number(form.sqft) }),
-    ...(form.notes && { notes: form.notes }),
+    // In edit mode send null to clear; in create mode omit if empty
+    ...(isEdit
+      ? {
+          securityDeposit: form.securityDeposit ? Number(form.securityDeposit) : null,
+          sqft:            form.sqft            ? Number(form.sqft)            : null,
+          notes:           form.notes           || null,
+        }
+      : {
+          ...(form.securityDeposit && { securityDeposit: Number(form.securityDeposit) }),
+          ...(form.sqft            && { sqft:            Number(form.sqft) }),
+          ...(form.notes           && { notes:           form.notes }),
+        }),
   });
 
   const createMutation = useMutation({
