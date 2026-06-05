@@ -4,6 +4,15 @@ import { NotFoundError } from '../../utils/errors';
 import { addDays } from 'date-fns';
 import { computeRenewalRisk } from '../leases/leases.service';
 
+const ALERT_INCLUDE = {
+  property: { select: { id: true, name: true, code: true } },
+  lease: { select: { id: true, leaseNumber: true } },
+  assignee: { select: { id: true, firstName: true, lastName: true } },
+  acknowledgedByUser: { select: { id: true, firstName: true, lastName: true } },
+  dismissedByUser: { select: { id: true, firstName: true, lastName: true } },
+  resolvedByUser: { select: { id: true, firstName: true, lastName: true } },
+} as const;
+
 export async function logAlertActivity(
   alertId: string,
   action: string,
@@ -49,11 +58,7 @@ export async function getAlerts(query: {
       skip,
       take: limit,
       orderBy: [{ severity: 'desc' }, { createdAt: 'desc' }],
-      include: {
-        property: { select: { id: true, name: true, code: true } },
-        lease: { select: { id: true, leaseNumber: true } },
-        assignee: { select: { id: true, firstName: true, lastName: true } },
-      },
+      include: ALERT_INCLUDE,
     }),
     prisma.alert.count({ where }),
   ]);
@@ -61,14 +66,35 @@ export async function getAlerts(query: {
   return { alerts, total };
 }
 
-export async function progressAlert(id: string, userId: string) {
+export async function acknowledgeAlert(id: string, userId: string) {
   const alert = await prisma.alert.findUnique({ where: { id } });
   if (!alert) throw new NotFoundError('Alert');
 
   const updated = await prisma.alert.update({
     where: { id },
-    data: { status: 'IN_PROGRESS' },
+    data: {
+      status: 'ACKNOWLEDGED',
+      acknowledgedAt: new Date(),
+      acknowledgedById: userId,
+    },
+    include: ALERT_INCLUDE,
   });
+  await logAlertActivity(id, 'ACKNOWLEDGED', userId);
+  return updated;
+}
+
+export async function progressAlert(id: string, userId: string) {
+  const alert = await prisma.alert.findUnique({ where: { id } });
+  if (!alert) throw new NotFoundError('Alert');
+
+  const data: Prisma.AlertUpdateInput = { status: 'IN_PROGRESS' };
+  // Carry forward acknowledgedAt/By if not already set (direct OPEN→IN_PROGRESS)
+  if (!alert.acknowledgedAt) {
+    data.acknowledgedAt = new Date();
+    data.acknowledgedById = userId;
+  }
+
+  const updated = await prisma.alert.update({ where: { id }, data, include: ALERT_INCLUDE });
   await logAlertActivity(id, 'PROGRESSED', userId);
   return updated;
 }
@@ -85,6 +111,7 @@ export async function resolveAlert(id: string, userId: string, note?: string) {
       resolvedBy: userId,
       ...(note && { resolutionNote: note }),
     },
+    include: ALERT_INCLUDE,
   });
   await logAlertActivity(id, 'RESOLVED', userId, note ? { note } : undefined);
   return updated;
@@ -98,8 +125,11 @@ export async function dismissAlert(id: string, userId: string, note?: string) {
     where: { id },
     data: {
       status: 'DISMISSED',
+      dismissedAt: new Date(),
+      dismissedById: userId,
       ...(note && { resolutionNote: note }),
     },
+    include: ALERT_INCLUDE,
   });
   await logAlertActivity(id, 'DISMISSED', userId, note ? { note } : undefined);
   return updated;
@@ -112,8 +142,31 @@ export async function assignAlert(id: string, assigneeUserId: string, actorUserI
   const updated = await prisma.alert.update({
     where: { id },
     data: { assigneeUserId, status: alert.status === 'OPEN' ? 'IN_PROGRESS' : alert.status },
+    include: ALERT_INCLUDE,
   });
   await logAlertActivity(id, 'ASSIGNED', actorUserId, { assigneeUserId });
+  return updated;
+}
+
+export async function reopenAlert(id: string, userId: string) {
+  const alert = await prisma.alert.findUnique({ where: { id } });
+  if (!alert) throw new NotFoundError('Alert');
+
+  const updated = await prisma.alert.update({
+    where: { id },
+    data: {
+      status: 'OPEN',
+      resolvedAt: null,
+      resolvedBy: null,
+      resolutionNote: null,
+      acknowledgedAt: null,
+      acknowledgedById: null,
+      dismissedAt: null,
+      dismissedById: null,
+    },
+    include: ALERT_INCLUDE,
+  });
+  await logAlertActivity(id, 'REOPENED', userId);
   return updated;
 }
 
@@ -126,6 +179,18 @@ export async function getAlertActivity(alertId: string) {
     orderBy: { createdAt: 'asc' },
     include: { actor: { select: { id: true, firstName: true, lastName: true } } },
   });
+}
+
+export async function getAlertSummary() {
+  const [openTotal, acknowledgedTotal, bySeverity, byType, byStatus] = await Promise.all([
+    prisma.alert.count({ where: { status: 'OPEN' } }),
+    prisma.alert.count({ where: { status: 'ACKNOWLEDGED' } }),
+    prisma.alert.groupBy({ by: ['severity'], where: { status: { in: ['OPEN', 'ACKNOWLEDGED'] } }, _count: true }),
+    prisma.alert.groupBy({ by: ['type'], where: { status: { in: ['OPEN', 'ACKNOWLEDGED'] } }, _count: true }),
+    prisma.alert.groupBy({ by: ['status'], _count: true }),
+  ]);
+
+  return { openTotal, acknowledgedTotal, bySeverity, byType, byStatus };
 }
 
 export async function generateLeaseExpirationAlerts(): Promise<number> {
@@ -174,32 +239,4 @@ export async function generateLeaseExpirationAlerts(): Promise<number> {
   }
 
   return created;
-}
-
-export async function getAlertSummary() {
-  const [total, bySeverity, byType, byStatus] = await Promise.all([
-    prisma.alert.count({ where: { status: 'OPEN' } }),
-    prisma.alert.groupBy({ by: ['severity'], where: { status: 'OPEN' }, _count: true }),
-    prisma.alert.groupBy({ by: ['type'], where: { status: 'OPEN' }, _count: true }),
-    prisma.alert.groupBy({ by: ['status'], _count: true }),
-  ]);
-
-  return { openTotal: total, bySeverity, byType, byStatus };
-}
-
-export async function reopenAlert(id: string, userId: string) {
-  const alert = await prisma.alert.findUnique({ where: { id } });
-  if (!alert) throw new NotFoundError('Alert');
-
-  const updated = await prisma.alert.update({
-    where: { id },
-    data: { status: 'OPEN', resolvedAt: null, resolvedBy: null, resolutionNote: null },
-  });
-  await logAlertActivity(id, 'REOPENED', userId);
-  return updated;
-}
-
-// Legacy — kept for any existing callers
-export async function acknowledgeAlert(id: string, userId: string) {
-  return progressAlert(id, userId);
 }

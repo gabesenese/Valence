@@ -89,12 +89,11 @@ enum AlertSeverity {
 
 enum AlertStatus {
   OPEN
+  ACKNOWLEDGED
   IN_PROGRESS
   RESOLVED
   DISMISSED
-  // Legacy values — kept for backward compat, no new records will use these
-  ACKNOWLEDGED
-  SUPPRESSED
+  SUPPRESSED   // legacy
 }
 
 enum RenewalStage {
@@ -129,10 +128,13 @@ model User {
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
-  refreshTokens   RefreshToken[]
-  alerts          Alert[]         @relation("AlertCreatedBy")
-  assignedAlerts  Alert[]         @relation("AlertAssignee")
-  alertActivities AlertActivity[] @relation("AlertActivityActor")
+  refreshTokens      RefreshToken[]
+  alerts             Alert[]         @relation("AlertCreatedBy")
+  assignedAlerts     Alert[]         @relation("AlertAssignee")
+  acknowledgedAlerts Alert[]         @relation("AlertAcknowledgedBy")
+  dismissedAlerts    Alert[]         @relation("AlertDismissedBy")
+  resolvedAlerts     Alert[]         @relation("AlertResolvedBy")
+  alertActivities    AlertActivity[] @relation("AlertActivityActor")
   insights        Insight[]       @relation("InsightCreatedBy")
   ownedLeases     Lease[]         @relation("LeaseOwner")
   leaseActivities LeaseActivity[] @relation("LeaseActivityActor")
@@ -307,14 +309,22 @@ model Alert {
   createdAt   DateTime      @default(now()) @map("created_at")
   updatedAt   DateTime      @updatedAt @map("updated_at")
 
-  assigneeUserId String?   @map("assignee_user_id")
-  resolutionNote String?   @map("resolution_note")
+  assigneeUserId   String?   @map("assignee_user_id")
+  resolutionNote   String?   @map("resolution_note")
 
-  property    Property?       @relation(fields: [propertyId], references: [id])
-  lease       Lease?          @relation(fields: [leaseId], references: [id])
-  createdBy   User?           @relation("AlertCreatedBy", fields: [createdById], references: [id])
-  assignee    User?           @relation("AlertAssignee", fields: [assigneeUserId], references: [id])
-  activities  AlertActivity[]
+  acknowledgedAt   DateTime? @map("acknowledged_at")
+  acknowledgedById String?   @map("acknowledged_by_id")
+  dismissedAt      DateTime? @map("dismissed_at")
+  dismissedById    String?   @map("dismissed_by_id")
+
+  property          Property?       @relation(fields: [propertyId], references: [id])
+  lease             Lease?          @relation(fields: [leaseId], references: [id])
+  createdBy         User?           @relation("AlertCreatedBy", fields: [createdById], references: [id])
+  assignee          User?           @relation("AlertAssignee", fields: [assigneeUserId], references: [id])
+  acknowledgedByUser User?          @relation("AlertAcknowledgedBy", fields: [acknowledgedById], references: [id])
+  dismissedByUser   User?           @relation("AlertDismissedBy", fields: [dismissedById], references: [id])
+  resolvedByUser    User?           @relation("AlertResolvedBy", fields: [resolvedBy], references: [id])
+  activities        AlertActivity[]
 
   @@index([type])
   @@index([severity])

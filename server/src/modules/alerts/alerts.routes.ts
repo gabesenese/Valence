@@ -69,10 +69,9 @@ router.post('/:id/reopen', async (req: Request, res: Response, next: NextFunctio
   } catch (e) { next(e); }
 });
 
-// Legacy
 router.post('/:id/acknowledge', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    sendSuccess(res, await service.progressAlert(req.params.id, req.user!.id));
+    sendSuccess(res, await service.acknowledgeAlert(req.params.id, req.user!.id));
   } catch (e) { next(e); }
 });
 
