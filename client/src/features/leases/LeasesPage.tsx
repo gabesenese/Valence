@@ -480,10 +480,10 @@ export default function LeasesPage() {
       {stats && (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           {[
-            { label: 'Active', value: stats.totalActive, color: 'text-success', onClick: () => { setStatusFilter('ACTIVE'); setExpiryFilter(''); setViewMode('table'); } },
-            { label: 'Expiring 30d', value: stats.expiringIn30, color: 'text-danger', onClick: () => { setStatusFilter('ACTIVE'); setExpiryFilter('30'); setViewMode('table'); } },
-            { label: 'Expiring 90d', value: stats.expiringIn90, color: 'text-warning', onClick: () => { setStatusFilter('ACTIVE'); setExpiryFilter('90'); setViewMode('table'); } },
-            { label: 'Critical Risk', value: stats.byRisk.find((r) => r.renewalRisk === 'CRITICAL')?._count ?? 0, color: 'text-danger', onClick: () => { setRiskFilter('CRITICAL'); setExpiryFilter(''); setViewMode('table'); } },
+            { label: 'Active', value: stats.totalActive, color: 'text-success', onClick: () => { setStatusFilter('ACTIVE'); setExpiryFilter(''); setRiskFilter(''); setStageFilter(''); setSearch(''); setPage(1); setViewMode('table'); } },
+            { label: 'Expiring 30d', value: stats.expiringIn30, color: 'text-danger', onClick: () => { setStatusFilter('ACTIVE'); setExpiryFilter('30'); setRiskFilter(''); setStageFilter(''); setSearch(''); setPage(1); setViewMode('table'); } },
+            { label: 'Expiring 90d', value: stats.expiringIn90, color: 'text-warning', onClick: () => { setStatusFilter('ACTIVE'); setExpiryFilter('90'); setRiskFilter(''); setStageFilter(''); setSearch(''); setPage(1); setViewMode('table'); } },
+            { label: 'Critical Risk', value: stats.byRisk.find((r) => r.renewalRisk === 'CRITICAL')?._count ?? 0, color: 'text-danger', onClick: () => { setStatusFilter('ACTIVE'); setRiskFilter('CRITICAL'); setExpiryFilter(''); setStageFilter(''); setSearch(''); setPage(1); setViewMode('table'); } },
           ].map((s) => (
             <Card key={s.label} className="text-center p-4 cursor-pointer" hover onClick={s.onClick}>
               <p className={`text-2xl font-bold tabular-nums ${s.color}`}>{s.value}</p>
