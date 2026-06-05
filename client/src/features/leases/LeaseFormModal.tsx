@@ -154,17 +154,18 @@ export default function LeaseFormModal({ open, onClose, lease }: Props) {
     endDate: toDatetime(form.endDate),
     baseRent: Number(form.baseRent),
     rentEscalation: Number(form.rentEscalation) / 100,
-    // In edit mode send null to clear; in create mode omit if empty
+    // In edit mode send null to clear; in create mode omit if empty.
+    // Treat "0" the same as empty — 0 is not a valid deposit/sqft.
     ...(isEdit
       ? {
-          securityDeposit: form.securityDeposit ? Number(form.securityDeposit) : null,
-          sqft:            form.sqft            ? Number(form.sqft)            : null,
-          notes:           form.notes           || null,
+          securityDeposit: Number(form.securityDeposit) > 0 ? Number(form.securityDeposit) : null,
+          sqft:            Number(form.sqft)            > 0 ? Number(form.sqft)            : null,
+          notes:           form.notes.trim()            || null,
         }
       : {
-          ...(form.securityDeposit && { securityDeposit: Number(form.securityDeposit) }),
-          ...(form.sqft            && { sqft:            Number(form.sqft) }),
-          ...(form.notes           && { notes:           form.notes }),
+          ...(Number(form.securityDeposit) > 0 && { securityDeposit: Number(form.securityDeposit) }),
+          ...(Number(form.sqft)            > 0 && { sqft:            Number(form.sqft) }),
+          ...(form.notes.trim()                && { notes:           form.notes }),
         }),
   });
 
