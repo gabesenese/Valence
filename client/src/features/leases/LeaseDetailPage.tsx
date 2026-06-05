@@ -415,7 +415,7 @@ export default function LeaseDetailPage() {
             </div>
             <div className="flex items-center justify-between">
               <span className="text-xs text-slate-500">Escalation</span>
-              <span className="text-sm text-slate-300">{formatPercent(Number(lease.rentEscalation) * 100, 2)} / yr</span>
+              <span className="text-sm font-medium text-success">{formatPercent(Number(lease.rentEscalation) * 100, 2)} / yr</span>
             </div>
             {lease.securityDeposit && (
               <div className="flex items-center justify-between">
