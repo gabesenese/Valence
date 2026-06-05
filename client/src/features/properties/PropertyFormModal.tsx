@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { DollarSign } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
@@ -90,6 +91,19 @@ export default function PropertyFormModal({ open, onClose, property }: Props) {
     const val = (field === 'code' || field === 'state') ? e.target.value.toUpperCase() : e.target.value;
     setForm(f => ({ ...f, [field]: val }));
     setErrors(err => ({ ...err, [field]: undefined }));
+  };
+
+  const setMoney = (field: keyof FormData) => (e: React.ChangeEvent<HTMLInputElement>) => {
+    setForm(f => ({ ...f, [field]: e.target.value.replace(/[^0-9.]/g, '') }));
+    setErrors(err => ({ ...err, [field]: undefined }));
+  };
+
+  const fmtMoney = (val: string) => {
+    if (!val) return '';
+    const [int, dec] = val.split('.');
+    return dec !== undefined
+      ? `${int.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}.${dec}`
+      : int.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
   };
 
   const validate = (): boolean => {
@@ -195,8 +209,20 @@ export default function PropertyFormModal({ open, onClose, property }: Props) {
           {/* Financials */}
           <p className={SECTION_CLASS}>Financials <span className="normal-case font-normal text-slate-600">(optional)</span></p>
           <div className="grid grid-cols-2 gap-4">
-            <Input label="Purchase Price" type="number" value={form.purchasePrice} onChange={set('purchasePrice')} placeholder="5000000" min={0} />
-            <Input label="Current Value" type="number" value={form.currentValue} onChange={set('currentValue')} placeholder="6500000" min={0} />
+            <Input
+              label="Purchase Price"
+              value={fmtMoney(form.purchasePrice)}
+              onChange={setMoney('purchasePrice')}
+              placeholder="72,000,000"
+              prefix={<DollarSign className="h-3.5 w-3.5" />}
+            />
+            <Input
+              label="Current Value"
+              value={fmtMoney(form.currentValue)}
+              onChange={setMoney('currentValue')}
+              placeholder="94,000,000"
+              prefix={<DollarSign className="h-3.5 w-3.5" />}
+            />
           </div>
         </div>
 
