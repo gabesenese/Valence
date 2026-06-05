@@ -64,7 +64,7 @@ function toForm(l: Lease): FormData {
     startDate: l.startDate.slice(0, 10),
     endDate: l.endDate.slice(0, 10),
     baseRent: String(l.baseRent),
-    rentEscalation: String(Number(l.rentEscalation) * 100),
+    rentEscalation: String(parseFloat((Number(l.rentEscalation) * 100).toFixed(10))),
     securityDeposit: l.securityDeposit ? String(l.securityDeposit) : '',
     sqft: l.sqft ? String(l.sqft) : '',
     notes: l.notes ?? '',
@@ -145,7 +145,7 @@ export default function LeaseFormModal({ open, onClose, lease }: Props) {
 
   const toDatetime = (d: string) => `${d}T00:00:00.000Z`;
 
-  const buildPayload = (): CreateLeaseInput & { status?: string } => ({
+  const buildPayload = () => ({
     ...(!isEdit && { propertyId: form.propertyId, tenantId: form.tenantId }),
     unitNumber: form.unitNumber || undefined,
     type: form.type,

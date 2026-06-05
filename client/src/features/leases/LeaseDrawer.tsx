@@ -19,6 +19,7 @@ const STAGE_LABEL: Record<RenewalStage, string> = {
   CONTACTED: 'Contacted',
   NEGOTIATING: 'Negotiating',
   DRAFT_SENT: 'Draft sent',
+  LEGAL_REVIEW: 'Legal review',
   SCHEDULED_RENEWAL: 'Scheduled',
   SIGNED: 'Signed',
 };
@@ -28,6 +29,7 @@ const STAGE_VARIANT: Record<RenewalStage, 'neutral' | 'info' | 'warning' | 'bran
   CONTACTED: 'info',
   NEGOTIATING: 'warning',
   DRAFT_SENT: 'brand',
+  LEGAL_REVIEW: 'warning',
   SCHEDULED_RENEWAL: 'brand',
   SIGNED: 'success',
 };

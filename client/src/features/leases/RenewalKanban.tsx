@@ -13,7 +13,7 @@ import {
   type DragStartEvent,
   type DragEndEvent,
 } from '@dnd-kit/core';
-import { Clock, DollarSign, User, AlertTriangle, ExternalLink } from 'lucide-react';
+import { Clock, DollarSign, User, AlertTriangle } from 'lucide-react';
 import { leasesService } from '@/services/leases.service';
 import type { RenewalStage, KanbanLease, KanbanColumn } from '@/services/leases.service';
 import { Badge } from '@/components/ui/Badge';
@@ -95,7 +95,7 @@ function CardContent({ lease }: { lease: KanbanLease }) {
 function KanbanCard({ lease }: { lease: KanbanLease }) {
   const navigate = useNavigate();
 
-  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: lease.id,
     data: { lease },
   });

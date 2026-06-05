@@ -37,12 +37,13 @@ const PIPELINE: Array<{ stage: RenewalStage; label: string; icon: React.ReactNod
   { stage: 'CONTACTED',         label: 'Contact tenant',   icon: <Phone className="h-3.5 w-3.5" /> },
   { stage: 'NEGOTIATING',       label: 'Schedule meeting', icon: <Calendar className="h-3.5 w-3.5" /> },
   { stage: 'DRAFT_SENT',        label: 'Send draft',       icon: <Send className="h-3.5 w-3.5" /> },
+  { stage: 'LEGAL_REVIEW',      label: 'Legal review',     icon: <FileSignature className="h-3.5 w-3.5" /> },
   { stage: 'SCHEDULED_RENEWAL', label: 'Confirm terms',    icon: <Check className="h-3.5 w-3.5" /> },
   { stage: 'SIGNED',            label: 'Execute',          icon: <FileSignature className="h-3.5 w-3.5" /> },
 ];
 
 const STAGE_ORDER: RenewalStage[] = [
-  'NOT_STARTED', 'CONTACTED', 'NEGOTIATING', 'DRAFT_SENT', 'SCHEDULED_RENEWAL', 'SIGNED',
+  'NOT_STARTED', 'CONTACTED', 'NEGOTIATING', 'DRAFT_SENT', 'LEGAL_REVIEW', 'SCHEDULED_RENEWAL', 'SIGNED',
 ];
 
 const ACTION_LABEL: Record<string, string> = {
