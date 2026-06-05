@@ -324,7 +324,11 @@ export async function assignOwner(id: string, actorUserId: string, ownerUserId: 
       owner: { select: { id: true, firstName: true, lastName: true } },
     },
   });
-  await logActivity(id, 'OWNER_ASSIGNED', actorUserId, { ownerUserId });
+  const owner = updated.owner;
+  await logActivity(id, 'OWNER_ASSIGNED', actorUserId, {
+    ownerUserId,
+    ownerName: owner ? `${owner.firstName} ${owner.lastName}` : null,
+  });
   return updated;
 }
 

@@ -5,7 +5,7 @@ import {
   ArrowLeft, Building2, User, Calendar, DollarSign, TrendingUp,
   AlertTriangle, CheckCircle2, RefreshCw, Phone, Check,
   Send, FileSignature, MessageSquare, Clock, Pencil, Trash2,
-  ChevronUp, ChevronDown, Eye, RotateCcw,
+  ChevronUp, ChevronDown, Eye, RotateCcw, BellOff, ArrowRight,
 } from 'lucide-react';
 import { leasesService, type RenewalStage } from '@/services/leases.service';
 import LeaseFormModal from './LeaseFormModal';
@@ -46,18 +46,59 @@ const STAGE_ORDER: RenewalStage[] = [
   'NOT_STARTED', 'CONTACTED', 'NEGOTIATING', 'DRAFT_SENT', 'LEGAL_REVIEW', 'SCHEDULED_RENEWAL', 'SIGNED',
 ];
 
-const ACTION_LABEL: Record<string, string> = {
-  RENEWAL_STARTED: 'Renewal started',
-  RENEWAL_DATE_SET: 'Renewal date set',
-  RENEWAL_DATE_CLEARED: 'Renewal date cleared',
-  OWNER_ASSIGNED: 'Owner assigned',
-  TENANT_CONTACTED: 'Tenant contacted',
-  SNOOZED: 'Snoozed',
-  REVIEWED: 'Marked reviewed',
-  STAGE_ADVANCED: 'Stage advanced',
-  NOTE_ADDED: 'Note added',
-  NOTE_DELETED: 'Note deleted',
+type ActionCfg = {
+  Icon: React.FC<{ className?: string }>;
+  dot: string;
+  label: (meta: Record<string, unknown> | null) => string;
+  detail?: (meta: Record<string, unknown>) => string | null;
 };
+
+const fmtStage = (s: string) =>
+  s.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+
+const ACTION_CONFIG: Record<string, ActionCfg> = {
+  RENEWAL_STARTED:      { Icon: RefreshCw,     dot: 'bg-brand-500',    label: () => 'Renewal started' },
+  STAGE_ADVANCED:       { Icon: ArrowRight,    dot: 'bg-brand-400',    label: () => 'Stage advanced',
+                          detail: (m) => m.previousStage && m.newStage ? `${fmtStage(String(m.previousStage))} → ${fmtStage(String(m.newStage))}` : null },
+  TENANT_CONTACTED:     { Icon: Phone,         dot: 'bg-blue-400',     label: () => 'Tenant contacted' },
+  OWNER_ASSIGNED:       { Icon: User,          dot: 'bg-violet-400',   label: (m) => m?.ownerName ? `Assigned to ${String(m.ownerName)}` : 'Owner assigned' },
+  RENEWAL_DATE_SET:     { Icon: Calendar,      dot: 'bg-teal-400',     label: () => 'Renewal date set',
+                          detail: (m) => m.renewalDate ? formatDate(String(m.renewalDate)) : null },
+  RENEWAL_DATE_CLEARED: { Icon: Calendar,      dot: 'bg-slate-500',    label: () => 'Renewal date cleared' },
+  SNOOZED:              { Icon: BellOff,       dot: 'bg-slate-500',    label: (m) => m?.days ? `Snoozed ${String(m.days)} days` : 'Snoozed' },
+  REVIEWED:             { Icon: Eye,           dot: 'bg-slate-500',    label: () => 'Marked reviewed' },
+  NOTE_ADDED:           { Icon: MessageSquare, dot: 'bg-amber-400',    label: () => 'Note added' },
+  NOTE_DELETED:         { Icon: Trash2,        dot: 'bg-slate-600',    label: () => 'Note deleted' },
+};
+
+// ─── Timeline helpers ─────────────────────────────────────────────────────────
+
+import type { LeaseActivityDTO, LeaseNoteDTO } from '@/services/leases.service';
+
+type TEntry =
+  | { kind: 'activity'; data: LeaseActivityDTO; createdAt: string }
+  | { kind: 'note';     data: LeaseNoteDTO;     createdAt: string };
+
+function dateLabel(iso: string): string {
+  const d = new Date(iso);
+  const now = new Date();
+  const todayMs = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const dMs     = new Date(d.getFullYear(),   d.getMonth(),   d.getDate()).getTime();
+  if (dMs === todayMs)           return 'Today';
+  if (dMs === todayMs - 86400000) return 'Yesterday';
+  const sameYear = d.getFullYear() === now.getFullYear();
+  return d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', ...(!sameYear && { year: 'numeric' }) });
+}
+
+function groupTimeline(entries: TEntry[]): Array<{ label: string; entries: TEntry[] }> {
+  const map = new Map<string, TEntry[]>();
+  for (const e of entries) {
+    const key = dateLabel(e.createdAt);
+    if (!map.has(key)) map.set(key, []);
+    map.get(key)!.push(e);
+  }
+  return Array.from(map.entries()).map(([label, entries]) => ({ label, entries }));
+}
 
 // ─── Small helpers ────────────────────────────────────────────────────────────
 
@@ -640,156 +681,168 @@ export default function LeaseDetailPage() {
         </Card>
       )}
 
-      {/* ── Notes + Activity ─────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        {/* Notes */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <MessageSquare className="h-4 w-4 text-brand-400" />
-              <CardTitle>Notes</CardTitle>
+      {/* ── Timeline ─────────────────────────────────────────────────────────── */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Clock className="h-4 w-4 text-slate-500" />
+            <CardTitle>Timeline</CardTitle>
+          </div>
+        </CardHeader>
+        <CardBody className="flex flex-col gap-5">
+
+          {/* Compose note */}
+          <div className="flex gap-3">
+            <div className="h-7 w-7 shrink-0 rounded-full bg-brand-600/30 border border-brand-500/30 flex items-center justify-center">
+              <MessageSquare className="h-3.5 w-3.5 text-brand-400" />
             </div>
-          </CardHeader>
-          <CardBody className="flex flex-col gap-4">
-            {/* Add note */}
-            <div className="flex flex-col gap-2">
+            <div className="flex-1 flex flex-col gap-2">
               <textarea
                 ref={noteRef}
                 rows={2}
                 value={noteInput}
                 onChange={(e) => setNoteInput(e.target.value)}
-                placeholder="Add a note…"
+                placeholder="Add a note to the timeline…"
                 className="w-full resize-none rounded-lg border border-surface-400 bg-surface-200 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-600 focus:border-brand-500/60 focus:outline-none focus:ring-1 focus:ring-brand-500/30"
               />
-              <div className="flex justify-end">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => noteMutation.mutate(noteInput)}
-                  loading={noteMutation.isPending}
-                  disabled={!noteInput.trim()}
-                >
-                  Add Note
-                </Button>
-              </div>
+              {noteInput.trim() && (
+                <div className="flex justify-end gap-2">
+                  <Button variant="ghost" size="sm" onClick={() => setNoteInput('')}>Cancel</Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => noteMutation.mutate(noteInput)}
+                    loading={noteMutation.isPending}
+                  >
+                    Add Note
+                  </Button>
+                </div>
+              )}
             </div>
+          </div>
 
-            {/* Notes list */}
-            {notes && notes.length > 0 ? (
-              <div className="flex flex-col gap-3 border-t border-surface-400/30 pt-3">
-                {notes.map((note) => (
-                  <div key={note.id} className="group/note flex gap-3">
-                    <div className="h-7 w-7 shrink-0 rounded-full bg-brand-600/30 border border-brand-600/40 flex items-center justify-center text-xs font-semibold text-brand-300">
-                      {note.author ? `${note.author.firstName[0]}${note.author.lastName[0]}` : '?'}
+          {/* Grouped timeline */}
+          {(() => {
+            const merged: TEntry[] = [
+              ...(activity ?? []).map((a) => ({ kind: 'activity' as const, data: a, createdAt: a.createdAt })),
+              ...(notes    ?? []).map((n) => ({ kind: 'note'     as const, data: n, createdAt: n.createdAt })),
+            ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+            if (merged.length === 0) {
+              return <p className="text-xs text-slate-600">No activity recorded yet.</p>;
+            }
+
+            const groups = groupTimeline(merged);
+
+            return (
+              <div className="flex flex-col gap-6">
+                {groups.map(({ label, entries }) => (
+                  <div key={label}>
+                    {/* Date header */}
+                    <div className="flex items-center gap-3 mb-4">
+                      <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">{label}</span>
+                      <div className="flex-1 h-px bg-surface-400/40" />
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-medium text-slate-300">
-                          {note.author ? `${note.author.firstName} ${note.author.lastName}` : 'Unknown'}
-                        </span>
-                        <span className="text-xs text-slate-600">{formatRelative(note.createdAt)}</span>
-                        {/* Edit / Delete — visible on hover */}
-                        <div className="ml-auto flex items-center gap-1 opacity-0 group-hover/note:opacity-100 transition-opacity">
-                          <button
-                            onClick={() => { setEditingNoteId(note.id); setEditNoteInput(note.body); }}
-                            className="rounded p-1 text-slate-600 hover:text-brand-300 hover:bg-surface-300 transition-colors"
-                            title="Edit note"
-                          >
-                            <Pencil className="h-3 w-3" />
-                          </button>
-                          <button
-                            onClick={() => deleteNoteMutation.mutate(note.id)}
-                            disabled={deleteNoteMutation.isPending}
-                            className="rounded p-1 text-slate-600 hover:text-danger hover:bg-danger/10 transition-colors disabled:opacity-40"
-                            title="Delete note"
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </button>
-                        </div>
-                      </div>
 
-                      {editingNoteId === note.id ? (
-                        <div className="mt-1 flex flex-col gap-1.5">
-                          <textarea
-                            rows={2}
-                            value={editNoteInput}
-                            onChange={(e) => setEditNoteInput(e.target.value)}
-                            className="w-full resize-none rounded-md border border-surface-400 bg-surface-200 px-2.5 py-1.5 text-sm text-slate-100 placeholder:text-slate-600 focus:border-brand-500/60 focus:outline-none"
-                          />
-                          <div className="flex gap-1.5">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => editNoteMutation.mutate({ noteId: note.id, body: editNoteInput })}
-                              loading={editNoteMutation.isPending}
-                              disabled={!editNoteInput.trim()}
-                            >
-                              Save
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => { setEditingNoteId(null); setEditNoteInput(''); }}
-                            >
-                              Cancel
-                            </Button>
+                    {/* Entries */}
+                    <div className="flex flex-col gap-4">
+                      {entries.map((entry) => {
+                        if (entry.kind === 'note') {
+                          const note = entry.data;
+                          const initials = note.author
+                            ? `${note.author.firstName[0]}${note.author.lastName[0]}`
+                            : '?';
+                          const authorName = note.author
+                            ? `${note.author.firstName} ${note.author.lastName}`
+                            : 'Unknown';
+                          return (
+                            <div key={note.id} className="group/note flex items-start gap-3">
+                              {/* Avatar */}
+                              <div className="h-7 w-7 shrink-0 rounded-full bg-amber-600/20 ring-1 ring-amber-500/25 flex items-center justify-center text-[10px] font-semibold text-amber-300">
+                                {initials}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-xs font-medium text-slate-300">{authorName}</span>
+                                  <span className="text-xs text-slate-600">{formatRelative(note.createdAt)}</span>
+                                  <div className="ml-auto flex items-center gap-1 opacity-0 group-hover/note:opacity-100 transition-opacity">
+                                    <button
+                                      onClick={() => { setEditingNoteId(note.id); setEditNoteInput(note.body); }}
+                                      className="rounded p-1 text-slate-600 hover:text-brand-300 hover:bg-surface-300 transition-colors"
+                                    >
+                                      <Pencil className="h-3 w-3" />
+                                    </button>
+                                    <button
+                                      onClick={() => deleteNoteMutation.mutate(note.id)}
+                                      disabled={deleteNoteMutation.isPending}
+                                      className="rounded p-1 text-slate-600 hover:text-danger hover:bg-danger/10 transition-colors disabled:opacity-40"
+                                    >
+                                      <Trash2 className="h-3 w-3" />
+                                    </button>
+                                  </div>
+                                </div>
+                                {editingNoteId === note.id ? (
+                                  <div className="mt-1 flex flex-col gap-1.5">
+                                    <textarea
+                                      rows={2}
+                                      value={editNoteInput}
+                                      onChange={(e) => setEditNoteInput(e.target.value)}
+                                      className="w-full resize-none rounded-md border border-surface-400 bg-surface-200 px-2.5 py-1.5 text-sm text-slate-100 focus:border-brand-500/60 focus:outline-none"
+                                    />
+                                    <div className="flex gap-1.5">
+                                      <Button variant="outline" size="sm" onClick={() => editNoteMutation.mutate({ noteId: note.id, body: editNoteInput })} loading={editNoteMutation.isPending} disabled={!editNoteInput.trim()}>Save</Button>
+                                      <Button variant="ghost" size="sm" onClick={() => { setEditingNoteId(null); setEditNoteInput(''); }}>Cancel</Button>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <p className="mt-1 text-sm text-slate-300 leading-relaxed whitespace-pre-wrap">{note.body}</p>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        }
+
+                        // Activity entry
+                        const act = entry.data;
+                        const cfg = ACTION_CONFIG[act.actionType];
+                        const Icon = cfg?.Icon ?? Clock;
+                        const dotColor = cfg?.dot ?? 'bg-slate-500';
+                        const meta = act.metadata as Record<string, unknown> | null;
+                        const label = cfg
+                          ? cfg.label(meta)
+                          : act.actionType.replace(/_/g, ' ').toLowerCase();
+                        const detail = cfg?.detail && meta ? cfg.detail(meta) : null;
+                        const actor = act.actor
+                          ? `${act.actor.firstName} ${act.actor.lastName}`
+                          : 'System';
+
+                        return (
+                          <div key={act.id} className="flex items-start gap-3">
+                            {/* Icon dot */}
+                            <div className={`h-7 w-7 shrink-0 rounded-full bg-surface-300/60 ring-1 ring-surface-400/50 flex items-center justify-center`}>
+                              <Icon className={`h-3.5 w-3.5 ${dotColor.replace('bg-', 'text-')}`} />
+                            </div>
+                            <div className="flex-1 min-w-0 pt-0.5">
+                              <p className="text-sm font-medium text-slate-200">{label}</p>
+                              {detail && (
+                                <p className="mt-0.5 text-xs text-slate-500">{detail}</p>
+                              )}
+                              <p className="mt-0.5 text-xs text-slate-600">
+                                {actor} · {formatRelative(act.createdAt)}
+                              </p>
+                            </div>
                           </div>
-                        </div>
-                      ) : (
-                        <p className="mt-0.5 text-sm text-slate-400 whitespace-pre-wrap">{note.body}</p>
-                      )}
+                        );
+                      })}
                     </div>
                   </div>
                 ))}
               </div>
-            ) : (
-              <p className="text-xs text-slate-600">No notes yet.</p>
-            )}
-          </CardBody>
-        </Card>
+            );
+          })()}
 
-        {/* Activity feed */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <Clock className="h-4 w-4 text-slate-500" />
-              <CardTitle>Activity</CardTitle>
-            </div>
-          </CardHeader>
-          <CardBody>
-            {activity && activity.length > 0 ? (
-              <ol className="relative border-l border-surface-400/40 ml-2 space-y-3">
-                {activity.map((entry) => {
-                  const label = ACTION_LABEL[entry.actionType] ?? entry.actionType.replace(/_/g, ' ').toLowerCase();
-                  const actor = entry.actor
-                    ? `${entry.actor.firstName} ${entry.actor.lastName}`
-                    : 'System';
-                  const meta = entry.metadata as Record<string, unknown> | null;
-                  return (
-                    <li key={entry.id} className="ml-4">
-                      <div className="absolute -left-[5px] mt-1.5 h-2 w-2 rounded-full bg-surface-500 border border-surface-400" />
-                      <p className="text-xs font-medium text-slate-300">{label}</p>
-                      <p className="text-xs text-slate-500">
-                        {actor} · {formatRelative(entry.createdAt)}
-                      </p>
-                      {!!meta?.newStage && (
-                        <p className="mt-0.5 text-xs text-slate-600">
-                          {String(meta.previousStage)} → {String(meta.newStage)}
-                        </p>
-                      )}
-                      {!!meta?.renewalDate && (
-                        <p className="mt-0.5 text-xs text-slate-600">{String(meta.renewalDate)}</p>
-                      )}
-                    </li>
-                  );
-                })}
-              </ol>
-            ) : (
-              <p className="text-xs text-slate-600">No activity recorded yet.</p>
-            )}
-          </CardBody>
-        </Card>
-      </div>
+        </CardBody>
+      </Card>
 
       {/* Notes from lease record (original field) */}
       {lease.notes && (
