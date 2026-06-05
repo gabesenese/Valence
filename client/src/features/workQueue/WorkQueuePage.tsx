@@ -16,6 +16,7 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import { workQueueService, type WorkItem } from '@/services/workQueue.service';
+import { TaskPanel } from './TaskPanel';
 import { alertsService } from '@/services/alerts.service';
 import { useAuthStore } from '@/state/auth.store';
 import { Card } from '@/components/ui/Card';
@@ -186,7 +187,8 @@ function WorkItemCard({
   const busy = busyId === item.alertId;
 
   return (
-    <div className={`flex items-start gap-4 px-5 py-4 hover:bg-surface-200/30 transition-colors border-l-2 ${borderColor}`}>
+    <div className={`hover:bg-surface-200/30 transition-colors border-l-2 ${borderColor}`}>
+    <div className="flex items-start gap-4 px-5 py-4">
       <SeverityIcon severity={item.severity} />
 
       <div className="min-w-0 flex-1">
@@ -241,6 +243,11 @@ function WorkItemCard({
         onResolve={onResolve}
         onDismiss={onDismiss}
       />
+    </div>
+
+    <div className="px-5 pb-3">
+      <TaskPanel alertId={item.alertId} leaseId={item.leaseId} />
+    </div>
     </div>
   );
 }

@@ -21,6 +21,7 @@ import { alertsRouter } from './modules/alerts/alerts.routes';
 import { aiRouter } from './modules/ai/ai.routes';
 import { tenantsRouter } from './modules/tenants/tenants.routes';
 import { workQueueRouter } from './modules/workQueue/work-queue.routes';
+import { tasksRouter } from './modules/tasks/tasks.routes';
 import cron from 'node-cron';
 import { runAnomalyScan } from './modules/alerts/anomaly.service';
 
@@ -70,6 +71,7 @@ app.use('/api/alerts', alertsRouter);
 app.use('/api/ai', aiRouter);
 app.use('/api/tenants', tenantsRouter);
 app.use('/api/work-queue', workQueueRouter);
+app.use('/api/tasks', tasksRouter);
 
 // ─── Error Handling ───────────────────────────────────────────────────────────
 app.use(notFoundHandler);
