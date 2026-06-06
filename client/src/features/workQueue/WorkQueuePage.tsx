@@ -522,12 +522,10 @@ export default function WorkQueuePage() {
                 label="Other Items"
                 count={other.length}
                 severity="NEUTRAL"
-                collapsed={collapsed['other'] !== false}
-                onToggle={() =>
-                  setCollapsed((p) => ({ ...p, other: p['other'] === false ? true : false }))
-                }
+                collapsed={!!collapsed['other']}
+                onToggle={() => toggle('other')}
               />
-              {collapsed['other'] !== false ? null : (
+              {!!collapsed['other'] ? null : (
                 <div className="divide-y divide-surface-400/30">
                   {other.map((item) => (
                     <WorkItemCard key={item.id} item={item} {...cardProps} />
