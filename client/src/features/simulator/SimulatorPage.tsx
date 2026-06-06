@@ -7,6 +7,7 @@ import {
 import { aiService, type ScenarioType, type SimulationResult } from '@/services/ai.service';
 import { formatCurrency, compactCurrency } from '@/utils/format';
 import { Card, CardBody } from '@/components/ui/Card';
+import { Select } from '@/components/ui/Select';
 
 // ─── Scenario config ──────────────────────────────────────────────────────────
 
@@ -58,21 +59,19 @@ function TenantDepartureForm({ value, onChange }: { value: Record<string, unknow
   return (
     <div>
       <label className="text-xs font-medium text-slate-400 block mb-1.5">Select Tenant</label>
-      <select
+      <Select
+        size="md"
         value={(value.tenantId as string) ?? ''}
-        onChange={e => {
-          const t = tenants?.find(x => x.tenantId === e.target.value);
-          onChange({ ...value, tenantId: e.target.value, tenantName: t?.tenantName });
+        onChange={(v) => {
+          const t = tenants?.find(x => x.tenantId === v);
+          onChange({ ...value, tenantId: v, tenantName: t?.tenantName });
         }}
-        className="w-full rounded-lg border border-surface-400/50 bg-surface-200 px-3 py-2 text-sm text-white focus:border-brand-500 focus:outline-none"
-      >
-        <option value="">— Select a tenant —</option>
-        {tenants?.map(t => (
-          <option key={t.tenantId} value={t.tenantId}>
-            {t.tenantName} · {t.propertyName} · {compactCurrency(t.monthlyRent)}/mo
-          </option>
-        ))}
-      </select>
+        placeholder="— Select a tenant —"
+        options={tenants?.map(t => ({
+          value: t.tenantId,
+          label: `${t.tenantName} · ${t.propertyName} · ${compactCurrency(t.monthlyRent)}/mo`,
+        })) ?? []}
+      />
     </div>
   );
 }

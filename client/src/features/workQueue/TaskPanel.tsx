@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { CheckCircle2, Circle, Clock, Plus, Loader2, ChevronDown, ChevronRight, X } from 'lucide-react';
 import { tasksService, type Task, type TaskStatus } from '@/services/tasks.service';
+import { Select } from '@/components/ui/Select';
+import { DatePicker } from '@/components/ui/DatePicker';
 
 // ─── Status config ────────────────────────────────────────────────────────────
 
@@ -168,21 +170,19 @@ function AddTaskForm({
         className="rounded-md bg-surface-300/60 border border-surface-400/40 px-2.5 py-1.5 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-brand-500/50"
       />
       <div className="grid grid-cols-2 gap-2">
-        <select
+        <Select
           value={assigneeUserId}
-          onChange={(e) => setAssigneeUserId(e.target.value)}
-          className="rounded-md bg-surface-300/60 border border-surface-400/40 px-2.5 py-1.5 text-xs text-slate-300 focus:outline-none focus:ring-1 focus:ring-brand-500/50"
-        >
-          <option value="">Unassigned</option>
-          {users.filter((u) => u.isActive).map((u) => (
-            <option key={u.id} value={u.id}>{u.firstName} {u.lastName}</option>
-          ))}
-        </select>
-        <input
-          type="date"
+          onChange={setAssigneeUserId}
+          options={[
+            { value: '', label: 'Unassigned' },
+            ...users.filter((u) => u.isActive).map((u) => ({ value: u.id, label: `${u.firstName} ${u.lastName}` })),
+          ]}
+        />
+        <DatePicker
           value={dueAt}
-          onChange={(e) => setDueAt(e.target.value)}
-          className="rounded-md bg-surface-300/60 border border-surface-400/40 px-2.5 py-1.5 text-xs text-slate-300 focus:outline-none focus:ring-1 focus:ring-brand-500/50"
+          onChange={setDueAt}
+          onClear={dueAt ? () => setDueAt('') : undefined}
+          placeholder="Due date"
         />
       </div>
       <div className="flex gap-2">

@@ -4,6 +4,7 @@ import { DollarSign } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
+import { Select } from '@/components/ui/Select';
 import {
   propertiesService,
   type PropertyDetail,
@@ -67,7 +68,6 @@ function toForm(p: PropertyDetail): FormData {
   };
 }
 
-const SELECT_CLASS = 'h-9 w-full rounded-lg border border-surface-400 bg-surface-200 px-3 text-sm text-slate-100 focus:border-brand-500/60 focus:outline-none focus:ring-1 focus:ring-brand-500/30';
 const LABEL_CLASS = 'text-xs font-medium text-slate-400 tracking-wide uppercase';
 const SECTION_CLASS = 'mb-3 border-t border-surface-400/30 pt-4 text-xs font-semibold uppercase tracking-wider text-slate-500';
 
@@ -90,6 +90,11 @@ export default function PropertyFormModal({ open, onClose, property }: Props) {
   ) => {
     const val = (field === 'code' || field === 'state') ? e.target.value.toUpperCase() : e.target.value;
     setForm(f => ({ ...f, [field]: val }));
+    setErrors(err => ({ ...err, [field]: undefined }));
+  };
+
+  const setField = (field: keyof FormData) => (value: string) => {
+    setForm(f => ({ ...f, [field]: value }));
     setErrors(err => ({ ...err, [field]: undefined }));
   };
 
@@ -175,15 +180,11 @@ export default function PropertyFormModal({ open, onClose, property }: Props) {
           <div className="grid grid-cols-2 gap-4 mb-4">
             <div className="flex flex-col gap-1.5">
               <label className={LABEL_CLASS}>Type</label>
-              <select value={form.type} onChange={set('type')} className={SELECT_CLASS}>
-                {PROPERTY_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
-              </select>
+              <Select size="md" value={form.type} onChange={setField('type')} options={PROPERTY_TYPES} />
             </div>
             <div className="flex flex-col gap-1.5">
               <label className={LABEL_CLASS}>Status</label>
-              <select value={form.status} onChange={set('status')} className={SELECT_CLASS}>
-                {PROPERTY_STATUSES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
-              </select>
+              <Select size="md" value={form.status} onChange={setField('status')} options={PROPERTY_STATUSES} />
             </div>
           </div>
 

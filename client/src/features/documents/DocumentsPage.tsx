@@ -8,6 +8,7 @@ import { documentsService, type Document, type DocumentType } from '@/services/d
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
+import { Select } from '@/components/ui/Select';
 import { PageLoader } from '@/components/ui/Spinner';
 
 // ─── Config ───────────────────────────────────────────────────────────────────
@@ -101,15 +102,12 @@ function UploadModal({ onClose }: { onClose: () => void }) {
             placeholder="Document name"
             className="rounded-lg border border-surface-400/40 bg-surface-200 px-3 py-2 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-brand-500/50"
           />
-          <select
+          <Select
+            size="md"
             value={docType}
-            onChange={(e) => setDocType(e.target.value as DocumentType)}
-            className="rounded-lg border border-surface-400/40 bg-surface-200 px-3 py-2 text-sm text-slate-300 focus:outline-none focus:ring-1 focus:ring-brand-500/50"
-          >
-            {DOC_TYPES.map((t) => (
-              <option key={t} value={t}>{DOC_TYPE_CONFIG[t].label}</option>
-            ))}
-          </select>
+            onChange={(v) => setDocType(v as DocumentType)}
+            options={DOC_TYPES.map((t) => ({ value: t, label: DOC_TYPE_CONFIG[t].label }))}
+          />
         </div>
 
         <div className="flex justify-end gap-2 mt-5">
@@ -236,16 +234,15 @@ export default function DocumentsPage() {
         </div>
         <div className="flex items-center gap-1.5 text-xs text-slate-500">
           <Filter className="h-3.5 w-3.5" />
-          <select
+          <Select
             value={typeFilter}
-            onChange={(e) => setTypeFilter(e.target.value as DocumentType | '')}
-            className="rounded-md border border-surface-400/40 bg-surface-200 px-2 py-1.5 text-xs text-slate-300 focus:outline-none focus:ring-1 focus:ring-brand-500/50"
-          >
-            <option value="">All types</option>
-            {DOC_TYPES.map((t) => (
-              <option key={t} value={t}>{DOC_TYPE_CONFIG[t].label}</option>
-            ))}
-          </select>
+            onChange={(v) => setTypeFilter(v as DocumentType | '')}
+            options={[
+              { value: '', label: 'All types' },
+              ...DOC_TYPES.map((t) => ({ value: t, label: DOC_TYPE_CONFIG[t].label })),
+            ]}
+            className="w-36"
+          />
         </div>
       </div>
 

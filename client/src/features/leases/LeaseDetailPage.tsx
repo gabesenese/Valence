@@ -8,6 +8,7 @@ import {
   ChevronUp, ChevronDown, Eye, RotateCcw, BellOff, ArrowRight,
 } from 'lucide-react';
 import { leasesService, type RenewalStage } from '@/services/leases.service';
+import { Select } from '@/components/ui/Select';
 import LeaseFormModal from './LeaseFormModal';
 import { alertsService } from '@/services/alerts.service';
 import { authService } from '@/services/auth.service';
@@ -363,23 +364,26 @@ export default function LeaseDetailPage() {
             const urgent = !signed && days <= 30;
             const warn   = !signed && !urgent && days <= 60;
             return (
-              <div className={`text-right px-4 py-2 rounded-xl border ${
-                signed ? 'border-success/25 bg-success/10' :
-                urgent ? 'border-danger/30 bg-danger/10' :
-                warn   ? 'border-warning/30 bg-warning/10' :
-                         'border-surface-400/40 bg-surface-200'
-              }`}>
-                <p className={`text-3xl font-bold tabular-nums ${
-                  signed ? 'text-success' :
-                  urgent ? 'text-danger' :
-                  warn   ? 'text-warning' : 'text-white'
+              <>
+                <div className="h-8 w-px bg-surface-400/30" />
+                <div className={`text-right px-3 py-1.5 rounded-xl border ${
+                  signed ? 'border-success/25 bg-success/10' :
+                  urgent ? 'border-danger/30 bg-danger/10' :
+                  warn   ? 'border-warning/30 bg-warning/10' :
+                           'border-surface-400/40 bg-surface-200'
                 }`}>
-                  {days > 0 ? days : 0}
-                </p>
-                <p className="text-xs text-slate-400">
-                  {signed ? 'days · renewed' : 'days remaining'}
-                </p>
-              </div>
+                  <p className={`text-2xl font-bold tabular-nums leading-tight ${
+                    signed ? 'text-success' :
+                    urgent ? 'text-danger' :
+                    warn   ? 'text-warning' : 'text-white'
+                  }`}>
+                    {days >= 365 ? +(days / 365).toFixed(1) : Math.max(0, days)}
+                  </p>
+                  <p className="text-xs text-slate-400 leading-tight">
+                    {signed ? (days >= 365 ? 'yrs · renewed' : 'days · renewed') : days >= 365 ? 'years remaining' : 'days remaining'}
+                  </p>
+                </div>
+              </>
             );
           })()}
         </div>
@@ -427,17 +431,14 @@ export default function LeaseDetailPage() {
                   </button>
                 ) : (
                   <div className="flex items-center gap-1.5">
-                    <select
-                      defaultValue={lease.ownerUserId ?? ''}
-                      onChange={(e) => { if (e.target.value) assignOwnerMutation.mutate(e.target.value); }}
+                    <Select
+                      value={lease.ownerUserId ?? ''}
+                      onChange={(v) => { if (v) assignOwnerMutation.mutate(v); }}
                       disabled={assignOwnerMutation.isPending}
-                      className="h-7 rounded border border-surface-400 bg-surface-200 px-2 text-xs text-slate-100 focus:border-brand-500/60 focus:outline-none disabled:opacity-50"
-                    >
-                      <option value="">Select user…</option>
-                      {users?.map((u) => (
-                        <option key={u.id} value={u.id}>{u.firstName} {u.lastName}</option>
-                      ))}
-                    </select>
+                      placeholder="Select user…"
+                      options={users?.map((u) => ({ value: u.id, label: `${u.firstName} ${u.lastName}` })) ?? []}
+                      className="w-40"
+                    />
                     <button
                       onClick={() => setAssigningOwner(false)}
                       className="text-xs text-slate-600 hover:text-slate-300 transition-colors"

@@ -16,6 +16,7 @@ import { useAuthStore } from '@/state/auth.store';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
+import { Select } from '@/components/ui/Select';
 import { PageLoader } from '@/components/ui/Spinner';
 
 // ─── Config ───────────────────────────────────────────────────────────────────
@@ -198,15 +199,15 @@ function CreateRuleModal({ onClose }: { onClose: () => void }) {
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="text-[11px] text-slate-500 mb-1 block">Assign To</label>
-                    <select
+                    <Select
                       value={assignTo}
-                      onChange={(e) => setAssignTo(e.target.value)}
-                      className="w-full rounded-lg border border-surface-400/40 bg-surface-300/60 px-2.5 py-2 text-xs text-slate-300 focus:outline-none focus:ring-1 focus:ring-brand-500/50"
-                    >
-                      <option value="lease_owner">Lease Owner</option>
-                      <option value="manager">Assigned Manager</option>
-                      <option value="">Unassigned</option>
-                    </select>
+                      onChange={setAssignTo}
+                      options={[
+                        { value: 'lease_owner', label: 'Lease Owner' },
+                        { value: 'manager',     label: 'Assigned Manager' },
+                        { value: '',            label: 'Unassigned' },
+                      ]}
+                    />
                   </div>
                   <div>
                     <label className="text-[11px] text-slate-500 mb-1 block">Due In (days)</label>

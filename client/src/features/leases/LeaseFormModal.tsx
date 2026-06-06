@@ -5,6 +5,7 @@ import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { DatePicker } from '@/components/ui/DatePicker';
+import { Select } from '@/components/ui/Select';
 import { leasesService, type Lease, type CreateLeaseInput } from '@/services/leases.service';
 import { propertiesService } from '@/services/properties.service';
 import { tenantsService } from '@/services/tenants.service';
@@ -72,7 +73,6 @@ function toForm(l: Lease): FormData {
   };
 }
 
-const SELECT_CLASS = 'h-9 w-full rounded-lg border border-surface-400 bg-surface-200 px-3 text-sm text-slate-100 focus:border-brand-500/60 focus:outline-none focus:ring-1 focus:ring-brand-500/30 disabled:opacity-50';
 const LABEL_CLASS = 'text-xs font-medium text-slate-400 tracking-wide uppercase';
 const SECTION_CLASS = 'mb-3 border-t border-surface-400/30 pt-4 text-xs font-semibold uppercase tracking-wider text-slate-500';
 
@@ -103,9 +103,14 @@ export default function LeaseFormModal({ open, onClose, lease, initialValues }: 
   }, [open, lease]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const set = (field: keyof FormData) => (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     setForm(f => ({ ...f, [field]: e.target.value }));
+    setErrors(err => ({ ...err, [field]: undefined }));
+  };
+
+  const setField = (field: keyof FormData) => (value: string) => {
+    setForm(f => ({ ...f, [field]: value }));
     setErrors(err => ({ ...err, [field]: undefined }));
   };
 
@@ -210,22 +215,24 @@ export default function LeaseFormModal({ open, onClose, lease, initialValues }: 
               <div className="grid grid-cols-2 gap-4 mb-4">
                 <div className="flex flex-col gap-1.5">
                   <label className={LABEL_CLASS}>Property <span className="text-danger">*</span></label>
-                  <select value={form.propertyId} onChange={set('propertyId')} className={`${SELECT_CLASS} ${errors.propertyId ? 'border-danger/60' : ''}`}>
-                    <option value="">Select property…</option>
-                    {properties?.data.map(p => (
-                      <option key={p.id} value={p.id}>{p.name} ({p.code})</option>
-                    ))}
-                  </select>
+                  <Select
+                    size="md"
+                    value={form.propertyId}
+                    onChange={setField('propertyId')}
+                    placeholder="Select property…"
+                    options={properties?.data.map(p => ({ value: p.id, label: `${p.name} (${p.code})` })) ?? []}
+                  />
                   {errors.propertyId && <p className="text-xs text-danger">{errors.propertyId}</p>}
                 </div>
                 <div className="flex flex-col gap-1.5">
                   <label className={LABEL_CLASS}>Tenant <span className="text-danger">*</span></label>
-                  <select value={form.tenantId} onChange={set('tenantId')} className={`${SELECT_CLASS} ${errors.tenantId ? 'border-danger/60' : ''}`}>
-                    <option value="">Select tenant…</option>
-                    {tenants?.data.map(t => (
-                      <option key={t.id} value={t.id}>{t.name}{t.company ? ` (${t.company})` : ''}</option>
-                    ))}
-                  </select>
+                  <Select
+                    size="md"
+                    value={form.tenantId}
+                    onChange={setField('tenantId')}
+                    placeholder="Select tenant…"
+                    options={tenants?.data.map(t => ({ value: t.id, label: t.name + (t.company ? ` (${t.company})` : '') })) ?? []}
+                  />
                   {errors.tenantId && <p className="text-xs text-danger">{errors.tenantId}</p>}
                 </div>
               </div>
@@ -239,9 +246,12 @@ export default function LeaseFormModal({ open, onClose, lease, initialValues }: 
           <div className="grid grid-cols-2 gap-4 mb-4">
             <div className="flex flex-col gap-1.5">
               <label className={LABEL_CLASS}>Lease Type</label>
-              <select value={form.type} onChange={set('type')} className={SELECT_CLASS}>
-                {LEASE_TYPES.map(t => <option key={t.value} value={t.value}>{t.value.replace('_', ' ')}</option>)}
-              </select>
+              <Select
+                size="md"
+                value={form.type}
+                onChange={setField('type')}
+                options={LEASE_TYPES.map(t => ({ value: t.value, label: t.value.replace('_', ' ') }))}
+              />
               <p className="text-xs text-slate-600">
                 {LEASE_TYPES.find(t => t.value === form.type)?.label.split('—')[1]?.trim()}
               </p>
@@ -249,9 +259,12 @@ export default function LeaseFormModal({ open, onClose, lease, initialValues }: 
             {isEdit && (
               <div className="flex flex-col gap-1.5">
                 <label className={LABEL_CLASS}>Status</label>
-                <select value={form.status} onChange={set('status')} className={SELECT_CLASS}>
-                  {LEASE_STATUSES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
-                </select>
+                <Select
+                  size="md"
+                  value={form.status}
+                  onChange={setField('status')}
+                  options={LEASE_STATUSES.map(s => ({ value: s.value, label: s.label }))}
+                />
               </div>
             )}
             <Input

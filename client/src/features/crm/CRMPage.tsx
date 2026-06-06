@@ -10,6 +10,7 @@ import { usersService } from '@/services/users.service';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
+import { Select } from '@/components/ui/Select';
 import { PageLoader } from '@/components/ui/Spinner';
 
 // ─── Config ───────────────────────────────────────────────────────────────────
@@ -104,16 +105,14 @@ function AddContactLog({
       />
 
       {leases.length > 0 && (
-        <select
+        <Select
           value={leaseId}
-          onChange={(e) => setLeaseId(e.target.value)}
-          className="rounded-lg border border-surface-400/40 bg-surface-300/60 px-3 py-2 text-xs text-slate-300 focus:outline-none focus:ring-1 focus:ring-brand-500/50"
-        >
-          <option value="">No specific lease</option>
-          {leases.map((l) => (
-            <option key={l.id} value={l.id}>{l.leaseNumber} — {l.property.name}</option>
-          ))}
-        </select>
+          onChange={setLeaseId}
+          options={[
+            { value: '', label: 'No specific lease' },
+            ...leases.map((l) => ({ value: l.id, label: `${l.leaseNumber} — ${l.property.name}` })),
+          ]}
+        />
       )}
 
       <div className="flex gap-2">
@@ -216,15 +215,13 @@ function TenantPanel({ tenant, onClose }: { tenant: CrmTenant; onClose: () => vo
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-[11px] text-slate-500 mb-1 block">Status</label>
-                  <select
+                  <Select
                     value={editStatus}
-                    onChange={(e) => setEditStatus(e.target.value as CrmStatus)}
-                    className="w-full rounded-lg border border-surface-400/40 bg-surface-300/60 px-2.5 py-1.5 text-xs text-slate-300 focus:outline-none focus:ring-1 focus:ring-brand-500/50"
-                  >
-                    {(['ACTIVE', 'HIGH_VALUE', 'AT_RISK', 'CHURNED'] as CrmStatus[]).map((s) => (
-                      <option key={s} value={s}>{CRM_STATUS_CONFIG[s].label}</option>
-                    ))}
-                  </select>
+                    onChange={(v) => setEditStatus(v as CrmStatus)}
+                    options={(['ACTIVE', 'HIGH_VALUE', 'AT_RISK', 'CHURNED'] as CrmStatus[]).map((s) => ({
+                      value: s, label: CRM_STATUS_CONFIG[s].label,
+                    }))}
+                  />
                 </div>
                 <div>
                   <label className="text-[11px] text-slate-500 mb-1 block">Renewal Probability %</label>
@@ -242,16 +239,16 @@ function TenantPanel({ tenant, onClose }: { tenant: CrmTenant; onClose: () => vo
 
               <div>
                 <label className="text-[11px] text-slate-500 mb-1 block">Assigned Manager</label>
-                <select
+                <Select
                   value={managerId}
-                  onChange={(e) => setManagerId(e.target.value)}
-                  className="w-full rounded-lg border border-surface-400/40 bg-surface-300/60 px-2.5 py-1.5 text-xs text-slate-300 focus:outline-none focus:ring-1 focus:ring-brand-500/50"
-                >
-                  <option value="">No manager assigned</option>
-                  {users.filter((u) => u.isActive).map((u) => (
-                    <option key={u.id} value={u.id}>{u.firstName} {u.lastName}</option>
-                  ))}
-                </select>
+                  onChange={setManagerId}
+                  options={[
+                    { value: '', label: 'No manager assigned' },
+                    ...users.filter((u) => u.isActive).map((u) => ({
+                      value: u.id, label: `${u.firstName} ${u.lastName}`,
+                    })),
+                  ]}
+                />
               </div>
 
               <Button size="sm" loading={updateMutation.isPending} onClick={() => updateMutation.mutate()}>

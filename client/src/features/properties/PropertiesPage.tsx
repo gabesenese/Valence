@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { PageLoader } from '@/components/ui/Spinner';
 import PropertyFormModal from './PropertyFormModal';
+import { Select } from '@/components/ui/Select';
 
 const TYPE_OPTIONS: { value: PropertyType | ''; label: string }[] = [
   { value: '', label: 'All Types' },
@@ -27,7 +28,6 @@ const STATUS_OPTIONS: { value: PropertyStatus | ''; label: string }[] = [
   { value: 'DISPOSED', label: 'Disposed' },
 ];
 
-const SELECT_CLASS = 'h-9 rounded-lg border border-surface-400 bg-surface-200 px-3 text-sm text-slate-100 focus:border-brand-500/60 focus:outline-none';
 
 export default function PropertiesPage() {
   const navigate = useNavigate();
@@ -72,12 +72,8 @@ export default function PropertiesPage() {
             className="h-9 w-56 rounded-lg border border-surface-400 bg-surface-200 pl-9 pr-3 text-sm text-slate-100 placeholder:text-slate-600 focus:border-brand-500/60 focus:outline-none focus:ring-1 focus:ring-brand-500/30"
           />
         </div>
-        <select value={type} onChange={(e) => setType(e.target.value as PropertyType | '')} className={SELECT_CLASS}>
-          {TYPE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-        </select>
-        <select value={status} onChange={(e) => setStatus(e.target.value as PropertyStatus | '')} className={SELECT_CLASS}>
-          {STATUS_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-        </select>
+        <Select value={type} onChange={(v) => setType(v as PropertyType | '')} options={TYPE_OPTIONS} className="w-40" />
+        <Select value={status} onChange={(v) => setStatus(v as PropertyStatus | '')} options={STATUS_OPTIONS} className="w-44" />
         {(search || type || status) && (
           <button
             onClick={() => { setSearch(''); setType(''); setStatus(''); }}
