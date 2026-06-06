@@ -1,71 +1,148 @@
-import { useState } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import {
-  ClipboardList, CheckCircle2, Circle, Clock, X, Plus, Filter,
-  Building2, FileText, AlertTriangle,
+  ClipboardList, X, Plus, Building2, FileText, AlertTriangle, ChevronDown,
 } from 'lucide-react';
-import { tasksService, type Task, type TaskStatus } from '@/services/tasks.service';
-import { usersService } from '@/services/users.service';
+import { tasksService, type Task, type TaskStatus, type CreateTaskInput } from '@/services/tasks.service';
+import { usersService, type TeamMember } from '@/services/users.service';
 import { useAuthStore } from '@/state/auth.store';
 import { Card } from '@/components/ui/Card';
-import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
+import { Select } from '@/components/ui/Select';
+import { DatePicker } from '@/components/ui/DatePicker';
 import { PageLoader } from '@/components/ui/Spinner';
 
-// ─── Config ───────────────────────────────────────────────────────────────────
+// ─── Status config ─────────────────────────────────────────────────────────────
 
-const STATUS_CONFIG: Record<TaskStatus, { label: string; icon: React.ComponentType<{ className?: string }>; color: string }> = {
-  OPEN:        { label: 'Open',        icon: Circle,       color: 'text-slate-400' },
-  IN_PROGRESS: { label: 'In Progress', icon: Clock,        color: 'text-warning'   },
-  COMPLETED:   { label: 'Completed',   icon: CheckCircle2, color: 'text-success'   },
-  CANCELLED:   { label: 'Cancelled',   icon: X,            color: 'text-slate-600' },
+const STATUS_CONFIG: Record<
+  TaskStatus,
+  { label: string; dot: string; badge: string }
+> = {
+  OPEN:        { label: 'Open',        dot: 'bg-slate-400', badge: 'bg-surface-400/60 text-slate-300 border-surface-500/60' },
+  IN_PROGRESS: { label: 'In Progress', dot: 'bg-info',      badge: 'bg-info/10 text-info border-info/20'                    },
+  COMPLETED:   { label: 'Completed',   dot: 'bg-success',   badge: 'bg-success/10 text-success border-success/20'           },
+  CANCELLED:   { label: 'Cancelled',   dot: 'bg-slate-600', badge: 'bg-surface-300/40 text-slate-500 border-surface-400/30' },
 };
 
-const NEXT: Partial<Record<TaskStatus, TaskStatus>> = {
-  OPEN: 'IN_PROGRESS',
-  IN_PROGRESS: 'COMPLETED',
-};
+const ALL_STATUSES: TaskStatus[] = ['OPEN', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'];
 
-function formatDate(s: string | null) {
+const STATUS_FILTER_OPTIONS = [
+  { value: 'OPEN',        label: 'Open'        },
+  { value: 'IN_PROGRESS', label: 'In Progress' },
+  { value: 'COMPLETED',   label: 'Completed'   },
+  { value: 'all',         label: 'All'         },
+];
+
+function fmtDate(s: string | null) {
   if (!s) return null;
   return new Date(s).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
+// ─── Inline status picker ──────────────────────────────────────────────────────
+// Portaled to document.body so it escapes overflow-x-auto / overflow-hidden parents.
+
+function StatusPicker({ status, onChange }: { status: TaskStatus; onChange: (s: TaskStatus) => void }) {
+  const [open, setOpen] = useState(false);
+  const [rect, setRect] = useState<DOMRect | null>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const cfg = STATUS_CONFIG[status];
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      const t = e.target as Node;
+      if (triggerRef.current?.contains(t) || dropdownRef.current?.contains(t)) return;
+      setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  const handleToggle = () => {
+    if (!open && triggerRef.current) setRect(triggerRef.current.getBoundingClientRect());
+    setOpen((o) => !o);
+  };
+
+  return (
+    <>
+      <button
+        ref={triggerRef}
+        type="button"
+        onClick={handleToggle}
+        className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-xs font-medium tracking-wide transition-all hover:brightness-110 ${cfg.badge}`}
+      >
+        <span className={`h-1.5 w-1.5 rounded-full ${cfg.dot}`} />
+        {cfg.label}
+        <ChevronDown className={`h-3 w-3 opacity-50 transition-transform duration-150 ${open ? 'rotate-180' : ''}`} />
+      </button>
+
+      {open && rect && createPortal(
+        <div
+          ref={dropdownRef}
+          style={{ position: 'fixed', top: rect.bottom + 4, left: rect.left, zIndex: 9999 }}
+          className="w-36 overflow-hidden rounded-xl border border-surface-400/60 bg-surface-100 py-1 shadow-2xl shadow-black/60"
+        >
+          {ALL_STATUSES.map((s) => {
+            const c = STATUS_CONFIG[s];
+            return (
+              <button
+                key={s}
+                type="button"
+                onClick={() => { onChange(s); setOpen(false); }}
+                className={`flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs transition-colors hover:bg-surface-300 ${
+                  s === status ? 'text-white' : 'text-slate-400'
+                }`}
+              >
+                <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${c.dot}`} />
+                {c.label}
+              </button>
+            );
+          })}
+        </div>,
+        document.body,
+      )}
+    </>
+  );
+}
+
 // ─── Task row ─────────────────────────────────────────────────────────────────
 
-function TaskRow({ task, onStatusChange, onDelete }: {
+function TaskRow({
+  task,
+  onStatusChange,
+  onDelete,
+}: {
   task: Task;
   onStatusChange: (id: string, status: TaskStatus) => void;
   onDelete: (id: string) => void;
 }) {
   const navigate = useNavigate();
-  const cfg = STATUS_CONFIG[task.status];
-  const Icon = cfg.icon;
-  const next = NEXT[task.status];
-  const isOverdue = task.dueAt && task.status !== 'COMPLETED' && task.status !== 'CANCELLED'
-    && new Date(task.dueAt) < new Date();
+  const isTemp = task.id.startsWith('temp-');
+  const isOverdue =
+    task.dueAt &&
+    task.status !== 'COMPLETED' &&
+    task.status !== 'CANCELLED' &&
+    new Date(task.dueAt) < new Date();
 
   return (
-    <tr className="border-b border-surface-400/30 hover:bg-surface-200/30 transition-colors group">
-      <td className="px-4 py-3 w-8">
-        <button
-          onClick={() => next && onStatusChange(task.id, next)}
-          disabled={!next}
-          className={`transition-colors ${cfg.color} ${next ? 'hover:opacity-70' : 'cursor-default opacity-50'}`}
-          title={next ? `Mark as ${STATUS_CONFIG[next].label}` : cfg.label}
-        >
-          <Icon className="h-4 w-4" />
-        </button>
-      </td>
+    <tr className={`border-b border-surface-400/30 transition-colors group ${isTemp ? 'opacity-60' : 'hover:bg-surface-200/30'}`}>
       <td className="px-4 py-3">
-        <p className={`text-sm font-medium ${task.status === 'COMPLETED' ? 'line-through text-slate-500' : 'text-slate-200'}`}>
+        <p
+          className={`text-sm font-medium ${
+            task.status === 'COMPLETED' ? 'line-through text-slate-500' :
+            task.status === 'CANCELLED' ? 'text-slate-600' : 'text-slate-200'
+          }`}
+        >
           {task.title}
         </p>
         {task.description && (
           <p className="text-xs text-slate-500 mt-0.5 line-clamp-1">{task.description}</p>
         )}
       </td>
+
       <td className="px-4 py-3">
         <div className="flex flex-col gap-0.5">
           {task.lease && (
@@ -97,6 +174,7 @@ function TaskRow({ task, onStatusChange, onDelete }: {
           )}
         </div>
       </td>
+
       <td className="px-4 py-3">
         {task.assignee ? (
           <div className="flex items-center gap-1.5">
@@ -109,59 +187,77 @@ function TaskRow({ task, onStatusChange, onDelete }: {
           <span className="text-xs text-slate-600">Unassigned</span>
         )}
       </td>
+
       <td className="px-4 py-3">
         {task.dueAt ? (
           <span className={`text-xs font-medium ${isOverdue ? 'text-danger' : 'text-slate-400'}`}>
-            {isOverdue ? 'Overdue · ' : ''}{formatDate(task.dueAt)}
+            {isOverdue ? 'Overdue · ' : ''}{fmtDate(task.dueAt)}
           </span>
         ) : (
           <span className="text-xs text-slate-600">—</span>
         )}
       </td>
+
       <td className="px-4 py-3">
-        <Badge variant={
-          task.status === 'COMPLETED' ? 'success' :
-          task.status === 'IN_PROGRESS' ? 'info' :
-          task.status === 'CANCELLED' ? 'neutral' : 'neutral'
-        }>
-          {STATUS_CONFIG[task.status].label}
-        </Badge>
+        {isTemp ? (
+          <span className="text-xs text-slate-600 italic">Saving…</span>
+        ) : (
+          <StatusPicker status={task.status} onChange={(s) => onStatusChange(task.id, s)} />
+        )}
       </td>
+
       <td className="px-4 py-3 text-xs text-slate-600">
         {new Date(task.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
       </td>
+
       <td className="px-4 py-3 opacity-0 group-hover:opacity-100 transition-opacity">
-        <button
-          onClick={() => onDelete(task.id)}
-          className="text-slate-600 hover:text-danger transition-colors"
-          title="Delete task"
-        >
-          <X className="h-3.5 w-3.5" />
-        </button>
+        {!isTemp && (
+          <button
+            onClick={() => onDelete(task.id)}
+            className="text-slate-600 hover:text-danger transition-colors"
+            title="Delete"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        )}
       </td>
     </tr>
   );
 }
 
-// ─── Create task modal ────────────────────────────────────────────────────────
+// ─── Create task modal ─────────────────────────────────────────────────────────
+// Pure form — no mutation here. Parent handles the optimistic create.
 
-function CreateTaskModal({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
+function CreateTaskModal({
+  onClose,
+  onSubmit,
+  users,
+}: {
+  onClose: () => void;
+  onSubmit: (data: CreateTaskInput) => void;
+  users: TeamMember[];
+}) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [assigneeUserId, setAssigneeUserId] = useState('');
   const [dueAt, setDueAt] = useState('');
 
-  const { data: users = [] } = useQuery({ queryKey: ['users'], queryFn: usersService.listUsers });
+  const assigneeOptions = [
+    { value: '', label: 'Unassigned' },
+    ...users
+      .filter((u) => u.isActive)
+      .map((u) => ({ value: u.id, label: `${u.firstName} ${u.lastName}` })),
+  ];
 
-  const mutation = useMutation({
-    mutationFn: () => tasksService.create({
+  const submit = () => {
+    if (!title.trim()) return;
+    onSubmit({
       title: title.trim(),
       description: description.trim() || undefined,
       assigneeUserId: assigneeUserId || undefined,
       dueAt: dueAt || undefined,
-    }),
-    onSuccess: () => { onCreated(); onClose(); },
-  });
+    });
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
@@ -172,6 +268,7 @@ function CreateTaskModal({ onClose, onCreated }: { onClose: () => void; onCreate
             autoFocus
             value={title}
             onChange={(e) => setTitle(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') submit(); }}
             placeholder="Task title"
             className="rounded-lg border border-surface-400/40 bg-surface-200 px-3 py-2 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-brand-500/50"
           />
@@ -182,31 +279,23 @@ function CreateTaskModal({ onClose, onCreated }: { onClose: () => void; onCreate
             rows={2}
             className="rounded-lg border border-surface-400/40 bg-surface-200 px-3 py-2 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-brand-500/50 resize-none"
           />
-          <select
+          <Select
+            size="md"
             value={assigneeUserId}
-            onChange={(e) => setAssigneeUserId(e.target.value)}
-            className="rounded-lg border border-surface-400/40 bg-surface-200 px-3 py-2 text-sm text-slate-300 focus:outline-none focus:ring-1 focus:ring-brand-500/50"
-          >
-            <option value="">Unassigned</option>
-            {users.filter((u) => u.isActive).map((u) => (
-              <option key={u.id} value={u.id}>{u.firstName} {u.lastName}</option>
-            ))}
-          </select>
-          <input
-            type="date"
+            onChange={setAssigneeUserId}
+            options={assigneeOptions}
+            placeholder="Assign to..."
+          />
+          <DatePicker
             value={dueAt}
-            onChange={(e) => setDueAt(e.target.value)}
-            className="rounded-lg border border-surface-400/40 bg-surface-200 px-3 py-2 text-sm text-slate-300 focus:outline-none focus:ring-1 focus:ring-brand-500/50"
+            onChange={setDueAt}
+            onClear={dueAt ? () => setDueAt('') : undefined}
+            placeholder="Due date (optional)"
           />
         </div>
         <div className="flex justify-end gap-2 mt-5">
           <Button variant="ghost" size="sm" onClick={onClose}>Cancel</Button>
-          <Button
-            size="sm"
-            disabled={!title.trim()}
-            loading={mutation.isPending}
-            onClick={() => mutation.mutate()}
-          >
+          <Button size="sm" disabled={!title.trim()} onClick={submit}>
             Create Task
           </Button>
         </div>
@@ -217,50 +306,127 @@ function CreateTaskModal({ onClose, onCreated }: { onClose: () => void; onCreate
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
-const STATUS_FILTERS: { label: string; value: string }[] = [
-  { label: 'Open',        value: 'OPEN' },
-  { label: 'In Progress', value: 'IN_PROGRESS' },
-  { label: 'Completed',   value: 'COMPLETED' },
-  { label: 'All',         value: 'all' },
-];
-
 export default function TasksPage() {
   const me = useAuthStore((s) => s.user);
   const qc = useQueryClient();
-  const [statusFilter, setStatusFilter] = useState<string>('OPEN');
-  const [assigneeFilter, setAssigneeFilter] = useState<string>('');
+  const [statusFilter, setStatusFilter] = useState('OPEN');
+  const [assigneeFilter, setAssigneeFilter] = useState('');
   const [showCreate, setShowCreate] = useState(false);
 
-  const { data: users = [] } = useQuery({ queryKey: ['users'], queryFn: usersService.listUsers });
-
-  const queryParams = {
-    ...(statusFilter !== 'all' ? { status: statusFilter as TaskStatus } : {}),
-    ...(assigneeFilter === 'me' ? { assigneeUserId: me?.id } :
-        assigneeFilter === 'unassigned' ? { unassigned: true } :
-        assigneeFilter ? { assigneeUserId: assigneeFilter } : {}),
-  };
-
   const { data: tasks = [], isLoading } = useQuery({
-    queryKey: ['tasks', 'all', queryParams],
-    queryFn: () => tasksService.getAll(queryParams),
+    queryKey: ['tasks'],
+    queryFn: () => tasksService.getAll(),
+    staleTime: 30_000,
   });
 
+  const { data: users = [] } = useQuery({
+    queryKey: ['users'],
+    queryFn: usersService.listUsers,
+    staleTime: 60_000,
+  });
+
+  const assigneeFilterOptions = useMemo(
+    () => [
+      { value: '',           label: 'All assignees'  },
+      { value: 'me',         label: 'Assigned to me' },
+      { value: 'unassigned', label: 'Unassigned'     },
+      ...users
+        .filter((u) => u.isActive)
+        .map((u) => ({ value: u.id, label: `${u.firstName} ${u.lastName}` })),
+    ],
+    [users],
+  );
+
+  const filtered = useMemo(
+    () =>
+      tasks
+        .filter((t) => statusFilter === 'all' || t.status === statusFilter)
+        .filter((t) => {
+          if (!assigneeFilter) return true;
+          if (assigneeFilter === 'me') return t.assignee?.id === me?.id;
+          if (assigneeFilter === 'unassigned') return !t.assignee;
+          return t.assignee?.id === assigneeFilter;
+        }),
+    [tasks, statusFilter, assigneeFilter, me?.id],
+  );
+
+  const openCount       = useMemo(() => tasks.filter((t) => t.status === 'OPEN').length, [tasks]);
+  const inProgressCount = useMemo(() => tasks.filter((t) => t.status === 'IN_PROGRESS').length, [tasks]);
+  const overdueCount    = useMemo(
+    () => tasks.filter((t) => t.dueAt && t.status !== 'COMPLETED' && t.status !== 'CANCELLED' && new Date(t.dueAt) < new Date()).length,
+    [tasks],
+  );
+
+  // ── Optimistic create: close modal instantly, insert temp task ────────────
+  const createMutation = useMutation({
+    mutationFn: tasksService.create,
+    onMutate: async (input) => {
+      setShowCreate(false); // close immediately — no waiting for the server
+
+      await qc.cancelQueries({ queryKey: ['tasks'] });
+      const prev = qc.getQueryData<Task[]>(['tasks']);
+
+      const assigneeUser = users.find((u) => u.id === input.assigneeUserId);
+      const tempId = `temp-${Date.now()}`;
+      const tempTask: Task = {
+        id: tempId,
+        title: input.title,
+        description: input.description ?? null,
+        status: 'OPEN',
+        alertId: null, leaseId: null, propertyId: null,
+        completedAt: null, completionNote: null,
+        dueAt: input.dueAt ? new Date(input.dueAt).toISOString() : null,
+        createdAt: new Date().toISOString(),
+        assignee: assigneeUser
+          ? { id: assigneeUser.id, firstName: assigneeUser.firstName, lastName: assigneeUser.lastName }
+          : null,
+        createdBy: null, completedBy: null,
+        alert: null, lease: null, property: null,
+      };
+
+      qc.setQueryData<Task[]>(['tasks'], (old) => (old ? [tempTask, ...old] : [tempTask]));
+      return { prev, tempId };
+    },
+    onSuccess: (realTask, _input, ctx) => {
+      // Swap temp placeholder with the real task from the server
+      qc.setQueryData<Task[]>(['tasks'], (old) =>
+        old?.map((t) => (t.id === ctx?.tempId ? realTask : t)) ?? [],
+      );
+    },
+    onError: (_e, _v, ctx) => {
+      if (ctx?.prev) qc.setQueryData(['tasks'], ctx.prev);
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: ['tasks'] }),
+  });
+
+  // ── Optimistic status change ──────────────────────────────────────────────
   const statusMutation = useMutation({
     mutationFn: ({ id, status }: { id: string; status: TaskStatus }) =>
       tasksService.updateStatus(id, status),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['tasks'] }),
+    onMutate: async ({ id, status }) => {
+      await qc.cancelQueries({ queryKey: ['tasks'] });
+      const prev = qc.getQueryData<Task[]>(['tasks']);
+      qc.setQueryData<Task[]>(['tasks'], (old) =>
+        old?.map((t) => (t.id === id ? { ...t, status } : t)) ?? [],
+      );
+      return { prev };
+    },
+    onError: (_e, _v, ctx) => { if (ctx?.prev) qc.setQueryData(['tasks'], ctx.prev); },
+    onSettled: () => qc.invalidateQueries({ queryKey: ['tasks'] }),
   });
 
+  // ── Optimistic delete ─────────────────────────────────────────────────────
   const deleteMutation = useMutation({
     mutationFn: tasksService.delete,
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['tasks'] }),
+    onMutate: async (id) => {
+      await qc.cancelQueries({ queryKey: ['tasks'] });
+      const prev = qc.getQueryData<Task[]>(['tasks']);
+      qc.setQueryData<Task[]>(['tasks'], (old) => old?.filter((t) => t.id !== id) ?? []);
+      return { prev };
+    },
+    onError: (_e, _v, ctx) => { if (ctx?.prev) qc.setQueryData(['tasks'], ctx.prev); },
+    onSettled: () => qc.invalidateQueries({ queryKey: ['tasks'] }),
   });
-
-  const openCount = tasks.filter((t) => t.status === 'OPEN').length;
-  const inProgressCount = tasks.filter((t) => t.status === 'IN_PROGRESS').length;
-  const overdueCount = tasks.filter(
-    (t) => t.dueAt && t.status !== 'COMPLETED' && t.status !== 'CANCELLED' && new Date(t.dueAt) < new Date()
-  ).length;
 
   return (
     <div className="flex flex-col gap-6 p-6 animate-fade-in">
@@ -269,7 +435,8 @@ export default function TasksPage() {
         <div>
           <h1 className="text-xl font-bold text-white tracking-tight">Tasks</h1>
           <p className="mt-0.5 text-sm text-slate-500">
-            {openCount} open · {inProgressCount} in progress{overdueCount > 0 ? ` · ${overdueCount} overdue` : ''}
+            {openCount} open · {inProgressCount} in progress
+            {overdueCount > 0 ? ` · ${overdueCount} overdue` : ''}
           </p>
         </div>
         <Button size="sm" onClick={() => setShowCreate(true)}>
@@ -280,9 +447,8 @@ export default function TasksPage() {
 
       {/* Filters */}
       <div className="flex flex-wrap gap-3 items-center">
-        {/* Status */}
         <div className="flex rounded-lg border border-surface-400/40 overflow-hidden">
-          {STATUS_FILTERS.map((f) => (
+          {STATUS_FILTER_OPTIONS.map((f) => (
             <button
               key={f.value}
               onClick={() => setStatusFilter(f.value)}
@@ -297,29 +463,19 @@ export default function TasksPage() {
           ))}
         </div>
 
-        {/* Assignee */}
-        <div className="flex items-center gap-1.5 text-xs text-slate-500">
-          <Filter className="h-3.5 w-3.5" />
-          <select
-            value={assigneeFilter}
-            onChange={(e) => setAssigneeFilter(e.target.value)}
-            className="rounded-md border border-surface-400/40 bg-surface-200 px-2 py-1.5 text-xs text-slate-300 focus:outline-none focus:ring-1 focus:ring-brand-500/50"
-          >
-            <option value="">All assignees</option>
-            <option value="me">Assigned to me</option>
-            <option value="unassigned">Unassigned</option>
-            {users.filter((u) => u.isActive).map((u) => (
-              <option key={u.id} value={u.id}>{u.firstName} {u.lastName}</option>
-            ))}
-          </select>
-        </div>
+        <Select
+          value={assigneeFilter}
+          onChange={setAssigneeFilter}
+          options={assigneeFilterOptions}
+          className="w-44"
+        />
       </div>
 
       {/* Table */}
       <Card>
         {isLoading ? (
           <PageLoader />
-        ) : tasks.length === 0 ? (
+        ) : filtered.length === 0 ? (
           <div className="py-16 text-center">
             <ClipboardList className="mx-auto h-8 w-8 text-slate-600 mb-2" />
             <p className="text-sm text-slate-500">No tasks match these filters</p>
@@ -329,14 +485,15 @@ export default function TasksPage() {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-surface-400/40">
-                  <th className="px-4 py-3 w-8" />
                   {['Task', 'Context', 'Assignee', 'Due', 'Status', 'Created', ''].map((h) => (
-                    <th key={h} className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">{h}</th>
+                    <th key={h} className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">
+                      {h}
+                    </th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {tasks.map((t) => (
+                {filtered.map((t) => (
                   <TaskRow
                     key={t.id}
                     task={t}
@@ -353,7 +510,8 @@ export default function TasksPage() {
       {showCreate && (
         <CreateTaskModal
           onClose={() => setShowCreate(false)}
-          onCreated={() => qc.invalidateQueries({ queryKey: ['tasks'] })}
+          onSubmit={(data) => createMutation.mutate(data)}
+          users={users}
         />
       )}
     </div>
