@@ -56,6 +56,13 @@ export interface HealthScoreComponent {
   maxScore:    number;
   label:       string;
   description: string;
+  delta:       number;
+}
+
+export interface ScoreDriver {
+  name:  string;
+  label: string;
+  delta: number;
 }
 
 export interface PortfolioHealthScore {
@@ -64,6 +71,10 @@ export interface PortfolioHealthScore {
   trend:      'up' | 'down' | 'stable';
   band:       'critical' | 'at_risk' | 'stable' | 'healthy';
   components: HealthScoreComponent[];
+  drivers: {
+    positive: ScoreDriver[];
+    negative: ScoreDriver[];
+  };
   computedAt: string;
 }
 

@@ -21,6 +21,10 @@ export interface PropertyScorecard {
   expiringSoon:    number;
   highRiskLeases:  number;
   riskScore:       number;
+  // Composite performance score (0–100): weighted avg of normalized revenue, NOI, occupancy ranks
+  compositeScore:  number;
+  // Portfolio-relative percentile (0–100): 95 = top 5%, 10 = bottom 10%
+  percentile:      number;
   ranks: {
     byRevenue:   number;
     byGrowth:    number | null;
@@ -194,6 +198,8 @@ export async function getBenchmarks(): Promise<BenchmarkReport> {
         expiringSoon,
         highRiskLeases,
         riskScore,
+        compositeScore: 0,
+        percentile: 0,
         ranks: { byRevenue: 0, byGrowth: null as number | null, byNOI: 0, byRisk: 0, byOccupancy: 0 },
         isOutlier: false,
         outlierReasons: [] as string[],
@@ -216,6 +222,27 @@ export async function getBenchmarks(): Promise<BenchmarkReport> {
     p.ranks.byOccupancy = byOccupancy.findIndex(x => x.id === p.id) + 1;
     const gi = byGrowth.findIndex(x => x.id === p.id);
     p.ranks.byGrowth    = gi !== -1 ? gi + 1 : null;
+  }
+
+  // ── Composite score & percentile ──────────────────────────────────────────
+  // Normalize each rank to 0–100 (rank 1 of N → 100, rank N of N → 0),
+  // then average revenue, NOI, and occupancy contributions equally.
+  // Risk score is inverted (lower = better) and contributes as a penalty.
+  const N = scorecards.length;
+  const norm = (rank: number) => N > 1 ? ((N - rank) / (N - 1)) * 100 : 100;
+
+  for (const p of scorecards) {
+    const perfScore = (norm(p.ranks.byRevenue) + norm(p.ranks.byNOI) + norm(p.ranks.byOccupancy)) / 3;
+    // Risk score is 0–100 where higher = worse; invert for penalty (max -20 pts)
+    const riskPenalty = (p.riskScore / 100) * 20;
+    p.compositeScore = Math.round(Math.max(0, Math.min(100, perfScore - riskPenalty)));
+  }
+
+  // Rank by composite score descending, then assign percentile
+  const byComposite = [...scorecards].sort((a, b) => b.compositeScore - a.compositeScore);
+  for (const p of scorecards) {
+    const compositeRank = byComposite.findIndex(x => x.id === p.id) + 1;
+    p.percentile = N > 1 ? Math.round(norm(compositeRank)) : 100;
   }
 
   // ── Outlier detection ──────────────────────────────────────────────────────

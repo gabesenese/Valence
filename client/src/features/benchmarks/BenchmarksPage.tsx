@@ -26,6 +26,41 @@ function RankBadge({ rank, total }: { rank: number; total: number }) {
   );
 }
 
+// ─── Percentile badge ─────────────────────────────────────────────────────────
+
+function PercentileBadge({ percentile, total }: { percentile: number; total: number }) {
+  if (total < 2) return null;
+
+  let label: string;
+  let cls: string;
+
+  if (percentile >= 90) {
+    label = 'Top 10%';
+    cls   = 'bg-amber-500/15 text-amber-400 ring-amber-500/25';
+  } else if (percentile >= 75) {
+    label = 'Top 25%';
+    cls   = 'bg-success/10 text-success ring-success/20';
+  } else if (percentile >= 50) {
+    label = 'Top 50%';
+    cls   = 'bg-brand-600/10 text-brand-400 ring-brand-500/20';
+  } else if (percentile >= 25) {
+    label = 'Bottom 50%';
+    cls   = 'bg-surface-300/50 text-slate-400 ring-surface-400/30';
+  } else if (percentile >= 10) {
+    label = 'Bottom 25%';
+    cls   = 'bg-warning/10 text-warning ring-warning/20';
+  } else {
+    label = 'Bottom 10%';
+    cls   = 'bg-danger/10 text-danger ring-danger/20';
+  }
+
+  return (
+    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold ring-1 ${cls}`}>
+      {label}
+    </span>
+  );
+}
+
 // ─── Risk bar ─────────────────────────────────────────────────────────────────
 
 function RiskBar({ score }: { score: number }) {
@@ -248,7 +283,7 @@ export default function BenchmarksPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-surface-400/30">
-                {['#', 'Property', 'Revenue', 'MoM', 'NOI', 'Rev/Unit', 'Occupancy', 'Alerts', 'Expiring', 'Risk'].map(h => (
+                {['#', 'Property', 'Score', 'Revenue', 'MoM', 'NOI', 'Rev/Unit', 'Occupancy', 'Alerts', 'Expiring', 'Risk'].map(h => (
                   <th key={h} className="px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500 whitespace-nowrap first:pl-5">
                     {h}
                   </th>
@@ -279,6 +314,12 @@ export default function BenchmarksPage() {
                         {p.isOutlier && (
                           <span className="ml-1 inline-flex rounded-full bg-warning/10 border border-warning/20 px-1.5 py-0.5 text-[9px] font-bold text-warning">OUTLIER</span>
                         )}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      <div className="flex flex-col gap-1">
+                        <span className="text-sm font-bold text-white tabular-nums">{p.compositeScore}</span>
+                        <PercentileBadge percentile={p.percentile} total={total} />
                       </div>
                     </td>
                     <td className="px-4 py-3 font-semibold text-white tabular-nums whitespace-nowrap">
@@ -338,6 +379,7 @@ export default function BenchmarksPage() {
                 <td className="pl-5 pr-3 py-3 text-[10px] text-slate-600 font-semibold uppercase tracking-wider" colSpan={2}>
                   Portfolio avg
                 </td>
+                <td className="px-4 py-3 text-slate-600">—</td>
                 <td className="px-4 py-3 text-slate-500 tabular-nums text-sm">{compactCurrency(portfolioAverages.monthlyRevenue)}</td>
                 <td className="px-4 py-3 text-slate-600">—</td>
                 <td className="px-4 py-3 text-slate-500 tabular-nums text-sm">{compactCurrency(portfolioAverages.noi)}</td>

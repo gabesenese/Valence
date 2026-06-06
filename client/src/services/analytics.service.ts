@@ -80,6 +80,8 @@ export interface PropertyScorecard {
   expiringSoon:    number;
   highRiskLeases:  number;
   riskScore:       number;
+  compositeScore:  number;
+  percentile:      number;
   ranks: {
     byRevenue:   number;
     byGrowth:    number | null;
