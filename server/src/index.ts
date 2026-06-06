@@ -22,8 +22,17 @@ import { aiRouter } from './modules/ai/ai.routes';
 import { tenantsRouter } from './modules/tenants/tenants.routes';
 import { workQueueRouter } from './modules/workQueue/work-queue.routes';
 import { tasksRouter } from './modules/tasks/tasks.routes';
+import { crmRouter } from './modules/crm/crm.routes';
+import { documentsRouter } from './modules/documents/documents.routes';
+import { automationRouter } from './modules/automation/automation.routes';
 import cron from 'node-cron';
 import { runAnomalyScan } from './modules/alerts/anomaly.service';
+import { runAllRules } from './modules/automation/automation.service';
+import { mkdirSync } from 'fs';
+import path from 'path';
+
+// Ensure upload directory exists
+mkdirSync(path.resolve('uploads/documents'), { recursive: true });
 
 const app = express();
 
@@ -72,6 +81,9 @@ app.use('/api/ai', aiRouter);
 app.use('/api/tenants', tenantsRouter);
 app.use('/api/work-queue', workQueueRouter);
 app.use('/api/tasks', tasksRouter);
+app.use('/api/crm', crmRouter);
+app.use('/api/documents', documentsRouter);
+app.use('/api/automation', automationRouter);
 
 // ─── Error Handling ───────────────────────────────────────────────────────────
 app.use(notFoundHandler);
@@ -94,7 +106,19 @@ async function start() {
       .catch((err) => logger.warn('Anomaly scan failed', { error: err }));
 
   cron.schedule('0 */6 * * *', scan);
-  scan(); // run once at startup (non-blocking — lock prevents doubles)
+  scan(); // run once at startup
+
+  // Automation rules — runs every hour
+  const automate = () =>
+    runAllRules()
+      .then(({ total, tasksCreated }) => {
+        if (tasksCreated > 0)
+          logger.info(`Automation: ran ${total} rules, created ${tasksCreated} tasks`);
+      })
+      .catch((err) => logger.warn('Automation run failed', { error: err }));
+
+  cron.schedule('0 * * * *', automate);
+  automate(); // run once at startup
 
   const shutdown = async (signal: string) => {
     logger.info(`${signal} received, shutting down gracefully`);

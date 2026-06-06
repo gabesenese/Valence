@@ -2,21 +2,43 @@ import { Router } from 'express';
 import type { Request, Response, NextFunction } from 'express';
 import { authenticate } from '../../middleware/authenticate';
 import { sendSuccess } from '../../utils/response';
-import { getTasksForItem, createTask, updateTaskStatus, deleteTask, type TaskStatus } from './tasks.service';
+import {
+  getTasksForItem,
+  listAllTasks,
+  createTask,
+  updateTask,
+  updateTaskStatus,
+  deleteTask,
+  type TaskStatus,
+} from './tasks.service';
 
 const router = Router();
 router.use(authenticate);
 
-// GET /tasks?alertId=&leaseId=&propertyId=
+// GET /tasks?alertId=&leaseId=&propertyId=&status=&assigneeUserId=&unassigned=
 router.get('/', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { alertId, leaseId, propertyId } = req.query as Record<string, string | undefined>;
-    const tasks = await getTasksForItem({
-      ...(alertId    ? { alertId }    : {}),
-      ...(leaseId    ? { leaseId }    : {}),
-      ...(propertyId ? { propertyId } : {}),
+    const { alertId, leaseId, propertyId, status, assigneeUserId, unassigned } =
+      req.query as Record<string, string | undefined>;
+
+    // If scoped to a specific work item, use the item-level query
+    if (alertId || (leaseId && !status && !assigneeUserId) || (propertyId && !status && !assigneeUserId)) {
+      const tasks = await getTasksForItem({
+        ...(alertId    ? { alertId }    : {}),
+        ...(leaseId    ? { leaseId }    : {}),
+        ...(propertyId ? { propertyId } : {}),
+      });
+      return sendSuccess(res, tasks);
+    }
+
+    const tasks = await listAllTasks({
+      status: status as TaskStatus | undefined,
+      assigneeUserId,
+      propertyId,
+      leaseId,
+      unassigned: unassigned === 'true',
     });
-    sendSuccess(res, tasks);
+    return sendSuccess(res, tasks);
   } catch (e) { next(e); }
 });
 
@@ -50,6 +72,26 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
     });
 
     res.status(201).json({ success: true, data: task });
+  } catch (e) { next(e); }
+});
+
+// PATCH /tasks/:id
+router.patch('/:id', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { title, description, assigneeUserId, dueAt } = req.body as {
+      title?: string;
+      description?: string;
+      assigneeUserId?: string | null;
+      dueAt?: string | null;
+    };
+
+    const task = await updateTask(req.params.id, {
+      title,
+      description,
+      assigneeUserId,
+      dueAt: dueAt === null ? null : dueAt ? new Date(dueAt) : undefined,
+    });
+    sendSuccess(res, task);
   } catch (e) { next(e); }
 });
 

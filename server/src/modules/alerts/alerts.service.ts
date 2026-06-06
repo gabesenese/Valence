@@ -87,7 +87,7 @@ export async function progressAlert(id: string, userId: string) {
   const alert = await prisma.alert.findUnique({ where: { id } });
   if (!alert) throw new NotFoundError('Alert');
 
-  const data: Prisma.AlertUpdateInput = { status: 'IN_PROGRESS' };
+  const data: Prisma.AlertUncheckedUpdateInput = { status: 'IN_PROGRESS' };
   // Carry forward acknowledgedAt/By if not already set (direct OPEN→IN_PROGRESS)
   if (!alert.acknowledgedAt) {
     data.acknowledgedAt = new Date();

@@ -15,6 +15,10 @@ import {
   Inbox,
   Layers,
   Wand2,
+  ClipboardList,
+  Heart,
+  FolderOpen,
+  Zap,
 } from 'lucide-react';
 import { cn } from '@/utils/cn';
 import { useAuthStore } from '@/state/auth.store';
@@ -23,15 +27,20 @@ import { authService } from '@/services/auth.service';
 
 const navItems = [
   { to: '/', icon: Inbox, label: 'Work Queue', exact: true },
+  { to: '/tasks', icon: ClipboardList, label: 'Tasks' },
   { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/leases', icon: FileText, label: 'Leases' },
   { to: '/properties', icon: Building2, label: 'Properties' },
   { to: '/tenants', icon: Users, label: 'Tenants' },
+  { to: '/crm', icon: Heart, label: 'CRM' },
+  { to: '/documents', icon: FolderOpen, label: 'Documents' },
   { to: '/finance', icon: DollarSign, label: 'Finance' },
   { to: '/analytics', icon: BarChart3, label: 'Analytics' },
   { to: '/benchmarks', icon: Layers, label: 'Benchmarks' },
   { to: '/simulator', icon: Wand2, label: 'Simulator' },
   { to: '/alerts', icon: Bell, label: 'Alerts' },
+  { to: '/automation', icon: Zap, label: 'Automation' },
+  { to: '/team', icon: Users, label: 'Team' },
   { to: '/settings', icon: Settings, label: 'Settings' },
 ];
 

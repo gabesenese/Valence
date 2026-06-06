@@ -23,6 +23,9 @@ export interface Task {
   assignee:    TaskUser | null;
   createdBy:   TaskUser | null;
   completedBy: TaskUser | null;
+  alert:    { id: string; title: string; severity: string } | null;
+  lease:    { id: string; leaseNumber: string; tenant: { name: string } } | null;
+  property: { id: string; name: string; code: string } | null;
 }
 
 export interface CreateTaskInput {
@@ -36,11 +39,26 @@ export interface CreateTaskInput {
 }
 
 export const tasksService = {
+  getAll: (params?: {
+    status?: TaskStatus | TaskStatus[];
+    assigneeUserId?: string;
+    propertyId?: string;
+    leaseId?: string;
+    unassigned?: boolean;
+  }): Promise<Task[]> =>
+    api.get('/tasks', { params }).then(extractData<Task[]>),
+
   getForItem: (filter: { alertId?: string; leaseId?: string; propertyId?: string }): Promise<Task[]> =>
     api.get('/tasks', { params: filter }).then(extractData<Task[]>),
 
   create: (data: CreateTaskInput): Promise<Task> =>
     api.post('/tasks', data).then(extractData<Task>),
+
+  update: (
+    id: string,
+    data: { title?: string; description?: string; assigneeUserId?: string | null; dueAt?: string | null },
+  ): Promise<Task> =>
+    api.patch(`/tasks/${id}`, data).then(extractData<Task>),
 
   updateStatus: (id: string, status: TaskStatus, completionNote?: string): Promise<Task> =>
     api.patch(`/tasks/${id}/status`, { status, completionNote }).then(extractData<Task>),

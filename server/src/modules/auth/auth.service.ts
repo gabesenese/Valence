@@ -120,11 +120,38 @@ export async function getMe(userId: string): Promise<AuthUser> {
   return user;
 }
 
-export async function listUsers(): Promise<AuthUser[]> {
+export async function listUsers(): Promise<(AuthUser & { isActive: boolean; lastLoginAt: Date | null; createdAt: Date })[]> {
   return prisma.user.findMany({
-    where: { isActive: true },
-    select: { id: true, email: true, firstName: true, lastName: true, role: true },
+    select: {
+      id: true,
+      email: true,
+      firstName: true,
+      lastName: true,
+      role: true,
+      isActive: true,
+      lastLoginAt: true,
+      createdAt: true,
+    },
     orderBy: [{ firstName: 'asc' }, { lastName: 'asc' }],
+  });
+}
+
+export async function updateUserRole(
+  targetUserId: string,
+  role: UserRole,
+) {
+  return prisma.user.update({
+    where: { id: targetUserId },
+    data: { role },
+    select: { id: true, email: true, firstName: true, lastName: true, role: true, isActive: true },
+  });
+}
+
+export async function setUserActive(targetUserId: string, isActive: boolean) {
+  return prisma.user.update({
+    where: { id: targetUserId },
+    data: { isActive },
+    select: { id: true, email: true, firstName: true, lastName: true, role: true, isActive: true },
   });
 }
 

@@ -54,3 +54,26 @@ export async function listUsers(_req: Request, res: Response, next: NextFunction
     next(err);
   }
 }
+
+export async function updateUserRole(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const { role } = req.body as { role: string };
+    const user = await authService.updateUserRole(
+      req.params.id,
+      role as import('@prisma/client').UserRole,
+    );
+    sendSuccess(res, user);
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function setUserActive(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const { isActive } = req.body as { isActive: boolean };
+    const user = await authService.setUserActive(req.params.id, isActive);
+    sendSuccess(res, user);
+  } catch (err) {
+    next(err);
+  }
+}

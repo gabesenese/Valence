@@ -20,6 +20,11 @@ const SetupPage = lazy(() => import('@/features/setup/SetupPage'));
 const WorkQueuePage = lazy(() => import('@/features/workQueue/WorkQueuePage'));
 const BenchmarksPage = lazy(() => import('@/features/benchmarks/BenchmarksPage'));
 const SimulatorPage = lazy(() => import('@/features/simulator/SimulatorPage'));
+const TeamPage = lazy(() => import('@/features/team/TeamPage'));
+const TasksPage = lazy(() => import('@/features/tasks/TasksPage'));
+const CRMPage = lazy(() => import('@/features/crm/CRMPage'));
+const DocumentsPage = lazy(() => import('@/features/documents/DocumentsPage'));
+const AutomationPage = lazy(() => import('@/features/automation/AutomationPage'));
 
 export default function App() {
   return (
@@ -49,6 +54,11 @@ export default function App() {
             <Route path="simulator" element={<SimulatorPage />} />
             <Route path="alerts" element={<AlertsPage />} />
             <Route path="tenants" element={<TenantsPage />} />
+            <Route path="crm" element={<CRMPage />} />
+            <Route path="tasks" element={<TasksPage />} />
+            <Route path="documents" element={<DocumentsPage />} />
+            <Route path="team" element={<TeamPage />} />
+            <Route path="automation" element={<AutomationPage />} />
             <Route path="settings" element={<SettingsPage />} />
           </Route>
         </Route>

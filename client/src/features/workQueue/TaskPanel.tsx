@@ -123,15 +123,27 @@ function AddTaskForm({
   onAdd,
   onCancel,
 }: {
-  onAdd: (title: string, description?: string) => void;
+  onAdd: (title: string, description?: string, assigneeUserId?: string, dueAt?: string) => void;
   onCancel: () => void;
 }) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [assigneeUserId, setAssigneeUserId] = useState('');
+  const [dueAt, setDueAt] = useState('');
+
+  const { data: users = [] } = useQuery({
+    queryKey: ['users'],
+    queryFn: () => import('@/services/users.service').then((m) => m.usersService.listUsers()),
+  });
 
   const submit = () => {
     if (!title.trim()) return;
-    onAdd(title.trim(), description.trim() || undefined);
+    onAdd(
+      title.trim(),
+      description.trim() || undefined,
+      assigneeUserId || undefined,
+      dueAt || undefined,
+    );
   };
 
   return (
@@ -152,13 +164,27 @@ function AddTaskForm({
         type="text"
         value={description}
         onChange={(e) => setDescription(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') submit();
-          if (e.key === 'Escape') onCancel();
-        }}
         placeholder="Description (optional)"
         className="rounded-md bg-surface-300/60 border border-surface-400/40 px-2.5 py-1.5 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-brand-500/50"
       />
+      <div className="grid grid-cols-2 gap-2">
+        <select
+          value={assigneeUserId}
+          onChange={(e) => setAssigneeUserId(e.target.value)}
+          className="rounded-md bg-surface-300/60 border border-surface-400/40 px-2.5 py-1.5 text-xs text-slate-300 focus:outline-none focus:ring-1 focus:ring-brand-500/50"
+        >
+          <option value="">Unassigned</option>
+          {users.filter((u) => u.isActive).map((u) => (
+            <option key={u.id} value={u.id}>{u.firstName} {u.lastName}</option>
+          ))}
+        </select>
+        <input
+          type="date"
+          value={dueAt}
+          onChange={(e) => setDueAt(e.target.value)}
+          className="rounded-md bg-surface-300/60 border border-surface-400/40 px-2.5 py-1.5 text-xs text-slate-300 focus:outline-none focus:ring-1 focus:ring-brand-500/50"
+        />
+      </div>
       <div className="flex gap-2">
         <button
           onClick={submit}
@@ -212,7 +238,7 @@ export function TaskPanel({ alertId, leaseId, propertyId }: TaskPanelProps) {
   const invalidate = () => qc.invalidateQueries({ queryKey });
 
   const createMutation = useMutation({
-    mutationFn: (vars: { title: string; description?: string }) =>
+    mutationFn: (vars: { title: string; description?: string; assigneeUserId?: string; dueAt?: string }) =>
       tasksService.create({ ...vars, ...filter }),
     onSuccess: () => { invalidate(); setAdding(false); },
   });
@@ -233,8 +259,8 @@ export function TaskPanel({ alertId, leaseId, propertyId }: TaskPanelProps) {
 
   const handleDelete = (id: string) => deleteMutation.mutate(id);
 
-  const handleAdd = (title: string, description?: string) =>
-    createMutation.mutate({ title, description });
+  const handleAdd = (title: string, description?: string, assigneeUserId?: string, dueAt?: string) =>
+    createMutation.mutate({ title, description, assigneeUserId, dueAt });
 
   return (
     <div className="mt-2 border-t border-surface-400/20 pt-2">
