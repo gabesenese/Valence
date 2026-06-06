@@ -18,6 +18,8 @@ const TenantsPage = lazy(() => import('@/features/tenants/TenantsPage'));
 const SettingsPage = lazy(() => import('@/features/settings/SettingsPage'));
 const SetupPage = lazy(() => import('@/features/setup/SetupPage'));
 const WorkQueuePage = lazy(() => import('@/features/workQueue/WorkQueuePage'));
+const BenchmarksPage = lazy(() => import('@/features/benchmarks/BenchmarksPage'));
+const SimulatorPage = lazy(() => import('@/features/simulator/SimulatorPage'));
 
 export default function App() {
   return (
@@ -43,6 +45,8 @@ export default function App() {
             <Route path="properties/:id" element={<PropertyDetailPage />} />
             <Route path="finance" element={<FinancePage />} />
             <Route path="analytics" element={<AnalyticsPage />} />
+            <Route path="benchmarks" element={<BenchmarksPage />} />
+            <Route path="simulator" element={<SimulatorPage />} />
             <Route path="alerts" element={<AlertsPage />} />
             <Route path="tenants" element={<TenantsPage />} />
             <Route path="settings" element={<SettingsPage />} />

@@ -13,6 +13,8 @@ import {
   Users,
   Settings,
   Inbox,
+  Layers,
+  Wand2,
 } from 'lucide-react';
 import { cn } from '@/utils/cn';
 import { useAuthStore } from '@/state/auth.store';
@@ -27,6 +29,8 @@ const navItems = [
   { to: '/tenants', icon: Users, label: 'Tenants' },
   { to: '/finance', icon: DollarSign, label: 'Finance' },
   { to: '/analytics', icon: BarChart3, label: 'Analytics' },
+  { to: '/benchmarks', icon: Layers, label: 'Benchmarks' },
+  { to: '/simulator', icon: Wand2, label: 'Simulator' },
   { to: '/alerts', icon: Bell, label: 'Alerts' },
   { to: '/settings', icon: Settings, label: 'Settings' },
 ];

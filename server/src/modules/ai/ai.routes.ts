@@ -4,6 +4,8 @@ import multer from 'multer';
 import { insightEngine, riskEvaluator } from './ai.service';
 import { extractLeaseFromPDF } from './lease-extractor.service';
 import { generateExecutiveBrief } from './executive-brief.service';
+import { computeHealthScore } from './health-score.service';
+import { runSimulation, getActiveTenantsForSimulator } from './scenario-simulator.service';
 import { authenticate } from '../../middleware/authenticate';
 import { sendSuccess } from '../../utils/response';
 
@@ -33,6 +35,22 @@ router.post('/extract-lease', upload.single('file'), async (req: Request, res: R
 
 router.get('/executive-brief', async (_req: Request, res: Response, next: NextFunction) => {
   try { sendSuccess(res, await generateExecutiveBrief()); } catch (e) { next(e); }
+});
+
+// ─── Portfolio health score ───────────────────────────────────────────────────
+
+router.get('/health-score', async (_req: Request, res: Response, next: NextFunction) => {
+  try { sendSuccess(res, await computeHealthScore()); } catch (e) { next(e); }
+});
+
+// ─── Scenario simulator ───────────────────────────────────────────────────────
+
+router.post('/simulate', async (req: Request, res: Response, next: NextFunction) => {
+  try { sendSuccess(res, await runSimulation(req.body)); } catch (e) { next(e); }
+});
+
+router.get('/simulate/tenants', async (_req: Request, res: Response, next: NextFunction) => {
+  try { sendSuccess(res, await getActiveTenantsForSimulator()); } catch (e) { next(e); }
 });
 
 // ─── Insights ─────────────────────────────────────────────────────────────────

@@ -48,6 +48,86 @@ export interface ExtractedLease {
   notes:           string | null;
 }
 
+// ─── Health score ─────────────────────────────────────────────────────────────
+
+export interface HealthScoreComponent {
+  name:        string;
+  score:       number;
+  maxScore:    number;
+  label:       string;
+  description: string;
+}
+
+export interface PortfolioHealthScore {
+  score:      number;
+  delta:      number;
+  trend:      'up' | 'down' | 'stable';
+  band:       'critical' | 'at_risk' | 'stable' | 'healthy';
+  components: HealthScoreComponent[];
+  computedAt: string;
+}
+
+// ─── Scenario simulator ───────────────────────────────────────────────────────
+
+export type ScenarioType =
+  | 'occupancy_drop'
+  | 'tenant_departure'
+  | 'expense_increase'
+  | 'acquisition'
+  | 'rent_increase';
+
+export interface SimulationRequest {
+  scenario: ScenarioType;
+  params:   Record<string, unknown>;
+}
+
+export interface SimulationResult {
+  scenario:      ScenarioType;
+  scenarioLabel: string;
+  params:        Record<string, unknown>;
+  current: {
+    monthlyRevenue:  number;
+    monthlyExpenses: number;
+    noi:             number;
+    occupancyRate:   number;
+    totalUnits:      number;
+    activeLeases:    number;
+  };
+  projected: {
+    monthlyRevenue:  number;
+    monthlyExpenses: number;
+    noi:             number;
+    occupancyRate:   number;
+  };
+  impact: {
+    revenueChange:         number;
+    revenueChangePct:      number;
+    expenseChange:         number;
+    noiChange:             number;
+    noiChangePct:          number;
+    occupancyChange:       number;
+    estimatedAnnualImpact: number;
+  };
+  analysis: {
+    findings:        string[];
+    recommendations: string[];
+    riskFactors:     string[];
+    timeToImpact:    string;
+    confidence:      'high' | 'medium' | 'low';
+  };
+  computedAt: string;
+}
+
+export interface SimulatorTenant {
+  tenantId:     string;
+  tenantName:   string;
+  propertyName: string;
+  monthlyRent:  number;
+  leaseId:      string;
+}
+
+// ─── Service ──────────────────────────────────────────────────────────────────
+
 export const aiService = {
   getExecutiveBrief: (): Promise<ExecutiveBrief> =>
     api.get('/ai/executive-brief', { timeout: 120_000 }).then(extractData<ExecutiveBrief>),
@@ -59,4 +139,13 @@ export const aiService = {
       .post('/ai/extract-lease', form, { headers: { 'Content-Type': 'multipart/form-data' }, timeout: 120_000 })
       .then(extractData<ExtractedLease>);
   },
+
+  getHealthScore: (): Promise<PortfolioHealthScore> =>
+    api.get('/ai/health-score').then(extractData<PortfolioHealthScore>),
+
+  runSimulation: (req: SimulationRequest): Promise<SimulationResult> =>
+    api.post('/ai/simulate', req, { timeout: 120_000 }).then(extractData<SimulationResult>),
+
+  getSimulatorTenants: (): Promise<SimulatorTenant[]> =>
+    api.get('/ai/simulate/tenants').then(extractData<SimulatorTenant[]>),
 };
