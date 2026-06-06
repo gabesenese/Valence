@@ -25,6 +25,7 @@ import { tasksRouter } from './modules/tasks/tasks.routes';
 import { crmRouter } from './modules/crm/crm.routes';
 import { documentsRouter } from './modules/documents/documents.routes';
 import { automationRouter } from './modules/automation/automation.routes';
+import { importRouter } from './modules/import/import.routes';
 import cron from 'node-cron';
 import { runAnomalyScan } from './modules/alerts/anomaly.service';
 import { runAllRules } from './modules/automation/automation.service';
@@ -84,6 +85,7 @@ app.use('/api/tasks', tasksRouter);
 app.use('/api/crm', crmRouter);
 app.use('/api/documents', documentsRouter);
 app.use('/api/automation', automationRouter);
+app.use('/api/import', importRouter);
 
 // ─── Error Handling ───────────────────────────────────────────────────────────
 app.use(notFoundHandler);

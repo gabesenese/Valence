@@ -20,6 +20,7 @@ import {
   FolderOpen,
   Zap,
   Lock,
+  Upload,
 } from 'lucide-react';
 import { cn } from '@/utils/cn';
 import { useAuthStore } from '@/state/auth.store';
@@ -50,6 +51,7 @@ const NAV_ITEMS: {
   { to: '/alerts',     icon: Bell,          label: 'Alerts'                                                  },
   { to: '/automation', icon: Zap,           label: 'Automation',                  feature: 'automation'      },
   { to: '/team',       icon: Users,         label: 'Team',                        feature: 'team'            },
+  { to: '/import',     icon: Upload,        label: 'Import Data'                                             },
   { to: '/settings',   icon: Settings,      label: 'Settings'                                                },
 ];
 
