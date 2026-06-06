@@ -13,6 +13,7 @@ import {
 import { analyticsService } from '@/services/analytics.service';
 import { leasesService } from '@/services/leases.service';
 import ExecutiveBriefCard from './ExecutiveBrief';
+import HealthScoreCard from './HealthScoreCard';
 import { Card, CardHeader, CardTitle, CardBody } from '@/components/ui/Card';
 import { PageLoader } from '@/components/ui/Spinner';
 import { formatCurrency, compactCurrency, daysUntil, formatDate } from '@/utils/format';
@@ -155,6 +156,9 @@ export default function DashboardPage() {
         </h1>
         <p className="mt-0.5 text-sm text-slate-500">Portfolio intelligence overview</p>
       </div>
+
+      {/* Portfolio Health Score */}
+      {!isEmpty && <HealthScoreCard />}
 
       {/* Executive Intelligence Brief */}
       {!isEmpty && <ExecutiveBriefCard />}
