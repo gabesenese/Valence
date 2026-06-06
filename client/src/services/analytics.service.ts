@@ -25,6 +25,9 @@ export const analyticsService = {
 
   getRevenueTrend: (months = 12) =>
     api.get('/analytics/revenue-trend', { params: { months } }).then(extractData<RevenueTrendPoint[]>),
+
+  getBenchmarks: () =>
+    api.get('/analytics/benchmarks').then(extractData<BenchmarkReport>),
 };
 
 export interface ExecutiveSummary {
@@ -57,4 +60,55 @@ export interface PropertyPerformance {
   occupancyRate: number;
   monthlyRevenue: number;
   revenueDeltaPct: number | null;
+}
+
+export interface PropertyScorecard {
+  id:              string;
+  name:            string;
+  code:            string;
+  totalUnits:      number;
+  activeLeases:    number;
+  occupancyRate:   number;
+  monthlyRevenue:  number;
+  monthlyExpenses: number;
+  noi:             number;
+  revenuePerUnit:  number;
+  noiPerUnit:      number;
+  revenueDeltaPct: number | null;
+  openAlerts:      number;
+  criticalAlerts:  number;
+  expiringSoon:    number;
+  highRiskLeases:  number;
+  riskScore:       number;
+  ranks: {
+    byRevenue:   number;
+    byGrowth:    number | null;
+    byNOI:       number;
+    byRisk:      number;
+    byOccupancy: number;
+  };
+  isOutlier:      boolean;
+  outlierReasons: string[];
+}
+
+export interface BenchmarkReport {
+  generatedAt:       string;
+  propertyCount:     number;
+  portfolioAverages: {
+    occupancyRate:   number;
+    monthlyRevenue:  number;
+    noi:             number;
+    revenuePerUnit:  number;
+    riskScore:       number;
+  };
+  highlights: {
+    bestRevenue:     PropertyScorecard | null;
+    fastestGrowing:  PropertyScorecard | null;
+    highestNOI:      PropertyScorecard | null;
+    lowestRisk:      PropertyScorecard | null;
+    worstPerforming: PropertyScorecard | null;
+    highestRisk:     PropertyScorecard | null;
+  };
+  outliers:   PropertyScorecard[];
+  properties: PropertyScorecard[];
 }

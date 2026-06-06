@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import type { Request, Response, NextFunction } from 'express';
 import * as service from './analytics.service';
+import { getBenchmarks } from './benchmark.service';
 import { authenticate } from '../../middleware/authenticate';
 import { sendSuccess } from '../../utils/response';
 
@@ -29,6 +30,10 @@ router.get('/revenue-trend', async (req: Request, res: Response, next: NextFunct
 
 router.get('/insights', async (_req: Request, res: Response, next: NextFunction) => {
   try { sendSuccess(res, await service.getInsights()); } catch (e) { next(e); }
+});
+
+router.get('/benchmarks', async (_req: Request, res: Response, next: NextFunction) => {
+  try { sendSuccess(res, await getBenchmarks()); } catch (e) { next(e); }
 });
 
 export { router as analyticsRouter };
