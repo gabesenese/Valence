@@ -184,6 +184,7 @@ export default function LeaseDetailPage() {
   const [showClosedAlerts, setShowClosedAlerts] = useState(false);
   const [assigningOwner, setAssigningOwner] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const noteRef = useRef<HTMLTextAreaElement>(null);
 
   const invalidate = () => {
@@ -266,6 +267,14 @@ export default function LeaseDetailPage() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['leases', id, 'notes'] }),
   });
 
+  const deleteLeaseMutation = useMutation({
+    mutationFn: () => leasesService.deleteLease(id!),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['leases'] });
+      navigate('/leases');
+    },
+  });
+
   const resolveMutation = useMutation({
     mutationFn: (alertId: string) => alertsService.resolve(alertId),
     onSuccess: invalidate,
@@ -323,6 +332,32 @@ export default function LeaseDetailPage() {
             <Pencil className="h-3.5 w-3.5" />
             Edit Lease
           </Button>
+          {confirmDelete ? (
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs text-slate-400">Delete this lease?</span>
+              <button
+                onClick={() => deleteLeaseMutation.mutate()}
+                disabled={deleteLeaseMutation.isPending}
+                className="inline-flex items-center gap-1 rounded-lg bg-danger/20 hover:bg-danger/30 border border-danger/30 px-2.5 py-1.5 text-xs font-semibold text-danger transition-colors disabled:opacity-50"
+              >
+                {deleteLeaseMutation.isPending ? 'Deleting…' : 'Yes, delete'}
+              </button>
+              <button
+                onClick={() => setConfirmDelete(false)}
+                className="rounded-lg px-2 py-1.5 text-xs text-slate-500 hover:text-slate-300 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setConfirmDelete(true)}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-surface-400/40 bg-surface-200/50 hover:border-danger/30 hover:bg-danger/10 hover:text-danger px-2.5 py-1.5 text-xs font-medium text-slate-500 transition-colors"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              Delete
+            </button>
+          )}
           {isActive && (() => {
             const signed = lease.renewalStage === 'SIGNED';
             const urgent = !signed && days <= 30;

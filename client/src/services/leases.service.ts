@@ -211,6 +211,9 @@ export const leasesService = {
   editNote: (id: string, noteId: string, body: string): Promise<LeaseNoteDTO> =>
     api.patch(`/leases/${id}/notes/${noteId}`, { body }).then(extractData<LeaseNoteDTO>),
 
+  deleteLease: (id: string): Promise<{ deleted: boolean }> =>
+    api.delete(`/leases/${id}`).then(extractData<{ deleted: boolean }>),
+
   deleteNote: (id: string, noteId: string): Promise<{ deleted: boolean }> =>
     api.delete(`/leases/${id}/notes/${noteId}`).then(extractData<{ deleted: boolean }>),
 

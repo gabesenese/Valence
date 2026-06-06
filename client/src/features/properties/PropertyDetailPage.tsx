@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   ArrowLeft, Building2, MapPin, FileText, AlertTriangle,
-  DollarSign, Layers, Pencil, X, Play, Check, RotateCcw,
+  DollarSign, Layers, Pencil, X, Play, Check, RotateCcw, Sparkles,
 } from 'lucide-react';
 import { propertiesService, type PropertyDetail } from '@/services/properties.service';
 import { alertsService } from '@/services/alerts.service';
@@ -13,6 +13,9 @@ import { Button } from '@/components/ui/Button';
 import { PageLoader } from '@/components/ui/Spinner';
 import { formatCurrency, formatDate, daysUntil } from '@/utils/format';
 import PropertyFormModal from './PropertyFormModal';
+import LeaseImportModal from '../leases/LeaseImportModal';
+import LeaseFormModal from '../leases/LeaseFormModal';
+import type { ExtractedLease } from '@/services/ai.service';
 
 const SEVERITY_DOT: Record<string, string> = {
   CRITICAL: 'bg-danger', WARNING: 'bg-warning', INFO: 'bg-info',
@@ -26,6 +29,9 @@ export default function PropertyDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [editOpen, setEditOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
+  const [importedValues, setImportedValues] = useState<Partial<Record<string, string>> | null>(null);
+  const [addLeaseOpen, setAddLeaseOpen] = useState(false);
   const qc = useQueryClient();
 
   const { data: property, isLoading } = useQuery({
@@ -126,7 +132,16 @@ export default function PropertyDetailPage() {
           <Card>
             <CardHeader>
               <CardTitle>Active Leases</CardTitle>
-              <span className="text-xs text-slate-600">{property.leases.length} leases</span>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-slate-600">{property.leases.length} leases</span>
+                <button
+                  onClick={() => setImportOpen(true)}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-brand-500/30 bg-brand-600/15 hover:bg-brand-600/25 px-2.5 py-1 text-xs font-medium text-brand-300 transition-colors"
+                >
+                  <Sparkles className="h-3 w-3" />
+                  Import from PDF
+                </button>
+              </div>
             </CardHeader>
             {property.leases.length === 0 ? (
               <div className="py-16 text-center">
@@ -276,6 +291,38 @@ export default function PropertyDetailPage() {
         open={editOpen}
         onClose={() => setEditOpen(false)}
         property={property as PropertyDetail}
+      />
+
+      <LeaseImportModal
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        onConfirm={(extracted: ExtractedLease) => {
+          const notes = [
+            extracted.renewalOptions ? `Renewal Options: ${extracted.renewalOptions}` : '',
+            extracted.obligations    ? `Obligations: ${extracted.obligations}`         : '',
+            extracted.notes          ? extracted.notes                                  : '',
+          ].filter(Boolean).join('\n\n');
+          setImportedValues({
+            propertyId:      id,
+            unitNumber:      extracted.unitNumber      ?? '',
+            type:            extracted.leaseType       ?? 'GROSS',
+            startDate:       extracted.startDate       ?? '',
+            endDate:         extracted.endDate         ?? '',
+            baseRent:        extracted.baseRent        != null ? String(extracted.baseRent)        : '',
+            rentEscalation:  extracted.rentEscalation  != null ? String(extracted.rentEscalation)  : '0',
+            securityDeposit: extracted.securityDeposit != null ? String(extracted.securityDeposit) : '',
+            sqft:            extracted.sqft            != null ? String(extracted.sqft)            : '',
+            notes,
+          });
+          setImportOpen(false);
+          setAddLeaseOpen(true);
+        }}
+      />
+
+      <LeaseFormModal
+        open={addLeaseOpen}
+        onClose={() => { setAddLeaseOpen(false); setImportedValues(null); }}
+        initialValues={importedValues ?? undefined}
       />
     </div>
   );
