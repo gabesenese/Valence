@@ -25,11 +25,15 @@ const TasksPage = lazy(() => import('@/features/tasks/TasksPage'));
 const CRMPage = lazy(() => import('@/features/crm/CRMPage'));
 const DocumentsPage = lazy(() => import('@/features/documents/DocumentsPage'));
 const AutomationPage = lazy(() => import('@/features/automation/AutomationPage'));
+const PricingPage = lazy(() => import('@/features/pricing/PricingPage'));
 
 export default function App() {
   return (
     <Suspense fallback={<div className="flex h-screen items-center justify-center bg-surface-0"><PageLoader /></div>}>
       <Routes>
+        {/* Public */}
+        <Route path="/pricing" element={<PricingPage />} />
+
         {/* Auth */}
         <Route path="/auth/login" element={<LoginPage />} />
         <Route path="/auth/register" element={<RegisterPage />} />

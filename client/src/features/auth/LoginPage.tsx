@@ -103,13 +103,16 @@ export default function LoginPage() {
             </Button>
           </form>
 
-          <div className="mt-4 text-center">
-            <p className="text-xs text-slate-600">
+          <div className="mt-4 flex items-center justify-between text-xs text-slate-600">
+            <span>
               No account?{' '}
               <Link to="/auth/register" className="text-brand-400 hover:text-brand-300 transition-colors">
                 Create one
               </Link>
-            </p>
+            </span>
+            <Link to="/pricing" className="text-slate-500 hover:text-slate-300 transition-colors">
+              View pricing →
+            </Link>
           </div>
 
           <div className="mt-5 rounded-lg border border-surface-400/40 bg-surface-200/50 p-3">
