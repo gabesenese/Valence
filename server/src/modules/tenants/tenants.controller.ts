@@ -1,5 +1,6 @@
 import type { Request, Response, NextFunction } from 'express';
 import * as service from './tenants.service';
+import { logAudit } from '../audit/audit.service';
 import { sendPaginated, sendSuccess } from '../../utils/response';
 
 export async function list(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -23,12 +24,16 @@ export async function show(req: Request, res: Response, next: NextFunction): Pro
 
 export async function create(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    sendSuccess(res, await service.createTenant(req.body), 201);
+    const result = await service.createTenant(req.body);
+    void logAudit({ userId: req.user?.id, action: 'CREATE', entity: 'tenant', entityId: result.id, entityName: result.name });
+    sendSuccess(res, result, 201);
   } catch (err) { next(err); }
 }
 
 export async function update(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    sendSuccess(res, await service.updateTenant(req.params.id, req.body));
+    const result = await service.updateTenant(req.params.id, req.body);
+    void logAudit({ userId: req.user?.id, action: 'UPDATE', entity: 'tenant', entityId: result.id, entityName: result.name, changes: req.body as Record<string, unknown> });
+    sendSuccess(res, result);
   } catch (err) { next(err); }
 }

@@ -4,6 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { prisma } from '../../infrastructure/database';
 import { env } from '../../config/env';
 import { ConflictError, UnauthorizedError, NotFoundError } from '../../utils/errors';
+import { logAudit } from '../audit/audit.service';
 import type { RegisterInput, LoginInput } from './auth.schemas';
 import type { UserRole, Plan } from '@prisma/client';
 
@@ -166,8 +167,9 @@ export async function setUserActive(targetUserId: string, isActive: boolean) {
   });
 }
 
-export async function setPlan(targetUserId: string, plan: Plan) {
-  await prisma.user.update({ where: { id: targetUserId }, data: { plan } });
+export async function setPlan(targetUserId: string, plan: Plan, actorId?: string) {
+  const user = await prisma.user.update({ where: { id: targetUserId }, data: { plan }, select: { email: true } });
+  void logAudit({ userId: actorId, action: 'PLAN_CHANGE', entity: 'user', entityId: targetUserId, entityName: user.email, changes: { plan } });
 }
 
 async function createTokenPair(user: AuthUser): Promise<TokenPair> {

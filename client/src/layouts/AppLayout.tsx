@@ -21,6 +21,7 @@ import {
   Zap,
   Lock,
   Upload,
+  ScrollText,
 } from 'lucide-react';
 import { cn } from '@/utils/cn';
 import { useAuthStore } from '@/state/auth.store';
@@ -52,6 +53,7 @@ const NAV_ITEMS: {
   { to: '/automation', icon: Zap,           label: 'Automation',                  feature: 'automation'      },
   { to: '/team',       icon: Users,         label: 'Team',                        feature: 'team'            },
   { to: '/import',     icon: Upload,        label: 'Import Data'                                             },
+  { to: '/audit',      icon: ScrollText,    label: 'Audit Log'                                               },
   { to: '/settings',   icon: Settings,      label: 'Settings'                                                },
 ];
 

@@ -1,6 +1,7 @@
 import type { Request, Response, NextFunction } from 'express';
 import * as service from './properties.service';
 import { enforcePropertyLimit } from '../plans/plans.service';
+import { logAudit } from '../audit/audit.service';
 import { sendSuccess, sendPaginated } from '../../utils/response';
 import type { Plan } from '@prisma/client';
 
@@ -21,19 +22,25 @@ export async function create(req: Request, res: Response, next: NextFunction): P
   try {
     const plan = ((req.user as { plan?: Plan })?.plan ?? 'ESSENTIALS') as Plan;
     await enforcePropertyLimit(plan);
-    sendSuccess(res, await service.createProperty(req.body), 201);
+    const result = await service.createProperty(req.body);
+    void logAudit({ userId: req.user?.id, action: 'CREATE', entity: 'property', entityId: result.id, entityName: result.name });
+    sendSuccess(res, result, 201);
   } catch (err) { next(err); }
 }
 
 export async function update(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    sendSuccess(res, await service.updateProperty(req.params.id, req.body));
+    const result = await service.updateProperty(req.params.id, req.body);
+    void logAudit({ userId: req.user?.id, action: 'UPDATE', entity: 'property', entityId: result.id, entityName: result.name, changes: req.body as Record<string, unknown> });
+    sendSuccess(res, result);
   } catch (err) { next(err); }
 }
 
 export async function remove(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
+    const existing = await service.getPropertyById(req.params.id);
     await service.deleteProperty(req.params.id);
+    void logAudit({ userId: req.user?.id, action: 'DELETE', entity: 'property', entityId: req.params.id, entityName: existing.name });
     sendSuccess(res, { deleted: true });
   } catch (err) { next(err); }
 }

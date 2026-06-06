@@ -207,6 +207,7 @@ model User {
   uploadedDocuments  Document[]      @relation("DocumentUploader")
   createdRules       AutomationRule[] @relation("RuleCreatedBy")
   usageRecords       UsageRecord[]
+  auditLogs          AuditLog[]
 
   @@index([email])
   @@index([role])
@@ -621,6 +622,26 @@ model AutomationLog {
   @@index([ruleId])
   @@index([triggeredAt])
   @@map("automation_logs")
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  userId     String?  @map("user_id")
+  action     String   // CREATE UPDATE DELETE IMPORT PLAN_CHANGE ROLE_CHANGE
+  entity     String   // property lease tenant financial_record user
+  entityId   String?  @map("entity_id")
+  entityName String?  @map("entity_name")
+  changes    Json?
+  meta       Json?
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([entity])
+  @@index([entityId])
+  @@index([createdAt])
+  @@map("audit_logs")
 }
 
 model UsageRecord {

@@ -28,6 +28,7 @@ const DocumentsPage = lazy(() => import('@/features/documents/DocumentsPage'));
 const AutomationPage = lazy(() => import('@/features/automation/AutomationPage'));
 const PricingPage = lazy(() => import('@/features/pricing/PricingPage'));
 const ImportPage = lazy(() => import('@/features/import/ImportPage'));
+const AuditPage = lazy(() => import('@/features/audit/AuditPage'));
 
 export default function App() {
   return (
@@ -66,6 +67,7 @@ export default function App() {
             <Route path="team" element={<UpgradeGate feature="team"><TeamPage /></UpgradeGate>} />
             <Route path="automation" element={<UpgradeGate feature="automation"><AutomationPage /></UpgradeGate>} />
             <Route path="import" element={<ImportPage />} />
+            <Route path="audit" element={<AuditPage />} />
             <Route path="settings" element={<SettingsPage />} />
           </Route>
         </Route>
