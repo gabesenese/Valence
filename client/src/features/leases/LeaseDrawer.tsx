@@ -306,8 +306,8 @@ function DaysRemaining({ endDate }: { endDate: string }) {
   const bg = days <= 30 ? 'bg-danger/10 border-danger/30' : days <= 60 ? 'bg-warning/10 border-warning/30' : 'bg-surface-200 border-surface-400/40';
   return (
     <div className={`rounded-xl border px-4 py-2 ${bg}`}>
-      <p className={`text-2xl font-bold tabular-nums ${color}`}>{Math.max(0, days)}</p>
-      <p className="text-xs text-slate-500">days remaining</p>
+      <p className={`text-2xl font-bold tabular-nums ${color}`}>{days >= 365 ? +(days / 365).toFixed(1) : Math.max(0, days)}</p>
+      <p className="text-xs text-slate-500">{days >= 365 ? 'years remaining' : 'days remaining'}</p>
     </div>
   );
 }
