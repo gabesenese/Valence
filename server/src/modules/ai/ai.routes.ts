@@ -25,7 +25,7 @@ const upload = multer({
   },
 });
 
-router.post('/extract-lease', planGate('EXECUTIVE'), upload.single('file'), async (req: Request, res: Response, next: NextFunction) => {
+router.post('/extract-lease', planGate('PROFESSIONAL'), upload.single('file'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     if (!req.file) return next(new Error('No file uploaded'));
     void trackUsage(req.user!.id, 'CONTRACT_PROCESSING');

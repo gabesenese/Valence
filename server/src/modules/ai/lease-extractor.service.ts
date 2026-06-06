@@ -1,7 +1,15 @@
-import Groq from 'groq-sdk';
 // pdf-parse is CJS-only; require avoids ESM interop issues under NodeNext
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const pdfParse = require('pdf-parse') as (buf: Buffer) => Promise<{ text: string }>;
+
+let _groq: import('groq-sdk').default | null = null;
+function groq() {
+  if (!_groq) {
+    const Groq = require('groq-sdk').default as typeof import('groq-sdk').default;
+    _groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+  }
+  return _groq;
+}
 
 export interface ExtractedLease {
   tenantName:      string | null;
@@ -19,42 +27,42 @@ export interface ExtractedLease {
   notes:           string | null;
 }
 
-const client = new Groq({ apiKey: process.env.GROQ_API_KEY });
-
 export async function extractLeaseFromPDF(pdfBuffer: Buffer): Promise<ExtractedLease> {
   const { text } = await pdfParse(pdfBuffer);
 
-  const response = await client.chat.completions.create({
+  const response = await groq().chat.completions.create({
     model: 'llama-3.3-70b-versatile',
     messages: [{
       role: 'user',
-      content: `Extract all key lease terms from the document below. Omit any field you cannot find or determine with confidence.\n\n${text}`,
+      content: `Extract all key lease terms from the document below. Only include a field if the value is explicitly stated — do not include fields that are absent, and never use "null", "N/A", or empty strings as values.\n\n${text}`,
     }],
     tools: [{
       type: 'function',
       function: {
         name: 'extract_lease_data',
-        description: 'Extract all key lease terms from the provided lease document.',
+        description: 'Extract key lease terms. Only populate fields that are explicitly present in the document.',
         parameters: {
           type: 'object',
           properties: {
-            tenantName:      { type: 'string',  description: 'Full legal name of the tenant or lessee' },
-            propertyAddress: { type: 'string',  description: 'Full street address of the leased property' },
-            unitNumber:      { type: 'string',  description: 'Unit, suite, or space number if specified' },
-            startDate:       { type: 'string',  description: 'Lease commencement date in YYYY-MM-DD format' },
-            endDate:         { type: 'string',  description: 'Lease expiration date in YYYY-MM-DD format' },
-            baseRent:        { type: 'number',  description: 'Monthly base rent in USD as a plain number' },
-            rentEscalation:  { type: 'number',  description: 'Annual rent escalation as a percentage (e.g. 3.0 for 3%)' },
-            securityDeposit: { type: 'number',  description: 'Security deposit amount in USD as a plain number' },
-            sqft:            { type: 'number',  description: 'Rentable square footage of the leased space' },
+            tenantName:      { anyOf: [{ type: 'string' }, { type: 'null' }], description: 'Full legal name of the tenant or lessee' },
+            propertyAddress: { anyOf: [{ type: 'string' }, { type: 'null' }], description: 'Full street address of the leased property' },
+            unitNumber:      { anyOf: [{ type: 'string' }, { type: 'null' }], description: 'Unit, suite, or space number if specified' },
+            startDate:       { anyOf: [{ type: 'string' }, { type: 'null' }], description: 'Lease commencement date in YYYY-MM-DD format' },
+            endDate:         { anyOf: [{ type: 'string' }, { type: 'null' }], description: 'Lease expiration date in YYYY-MM-DD format' },
+            baseRent:        { anyOf: [{ type: 'number' }, { type: 'null' }], description: 'Monthly base rent as a plain number' },
+            rentEscalation:  { anyOf: [{ type: 'number' }, { type: 'null' }], description: 'Annual rent escalation as a percentage (e.g. 3.0 for 3%)' },
+            securityDeposit: { anyOf: [{ type: 'number' }, { type: 'null' }], description: 'Security deposit amount as a plain number' },
+            sqft:            { anyOf: [{ type: 'number' }, { type: 'null' }], description: 'Rentable square footage of the leased space' },
             leaseType: {
-              type: 'string',
-              enum: ['GROSS', 'NET', 'MODIFIED_GROSS', 'PERCENTAGE', 'GROUND'],
+              anyOf: [
+                { type: 'string', enum: ['GROSS', 'NET', 'MODIFIED_GROSS', 'PERCENTAGE', 'GROUND'] },
+                { type: 'null' },
+              ],
               description: 'Lease structure type',
             },
-            renewalOptions:  { type: 'string',  description: 'Renewal option terms' },
-            obligations:     { type: 'string',  description: 'Key tenant obligations: maintenance, utilities, insurance, etc.' },
-            notes:           { type: 'string',  description: 'Other important clauses: exclusivity, co-tenancy, early termination, etc.' },
+            renewalOptions:  { anyOf: [{ type: 'string' }, { type: 'null' }], description: 'Renewal option terms' },
+            obligations:     { anyOf: [{ type: 'string' }, { type: 'null' }], description: 'Key tenant obligations: maintenance, utilities, insurance, etc.' },
+            notes:           { anyOf: [{ type: 'string' }, { type: 'null' }], description: 'Other important clauses: exclusivity, co-tenancy, early termination, etc.' },
           },
         },
       },
