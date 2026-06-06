@@ -1,12 +1,15 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
+export type Plan = 'ESSENTIALS' | 'PROFESSIONAL' | 'EXECUTIVE';
+
 interface AuthUser {
   id: string;
   email: string;
   firstName: string;
   lastName: string;
   role: string;
+  plan: Plan;
 }
 
 interface AuthState {

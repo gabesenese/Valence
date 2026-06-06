@@ -7,6 +7,8 @@ import { generateExecutiveBrief } from './executive-brief.service';
 import { computeHealthScore } from './health-score.service';
 import { runSimulation, getActiveTenantsForSimulator } from './scenario-simulator.service';
 import { authenticate } from '../../middleware/authenticate';
+import { planGate } from '../../middleware/planGate';
+import { trackUsage } from '../plans/plans.service';
 import { sendSuccess } from '../../utils/response';
 
 const router = Router();
@@ -23,9 +25,10 @@ const upload = multer({
   },
 });
 
-router.post('/extract-lease', upload.single('file'), async (req: Request, res: Response, next: NextFunction) => {
+router.post('/extract-lease', planGate('EXECUTIVE'), upload.single('file'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     if (!req.file) return next(new Error('No file uploaded'));
+    void trackUsage(req.user!.id, 'CONTRACT_PROCESSING');
     const result = await extractLeaseFromPDF(req.file.buffer);
     sendSuccess(res, result);
   } catch (e) { next(e); }
@@ -45,8 +48,11 @@ router.get('/health-score', async (_req: Request, res: Response, next: NextFunct
 
 // ─── Scenario simulator ───────────────────────────────────────────────────────
 
-router.post('/simulate', async (req: Request, res: Response, next: NextFunction) => {
-  try { sendSuccess(res, await runSimulation(req.body)); } catch (e) { next(e); }
+router.post('/simulate', planGate('EXECUTIVE'), async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    void trackUsage(req.user!.id, 'IMPACT_SIMULATION');
+    sendSuccess(res, await runSimulation(req.body));
+  } catch (e) { next(e); }
 });
 
 router.get('/simulate/tenants', async (_req: Request, res: Response, next: NextFunction) => {

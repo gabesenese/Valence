@@ -3,6 +3,7 @@ import { Suspense, lazy } from 'react';
 import { AppLayout } from '@/layouts/AppLayout';
 import { ProtectedRoute } from '@/routes/ProtectedRoute';
 import { PageLoader } from '@/components/ui/Spinner';
+import { UpgradeGate } from '@/components/ui/UpgradeGate';
 
 const LoginPage = lazy(() => import('@/features/auth/LoginPage'));
 const RegisterPage = lazy(() => import('@/features/auth/RegisterPage'));
@@ -46,7 +47,7 @@ export default function App() {
         {/* Protected */}
         <Route element={<ProtectedRoute />}>
           <Route element={<AppLayout />}>
-            <Route index element={<WorkQueuePage />} />
+            <Route index element={<UpgradeGate feature="work_queue"><WorkQueuePage /></UpgradeGate>} />
             <Route path="dashboard" element={<DashboardPage />} />
             <Route path="leases" element={<LeasesPage />} />
             <Route path="leases/:id" element={<LeaseDetailPage />} />
@@ -54,15 +55,15 @@ export default function App() {
             <Route path="properties/:id" element={<PropertyDetailPage />} />
             <Route path="finance" element={<FinancePage />} />
             <Route path="analytics" element={<AnalyticsPage />} />
-            <Route path="benchmarks" element={<BenchmarksPage />} />
-            <Route path="simulator" element={<SimulatorPage />} />
+            <Route path="benchmarks" element={<UpgradeGate feature="performance"><BenchmarksPage /></UpgradeGate>} />
+            <Route path="simulator" element={<UpgradeGate feature="impact_analysis"><SimulatorPage /></UpgradeGate>} />
             <Route path="alerts" element={<AlertsPage />} />
             <Route path="tenants" element={<TenantsPage />} />
-            <Route path="crm" element={<CRMPage />} />
-            <Route path="tasks" element={<TasksPage />} />
-            <Route path="documents" element={<DocumentsPage />} />
-            <Route path="team" element={<TeamPage />} />
-            <Route path="automation" element={<AutomationPage />} />
+            <Route path="crm" element={<UpgradeGate feature="crm"><CRMPage /></UpgradeGate>} />
+            <Route path="tasks" element={<UpgradeGate feature="tasks"><TasksPage /></UpgradeGate>} />
+            <Route path="documents" element={<UpgradeGate feature="documents"><DocumentsPage /></UpgradeGate>} />
+            <Route path="team" element={<UpgradeGate feature="team"><TeamPage /></UpgradeGate>} />
+            <Route path="automation" element={<UpgradeGate feature="automation"><AutomationPage /></UpgradeGate>} />
             <Route path="settings" element={<SettingsPage />} />
           </Route>
         </Route>

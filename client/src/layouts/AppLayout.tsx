@@ -19,29 +19,37 @@ import {
   Heart,
   FolderOpen,
   Zap,
+  Lock,
 } from 'lucide-react';
 import { cn } from '@/utils/cn';
 import { useAuthStore } from '@/state/auth.store';
 import { useUIStore } from '@/state/ui.store';
 import { authService } from '@/services/auth.service';
+import { usePlan, PLAN_LABELS } from '@/hooks/usePlan';
 
-const navItems = [
-  { to: '/', icon: Inbox, label: 'Work Queue', exact: true },
-  { to: '/tasks', icon: ClipboardList, label: 'Tasks' },
-  { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/leases', icon: FileText, label: 'Leases' },
-  { to: '/properties', icon: Building2, label: 'Properties' },
-  { to: '/tenants', icon: Users, label: 'Tenants' },
-  { to: '/crm', icon: Heart, label: 'CRM' },
-  { to: '/documents', icon: FolderOpen, label: 'Documents' },
-  { to: '/finance', icon: DollarSign, label: 'Finance' },
-  { to: '/analytics', icon: BarChart3, label: 'Analytics' },
-  { to: '/benchmarks', icon: Layers, label: 'Performance' },
-  { to: '/simulator', icon: Wand2, label: 'Impact Analysis' },
-  { to: '/alerts', icon: Bell, label: 'Alerts' },
-  { to: '/automation', icon: Zap, label: 'Automation' },
-  { to: '/team', icon: Users, label: 'Team' },
-  { to: '/settings', icon: Settings, label: 'Settings' },
+const NAV_ITEMS: {
+  to: string;
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  exact?: boolean;
+  feature?: string;
+}[] = [
+  { to: '/',           icon: Inbox,         label: 'Work Queue',     exact: true, feature: 'work_queue'      },
+  { to: '/tasks',      icon: ClipboardList, label: 'Tasks',                       feature: 'tasks'           },
+  { to: '/dashboard',  icon: LayoutDashboard, label: 'Dashboard'                                             },
+  { to: '/leases',     icon: FileText,      label: 'Leases'                                                  },
+  { to: '/properties', icon: Building2,     label: 'Properties'                                              },
+  { to: '/tenants',    icon: Users,         label: 'Tenants'                                                 },
+  { to: '/crm',        icon: Heart,         label: 'CRM',                         feature: 'crm'             },
+  { to: '/documents',  icon: FolderOpen,    label: 'Documents',                   feature: 'documents'       },
+  { to: '/finance',    icon: DollarSign,    label: 'Finance'                                                 },
+  { to: '/analytics',  icon: BarChart3,     label: 'Analytics'                                               },
+  { to: '/benchmarks', icon: Layers,        label: 'Performance',                 feature: 'performance'     },
+  { to: '/simulator',  icon: Wand2,         label: 'Impact Analysis',             feature: 'impact_analysis' },
+  { to: '/alerts',     icon: Bell,          label: 'Alerts'                                                  },
+  { to: '/automation', icon: Zap,           label: 'Automation',                  feature: 'automation'      },
+  { to: '/team',       icon: Users,         label: 'Team',                        feature: 'team'            },
+  { to: '/settings',   icon: Settings,      label: 'Settings'                                                },
 ];
 
 export function AppLayout() {
@@ -50,6 +58,7 @@ export function AppLayout() {
   const logout = useAuthStore((s) => s.logout);
   const { sidebarCollapsed, toggleSidebar } = useUIStore();
   const navigate = useNavigate();
+  const { canAccess, requiredPlan, label: planLabel } = usePlan();
 
   const handleLogout = async () => {
     try {
@@ -84,27 +93,55 @@ export function AppLayout() {
         {/* Nav */}
         <nav className="flex-1 overflow-y-auto p-2">
           <ul className="flex flex-col gap-0.5">
-            {navItems.map(({ to, icon: Icon, label, exact }) => (
-              <li key={to}>
-                <NavLink
-                  to={to}
-                  end={exact}
-                  className={({ isActive }) =>
-                    cn(
-                      'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors duration-100',
-                      isActive
-                        ? 'bg-brand-600/20 text-brand-300 shadow-inner'
-                        : 'text-slate-500 hover:bg-surface-200 hover:text-slate-200',
-                      sidebarCollapsed && 'justify-center px-0 py-2.5'
-                    )
-                  }
-                  title={sidebarCollapsed ? label : undefined}
-                >
-                  <Icon className="h-4 w-4 shrink-0" />
-                  {!sidebarCollapsed && label}
-                </NavLink>
-              </li>
-            ))}
+            {NAV_ITEMS.map(({ to, icon: Icon, label, exact, feature }) => {
+              const locked = feature ? !canAccess(feature) : false;
+              const needed = feature ? requiredPlan(feature) : null;
+
+              if (locked) {
+                return (
+                  <li key={to}>
+                    <button
+                      onClick={() => navigate('/pricing')}
+                      className={cn(
+                        'flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors duration-100 text-slate-600 hover:bg-surface-200/50 hover:text-slate-500',
+                        sidebarCollapsed && 'justify-center px-0 py-2.5'
+                      )}
+                      title={sidebarCollapsed ? `${label} — ${needed ? PLAN_LABELS[needed] : ''} plan` : undefined}
+                    >
+                      <Icon className="h-4 w-4 shrink-0" />
+                      {!sidebarCollapsed && (
+                        <>
+                          <span className="flex-1 text-left">{label}</span>
+                          <Lock className="h-3 w-3 shrink-0 text-slate-700" />
+                        </>
+                      )}
+                    </button>
+                  </li>
+                );
+              }
+
+              return (
+                <li key={to}>
+                  <NavLink
+                    to={to}
+                    end={exact}
+                    className={({ isActive }) =>
+                      cn(
+                        'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors duration-100',
+                        isActive
+                          ? 'bg-brand-600/20 text-brand-300 shadow-inner'
+                          : 'text-slate-500 hover:bg-surface-200 hover:text-slate-200',
+                        sidebarCollapsed && 'justify-center px-0 py-2.5'
+                      )
+                    }
+                    title={sidebarCollapsed ? label : undefined}
+                  >
+                    <Icon className="h-4 w-4 shrink-0" />
+                    {!sidebarCollapsed && label}
+                  </NavLink>
+                </li>
+              );
+            })}
           </ul>
         </nav>
 
@@ -113,7 +150,16 @@ export function AppLayout() {
           {!sidebarCollapsed && user && (
             <div className="mb-2 rounded-lg px-3 py-2">
               <p className="truncate text-xs font-medium text-slate-300">{user.firstName} {user.lastName}</p>
-              <p className="truncate text-xs text-slate-500">{user.role}</p>
+              <div className="mt-1 flex items-center gap-1.5">
+                <span className="text-[10px] text-slate-600">{user.role}</span>
+                <span className="text-slate-700">·</span>
+                <button
+                  onClick={() => navigate('/pricing')}
+                  className="text-[10px] font-semibold text-brand-400/80 hover:text-brand-300 transition-colors"
+                >
+                  {planLabel}
+                </button>
+              </div>
             </div>
           )}
           <button

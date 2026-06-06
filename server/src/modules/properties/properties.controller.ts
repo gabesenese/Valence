@@ -1,6 +1,8 @@
 import type { Request, Response, NextFunction } from 'express';
 import * as service from './properties.service';
+import { enforcePropertyLimit } from '../plans/plans.service';
 import { sendSuccess, sendPaginated } from '../../utils/response';
+import type { Plan } from '@prisma/client';
 
 export async function list(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
@@ -17,6 +19,8 @@ export async function show(req: Request, res: Response, next: NextFunction): Pro
 
 export async function create(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
+    const plan = ((req.user as { plan?: Plan })?.plan ?? 'ESSENTIALS') as Plan;
+    await enforcePropertyLimit(plan);
     sendSuccess(res, await service.createProperty(req.body), 201);
   } catch (err) { next(err); }
 }

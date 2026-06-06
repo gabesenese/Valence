@@ -6,6 +6,7 @@ export interface AuthUser {
   firstName: string;
   lastName: string;
   role: string;
+  plan: import('@/state/auth.store').Plan;
 }
 
 export interface AuthTokens {

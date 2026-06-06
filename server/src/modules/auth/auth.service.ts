@@ -5,7 +5,7 @@ import { prisma } from '../../infrastructure/database';
 import { env } from '../../config/env';
 import { ConflictError, UnauthorizedError, NotFoundError } from '../../utils/errors';
 import type { RegisterInput, LoginInput } from './auth.schemas';
-import type { UserRole } from '@prisma/client';
+import type { UserRole, Plan } from '@prisma/client';
 
 interface TokenPair {
   accessToken: string;
@@ -18,6 +18,7 @@ interface AuthUser {
   firstName: string;
   lastName: string;
   role: UserRole;
+  plan: Plan;
 }
 
 function signAccessToken(user: AuthUser): string {
@@ -26,6 +27,7 @@ function signAccessToken(user: AuthUser): string {
       sub: user.id,
       email: user.email,
       role: user.role,
+      plan: user.plan,
       firstName: user.firstName,
       lastName: user.lastName,
     },
@@ -51,7 +53,7 @@ export async function register(input: RegisterInput): Promise<{ user: AuthUser; 
       firstName: input.firstName,
       lastName: input.lastName,
     },
-    select: { id: true, email: true, firstName: true, lastName: true, role: true },
+    select: { id: true, email: true, firstName: true, lastName: true, role: true, plan: true },
   });
 
   const tokens = await createTokenPair(user);
@@ -67,6 +69,7 @@ export async function login(input: LoginInput): Promise<{ user: AuthUser; tokens
       firstName: true,
       lastName: true,
       role: true,
+      plan: true,
       passwordHash: true,
       isActive: true,
     },
@@ -90,7 +93,7 @@ export async function login(input: LoginInput): Promise<{ user: AuthUser; tokens
 export async function refresh(token: string): Promise<TokenPair> {
   const storedToken = await prisma.refreshToken.findUnique({
     where: { token },
-    include: { user: { select: { id: true, email: true, firstName: true, lastName: true, role: true, isActive: true } } },
+    include: { user: { select: { id: true, email: true, firstName: true, lastName: true, role: true, plan: true, isActive: true } } },
   });
 
   if (!storedToken || storedToken.revokedAt || storedToken.expiresAt < new Date()) {
@@ -114,7 +117,7 @@ export async function logout(token: string): Promise<void> {
 export async function getMe(userId: string): Promise<AuthUser> {
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { id: true, email: true, firstName: true, lastName: true, role: true },
+    select: { id: true, email: true, firstName: true, lastName: true, role: true, plan: true },
   });
   if (!user) throw new NotFoundError('User');
   return user;
@@ -128,6 +131,7 @@ export async function listUsers(): Promise<(AuthUser & { isActive: boolean; last
       firstName: true,
       lastName: true,
       role: true,
+      plan: true,
       isActive: true,
       lastLoginAt: true,
       createdAt: true,
@@ -153,6 +157,10 @@ export async function setUserActive(targetUserId: string, isActive: boolean) {
     data: { isActive },
     select: { id: true, email: true, firstName: true, lastName: true, role: true, isActive: true },
   });
+}
+
+export async function setPlan(targetUserId: string, plan: Plan) {
+  await prisma.user.update({ where: { id: targetUserId }, data: { plan } });
 }
 
 async function createTokenPair(user: AuthUser): Promise<TokenPair> {

@@ -16,6 +16,18 @@ enum UserRole {
   VIEWER
 }
 
+enum Plan {
+  ESSENTIALS
+  PROFESSIONAL
+  EXECUTIVE
+}
+
+enum UsageType {
+  AI_ANALYSIS
+  CONTRACT_PROCESSING
+  IMPACT_SIMULATION
+}
+
 enum PropertyType {
   RESIDENTIAL
   COMMERCIAL
@@ -169,6 +181,7 @@ model User {
   firstName    String   @map("first_name")
   lastName     String   @map("last_name")
   role         UserRole @default(ANALYST)
+  plan         Plan     @default(ESSENTIALS)
   isActive     Boolean  @default(true) @map("is_active")
   lastLoginAt  DateTime? @map("last_login_at")
   createdAt    DateTime @default(now()) @map("created_at")
@@ -192,6 +205,7 @@ model User {
   contactLogs        ContactLog[]    @relation("ContactLogAuthor")
   uploadedDocuments  Document[]      @relation("DocumentUploader")
   createdRules       AutomationRule[] @relation("RuleCreatedBy")
+  usageRecords       UsageRecord[]
 
   @@index([email])
   @@index([role])
@@ -606,4 +620,17 @@ model AutomationLog {
   @@index([ruleId])
   @@index([triggeredAt])
   @@map("automation_logs")
+}
+
+model UsageRecord {
+  id          String    @id @default(uuid())
+  userId      String    @map("user_id")
+  type        UsageType
+  periodStart DateTime  @map("period_start")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, type, periodStart])
+  @@map("usage_records")
 }

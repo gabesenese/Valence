@@ -2,12 +2,13 @@ import type { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { env } from '../config/env';
 import { UnauthorizedError } from '../utils/errors';
-import type { UserRole } from '@prisma/client';
+import type { UserRole, Plan } from '@prisma/client';
 
 interface JwtPayload {
   sub: string;
   email: string;
   role: UserRole;
+  plan: Plan;
   firstName: string;
   lastName: string;
   iat: number;
@@ -27,6 +28,7 @@ export function authenticate(req: Request, _res: Response, next: NextFunction): 
       id: payload.sub,
       email: payload.email,
       role: payload.role,
+      plan: payload.plan ?? 'ESSENTIALS',
       firstName: payload.firstName,
       lastName: payload.lastName,
     };

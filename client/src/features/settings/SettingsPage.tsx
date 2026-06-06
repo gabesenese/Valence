@@ -1,10 +1,16 @@
-import { User, Mail, Shield, Bell, Moon } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { User, Mail, Shield, Bell, Moon, ArrowRight, Zap } from 'lucide-react';
 import { useAuthStore } from '@/state/auth.store';
+import { usePlan, PLAN_LABELS, PLAN_PRICES } from '@/hooks/usePlan';
 import { Card, CardHeader, CardTitle, CardBody } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 
 export default function SettingsPage() {
   const user = useAuthStore((s) => s.user);
+  const navigate = useNavigate();
+  const { plan, limits } = usePlan();
+
+  const nextPlan = plan === 'ESSENTIALS' ? 'PROFESSIONAL' : plan === 'PROFESSIONAL' ? 'EXECUTIVE' : null;
 
   const roleVariant: Record<string, 'brand' | 'success' | 'warning' | 'neutral'> = {
     ADMIN: 'brand',
@@ -104,6 +110,56 @@ export default function SettingsPage() {
           </CardBody>
         </Card>
       </div>
+
+      {/* Plan card */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Zap className="h-4 w-4 text-brand-400" />
+            <CardTitle>Plan</CardTitle>
+          </div>
+          <button
+            onClick={() => navigate('/pricing')}
+            className="text-xs text-brand-400 hover:text-brand-300 transition-colors"
+          >
+            View all plans →
+          </button>
+        </CardHeader>
+        <CardBody>
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <p className="text-base font-bold text-white">{PLAN_LABELS[plan]}</p>
+              <p className="text-xs text-slate-500">${PLAN_PRICES[plan].toLocaleString()} / month</p>
+            </div>
+            {nextPlan && (
+              <button
+                onClick={() => navigate('/pricing')}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-brand-600/20 hover:bg-brand-600/30 border border-brand-500/30 px-3 py-1.5 text-xs font-semibold text-brand-300 transition-colors"
+              >
+                Upgrade to {PLAN_LABELS[nextPlan]}
+                <ArrowRight className="h-3 w-3" />
+              </button>
+            )}
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            {[
+              {
+                label: 'Properties',
+                limit: limits.properties === Infinity ? 'Unlimited' : limits.properties.toLocaleString(),
+              },
+              {
+                label: 'Leases',
+                limit: limits.leases === Infinity ? 'Unlimited' : limits.leases.toLocaleString(),
+              },
+            ].map(({ label, limit }) => (
+              <div key={label} className="rounded-lg border border-surface-400/30 bg-surface-200/30 px-3 py-2.5">
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 mb-0.5">{label}</p>
+                <p className="text-sm font-bold text-white">{limit}</p>
+              </div>
+            ))}
+          </div>
+        </CardBody>
+      </Card>
 
       {/* Preferences */}
       <Card>
