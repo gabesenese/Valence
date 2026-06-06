@@ -7,6 +7,7 @@ export interface AuthUser {
   lastName: string;
   role: string;
   plan: import('@/state/auth.store').Plan;
+  trialEndsAt: string | null;
 }
 
 export interface AuthTokens {

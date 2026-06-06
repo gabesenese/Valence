@@ -26,6 +26,7 @@ import { useAuthStore } from '@/state/auth.store';
 import { useUIStore } from '@/state/ui.store';
 import { authService } from '@/services/auth.service';
 import { usePlan, PLAN_LABELS } from '@/hooks/usePlan';
+import { TrialBanner } from '@/components/ui/TrialBanner';
 
 const NAV_ITEMS: {
   to: string;
@@ -197,6 +198,9 @@ export function AppLayout() {
             <span className="text-xs text-slate-600">Live</span>
           </div>
         </header>
+
+        {/* Trial banner */}
+        <TrialBanner />
 
         {/* Page */}
         <div className="flex-1 overflow-y-auto">

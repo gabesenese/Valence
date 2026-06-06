@@ -1,15 +1,24 @@
 import type { Request, Response, NextFunction } from 'express';
 import type { Plan } from '@prisma/client';
-import { meetsMinPlan } from '../modules/plans/plans.service';
+import { meetsMinPlan, PLAN_ORDER } from '../modules/plans/plans.service';
+
+function resolveEffectivePlan(plan: Plan, trialEndsAt: string | null): Plan {
+  if (trialEndsAt && new Date(trialEndsAt) > new Date()) {
+    if (PLAN_ORDER[plan] < PLAN_ORDER['PROFESSIONAL']) return 'PROFESSIONAL';
+  }
+  return plan;
+}
 
 export function planGate(required: Plan) {
   return (req: Request, res: Response, next: NextFunction): void => {
-    const plan = (req.user as { plan?: Plan }).plan ?? 'ESSENTIALS';
-    if (meetsMinPlan(plan, required)) return next();
+    const rawPlan = (req.user?.plan) ?? 'ESSENTIALS';
+    const trialEndsAt = req.user?.trialEndsAt ?? null;
+    const effective = resolveEffectivePlan(rawPlan, trialEndsAt);
+    if (meetsMinPlan(effective, required)) return next();
     res.status(402).json({
       error: 'Plan upgrade required',
       requiredPlan: required,
-      currentPlan: plan,
+      currentPlan: rawPlan,
       message: `This feature requires the ${required} plan or higher.`,
     });
   };

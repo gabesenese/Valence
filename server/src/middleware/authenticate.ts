@@ -9,6 +9,7 @@ interface JwtPayload {
   email: string;
   role: UserRole;
   plan: Plan;
+  trialEndsAt: string | null;
   firstName: string;
   lastName: string;
   iat: number;
@@ -29,6 +30,7 @@ export function authenticate(req: Request, _res: Response, next: NextFunction): 
       email: payload.email,
       role: payload.role,
       plan: payload.plan ?? 'ESSENTIALS',
+      trialEndsAt: payload.trialEndsAt ?? null,
       firstName: payload.firstName,
       lastName: payload.lastName,
     };

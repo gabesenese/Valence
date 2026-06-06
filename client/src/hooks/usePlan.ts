@@ -42,29 +42,45 @@ const FEATURE_MIN_PLAN: Record<string, Plan> = {
 export function usePlan() {
   const user = useAuthStore((s) => s.user);
   const plan: Plan = user?.plan ?? 'ESSENTIALS';
+  const trialEndsAt = user?.trialEndsAt ?? null;
+
+  const trialActive = trialEndsAt != null && new Date(trialEndsAt) > new Date();
+  const trialExpired = trialEndsAt != null && !trialActive && plan === 'ESSENTIALS';
+  const daysLeft = trialActive
+    ? Math.max(0, Math.ceil((new Date(trialEndsAt!).getTime() - Date.now()) / 86_400_000))
+    : 0;
+
+  // While trial is active, grant at least PROFESSIONAL access
+  const effectivePlan: Plan =
+    trialActive && PLAN_ORDER[plan] < PLAN_ORDER['PROFESSIONAL'] ? 'PROFESSIONAL' : plan;
 
   function canAccess(feature: string): boolean {
     const required = FEATURE_MIN_PLAN[feature];
-    if (!required) return true; // Essentials feature, always accessible
-    return PLAN_ORDER[plan] >= PLAN_ORDER[required];
+    if (!required) return true;
+    return PLAN_ORDER[effectivePlan] >= PLAN_ORDER[required];
   }
 
   function requiredPlan(feature: string): Plan | null {
     const required = FEATURE_MIN_PLAN[feature];
     if (!required) return null;
-    if (PLAN_ORDER[plan] >= PLAN_ORDER[required]) return null;
+    if (PLAN_ORDER[effectivePlan] >= PLAN_ORDER[required]) return null;
     return required;
   }
 
   return {
     plan,
+    effectivePlan,
     label:   PLAN_LABELS[plan],
     price:   PLAN_PRICES[plan],
-    limits:  PLAN_LIMITS[plan],
+    limits:  PLAN_LIMITS[effectivePlan],
     canAccess,
     requiredPlan,
     isEssentials:   plan === 'ESSENTIALS',
     isProfessional: plan === 'PROFESSIONAL',
     isExecutive:    plan === 'EXECUTIVE',
+    trialActive,
+    trialExpired,
+    trialEndsAt,
+    daysLeft,
   };
 }

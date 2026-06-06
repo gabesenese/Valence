@@ -10,6 +10,7 @@ interface AuthUser {
   lastName: string;
   role: string;
   plan: Plan;
+  trialEndsAt: string | null;
 }
 
 interface AuthState {
