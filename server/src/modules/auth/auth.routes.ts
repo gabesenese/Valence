@@ -11,9 +11,11 @@ const router = Router();
 // Strict limiters for auth endpoints
 const loginLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 10, standardHeaders: true, legacyHeaders: false });
 const forgotLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 5,  standardHeaders: true, legacyHeaders: false });
+const demoLimiter  = rateLimit({ windowMs: 60 * 60 * 1000, max: 10, standardHeaders: true, legacyHeaders: false });
 
 // ─── Public ───────────────────────────────────────────────────────────────────
 
+router.post('/demo-session',      demoLimiter,                           controller.demoLogin);
 router.post('/register',         loginLimiter, validate(registerSchema), controller.register);
 router.post('/login',            loginLimiter, validate(loginSchema),    controller.login);
 router.post('/refresh',          validate(refreshSchema),                controller.refresh);

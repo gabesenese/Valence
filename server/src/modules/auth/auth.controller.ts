@@ -264,3 +264,14 @@ export async function revokeAllSessions(req: Request, res: Response, next: NextF
     next(err);
   }
 }
+
+// ─── Demo session ─────────────────────────────────────────────────────────────
+
+export async function demoLogin(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const result = await authService.demoLogin(sessionMeta(req));
+    sendSuccess(res, result, 201);
+  } catch (err) {
+    next(err);
+  }
+}

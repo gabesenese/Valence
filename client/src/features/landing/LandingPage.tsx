@@ -1,11 +1,12 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   Activity, ArrowRight, Building2, FileText, Users, Bell, Inbox,
   ChevronRight, CheckCircle2,
-  Cpu, BarChart3, Shield, Zap, Play,
+  Cpu, BarChart3, Shield, Zap, Play, Loader2,
 } from 'lucide-react';
 import { useAuthStore } from '@/state/auth.store';
+import { authService } from '@/services/auth.service';
 import { cn } from '@/utils/cn';
 
 // ─── Work Queue Mock ──────────────────────────────────────────────────────────
@@ -166,14 +167,27 @@ function Persona({
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function LandingPage() {
-  const user = useAuthStore((s) => s.user);
+  const user    = useAuthStore((s) => s.user);
+  const setAuth = useAuthStore((s) => s.setAuth);
   const navigate = useNavigate();
+  const [demoLoading, setDemoLoading] = useState(false);
 
   useEffect(() => {
     if (user) navigate('/queue', { replace: true });
   }, [user, navigate]);
 
   if (user) return null;
+
+  async function handleDemo() {
+    setDemoLoading(true);
+    try {
+      const { user: u, tokens } = await authService.demoLogin();
+      setAuth(u, tokens.accessToken, tokens.refreshToken);
+      navigate('/queue', { replace: true });
+    } catch {
+      setDemoLoading(false);
+    }
+  }
 
   return (
     <div className="min-h-screen bg-surface-0 text-white">
@@ -230,12 +244,14 @@ export default function LandingPage() {
           >
             Start Free Trial <ArrowRight className="h-4 w-4" />
           </Link>
-          <Link
-            to="/auth/register"
-            className="inline-flex items-center gap-2 rounded-xl border border-surface-500 bg-surface-100 px-6 py-3 text-sm font-semibold text-slate-300 hover:border-brand-500/50 hover:text-white transition-colors"
+          <button
+            onClick={handleDemo}
+            disabled={demoLoading}
+            className="inline-flex items-center gap-2 rounded-xl border border-surface-500 bg-surface-100 px-6 py-3 text-sm font-semibold text-slate-300 hover:border-brand-500/50 hover:text-white transition-colors disabled:opacity-60"
           >
-            <Play className="h-3.5 w-3.5 text-brand-400" /> Explore Demo Portfolio
-          </Link>
+            {demoLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5 text-brand-400" />}
+            {demoLoading ? 'Loading demo…' : 'Explore Demo Portfolio'}
+          </button>
         </div>
 
         <p className="mt-4 text-xs text-slate-600">No credit card required · 7-day free trial · Cancel any time</p>
@@ -381,12 +397,14 @@ export default function LandingPage() {
             Our demo portfolio loads instantly with real properties, leases, alerts, and Work Queue items — fully functional, no account needed.
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-            <Link
-              to="/auth/register"
-              className="inline-flex items-center gap-2 rounded-xl bg-brand-600 px-6 py-3 text-sm font-semibold text-white shadow-glow-brand hover:bg-brand-500 transition-colors"
+            <button
+              onClick={handleDemo}
+              disabled={demoLoading}
+              className="inline-flex items-center gap-2 rounded-xl bg-brand-600 px-6 py-3 text-sm font-semibold text-white shadow-glow-brand hover:bg-brand-500 transition-colors disabled:opacity-60"
             >
-              <Play className="h-4 w-4" /> Explore Demo Portfolio
-            </Link>
+              {demoLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
+              {demoLoading ? 'Loading demo…' : 'Explore Demo Portfolio'}
+            </button>
             <Link
               to="/pricing"
               className="inline-flex items-center gap-2 rounded-xl border border-surface-500 bg-surface-100 px-6 py-3 text-sm font-semibold text-slate-300 hover:border-brand-500/50 transition-colors"

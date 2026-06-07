@@ -40,6 +40,7 @@ import { announcementsRouter } from './modules/announcements/announcements.route
 import cron from 'node-cron';
 import { runAnomalyScan } from './modules/alerts/anomaly.service';
 import { runAllRules } from './modules/automation/automation.service';
+import { cleanupDemoAccounts } from './modules/auth/auth.service';
 import { mkdirSync } from 'fs';
 import path from 'path';
 
@@ -132,6 +133,13 @@ async function start() {
 
   cron.schedule('0 */6 * * *', scan);
   scan(); // run once at startup
+
+  // Demo account cleanup — runs every hour, deletes accounts > 2h old
+  cron.schedule('0 * * * *', () => {
+    cleanupDemoAccounts()
+      .then((n) => { if (n > 0) logger.info(`Demo cleanup: removed ${n} expired demo accounts`); })
+      .catch((err) => logger.warn('Demo cleanup failed', { error: err }));
+  });
 
   // Automation rules — runs every hour
   const automate = () =>

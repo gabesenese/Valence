@@ -10,6 +10,7 @@ export interface AuthUser {
   trialEndsAt: string | null;
   emailVerifiedAt: string | null;
   mfaEnabled: boolean;
+  isDemo: boolean;
 }
 
 export interface AuthTokens {
@@ -86,4 +87,7 @@ export const authService = {
 
   revokeAllSessions: (): Promise<void> =>
     api.delete('/auth/sessions/all').then(() => undefined),
+
+  demoLogin: (): Promise<AuthResult> =>
+    api.post('/auth/demo-session').then(extractData<AuthResult>),
 };

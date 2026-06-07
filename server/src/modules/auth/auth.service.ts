@@ -8,6 +8,7 @@ import { env } from '../../config/env';
 import { ConflictError, UnauthorizedError, NotFoundError, ValidationError } from '../../utils/errors';
 import { logAudit } from '../audit/audit.service';
 import { sendPasswordResetEmail, sendVerificationEmail } from '../../lib/email';
+import { DemoPortfolioFactory } from '../demo/demo.factory';
 import type { RegisterInput, LoginInput } from './auth.schemas';
 import type { UserRole, Plan } from '@prisma/client';
 
@@ -26,6 +27,7 @@ interface AuthUser {
   trialEndsAt: Date | null;
   emailVerifiedAt: Date | null;
   mfaEnabled: boolean;
+  isDemo: boolean;
 }
 
 interface SessionMeta {
@@ -36,7 +38,7 @@ interface SessionMeta {
 const USER_SELECT = {
   id: true, email: true, firstName: true, lastName: true,
   role: true, plan: true, trialEndsAt: true,
-  emailVerifiedAt: true, mfaEnabled: true,
+  emailVerifiedAt: true, mfaEnabled: true, isDemo: true,
 } as const;
 
 function signAccessToken(user: AuthUser): string {
@@ -51,6 +53,7 @@ function signAccessToken(user: AuthUser): string {
       mfaEnabled: user.mfaEnabled,
       firstName: user.firstName,
       lastName: user.lastName,
+      isDemo: user.isDemo,
     },
     env.JWT_SECRET,
     { expiresIn: env.JWT_ACCESS_EXPIRES_IN as jwt.SignOptions['expiresIn'] }
@@ -380,6 +383,57 @@ export async function revokeSession(userId: string, sessionId: string): Promise<
 
 export async function revokeAllSessions(userId: string): Promise<void> {
   await prisma.refreshToken.updateMany({ where: { userId, revokedAt: null }, data: { revokedAt: new Date() } });
+}
+
+// ─── Demo session ─────────────────────────────────────────────────────────────
+
+export async function demoLogin(meta?: SessionMeta): Promise<{ user: AuthUser; tokens: TokenPair }> {
+  const email = `demo-${uuidv4().slice(0, 8)}@valence.demo`;
+  const passwordHash = await bcrypt.hash(uuidv4(), 4); // never used — throwaway
+
+  const user = await prisma.user.create({
+    data: {
+      email,
+      passwordHash,
+      firstName: 'Demo',
+      lastName: 'User',
+      plan: 'PROFESSIONAL',
+      role: 'ADMIN',
+      isDemo: true,
+      emailVerifiedAt: new Date(),
+      lastLoginAt: new Date(),
+    },
+    select: USER_SELECT,
+  });
+
+  await new DemoPortfolioFactory().create(user.id);
+
+  const tokens = await createTokenPair(user, meta);
+  return { user, tokens };
+}
+
+export async function cleanupDemoAccounts(): Promise<number> {
+  const cutoff = new Date(Date.now() - 2 * 60 * 60 * 1000);
+  const stale = await prisma.user.findMany({
+    where: { isDemo: true, createdAt: { lt: cutoff } },
+    select: { id: true },
+  });
+
+  const factory = new DemoPortfolioFactory();
+  let cleaned = 0;
+  for (const { id } of stale) {
+    try {
+      await factory.reset(id);
+      await prisma.$transaction([
+        prisma.refreshToken.deleteMany({ where: { userId: id } }),
+        prisma.usageRecord.deleteMany({ where: { userId: id } }),
+        prisma.auditLog.deleteMany({ where: { userId: id } }),
+      ]);
+      await prisma.user.delete({ where: { id } });
+      cleaned++;
+    } catch { /* skip if already gone */ }
+  }
+  return cleaned;
 }
 
 // ─── Token pair ───────────────────────────────────────────────────────────────

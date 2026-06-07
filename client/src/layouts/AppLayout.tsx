@@ -1,11 +1,11 @@
 import { useEffect } from 'react';
-import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+import { Outlet, NavLink, Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
   LayoutDashboard, FileText, Building2, BarChart3, Bell, DollarSign,
   LogOut, ChevronLeft, Activity, Cpu, Users, Settings, Inbox, Layers,
   Wand2, ClipboardList, Heart, FolderOpen, Zap, Lock, Upload, ScrollText, Download,
-  UserX,
+  UserX, Sparkles,
 } from 'lucide-react';
 import { cn } from '@/utils/cn';
 import { setOrgCurrency } from '@/utils/format';
@@ -280,6 +280,22 @@ export function AppLayout() {
             >
               Exit impersonation
             </button>
+          </div>
+        )}
+        {user?.isDemo && (
+          <div className="flex items-center justify-between border-b border-brand-500/30 bg-brand-600/10 px-6 py-2">
+            <div className="flex items-center gap-2.5">
+              <Sparkles className="h-4 w-4 text-brand-400 shrink-0" />
+              <span className="text-xs font-medium text-brand-300">
+                You're exploring a demo portfolio — data resets automatically after 2 hours.
+              </span>
+            </div>
+            <Link
+              to="/auth/register"
+              className="rounded-lg border border-brand-500/40 bg-brand-600/20 px-3 py-1 text-xs font-semibold text-brand-300 hover:bg-brand-600/30 transition-colors whitespace-nowrap"
+            >
+              Start free trial →
+            </Link>
           </div>
         )}
         <EmailVerificationBanner />

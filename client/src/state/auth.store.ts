@@ -13,6 +13,7 @@ interface AuthUser {
   trialEndsAt: string | null;
   emailVerifiedAt: string | null;
   mfaEnabled: boolean;
+  isDemo: boolean;
 }
 
 interface OriginalSession {
