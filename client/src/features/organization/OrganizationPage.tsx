@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -254,7 +255,31 @@ function RolePicker({ member, currentUserRole, onSelect, busy }: {
   member: TeamMember; currentUserRole: UserRole; onSelect: (role: UserRole) => void; busy: boolean;
 }) {
   const [open, setOpen] = useState(false);
+  const [dropPos, setDropPos] = useState({ top: 0, left: 0 });
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const dropRef = useRef<HTMLDivElement>(null);
   const canChange = roleLevel(currentUserRole) > roleLevel(member.role) || currentUserRole === 'SUPER_ADMIN';
+
+  const openDropdown = () => {
+    if (triggerRef.current) {
+      const rect = triggerRef.current.getBoundingClientRect();
+      setDropPos({ top: rect.bottom + 4, left: rect.left });
+    }
+    setOpen(true);
+  };
+
+  useEffect(() => {
+    if (!open) return;
+    function onClickOutside(e: MouseEvent) {
+      if (
+        triggerRef.current?.contains(e.target as Node) ||
+        dropRef.current?.contains(e.target as Node)
+      ) return;
+      setOpen(false);
+    }
+    document.addEventListener('mousedown', onClickOutside);
+    return () => document.removeEventListener('mousedown', onClickOutside);
+  }, [open]);
 
   const cfg = ROLE_CONFIG[member.role];
   if (!canChange) {
@@ -267,9 +292,10 @@ function RolePicker({ member, currentUserRole, onSelect, busy }: {
   }
 
   return (
-    <div className="relative">
+    <div>
       <button
-        onClick={() => setOpen((p) => !p)}
+        ref={triggerRef}
+        onClick={openDropdown}
         disabled={busy}
         className="flex items-center gap-1.5 text-xs font-medium text-slate-400 hover:text-slate-200 transition-colors"
       >
@@ -277,22 +303,30 @@ function RolePicker({ member, currentUserRole, onSelect, busy }: {
         <span className={cfg.color}>{cfg.label}</span>
         <MoreVertical className="h-3 w-3 text-slate-600" />
       </button>
-      {open && (
-        <div className="absolute left-0 top-6 z-20 min-w-[140px] rounded-lg border border-surface-400/60 bg-surface-100 py-1 shadow-xl">
-          {ROLES.filter((r) => r !== member.role && (roleLevel(currentUserRole) > roleLevel(r) || currentUserRole === 'SUPER_ADMIN')).map((r) => {
-            const c = ROLE_CONFIG[r];
-            return (
-              <button
-                key={r}
-                onClick={() => { onSelect(r); setOpen(false); }}
-                className={`flex w-full items-center gap-2 px-3 py-2 text-xs hover:bg-surface-200 transition-colors ${c.color}`}
-              >
-                <c.icon className="h-3.5 w-3.5" />
-                {c.label}
-              </button>
-            );
-          })}
-        </div>
+
+      {open && createPortal(
+        <div
+          ref={dropRef}
+          style={{ position: 'fixed', top: dropPos.top, left: dropPos.left }}
+          className="z-50 min-w-[140px] rounded-lg border border-surface-400/60 bg-surface-100 py-1 shadow-xl"
+        >
+          {ROLES
+            .filter((r) => r !== member.role && (roleLevel(currentUserRole) > roleLevel(r) || currentUserRole === 'SUPER_ADMIN'))
+            .map((r) => {
+              const c = ROLE_CONFIG[r];
+              return (
+                <button
+                  key={r}
+                  onClick={() => { onSelect(r); setOpen(false); }}
+                  className={`flex w-full items-center gap-2 px-3 py-2 text-xs hover:bg-surface-200 transition-colors ${c.color}`}
+                >
+                  <c.icon className="h-3.5 w-3.5" />
+                  {c.label}
+                </button>
+              );
+            })}
+        </div>,
+        document.body,
       )}
     </div>
   );
