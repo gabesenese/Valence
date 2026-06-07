@@ -50,7 +50,7 @@ export default function AcceptInvitePage() {
         result.tokens.accessToken,
         result.tokens.refreshToken,
       );
-      navigate('/');
+      navigate('/queue');
     } catch (err: unknown) {
       setError((err as Error).message || 'Failed to create account. Please try again.');
     } finally {

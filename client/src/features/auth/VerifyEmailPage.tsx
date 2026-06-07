@@ -47,7 +47,7 @@ export default function VerifyEmailPage() {
               <CheckCircle2 className="mx-auto mb-3 h-10 w-10 text-success" />
               <h2 className="text-base font-semibold text-white">Email verified</h2>
               <p className="mt-2 text-xs text-slate-400">Your email address has been confirmed.</p>
-              <Link to="/" className="mt-6 inline-block text-xs text-brand-400 hover:text-brand-300 transition-colors">
+              <Link to="/queue" className="mt-6 inline-block text-xs text-brand-400 hover:text-brand-300 transition-colors">
                 Go to dashboard →
               </Link>
             </>

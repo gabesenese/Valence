@@ -31,6 +31,7 @@ const TasksPage = lazy(() => import('@/features/tasks/TasksPage'));
 const CRMPage = lazy(() => import('@/features/crm/CRMPage'));
 const DocumentsPage = lazy(() => import('@/features/documents/DocumentsPage'));
 const AutomationPage = lazy(() => import('@/features/automation/AutomationPage'));
+const LandingPage = lazy(() => import('@/features/landing/LandingPage'));
 const PricingPage = lazy(() => import('@/features/pricing/PricingPage'));
 const ImportPage = lazy(() => import('@/features/import/ImportPage'));
 const AuditPage = lazy(() => import('@/features/audit/AuditPage'));
@@ -42,6 +43,7 @@ export default function App() {
     <Suspense fallback={<div className="flex h-screen items-center justify-center bg-surface-0"><PageLoader /></div>}>
       <Routes>
         {/* Public */}
+        <Route path="/" element={<LandingPage />} />
         <Route path="/pricing" element={<PricingPage />} />
         <Route path="/billing/success" element={<BillingSuccessPage />} />
 
@@ -61,7 +63,7 @@ export default function App() {
         {/* Protected */}
         <Route element={<ProtectedRoute />}>
           <Route element={<AppLayout />}>
-            <Route index element={<UpgradeGate feature="work_queue"><WorkQueuePage /></UpgradeGate>} />
+            <Route path="queue" element={<UpgradeGate feature="work_queue"><WorkQueuePage /></UpgradeGate>} />
             <Route path="dashboard" element={<DashboardPage />} />
             <Route path="leases" element={<LeasesPage />} />
             <Route path="leases/:id" element={<LeaseDetailPage />} />
@@ -86,7 +88,7 @@ export default function App() {
           </Route>
         </Route>
 
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="*" element={<Navigate to="/queue" replace />} />
       </Routes>
     </Suspense>
   );

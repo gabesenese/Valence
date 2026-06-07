@@ -53,7 +53,7 @@ export default function SetupPage() {
 
   useEffect(() => {
     if (!allDone) return;
-    const t = setTimeout(() => navigate('/'), 2500);
+    const t = setTimeout(() => navigate('/queue'), 2500);
     return () => clearTimeout(t);
   }, [allDone, navigate]);
 
@@ -187,7 +187,7 @@ export default function SetupPage() {
 
       {/* Go to dashboard */}
       <div className="flex flex-col items-center gap-2">
-        <Button onClick={() => navigate('/')} size="md">
+        <Button onClick={() => navigate('/queue')} size="md">
           {allDone ? 'Go to Dashboard' : 'Skip for Now'}
           <ArrowRight className="h-4 w-4" />
         </Button>

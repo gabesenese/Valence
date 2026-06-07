@@ -690,9 +690,10 @@ export default function SettingsPage() {
                   onClick={() => setAlertSeverityFilter(opt)}
                   className={cn(
                     'rounded-md px-3 py-1 text-xs font-medium transition-colors capitalize',
-                    alertSeverityFilter === opt
-                      ? 'bg-brand-600/30 text-brand-300 border border-brand-600/40'
-                      : 'text-slate-500 hover:text-slate-300',
+                    alertSeverityFilter === opt && opt === 'all'      && 'bg-brand-600/30 text-brand-300 border border-brand-600/40',
+                    alertSeverityFilter === opt && opt === 'warning'  && 'bg-danger/20 text-danger border border-danger/30',
+                    alertSeverityFilter === opt && opt === 'critical' && 'bg-amber-500/20 text-amber-400 border border-amber-500/30',
+                    alertSeverityFilter !== opt && 'text-slate-500 hover:text-slate-300',
                   )}
                 >
                   {opt === 'all' ? 'All' : opt === 'warning' ? 'Warning+' : 'Critical'}

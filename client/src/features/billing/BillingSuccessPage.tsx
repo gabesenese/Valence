@@ -25,7 +25,7 @@ export default function BillingSuccessPage() {
       .catch(() => { /* plan update may not be instant; redirect anyway */ })
       .finally(() => {
         setLoading(false);
-        const t = setTimeout(() => navigate('/'), 4000);
+        const t = setTimeout(() => navigate('/queue'), 4000);
         return () => clearTimeout(t);
       });
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -50,7 +50,7 @@ export default function BillingSuccessPage() {
             <p className="mt-1 text-xs text-slate-600">Redirecting to dashboard…</p>
           </div>
           <button
-            onClick={() => navigate('/')}
+            onClick={() => navigate('/queue')}
             className="rounded-xl bg-brand-600 hover:bg-brand-500 px-6 py-2.5 text-sm font-semibold text-white transition-colors"
           >
             Go to Dashboard

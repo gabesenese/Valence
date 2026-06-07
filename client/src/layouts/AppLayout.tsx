@@ -37,7 +37,7 @@ const NAV_SECTIONS: NavSection[] = [
   {
     label: 'Operations',
     items: [
-      { to: '/',           icon: Inbox,         label: 'Work Queue',  exact: true, feature: 'work_queue' },
+      { to: '/queue',      icon: Inbox,         label: 'Work Queue',  exact: true, feature: 'work_queue' },
       { to: '/tasks',      icon: ClipboardList, label: 'Tasks',                    feature: 'tasks'      },
       { to: '/leases',     icon: FileText,      label: 'Leases'                                          },
       { to: '/properties', icon: Building2,     label: 'Properties'                                      },

@@ -34,7 +34,7 @@ export default function LoginPage() {
       setAuth(result.user, result.tokens.accessToken, result.tokens.refreshToken);
       localStorage.setItem('valence-remember-me', rememberMe ? '1' : '0');
       if (!rememberMe) sessionStorage.setItem('valence-session-active', '1');
-      navigate('/');
+      navigate('/queue');
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
       setError(msg ?? 'Authentication failed');
@@ -51,7 +51,7 @@ export default function LoginPage() {
     try {
       const result = await authService.verifyMfa(mfaToken, totp);
       setAuth(result.user, result.tokens.accessToken, result.tokens.refreshToken);
-      navigate('/');
+      navigate('/queue');
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
       setError(msg ?? 'Invalid code');

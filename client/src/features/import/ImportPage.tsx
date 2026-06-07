@@ -412,7 +412,7 @@ function IntelligenceStep() {
         </div>
       )}
       <button
-        onClick={() => navigate('/')}
+        onClick={() => navigate('/queue')}
         className="inline-flex items-center gap-2 rounded-xl bg-brand-600 hover:bg-brand-500 px-6 py-3 text-sm font-semibold text-white transition-colors"
       >
         View Portfolio Dashboard <ChevronRight className="h-4 w-4" />

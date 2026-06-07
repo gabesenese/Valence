@@ -204,7 +204,7 @@ export default function PricingPage() {
     try {
       const result = await authService.claimTrial();
       setAuth(result.user, result.tokens.accessToken, result.tokens.refreshToken);
-      navigate('/');
+      navigate('/queue');
     } catch (err: unknown) {
       const status = (err as { response?: { status?: number } })?.response?.status;
       if (status === 409) {
@@ -222,7 +222,7 @@ export default function PricingPage() {
       {/* Nav */}
       <header className="flex items-center justify-between border-b border-surface-400/30 px-8 py-4">
         <button
-          onClick={() => navigate('/')}
+          onClick={() => navigate('/queue')}
           className="flex items-center gap-2.5 text-sm font-bold text-white hover:text-brand-300 transition-colors"
         >
           <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand-600 shadow-glow-brand">
@@ -232,7 +232,7 @@ export default function PricingPage() {
         </button>
         {isAuthenticated ? (
           <button
-            onClick={() => navigate('/')}
+            onClick={() => navigate('/queue')}
             className="text-sm text-slate-500 hover:text-slate-300 transition-colors"
           >
             Go to dashboard →
