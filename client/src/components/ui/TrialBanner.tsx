@@ -1,10 +1,13 @@
 import { useNavigate } from 'react-router-dom';
 import { Clock, ArrowRight, AlertTriangle } from 'lucide-react';
 import { usePlan } from '@/hooks/usePlan';
+import { useAuthStore } from '@/state/auth.store';
 
 export function TrialBanner() {
   const navigate = useNavigate();
   const { trialActive, trialExpired, daysLeft } = usePlan();
+  const userRole = useAuthStore((s) => s.user?.role);
+  const canUpgrade = userRole === 'SUPER_ADMIN' || userRole === 'ADMIN';
 
   if (!trialActive && !trialExpired) return null;
 
@@ -16,13 +19,15 @@ export function TrialBanner() {
           <span className="font-medium">Your trial has ended.</span>
           <span className="text-danger/70">Upgrade to keep access to your features.</span>
         </div>
-        <button
-          onClick={() => navigate('/pricing')}
-          className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-danger/20 hover:bg-danger/30 border border-danger/30 px-3 py-1 text-xs font-semibold text-danger transition-colors"
-        >
-          Upgrade now
-          <ArrowRight className="h-3 w-3" />
-        </button>
+        {canUpgrade && (
+          <button
+            onClick={() => navigate('/pricing')}
+            className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-danger/20 hover:bg-danger/30 border border-danger/30 px-3 py-1 text-xs font-semibold text-danger transition-colors"
+          >
+            Upgrade now
+            <ArrowRight className="h-3 w-3" />
+          </button>
+        )}
       </div>
     );
   }
@@ -46,17 +51,19 @@ export function TrialBanner() {
           You have full Professional access until it ends.
         </span>
       </div>
-      <button
-        onClick={() => navigate('/pricing')}
-        className={`inline-flex shrink-0 items-center gap-1 rounded-lg border px-3 py-1 text-xs font-semibold transition-colors ${
-          urgent
-            ? 'border-orange-500/30 bg-orange-500/20 hover:bg-orange-500/30 text-orange-300'
-            : 'border-brand-500/30 bg-brand-500/20 hover:bg-brand-500/30 text-brand-300'
-        }`}
-      >
-        Upgrade
-        <ArrowRight className="h-3 w-3" />
-      </button>
+      {canUpgrade && (
+        <button
+          onClick={() => navigate('/pricing')}
+          className={`inline-flex shrink-0 items-center gap-1 rounded-lg border px-3 py-1 text-xs font-semibold transition-colors ${
+            urgent
+              ? 'border-orange-500/30 bg-orange-500/20 hover:bg-orange-500/30 text-orange-300'
+              : 'border-brand-500/30 bg-brand-500/20 hover:bg-brand-500/30 text-brand-300'
+          }`}
+        >
+          Upgrade
+          <ArrowRight className="h-3 w-3" />
+        </button>
+      )}
     </div>
   );
 }

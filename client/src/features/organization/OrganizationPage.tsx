@@ -258,7 +258,8 @@ function RolePicker({ member, currentUserRole, onSelect, busy }: {
   const [dropPos, setDropPos] = useState({ top: 0, left: 0 });
   const triggerRef = useRef<HTMLButtonElement>(null);
   const dropRef = useRef<HTMLDivElement>(null);
-  const canChange = roleLevel(currentUserRole) > roleLevel(member.role) || currentUserRole === 'SUPER_ADMIN';
+  const canChange = (currentUserRole === 'SUPER_ADMIN' || currentUserRole === 'ADMIN')
+    && roleLevel(currentUserRole) < roleLevel(member.role);
 
   const openDropdown = () => {
     if (triggerRef.current) {
@@ -311,7 +312,7 @@ function RolePicker({ member, currentUserRole, onSelect, busy }: {
           className="z-50 min-w-[140px] rounded-lg border border-surface-400/60 bg-surface-100 py-1 shadow-xl"
         >
           {ROLES
-            .filter((r) => r !== member.role && (roleLevel(currentUserRole) > roleLevel(r) || currentUserRole === 'SUPER_ADMIN'))
+            .filter((r) => r !== member.role && roleLevel(r) > roleLevel(currentUserRole))
             .map((r) => {
               const c = ROLE_CONFIG[r];
               return (
