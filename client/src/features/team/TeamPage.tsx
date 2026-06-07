@@ -1,26 +1,38 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Users, Shield, Crown, Eye, BarChart3, MoreVertical, UserCheck, UserX } from 'lucide-react';
-import { usersService, type TeamMember, type UserRole } from '@/services/users.service';
+import {
+  Users, Shield, Crown, Eye, BarChart3, MoreVertical, UserCheck, UserX,
+  UserPlus, X, Copy, Check, Clock, Link as LinkIcon,
+} from 'lucide-react';
+import { usersService, type TeamMember, type UserRole, type Invite } from '@/services/users.service';
 import { useAuthStore } from '@/state/auth.store';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
+import { Button } from '@/components/ui/Button';
 import { PageLoader } from '@/components/ui/Spinner';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { Select } from '@/components/ui/Select';
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
 const ROLE_CONFIG: Record<UserRole, { label: string; color: string; icon: React.ComponentType<{ className?: string }> }> = {
-  SUPER_ADMIN: { label: 'Super Admin', color: 'text-danger',   icon: Crown   },
-  ADMIN:       { label: 'Admin',       color: 'text-warning',  icon: Shield  },
-  ANALYST:     { label: 'Analyst',     color: 'text-brand-400',icon: BarChart3},
-  VIEWER:      { label: 'Viewer',      color: 'text-slate-400',icon: Eye     },
+  SUPER_ADMIN: { label: 'Super Admin', color: 'text-danger',    icon: Crown    },
+  ADMIN:       { label: 'Admin',       color: 'text-warning',   icon: Shield   },
+  ANALYST:     { label: 'Analyst',     color: 'text-brand-400', icon: BarChart3 },
+  VIEWER:      { label: 'Viewer',      color: 'text-slate-400', icon: Eye      },
 };
 
 const ROLES: UserRole[] = ['SUPER_ADMIN', 'ADMIN', 'ANALYST', 'VIEWER'];
+const INVITE_ROLE_OPTIONS = [
+  { value: 'ADMIN',   label: 'Admin'   },
+  { value: 'ANALYST', label: 'Analyst' },
+  { value: 'VIEWER',  label: 'Viewer'  },
+];
 
-function roleLevel(r: UserRole) {
-  return ROLES.indexOf(r);
+function roleLevel(r: UserRole) { return ROLES.indexOf(r); }
+
+function daysUntil(iso: string) {
+  return Math.max(0, Math.ceil((new Date(iso).getTime() - Date.now()) / 86400000));
 }
 
 // ─── Avatar ───────────────────────────────────────────────────────────────────
@@ -36,29 +48,41 @@ function Avatar({ member }: { member: TeamMember }) {
   );
 }
 
+// ─── Copy button ──────────────────────────────────────────────────────────────
+
+function CopyButton({ text, label = 'Copy' }: { text: string; label?: string }) {
+  const [copied, setCopied] = useState(false);
+  const handleCopy = () => {
+    void navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+  return (
+    <button
+      onClick={handleCopy}
+      className="inline-flex items-center gap-1 rounded-md border border-surface-400/40 bg-surface-200 hover:bg-surface-300 px-2.5 py-1.5 text-xs font-medium text-slate-300 transition-colors"
+    >
+      {copied ? <Check className="h-3 w-3 text-success" /> : <Copy className="h-3 w-3" />}
+      {copied ? 'Copied!' : label}
+    </button>
+  );
+}
+
 // ─── Role picker ──────────────────────────────────────────────────────────────
 
 function RolePicker({
-  member,
-  currentUserRole,
-  onSelect,
-  busy,
+  member, currentUserRole, onSelect, busy,
 }: {
-  member: TeamMember;
-  currentUserRole: UserRole;
-  onSelect: (role: UserRole) => void;
-  busy: boolean;
+  member: TeamMember; currentUserRole: UserRole; onSelect: (role: UserRole) => void; busy: boolean;
 }) {
   const [open, setOpen] = useState(false);
-  const canChange = roleLevel(currentUserRole) > roleLevel(member.role) ||
-    currentUserRole === 'SUPER_ADMIN';
+  const canChange = roleLevel(currentUserRole) > roleLevel(member.role) || currentUserRole === 'SUPER_ADMIN';
 
   if (!canChange) {
     const cfg = ROLE_CONFIG[member.role];
-    const Icon = cfg.icon;
     return (
       <div className={`flex items-center gap-1.5 text-xs font-medium ${cfg.color}`}>
-        <Icon className="h-3.5 w-3.5" />
+        <cfg.icon className="h-3.5 w-3.5" />
         {cfg.label}
       </div>
     );
@@ -73,10 +97,9 @@ function RolePicker({
       >
         {(() => {
           const cfg = ROLE_CONFIG[member.role];
-          const Icon = cfg.icon;
           return (
             <>
-              <Icon className={`h-3.5 w-3.5 ${cfg.color}`} />
+              <cfg.icon className={`h-3.5 w-3.5 ${cfg.color}`} />
               <span className={cfg.color}>{cfg.label}</span>
               <MoreVertical className="h-3 w-3 text-slate-600" />
             </>
@@ -85,17 +108,15 @@ function RolePicker({
       </button>
       {open && (
         <div className="absolute right-0 top-6 z-20 min-w-[140px] rounded-lg border border-surface-400/60 bg-surface-100 py-1 shadow-xl">
-          {ROLES.filter((r) => r !== member.role && roleLevel(currentUserRole) > roleLevel(r) || currentUserRole === 'SUPER_ADMIN').map((r) => {
-            if (r === member.role) return null;
+          {ROLES.filter((r) => r !== member.role && (roleLevel(currentUserRole) > roleLevel(r) || currentUserRole === 'SUPER_ADMIN')).map((r) => {
             const cfg = ROLE_CONFIG[r];
-            const Icon = cfg.icon;
             return (
               <button
                 key={r}
                 onClick={() => { onSelect(r); setOpen(false); }}
                 className={`flex w-full items-center gap-2 px-3 py-2 text-xs hover:bg-surface-200 transition-colors ${cfg.color}`}
               >
-                <Icon className="h-3.5 w-3.5" />
+                <cfg.icon className="h-3.5 w-3.5" />
                 {cfg.label}
               </button>
             );
@@ -108,14 +129,8 @@ function RolePicker({
 
 // ─── Member row ───────────────────────────────────────────────────────────────
 
-function MemberRow({
-  member,
-  currentUserId,
-  currentUserRole,
-}: {
-  member: TeamMember;
-  currentUserId: string;
-  currentUserRole: UserRole;
+function MemberRow({ member, currentUserId, currentUserRole }: {
+  member: TeamMember; currentUserId: string; currentUserRole: UserRole;
 }) {
   const qc = useQueryClient();
   const isMe = member.id === currentUserId;
@@ -125,7 +140,6 @@ function MemberRow({
     mutationFn: (role: UserRole) => usersService.updateRole(member.id, role),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['users'] }),
   });
-
   const activeMutation = useMutation({
     mutationFn: (isActive: boolean) => usersService.setActive(member.id, isActive),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['users'] }),
@@ -150,17 +164,10 @@ function MemberRow({
         </div>
       </td>
       <td className="px-4 py-3">
-        <RolePicker
-          member={member}
-          currentUserRole={currentUserRole}
-          onSelect={(r) => roleMutation.mutate(r)}
-          busy={roleMutation.isPending}
-        />
+        <RolePicker member={member} currentUserRole={currentUserRole} onSelect={(r) => roleMutation.mutate(r)} busy={roleMutation.isPending} />
       </td>
       <td className="px-4 py-3">
-        <Badge variant={member.isActive ? 'success' : 'neutral'}>
-          {member.isActive ? 'Active' : 'Inactive'}
-        </Badge>
+        <Badge variant={member.isActive ? 'success' : 'neutral'}>{member.isActive ? 'Active' : 'Inactive'}</Badge>
       </td>
       <td className="px-4 py-3 text-xs text-slate-500">{lastLogin}</td>
       <td className="px-4 py-3 text-xs text-slate-600">
@@ -187,23 +194,190 @@ function MemberRow({
   );
 }
 
+// ─── Invite modal ─────────────────────────────────────────────────────────────
+
+function InviteModal({ onClose }: { onClose: () => void }) {
+  const qc = useQueryClient();
+  const [email, setEmail] = useState('');
+  const [role, setRole] = useState<UserRole>('ANALYST');
+  const [createdToken, setCreatedToken] = useState<string | null>(null);
+  const [error, setError] = useState('');
+
+  const createMutation = useMutation({
+    mutationFn: () => usersService.createInvite(email.trim(), role),
+    onSuccess: (invite) => {
+      setCreatedToken(invite.token);
+      void qc.invalidateQueries({ queryKey: ['invites'] });
+    },
+    onError: (err: Error) => setError(err.message || 'Failed to create invite'),
+  });
+
+  const inviteLink = createdToken
+    ? `${window.location.origin}/auth/invite/${createdToken}`
+    : '';
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+      <div className="w-full max-w-md rounded-2xl border border-surface-400/40 bg-surface-100 p-6 shadow-xl mx-4">
+        <div className="flex items-center justify-between mb-5">
+          <h2 className="text-base font-semibold text-white">
+            {createdToken ? 'Invite link ready' : 'Invite a team member'}
+          </h2>
+          <button onClick={onClose} className="text-slate-500 hover:text-slate-300 transition-colors">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        {!createdToken ? (
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-medium text-slate-400 uppercase tracking-wide">Email address</label>
+              <input
+                type="email"
+                autoFocus
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && email && createMutation.mutate()}
+                placeholder="colleague@company.com"
+                className="h-9 w-full rounded-lg border border-surface-400 bg-surface-200 px-3 text-sm text-slate-100 placeholder:text-slate-600 focus:border-brand-500/60 focus:outline-none focus:ring-1 focus:ring-brand-500/30"
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-medium text-slate-400 uppercase tracking-wide">Role</label>
+              <Select
+                value={role}
+                onChange={(v) => setRole(v as UserRole)}
+                options={INVITE_ROLE_OPTIONS}
+              />
+            </div>
+            {error && (
+              <p className="text-xs text-danger bg-danger/10 border border-danger/20 rounded-lg px-3 py-2">{error}</p>
+            )}
+            <div className="flex justify-end gap-2 mt-1">
+              <Button variant="ghost" size="sm" onClick={onClose}>Cancel</Button>
+              <Button
+                size="sm"
+                loading={createMutation.isPending}
+                disabled={!email.trim()}
+                onClick={() => createMutation.mutate()}
+              >
+                <LinkIcon className="h-3.5 w-3.5" />
+                Generate invite link
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-4">
+            <div className="flex items-start gap-3 rounded-xl bg-success/10 border border-success/20 px-4 py-3">
+              <Check className="h-4 w-4 text-success shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-medium text-success">Invite created</p>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  For <span className="text-slate-300">{email}</span> as{' '}
+                  <span className="text-slate-300">{ROLE_CONFIG[role]?.label}</span>
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-medium text-slate-400 uppercase tracking-wide">Share this link</label>
+              <div className="flex items-center gap-2">
+                <div className="flex-1 min-w-0 rounded-lg border border-surface-400/40 bg-surface-200/60 px-3 py-2">
+                  <p className="text-xs text-slate-400 truncate font-mono">{inviteLink}</p>
+                </div>
+                <CopyButton text={inviteLink} />
+              </div>
+              <p className="text-[11px] text-slate-600">Expires in 7 days. Send this link directly to the person you're inviting.</p>
+            </div>
+
+            <div className="flex justify-end mt-1">
+              <Button size="sm" onClick={onClose}>Done</Button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Pending invites ──────────────────────────────────────────────────────────
+
+function PendingInvites({ currentUserRole }: { currentUserRole: UserRole }) {
+  const qc = useQueryClient();
+  const canManage = currentUserRole === 'ADMIN' || currentUserRole === 'SUPER_ADMIN';
+
+  const { data: invites = [] } = useQuery({
+    queryKey: ['invites'],
+    queryFn: usersService.listInvites,
+    enabled: canManage,
+    staleTime: 30_000,
+  });
+
+  const revokeMutation = useMutation({
+    mutationFn: usersService.revokeInvite,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['invites'] }),
+  });
+
+  if (!canManage || invites.length === 0) return null;
+
+  return (
+    <Card>
+      <div className="px-4 py-3 border-b border-surface-400/30 flex items-center gap-2">
+        <Clock className="h-4 w-4 text-slate-500" />
+        <h3 className="text-sm font-medium text-slate-300">Pending Invites</h3>
+        <span className="text-xs text-slate-600">({invites.length})</span>
+      </div>
+      <div className="divide-y divide-surface-400/20">
+        {invites.map((invite: Invite) => {
+          const days = daysUntil(invite.expiresAt);
+          const link = `${window.location.origin}/auth/invite/${invite.token}`;
+          const cfg = ROLE_CONFIG[invite.role];
+          return (
+            <div key={invite.id} className="flex items-center gap-3 px-4 py-3">
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-slate-300 truncate">{invite.email}</p>
+                <p className="text-xs text-slate-600 mt-0.5">
+                  Invited by {invite.invitedBy.firstName} {invite.invitedBy.lastName}
+                </p>
+              </div>
+              <div className={`flex items-center gap-1.5 text-xs font-medium shrink-0 ${cfg.color}`}>
+                <cfg.icon className="h-3.5 w-3.5" />
+                {cfg.label}
+              </div>
+              <span className={`text-xs shrink-0 ${days <= 1 ? 'text-danger' : days <= 3 ? 'text-warning' : 'text-slate-500'}`}>
+                {days === 0 ? 'Expires today' : `${days}d left`}
+              </span>
+              <CopyButton text={link} label="Copy link" />
+              <button
+                onClick={() => revokeMutation.mutate(invite.id)}
+                disabled={revokeMutation.isPending}
+                className="text-xs text-slate-600 hover:text-danger transition-colors shrink-0"
+              >
+                Revoke
+              </button>
+            </div>
+          );
+        })}
+      </div>
+    </Card>
+  );
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function TeamPage() {
   const currentUser = useAuthStore((s) => s.user);
+  const currentUserRole = (currentUser?.role as UserRole) ?? 'VIEWER';
+  const canInvite = currentUserRole === 'ADMIN' || currentUserRole === 'SUPER_ADMIN';
+  const [showInvite, setShowInvite] = useState(false);
+
   const { data: members = [], isLoading } = useQuery({
     queryKey: ['users'],
     queryFn: usersService.listUsers,
   });
 
-  const byRole: Record<UserRole, TeamMember[]> = {
-    SUPER_ADMIN: [],
-    ADMIN: [],
-    ANALYST: [],
-    VIEWER: [],
-  };
+  const byRole: Record<UserRole, TeamMember[]> = { SUPER_ADMIN: [], ADMIN: [], ANALYST: [], VIEWER: [] };
   for (const m of members) byRole[m.role]?.push(m);
-
   const activeCount = members.filter((m) => m.isActive).length;
 
   return (
@@ -211,18 +385,25 @@ export default function TeamPage() {
       <PageHeader
         title="Team"
         description={`${activeCount} active member${activeCount !== 1 ? 's' : ''}`}
+        actions={
+          canInvite ? (
+            <Button size="sm" onClick={() => setShowInvite(true)}>
+              <UserPlus className="h-4 w-4" />
+              Invite member
+            </Button>
+          ) : undefined
+        }
       />
 
       {/* Role summary */}
       <div className="flex flex-wrap gap-3">
         {ROLES.map((r) => {
           const cfg = ROLE_CONFIG[r];
-          const Icon = cfg.icon;
           const count = byRole[r].length;
           if (count === 0) return null;
           return (
             <div key={r} className="flex items-center gap-2 rounded-lg border border-surface-400/40 bg-surface-50 px-3 py-2">
-              <Icon className={`h-4 w-4 ${cfg.color}`} />
+              <cfg.icon className={`h-4 w-4 ${cfg.color}`} />
               <span className={`text-sm font-bold ${cfg.color}`}>{count}</span>
               <span className="text-xs text-slate-500">{cfg.label}</span>
             </div>
@@ -230,6 +411,7 @@ export default function TeamPage() {
         })}
       </div>
 
+      {/* Member table */}
       <Card>
         {isLoading ? (
           <PageLoader />
@@ -249,20 +431,33 @@ export default function TeamPage() {
                     key={m.id}
                     member={m}
                     currentUserId={currentUser?.id ?? ''}
-                    currentUserRole={(currentUser?.role as UserRole) ?? 'VIEWER'}
+                    currentUserRole={currentUserRole}
                   />
                 ))}
               </tbody>
             </table>
             {members.length === 0 && (
-              <div className="px-4 py-12 text-center">
+              <div className="flex flex-col items-center justify-center px-4 py-16 text-center">
                 <Users className="mx-auto h-8 w-8 text-slate-600 mb-2" />
                 <p className="text-sm text-slate-500">No team members yet</p>
+                {canInvite && (
+                  <button
+                    onClick={() => setShowInvite(true)}
+                    className="mt-3 text-xs text-brand-400 hover:text-brand-300 transition-colors"
+                  >
+                    Invite the first team member →
+                  </button>
+                )}
               </div>
             )}
           </div>
         )}
       </Card>
+
+      {/* Pending invites */}
+      <PendingInvites currentUserRole={currentUserRole} />
+
+      {showInvite && <InviteModal onClose={() => setShowInvite(false)} />}
     </div>
   );
 }

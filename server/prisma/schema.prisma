@@ -210,10 +210,28 @@ model User {
   auditLogs          AuditLog[]
   ownedProperties    Property[]      @relation("PropertyOwner")
   ownedTenants       Tenant[]        @relation("TenantOwner")
+  sentInvites        Invite[]        @relation("InvitedBy")
 
   @@index([email])
   @@index([role])
   @@map("users")
+}
+
+model Invite {
+  id          String    @id @default(uuid())
+  email       String
+  role        UserRole  @default(ANALYST)
+  token       String    @unique
+  invitedById String    @map("invited_by_id")
+  expiresAt   DateTime  @map("expires_at")
+  acceptedAt  DateTime? @map("accepted_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  invitedBy User @relation("InvitedBy", fields: [invitedById], references: [id])
+
+  @@index([token])
+  @@index([email])
+  @@map("invites")
 }
 
 model RefreshToken {

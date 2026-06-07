@@ -13,6 +13,23 @@ export interface TeamMember {
   createdAt: string;
 }
 
+export interface Invite {
+  id: string;
+  email: string;
+  role: UserRole;
+  token: string;
+  expiresAt: string;
+  createdAt: string;
+  invitedBy: { firstName: string; lastName: string };
+}
+
+export interface InviteInfo {
+  email: string;
+  role: UserRole;
+  expiresAt: string;
+  invitedBy: { firstName: string; lastName: string };
+}
+
 export const usersService = {
   listUsers: () => api.get('/auth/users').then(extractData<TeamMember[]>),
 
@@ -21,4 +38,21 @@ export const usersService = {
 
   setActive: (id: string, isActive: boolean) =>
     api.patch(`/auth/users/${id}/active`, { isActive }).then(extractData<TeamMember>),
+
+  // Invites
+  createInvite: (email: string, role: UserRole) =>
+    api.post('/team/invites', { email, role }).then(extractData<Invite>),
+
+  listInvites: () => api.get('/team/invites').then(extractData<Invite[]>),
+
+  revokeInvite: (id: string) =>
+    api.delete(`/team/invites/${id}`).then(extractData<{ message: string }>),
+
+  validateInvite: (token: string) =>
+    api.get(`/team/invites/validate/${token}`).then(extractData<InviteInfo>),
+
+  acceptInvite: (token: string, body: { firstName: string; lastName: string; password: string }) =>
+    api.post(`/team/invites/accept/${token}`, body).then(
+      extractData<{ user: { id: string; email: string; firstName: string; lastName: string; role: UserRole; plan: string; trialEndsAt: string | null }; tokens: { accessToken: string; refreshToken: string } }>
+    ),
 };

@@ -7,6 +7,7 @@ import { UpgradeGate } from '@/components/ui/UpgradeGate';
 
 const LoginPage = lazy(() => import('@/features/auth/LoginPage'));
 const RegisterPage = lazy(() => import('@/features/auth/RegisterPage'));
+const AcceptInvitePage = lazy(() => import('@/features/auth/AcceptInvitePage'));
 const DashboardPage = lazy(() => import('@/features/dashboard/DashboardPage'));
 const LeasesPage = lazy(() => import('@/features/leases/LeasesPage'));
 const LeaseDetailPage = lazy(() => import('@/features/leases/LeaseDetailPage'));
@@ -42,6 +43,7 @@ export default function App() {
         {/* Auth */}
         <Route path="/auth/login" element={<LoginPage />} />
         <Route path="/auth/register" element={<RegisterPage />} />
+        <Route path="/auth/invite/:token" element={<AcceptInvitePage />} />
 
         {/* Protected — setup outside AppLayout so it has its own full-page look */}
         <Route element={<ProtectedRoute />}>
