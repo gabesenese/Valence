@@ -67,12 +67,15 @@ export async function register(input: RegisterInput, meta?: SessionMeta): Promis
 
   const passwordHash = await bcrypt.hash(input.password, env.BCRYPT_ROUNDS);
 
+  const isOwner = env.OWNER_EMAIL && input.email.toLowerCase() === env.OWNER_EMAIL.toLowerCase();
+
   const user = await prisma.user.create({
     data: {
       email: input.email,
       passwordHash,
       firstName: input.firstName,
       lastName: input.lastName,
+      ...(isOwner ? { role: 'SUPER_ADMIN' } : {}),
     },
     select: USER_SELECT,
   });
