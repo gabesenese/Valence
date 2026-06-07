@@ -239,9 +239,13 @@ export default function AdminPage() {
   const [planFilter, setPlan] = useState('');
   const [page, setPage]       = useState(1);
 
-  // Redirect non-super-admins immediately
+  // Must be logged in; must be SUPER_ADMIN
   useEffect(() => {
-    if (user && user.role !== 'SUPER_ADMIN') navigate('/queue', { replace: true });
+    if (!user) {
+      navigate('/auth/login', { state: { from: { pathname: '/admin' } }, replace: true });
+    } else if (user.role !== 'SUPER_ADMIN') {
+      navigate('/queue', { replace: true });
+    }
   }, [user, navigate]);
 
   // Restore secret from session

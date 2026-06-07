@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { Activity, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { useAuthStore } from '@/state/auth.store';
 import { authService } from '@/services/auth.service';
@@ -20,6 +20,8 @@ export default function LoginPage() {
 
   const setAuth = useAuthStore((s) => s.setAuth);
   const navigate = useNavigate();
+  const location = useLocation();
+  const from = (location.state as { from?: { pathname: string } })?.from?.pathname ?? '/queue';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,7 +36,7 @@ export default function LoginPage() {
       setAuth(result.user, result.tokens.accessToken, result.tokens.refreshToken);
       localStorage.setItem('valence-remember-me', rememberMe ? '1' : '0');
       if (!rememberMe) sessionStorage.setItem('valence-session-active', '1');
-      navigate('/queue');
+      navigate(from, { replace: true });
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
       setError(msg ?? 'Authentication failed');
@@ -51,7 +53,7 @@ export default function LoginPage() {
     try {
       const result = await authService.verifyMfa(mfaToken, totp);
       setAuth(result.user, result.tokens.accessToken, result.tokens.refreshToken);
-      navigate('/queue');
+      navigate(from, { replace: true });
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
       setError(msg ?? 'Invalid code');
