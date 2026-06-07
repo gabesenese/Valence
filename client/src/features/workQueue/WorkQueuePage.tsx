@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { MorningBrief } from './MorningBrief';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -385,6 +386,7 @@ export default function WorkQueuePage() {
 
   return (
     <div className="flex flex-col gap-6 p-6 animate-fade-in">
+      <MorningBrief />
       <PageHeader
         title="My Work"
         description={`${today}${data?.summary.total ? ` · ${data.summary.total} item${data.summary.total === 1 ? '' : 's'} need attention` : ''}`}
