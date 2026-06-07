@@ -1,3 +1,6 @@
+import { initSentry, Sentry } from '@/lib/sentry';
+initSentry();
+
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -35,11 +38,13 @@ if (!root) throw new Error('Root element not found');
 
 createRoot(root).render(
   <StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <App />
-      </BrowserRouter>
-      <ReactQueryDevtools initialIsOpen={false} />
-    </QueryClientProvider>
+    <Sentry.ErrorBoundary fallback={<div className="flex h-screen items-center justify-center text-sm text-gray-500">Something went wrong. Please refresh the page.</div>}>
+      <QueryClientProvider client={queryClient}>
+        <BrowserRouter>
+          <App />
+        </BrowserRouter>
+        <ReactQueryDevtools initialIsOpen={false} />
+      </QueryClientProvider>
+    </Sentry.ErrorBoundary>
   </StrictMode>
 );

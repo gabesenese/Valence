@@ -1,4 +1,5 @@
 import './config/env';
+import './lib/sentry';
 import express from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
@@ -11,6 +12,7 @@ import { env } from './config/env';
 import { logger } from './utils/logger';
 import { connectDatabase, disconnectDatabase } from './infrastructure/database';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
+import { Sentry } from './lib/sentry';
 
 import { authRouter } from './modules/auth/auth.routes';
 import { propertiesRouter } from './modules/properties/properties.routes';
@@ -102,6 +104,7 @@ app.use('/api/team', teamRouter);
 app.use('/api/organization', organizationRouter);
 
 // ─── Error Handling ───────────────────────────────────────────────────────────
+Sentry.setupExpressErrorHandler(app);
 app.use(notFoundHandler);
 app.use(errorHandler);
 

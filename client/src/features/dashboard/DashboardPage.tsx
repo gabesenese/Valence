@@ -161,6 +161,41 @@ export default function DashboardPage() {
 
       {isEmpty && <WelcomeScreen />}
 
+      {/* Attention Required — only shown when there's something urgent */}
+      {!isEmpty && summary && (summary.alerts.critical > 0 || (expiringLeases?.data.filter(l => daysUntil(l.endDate) <= 30).length ?? 0) > 0) && (
+        <div className="flex flex-col gap-2">
+          {summary.alerts.critical > 0 && (
+            <button
+              onClick={() => navigate('/alerts')}
+              className="flex items-center gap-3 rounded-xl border border-danger/30 bg-danger/5 px-4 py-3 text-left transition-colors hover:bg-danger/10"
+            >
+              <AlertTriangle className="h-4 w-4 shrink-0 text-danger" />
+              <span className="flex-1 text-sm font-medium text-danger">
+                {summary.alerts.critical} critical alert{summary.alerts.critical !== 1 ? 's' : ''} need immediate attention
+              </span>
+              <ChevronRight className="h-4 w-4 text-danger/60" />
+            </button>
+          )}
+          {expiringLeases?.data.filter(l => daysUntil(l.endDate) <= 30).slice(0, 3).map((l) => {
+            const days = daysUntil(l.endDate);
+            return (
+              <button
+                key={l.id}
+                onClick={() => navigate(`/leases/${l.id}`)}
+                className="flex items-center gap-3 rounded-xl border border-warning/30 bg-warning/5 px-4 py-3 text-left transition-colors hover:bg-warning/10"
+              >
+                <Calendar className="h-4 w-4 shrink-0 text-warning" />
+                <span className="flex-1 text-sm font-medium text-warning">
+                  {l.tenant.name} — expires in {days} day{days !== 1 ? 's' : ''}
+                </span>
+                <span className="text-xs text-slate-500">{l.property.name}</span>
+                <ChevronRight className="h-4 w-4 text-warning/60" />
+              </button>
+            );
+          })}
+        </div>
+      )}
+
       {/* Onboarding progress — shown until all milestones complete or dismissed */}
       {!isEmpty && <OnboardingCard />}
 
@@ -243,7 +278,121 @@ export default function DashboardPage() {
         </Card>
       )}
 
-      {/* Charts row */}
+      {/* Bottom row — most actionable content */}
+      {!isEmpty && <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        {/* Upcoming Renewals */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <Calendar className="h-4 w-4 text-brand-400" />
+              <CardTitle>Upcoming Renewals</CardTitle>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => navigate('/leases')}
+                className="text-xs text-slate-500 hover:text-brand-400 transition-colors"
+              >
+                View all →
+              </button>
+            </div>
+          </CardHeader>
+
+          <div className="divide-y divide-surface-400/30">
+            {expiringLeases?.data.length === 0 ? (
+              <div className="flex flex-col items-center gap-2 px-5 py-8">
+                <CheckCircle2 className="h-7 w-7 text-success/50" />
+                <p className="text-sm font-medium text-slate-400">No upcoming expirations</p>
+                <p className="text-xs text-slate-600">All leases stable beyond 90 days</p>
+              </div>
+            ) : (
+              expiringLeases?.data.map((lease) => {
+                const days = daysUntil(lease.endDate);
+                const urgencyColor = days <= 30 ? 'text-danger' : days <= 60 ? 'text-warning' : 'text-slate-400';
+                const urgencyBg = days <= 30 ? 'bg-danger/10 border-danger/20' : days <= 60 ? 'bg-warning/10 border-warning/20' : 'bg-surface-300/50 border-surface-400/40';
+                return (
+                  <button
+                    key={lease.id}
+                    onClick={() => navigate(`/leases/${lease.id}`)}
+                    className="flex w-full items-center gap-3 px-4 py-3 hover:bg-surface-200/40 transition-colors group text-left"
+                  >
+                    <div className={`shrink-0 rounded-lg border px-2 py-1 text-center min-w-[44px] ${urgencyBg}`}>
+                      <p className={`text-sm font-bold tabular-nums leading-none ${urgencyColor}`}>{days}</p>
+                      <p className={`text-[10px] ${urgencyColor} opacity-80`}>days</p>
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium text-slate-200 group-hover:text-brand-300 transition-colors">
+                        {lease.tenant.name}
+                      </p>
+                      <p className="text-xs text-slate-500 truncate">{lease.property.name}</p>
+                    </div>
+                    <div className="shrink-0 text-right">
+                      <p className="text-xs font-medium text-slate-300 tabular-nums">{compactCurrency(Number(lease.baseRent))}/mo</p>
+                      <p className="text-xs text-slate-500">{formatDate(lease.endDate)}</p>
+                    </div>
+                  </button>
+                );
+              })
+            )}
+          </div>
+        </Card>
+
+        {/* Property performance */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <Building2 className="h-4 w-4 text-brand-400" />
+              <CardTitle>Property Performance</CardTitle>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-slate-500">This month</span>
+              <button
+                onClick={() => navigate('/properties')}
+                className="text-xs text-slate-500 hover:text-brand-400 transition-colors"
+              >
+                View all →
+              </button>
+            </div>
+          </CardHeader>
+          <div className="divide-y divide-surface-400/30">
+            {performance?.slice(0, 5).map((p) => (
+              <button
+                key={p.id}
+                onClick={() => navigate(`/properties/${p.id}`)}
+                className="flex w-full items-center gap-3 px-4 py-3 hover:bg-surface-200/40 transition-colors group"
+              >
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-300 text-xs font-bold text-slate-400">
+                  {p.code.slice(0, 3)}
+                </div>
+                <div className="min-w-0 flex-1 text-left">
+                  <p className="truncate text-sm font-medium text-slate-200 group-hover:text-brand-300 transition-colors">{p.name}</p>
+                  <div className="mt-1 flex items-center gap-2">
+                    <div className="relative h-1 flex-1 overflow-hidden rounded-full bg-surface-400/40">
+                      <div
+                        className="absolute inset-y-0 left-0 rounded-full bg-brand-500/70"
+                        style={{ width: `${p.occupancyRate}%` }}
+                      />
+                    </div>
+                    <span className="shrink-0 text-xs text-slate-500 tabular-nums">{p.occupancyRate}%</span>
+                  </div>
+                </div>
+                <div className="text-right shrink-0">
+                  <p className="text-sm font-semibold text-white tabular-nums">{compactCurrency(p.monthlyRevenue)}</p>
+                  <p className={`text-xs tabular-nums ${
+                    p.revenueDeltaPct == null ? 'text-slate-500' :
+                    p.revenueDeltaPct >= 0 ? 'text-success' : 'text-danger'
+                  }`}>
+                    {p.revenueDeltaPct == null ? `${p.activeLeases} leases` :
+                      `${p.revenueDeltaPct >= 0 ? '+' : ''}${p.revenueDeltaPct}% vs last mo`}
+                  </p>
+                </div>
+                <ChevronRight className="h-3.5 w-3.5 text-slate-700 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+              </button>
+            ))}
+          </div>
+        </Card>
+      </div>}
+
+      {/* Charts row — historical trends */}
       {!isEmpty && <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         {/* Revenue trend */}
         <Card className="lg:col-span-2">
@@ -429,119 +578,6 @@ export default function DashboardPage() {
         </Card>
       </div>}
 
-      {/* Bottom row — 2 cards */}
-      {!isEmpty && <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        {/* Upcoming Renewals */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <Calendar className="h-4 w-4 text-brand-400" />
-              <CardTitle>Upcoming Renewals</CardTitle>
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => navigate('/leases')}
-                className="text-xs text-slate-500 hover:text-brand-400 transition-colors"
-              >
-                View all →
-              </button>
-            </div>
-          </CardHeader>
-
-          <div className="divide-y divide-surface-400/30">
-            {expiringLeases?.data.length === 0 ? (
-              <div className="flex flex-col items-center gap-2 px-5 py-8">
-                <CheckCircle2 className="h-7 w-7 text-success/50" />
-                <p className="text-sm font-medium text-slate-400">No upcoming expirations</p>
-                <p className="text-xs text-slate-600">All leases stable beyond 90 days</p>
-              </div>
-            ) : (
-              expiringLeases?.data.map((lease) => {
-                const days = daysUntil(lease.endDate);
-                const urgencyColor = days <= 30 ? 'text-danger' : days <= 60 ? 'text-warning' : 'text-slate-400';
-                const urgencyBg = days <= 30 ? 'bg-danger/10 border-danger/20' : days <= 60 ? 'bg-warning/10 border-warning/20' : 'bg-surface-300/50 border-surface-400/40';
-                return (
-                  <button
-                    key={lease.id}
-                    onClick={() => navigate(`/leases/${lease.id}`)}
-                    className="flex w-full items-center gap-3 px-4 py-3 hover:bg-surface-200/40 transition-colors group text-left"
-                  >
-                    <div className={`shrink-0 rounded-lg border px-2 py-1 text-center min-w-[44px] ${urgencyBg}`}>
-                      <p className={`text-sm font-bold tabular-nums leading-none ${urgencyColor}`}>{days}</p>
-                      <p className={`text-[10px] ${urgencyColor} opacity-80`}>days</p>
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium text-slate-200 group-hover:text-brand-300 transition-colors">
-                        {lease.tenant.name}
-                      </p>
-                      <p className="text-xs text-slate-500 truncate">{lease.property.name}</p>
-                    </div>
-                    <div className="shrink-0 text-right">
-                      <p className="text-xs font-medium text-slate-300 tabular-nums">{compactCurrency(Number(lease.baseRent))}/mo</p>
-                      <p className="text-xs text-slate-500">{formatDate(lease.endDate)}</p>
-                    </div>
-                  </button>
-                );
-              })
-            )}
-          </div>
-        </Card>
-
-        {/* Property performance */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <Building2 className="h-4 w-4 text-brand-400" />
-              <CardTitle>Property Performance</CardTitle>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-slate-500">This month</span>
-              <button
-                onClick={() => navigate('/properties')}
-                className="text-xs text-slate-500 hover:text-brand-400 transition-colors"
-              >
-                View all →
-              </button>
-            </div>
-          </CardHeader>
-          <div className="divide-y divide-surface-400/30">
-            {performance?.slice(0, 5).map((p) => (
-              <button
-                key={p.id}
-                onClick={() => navigate(`/properties/${p.id}`)}
-                className="flex w-full items-center gap-3 px-4 py-3 hover:bg-surface-200/40 transition-colors group"
-              >
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-300 text-xs font-bold text-slate-400">
-                  {p.code.slice(0, 3)}
-                </div>
-                <div className="min-w-0 flex-1 text-left">
-                  <p className="truncate text-sm font-medium text-slate-200 group-hover:text-brand-300 transition-colors">{p.name}</p>
-                  <div className="mt-1 flex items-center gap-2">
-                    <div className="relative h-1 flex-1 overflow-hidden rounded-full bg-surface-400/40">
-                      <div
-                        className="absolute inset-y-0 left-0 rounded-full bg-brand-500/70"
-                        style={{ width: `${p.occupancyRate}%` }}
-                      />
-                    </div>
-                    <span className="shrink-0 text-xs text-slate-500 tabular-nums">{p.occupancyRate}%</span>
-                  </div>
-                </div>
-                <div className="text-right shrink-0">
-                  <p className="text-sm font-semibold text-white tabular-nums">{compactCurrency(p.monthlyRevenue)}</p>
-                  <p className={`text-xs tabular-nums ${
-                    p.revenueDeltaPct == null ? 'text-slate-500' :
-                    p.revenueDeltaPct >= 0 ? 'text-success' : 'text-danger'
-                  }`}>
-                    {p.revenueDeltaPct == null ? `${p.activeLeases} leases` :
-                      `${p.revenueDeltaPct >= 0 ? '+' : ''}${p.revenueDeltaPct}% vs last mo`}
-                  </p>
-                </div>
-                <ChevronRight className="h-3.5 w-3.5 text-slate-700 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
-              </button>
-            ))}
-          </div>
-        </Card>
-      </div>}
     </div>
   );
 }

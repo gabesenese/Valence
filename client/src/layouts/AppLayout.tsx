@@ -14,6 +14,7 @@ import { useUIStore } from '@/state/ui.store';
 import { authService } from '@/services/auth.service';
 import { usePlan, PLAN_LABELS } from '@/hooks/usePlan';
 import { TrialBanner } from '@/components/ui/TrialBanner';
+import { NotificationBell } from '@/components/ui/NotificationBell';
 
 // ─── Navigation IA ────────────────────────────────────────────────────────────
 // Organized around jobs, not features.
@@ -242,9 +243,12 @@ export function AppLayout() {
             <Cpu className="h-4 w-4 text-brand-400" />
             <span className="text-xs text-slate-600">Operational Intelligence Platform</span>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="h-2 w-2 animate-pulse-slow rounded-full bg-success" />
-            <span className="text-xs text-slate-600">Live</span>
+          <div className="flex items-center gap-3">
+            <NotificationBell />
+            <div className="flex items-center gap-2">
+              <div className="h-2 w-2 animate-pulse-slow rounded-full bg-success" />
+              <span className="text-xs text-slate-600">Live</span>
+            </div>
           </div>
         </header>
 

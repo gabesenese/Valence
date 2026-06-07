@@ -19,6 +19,7 @@
   },
   "dependencies": {
     "@prisma/client": "^5.14.0",
+    "@sentry/node": "^10.56.0",
     "@valence/shared": "*",
     "bcryptjs": "^2.4.3",
     "compression": "^1.7.4",

@@ -5,7 +5,9 @@ import {
   User, Mail, Shield, Bell, Moon, ArrowRight, Zap, CreditCard,
   Trash2, Loader2, Lock, CheckCircle2, Eye, EyeOff,
 } from 'lucide-react';
+import { cn } from '@/utils/cn';
 import { useAuthStore } from '@/state/auth.store';
+import { useUIStore, type AlertSeverityFilter } from '@/state/ui.store';
 import { usePlan, PLAN_LABELS, PLAN_PRICES } from '@/hooks/usePlan';
 import { Card, CardHeader, CardTitle, CardBody } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
@@ -21,6 +23,8 @@ export default function SettingsPage() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const { plan, limits } = usePlan();
+  const alertSeverityFilter = useUIStore((s) => s.alertSeverityFilter);
+  const setAlertSeverityFilter = useUIStore((s) => s.setAlertSeverityFilter);
 
   // Portal / reset
   const [portalLoading, setPortalLoading] = useState(false);
@@ -450,24 +454,70 @@ export default function SettingsPage() {
         <CardHeader>
           <CardTitle>Preferences</CardTitle>
         </CardHeader>
-        <CardBody>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {[
-              { icon: Moon, label: 'Theme', value: 'Dark', description: 'Interface color scheme' },
-              { icon: Bell, label: 'Notifications', value: 'Enabled', description: 'Alert & system notifications' },
-              { icon: Shield, label: 'Session', value: '15 min timeout', description: 'Access token expiry' },
-            ].map(({ icon: Icon, label, value, description }) => (
-              <div key={label} className="flex items-center gap-3 rounded-lg border border-surface-400/30 bg-surface-200/30 p-3.5">
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-300">
-                  <Icon className="h-4 w-4 text-slate-400" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-slate-300">{label}</p>
-                  <p className="text-xs text-slate-500">{description}</p>
-                  <p className="mt-0.5 text-xs font-semibold text-brand-400">{value}</p>
-                </div>
+        <CardBody className="flex flex-col gap-5">
+          {/* Theme */}
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-300">
+                <Moon className="h-4 w-4 text-slate-400" />
               </div>
-            ))}
+              <div>
+                <p className="text-sm font-medium text-slate-300">Theme</p>
+                <p className="text-xs text-slate-500">Interface color scheme</p>
+              </div>
+            </div>
+            <span className="rounded-lg border border-surface-400/30 bg-surface-200/50 px-3 py-1.5 text-xs font-medium text-slate-400">
+              Dark
+            </span>
+          </div>
+
+          <div className="h-px bg-surface-400/30" />
+
+          {/* Notification severity filter */}
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-300">
+                <Bell className="h-4 w-4 text-slate-400" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-slate-300">Notification bell</p>
+                <p className="text-xs text-slate-500">Minimum severity shown in the alert bell</p>
+              </div>
+            </div>
+            <div className="flex rounded-lg border border-surface-400/30 bg-surface-200/30 p-0.5 shrink-0">
+              {(['all', 'warning', 'critical'] as AlertSeverityFilter[]).map((opt) => (
+                <button
+                  key={opt}
+                  onClick={() => setAlertSeverityFilter(opt)}
+                  className={cn(
+                    'rounded-md px-3 py-1 text-xs font-medium transition-colors capitalize',
+                    alertSeverityFilter === opt
+                      ? 'bg-brand-600/30 text-brand-300 border border-brand-600/40'
+                      : 'text-slate-500 hover:text-slate-300',
+                  )}
+                >
+                  {opt === 'all' ? 'All' : opt === 'warning' ? 'Warning+' : 'Critical'}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="h-px bg-surface-400/30" />
+
+          {/* Session */}
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-300">
+                <Shield className="h-4 w-4 text-slate-400" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-slate-300">Session timeout</p>
+                <p className="text-xs text-slate-500">Access token expiry</p>
+              </div>
+            </div>
+            <span className="rounded-lg border border-surface-400/30 bg-surface-200/50 px-3 py-1.5 text-xs font-medium text-slate-400">
+              15 min
+            </span>
           </div>
         </CardBody>
       </Card>
