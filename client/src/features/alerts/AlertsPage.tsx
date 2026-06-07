@@ -14,12 +14,22 @@ import { Button } from '@/components/ui/Button';
 import { PageLoader } from '@/components/ui/Spinner';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { StatusBadge, type StatusEntry } from '@/components/ui/StatusBadge';
 import { formatRelative } from '@/utils/format';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const SEVERITY_VARIANT: Record<string, 'danger' | 'warning' | 'info'> = {
-  CRITICAL: 'danger', WARNING: 'warning', INFO: 'info',
+const SEVERITY_CONFIG: Record<string, StatusEntry> = {
+  CRITICAL: { label: 'Critical', variant: 'danger'  },
+  WARNING:  { label: 'Warning',  variant: 'warning' },
+  INFO:     { label: 'Info',     variant: 'info'    },
+};
+
+const ALERT_STATUS_CONFIG: Record<string, StatusEntry> = {
+  ACKNOWLEDGED: { label: 'Acknowledged', variant: 'warning' },
+  IN_PROGRESS:  { label: 'In Progress',  variant: 'info'    },
+  RESOLVED:     { label: 'Resolved',     variant: 'success' },
+  DISMISSED:    { label: 'Dismissed',    variant: 'neutral' },
 };
 
 const STATUS_TABS = [
@@ -428,12 +438,11 @@ export default function AlertsPage() {
                       {/* Title + badges */}
                       <div className="flex items-center gap-2 flex-wrap">
                         <p className="text-sm font-medium text-slate-200">{alert.title}</p>
-                        <Badge variant={SEVERITY_VARIANT[alert.severity] ?? 'neutral'}>{alert.severity}</Badge>
+                        <StatusBadge status={alert.severity} config={SEVERITY_CONFIG} />
                         <Badge variant="neutral">{alert.type.replace(/_/g, ' ')}</Badge>
-                        {alert.status === 'ACKNOWLEDGED' && <Badge variant="warning">ACKNOWLEDGED</Badge>}
-                        {alert.status === 'IN_PROGRESS'  && <Badge variant="info">IN PROGRESS</Badge>}
-                        {alert.status === 'RESOLVED'     && <Badge variant="success">RESOLVED</Badge>}
-                        {alert.status === 'DISMISSED'    && <Badge variant="neutral">DISMISSED</Badge>}
+                        {alert.status !== 'OPEN' && (
+                          <StatusBadge status={alert.status} config={ALERT_STATUS_CONFIG} />
+                        )}
                       </div>
 
                       {/* Description */}

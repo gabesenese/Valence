@@ -14,6 +14,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { PageLoader } from '@/components/ui/Spinner';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { StatusBadge, type StatusEntry } from '@/components/ui/StatusBadge';
 import { formatCurrency, formatDate, daysUntil } from '@/utils/format';
 import LeaseDrawer from './LeaseDrawer';
 import LeaseFormModal from './LeaseFormModal';
@@ -22,32 +23,28 @@ import type { ExtractedLease } from '@/services/ai.service';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const RISK_VARIANT: Record<string, 'success' | 'info' | 'warning' | 'danger'> = {
-  LOW: 'success', MEDIUM: 'info', HIGH: 'warning', CRITICAL: 'danger',
+const RISK_CONFIG: Record<string, StatusEntry> = {
+  LOW:      { label: 'Low',      variant: 'success', dot: true },
+  MEDIUM:   { label: 'Medium',   variant: 'info',    dot: true },
+  HIGH:     { label: 'High',     variant: 'warning', dot: true },
+  CRITICAL: { label: 'Critical', variant: 'danger',  dot: true },
 };
 
-const STATUS_VARIANT: Record<string, 'success' | 'neutral' | 'brand' | 'danger'> = {
-  ACTIVE: 'success', EXPIRED: 'neutral', PENDING: 'brand', TERMINATED: 'danger',
+const LEASE_STATUS_CONFIG: Record<string, StatusEntry> = {
+  ACTIVE:     { label: 'Active',     variant: 'success' },
+  EXPIRED:    { label: 'Expired',    variant: 'neutral' },
+  PENDING:    { label: 'Pending',    variant: 'brand'   },
+  TERMINATED: { label: 'Terminated', variant: 'danger'  },
 };
 
-const STAGE_LABEL: Record<RenewalStage, string> = {
-  NOT_STARTED: 'Not started',
-  CONTACTED: 'Contacted',
-  NEGOTIATING: 'Negotiating',
-  DRAFT_SENT: 'Draft sent',
-  LEGAL_REVIEW: 'Legal review',
-  SCHEDULED_RENEWAL: 'Scheduled',
-  SIGNED: 'Signed',
-};
-
-const STAGE_VARIANT: Record<RenewalStage, 'neutral' | 'info' | 'warning' | 'brand' | 'success'> = {
-  NOT_STARTED: 'neutral',
-  CONTACTED: 'info',
-  NEGOTIATING: 'warning',
-  DRAFT_SENT: 'brand',
-  LEGAL_REVIEW: 'warning',
-  SCHEDULED_RENEWAL: 'brand',
-  SIGNED: 'success',
+const STAGE_CONFIG: Record<string, StatusEntry> = {
+  NOT_STARTED:       { label: 'Not started', variant: 'neutral' },
+  CONTACTED:         { label: 'Contacted',   variant: 'info'    },
+  NEGOTIATING:       { label: 'Negotiating', variant: 'warning' },
+  DRAFT_SENT:        { label: 'Draft sent',  variant: 'brand'   },
+  LEGAL_REVIEW:      { label: 'Legal review',variant: 'warning' },
+  SCHEDULED_RENEWAL: { label: 'Scheduled',   variant: 'brand'   },
+  SIGNED:            { label: 'Signed',      variant: 'success' },
 };
 
 const STATUS_TABS = [
@@ -184,12 +181,8 @@ function PriorityQueueView({
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-sm font-semibold text-white">{lease.tenant.name}</span>
                       <span className="text-xs text-slate-500 font-mono">{lease.leaseNumber}</span>
-                      <Badge variant={RISK_VARIANT[lease.renewalRisk] ?? 'neutral'} dot>
-                        {lease.renewalRisk}
-                      </Badge>
-                      <Badge variant={STAGE_VARIANT[lease.renewalStage]}>
-                        {STAGE_LABEL[lease.renewalStage]}
-                      </Badge>
+                      <StatusBadge status={lease.renewalRisk} config={RISK_CONFIG} />
+                      <StatusBadge status={lease.renewalStage} config={STAGE_CONFIG} />
                     </div>
                     <p className="mt-0.5 text-xs text-slate-500">
                       {lease.property.name}
@@ -804,20 +797,16 @@ function LeaseRow({
         {formatCurrency(Number(lease.baseRent))}
       </td>
       <td className="px-4 py-3" onClick={onRowClick}>
-        <Badge variant={STAGE_VARIANT[lease.renewalStage] ?? 'neutral'}>
-          {STAGE_LABEL[lease.renewalStage] ?? lease.renewalStage}
-        </Badge>
+        <StatusBadge status={lease.renewalStage} config={STAGE_CONFIG} />
       </td>
       <td className="px-4 py-3 text-xs text-slate-400" onClick={onRowClick}>
         {lease.owner ? `${lease.owner.firstName} ${lease.owner.lastName}` : <span className="text-slate-600">—</span>}
       </td>
       <td className="px-4 py-3" onClick={onRowClick}>
-        <Badge variant={RISK_VARIANT[lease.renewalRisk] ?? 'neutral'} dot>
-          {lease.renewalRisk}
-        </Badge>
+        <StatusBadge status={lease.renewalRisk} config={RISK_CONFIG} />
       </td>
       <td className="px-4 py-3" onClick={onRowClick}>
-        <Badge variant={STATUS_VARIANT[lease.status] ?? 'neutral'}>{lease.status}</Badge>
+        <StatusBadge status={lease.status} config={LEASE_STATUS_CONFIG} />
       </td>
       <td className="px-4 py-3" onClick={onNavigate}>
         <ChevronRight className="h-4 w-4 text-slate-600 opacity-0 group-hover:opacity-100 transition-opacity" />
