@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   User, Mail, Shield, Bell, Moon, ArrowRight, Zap, CreditCard,
   Trash2, Loader2, Lock, CheckCircle2, Eye, EyeOff,
+  Smartphone, Monitor, X,
 } from 'lucide-react';
 import { cn } from '@/utils/cn';
 import { useAuthStore } from '@/state/auth.store';
@@ -16,6 +17,7 @@ import { Button } from '@/components/ui/Button';
 import { billingService } from '@/services/billing.service';
 import { demoService } from '@/services/demo.service';
 import { usersService } from '@/services/users.service';
+import { authService } from '@/services/auth.service';
 
 export default function SettingsPage() {
   const user = useAuthStore((s) => s.user);
@@ -55,6 +57,21 @@ export default function SettingsPage() {
   const [pwSaving, setPwSaving] = useState(false);
   const [pwError, setPwError] = useState('');
   const [pwSaved, setPwSaved] = useState(false);
+
+  // MFA
+  const [mfaSetupData, setMfaSetupData] = useState<{ qrCode: string; secret: string } | null>(null);
+  const [mfaTotp, setMfaTotp] = useState('');
+  const [mfaLoading, setMfaLoading] = useState(false);
+  const [mfaError, setMfaError] = useState('');
+  const [mfaDone, setMfaDone] = useState(false);
+
+  // Sessions
+  const [revokingId, setRevokingId] = useState<string | null>(null);
+  const [revokingAll, setRevokingAll] = useState(false);
+  const { data: sessions, refetch: refetchSessions } = useQuery({
+    queryKey: ['sessions'],
+    queryFn: authService.listSessions,
+  });
 
   const nextPlan = plan === 'ESSENTIALS' ? 'PROFESSIONAL' : plan === 'PROFESSIONAL' ? 'EXECUTIVE' : null;
 
@@ -132,6 +149,62 @@ export default function SettingsPage() {
     } finally {
       setPwSaving(false);
     }
+  };
+
+  const startMfaSetup = async () => {
+    setMfaLoading(true);
+    setMfaError('');
+    try {
+      const data = await authService.setupMfa();
+      setMfaSetupData({ qrCode: data.qrCode, secret: data.secret });
+    } catch (err: unknown) {
+      setMfaError((err as Error).message || 'Failed to initialize MFA.');
+    } finally {
+      setMfaLoading(false);
+    }
+  };
+
+  const confirmMfaEnable = async () => {
+    setMfaLoading(true);
+    setMfaError('');
+    try {
+      const updated = await authService.enableMfa(mfaTotp);
+      updateUser({ mfaEnabled: updated.mfaEnabled });
+      setMfaSetupData(null);
+      setMfaTotp('');
+      setMfaDone(true);
+      setTimeout(() => setMfaDone(false), 4000);
+    } catch (err: unknown) {
+      setMfaError((err as Error).message || 'Invalid code.');
+    } finally {
+      setMfaLoading(false);
+    }
+  };
+
+  const disableMfa = async () => {
+    const totp = window.prompt('Enter your authenticator code to disable MFA:');
+    if (!totp) return;
+    setMfaLoading(true);
+    try {
+      const updated = await authService.disableMfa(totp);
+      updateUser({ mfaEnabled: updated.mfaEnabled });
+    } catch (err: unknown) {
+      alert((err as Error).message || 'Failed to disable MFA.');
+    } finally {
+      setMfaLoading(false);
+    }
+  };
+
+  const revokeSession = async (id: string) => {
+    setRevokingId(id);
+    try { await authService.revokeSession(id); await refetchSessions(); }
+    finally { setRevokingId(null); }
+  };
+
+  const revokeAll = async () => {
+    setRevokingAll(true);
+    try { await authService.revokeAllSessions(); await refetchSessions(); }
+    finally { setRevokingAll(false); }
   };
 
   const roleVariant: Record<string, 'brand' | 'success' | 'warning' | 'neutral'> = {
@@ -368,6 +441,132 @@ export default function SettingsPage() {
               )}
             </div>
           </div>
+        </CardBody>
+      </Card>
+
+      {/* MFA card */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Smartphone className="h-4 w-4 text-brand-400" />
+            <CardTitle>Two-Factor Authentication</CardTitle>
+          </div>
+        </CardHeader>
+        <CardBody className="flex flex-col gap-4">
+          {user?.mfaEnabled ? (
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <CheckCircle2 className="h-4 w-4 text-success" />
+                  <span className="text-sm font-semibold text-white">MFA is enabled</span>
+                </div>
+                <p className="text-xs text-slate-500">Your account requires an authenticator code on sign in.</p>
+                {mfaDone && <p className="mt-1 text-xs text-success">MFA has been enabled successfully.</p>}
+              </div>
+              <Button size="sm" variant="danger" onClick={disableMfa} loading={mfaLoading}>
+                Disable
+              </Button>
+            </div>
+          ) : mfaSetupData ? (
+            <div className="flex flex-col gap-4">
+              <div>
+                <p className="text-sm font-medium text-white mb-1">Scan with your authenticator app</p>
+                <p className="text-xs text-slate-500 mb-3">Use Google Authenticator, Authy, or any TOTP app.</p>
+                <img src={mfaSetupData.qrCode} alt="QR Code" className="w-40 h-40 rounded-lg bg-white p-2" />
+                <p className="mt-2 text-xs text-slate-500">Or enter this code manually:</p>
+                <code className="mt-1 inline-block rounded bg-surface-300 px-2 py-1 text-xs text-slate-300 tracking-widest">
+                  {mfaSetupData.secret}
+                </code>
+              </div>
+              <div className="flex flex-col gap-2">
+                <label className="text-xs font-medium uppercase tracking-wider text-slate-400">Verify 6-digit code</label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={6}
+                    value={mfaTotp}
+                    onChange={(e) => setMfaTotp(e.target.value.replace(/\D/g, ''))}
+                    placeholder="000000"
+                    className="h-9 w-36 rounded-lg border border-surface-400 bg-surface-200 px-3 text-center text-lg tracking-widest text-slate-100 placeholder:text-slate-600 transition-colors focus:border-brand-500/60 focus:outline-none focus:ring-1 focus:ring-brand-500/30"
+                  />
+                  <Button size="sm" onClick={confirmMfaEnable} loading={mfaLoading} disabled={mfaTotp.length !== 6}>
+                    Enable MFA
+                  </Button>
+                  <button onClick={() => { setMfaSetupData(null); setMfaTotp(''); setMfaError(''); }} className="text-xs text-slate-500 hover:text-slate-300">
+                    Cancel
+                  </button>
+                </div>
+                {mfaError && <p className="text-xs text-danger">{mfaError}</p>}
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-sm font-medium text-slate-300 mb-0.5">Add a second layer of security</p>
+                <p className="text-xs text-slate-500">Use an authenticator app to generate a code at every sign in.</p>
+                {mfaDone && <p className="mt-1 text-xs text-success">MFA enabled successfully.</p>}
+              </div>
+              <Button size="sm" onClick={startMfaSetup} loading={mfaLoading}>
+                Set up MFA
+              </Button>
+            </div>
+          )}
+        </CardBody>
+      </Card>
+
+      {/* Sessions card */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Monitor className="h-4 w-4 text-brand-400" />
+            <CardTitle>Active Sessions</CardTitle>
+          </div>
+          {sessions && sessions.length > 1 && (
+            <button
+              onClick={revokeAll}
+              disabled={revokingAll}
+              className="inline-flex items-center gap-1 text-xs text-danger hover:text-danger/80 transition-colors disabled:opacity-60"
+            >
+              {revokingAll ? <Loader2 className="h-3 w-3 animate-spin" /> : null}
+              Revoke all
+            </button>
+          )}
+        </CardHeader>
+        <CardBody>
+          {!sessions || sessions.length === 0 ? (
+            <p className="text-xs text-slate-500">No active sessions.</p>
+          ) : (
+            <div className="flex flex-col divide-y divide-surface-400/20">
+              {sessions.map((s) => (
+                <div key={s.id} className="flex items-center justify-between gap-4 py-3 first:pt-0 last:pb-0">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-300/60">
+                      <Monitor className="h-3.5 w-3.5 text-slate-400" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-xs font-medium text-slate-300 truncate">
+                        {s.userAgent
+                          ? s.userAgent.replace(/\s*\(.*?\)\s*/g, ' ').trim().slice(0, 60)
+                          : 'Unknown device'}
+                      </p>
+                      <p className="text-[11px] text-slate-600 mt-0.5">
+                        {s.ipAddress ?? 'Unknown IP'} · Started {new Date(s.createdAt).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => revokeSession(s.id)}
+                    disabled={revokingId === s.id}
+                    className="shrink-0 text-slate-500 hover:text-danger transition-colors disabled:opacity-40"
+                    title="Revoke session"
+                  >
+                    {revokingId === s.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <X className="h-3.5 w-3.5" />}
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </CardBody>
       </Card>
 

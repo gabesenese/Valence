@@ -2,9 +2,16 @@ import type { Request, Response, NextFunction } from 'express';
 import * as authService from './auth.service';
 import { sendSuccess } from '../../utils/response';
 
+function sessionMeta(req: Request) {
+  return {
+    userAgent: req.headers['user-agent']?.slice(0, 255),
+    ipAddress: (req.headers['x-forwarded-for'] as string)?.split(',')[0].trim() ?? req.ip,
+  };
+}
+
 export async function register(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const result = await authService.register(req.body);
+    const result = await authService.register(req.body, sessionMeta(req));
     sendSuccess(res, result, 201);
   } catch (err) {
     next(err);
@@ -13,7 +20,7 @@ export async function register(req: Request, res: Response, next: NextFunction):
 
 export async function login(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const result = await authService.login(req.body);
+    const result = await authService.login(req.body, sessionMeta(req));
     sendSuccess(res, result);
   } catch (err) {
     next(err);
@@ -22,7 +29,7 @@ export async function login(req: Request, res: Response, next: NextFunction): Pr
 
 export async function refresh(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const tokens = await authService.refresh(req.body.refreshToken);
+    const tokens = await authService.refresh(req.body.refreshToken, sessionMeta(req));
     sendSuccess(res, { tokens });
   } catch (err) {
     next(err);
@@ -138,6 +145,121 @@ export async function changePassword(req: Request, res: Response, next: NextFunc
     }
     await authService.changePassword(req.user!.id, currentPassword, newPassword);
     sendSuccess(res, { message: 'Password changed successfully' });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// ─── Forgot / reset password ──────────────────────────────────────────────────
+
+export async function forgotPassword(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    await authService.forgotPassword((req.body as { email: string }).email);
+    sendSuccess(res, { message: 'If that email is registered, a reset link has been sent.' });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function resetPassword(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const { token, newPassword } = req.body as { token: string; newPassword: string };
+    if (!token || !newPassword) {
+      res.status(400).json({ success: false, message: 'Token and new password are required' });
+      return;
+    }
+    if (newPassword.length < 8) {
+      res.status(400).json({ success: false, message: 'Password must be at least 8 characters' });
+      return;
+    }
+    await authService.resetPassword(token, newPassword);
+    sendSuccess(res, { message: 'Password reset successfully' });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// ─── Email verification ───────────────────────────────────────────────────────
+
+export async function verifyEmail(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    await authService.verifyEmail((req.query as { token?: string }).token ?? '');
+    sendSuccess(res, { message: 'Email verified' });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function resendVerification(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    await authService.resendVerification(req.user!.id);
+    sendSuccess(res, { message: 'Verification email sent' });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// ─── MFA ─────────────────────────────────────────────────────────────────────
+
+export async function setupMfa(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    sendSuccess(res, await authService.setupMfa(req.user!.id));
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function enableMfa(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const user = await authService.enableMfa(req.user!.id, (req.body as { totp: string }).totp);
+    sendSuccess(res, user);
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function disableMfa(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const user = await authService.disableMfa(req.user!.id, (req.body as { totp: string }).totp);
+    sendSuccess(res, user);
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function verifyMfaChallenge(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const { mfaToken, totp } = req.body as { mfaToken: string; totp: string };
+    const result = await authService.verifyMfaChallenge(mfaToken, totp, sessionMeta(req));
+    sendSuccess(res, result);
+  } catch (err) {
+    next(err);
+  }
+}
+
+// ─── Sessions ─────────────────────────────────────────────────────────────────
+
+export async function listSessions(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    sendSuccess(res, await authService.listSessions(req.user!.id));
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function revokeSession(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    await authService.revokeSession(req.user!.id, req.params.id);
+    sendSuccess(res, { message: 'Session revoked' });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function revokeAllSessions(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    await authService.revokeAllSessions(req.user!.id);
+    sendSuccess(res, { message: 'All sessions revoked' });
   } catch (err) {
     next(err);
   }

@@ -46,7 +46,7 @@ export default function AcceptInvitePage() {
       const result = await usersService.acceptInvite(token!, { firstName, lastName, password });
       localStorage.setItem('valence-remember-me', '1');
       setAuth(
-        { ...result.user, plan: result.user.plan as Plan },
+        { ...result.user, plan: result.user.plan as Plan, emailVerifiedAt: null, mfaEnabled: false },
         result.tokens.accessToken,
         result.tokens.refreshToken,
       );

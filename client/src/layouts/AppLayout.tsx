@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import {
   LayoutDashboard, FileText, Building2, BarChart3, Bell, DollarSign,
   LogOut, ChevronLeft, Activity, Cpu, Users, Settings, Inbox, Layers,
-  Wand2, ClipboardList, Heart, FolderOpen, Zap, Lock, Upload, ScrollText,
+  Wand2, ClipboardList, Heart, FolderOpen, Zap, Lock, Upload, ScrollText, Download,
 } from 'lucide-react';
 import { cn } from '@/utils/cn';
 import { setOrgCurrency } from '@/utils/format';
@@ -15,6 +15,7 @@ import { authService } from '@/services/auth.service';
 import { usePlan, PLAN_LABELS } from '@/hooks/usePlan';
 import { TrialBanner } from '@/components/ui/TrialBanner';
 import { NotificationBell } from '@/components/ui/NotificationBell';
+import { EmailVerificationBanner } from '@/components/ui/EmailVerificationBanner';
 
 // ─── Navigation IA ────────────────────────────────────────────────────────────
 // Organized around jobs, not features.
@@ -69,6 +70,7 @@ const NAV_SECTIONS: NavSection[] = [
       { to: '/audit',     icon: ScrollText,  label: 'Audit Log'                        },
       { to: '/organization', icon: Building2,  label: 'Organization'                     },
       { to: '/team',         icon: Users,    label: 'Team',      feature: 'team'       },
+      { to: '/export',       icon: Download, label: 'Export'                           },
       { to: '/settings',     icon: Settings, label: 'Settings'                         },
     ],
   },
@@ -252,6 +254,7 @@ export function AppLayout() {
           </div>
         </header>
 
+        <EmailVerificationBanner />
         <TrialBanner />
 
         <div className="flex-1 overflow-y-auto">

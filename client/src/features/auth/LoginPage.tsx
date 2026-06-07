@@ -14,6 +14,10 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // MFA step
+  const [mfaToken, setMfaToken] = useState<string | null>(null);
+  const [totp, setTotp] = useState('');
+
   const setAuth = useAuthStore((s) => s.setAuth);
   const navigate = useNavigate();
 
@@ -23,6 +27,10 @@ export default function LoginPage() {
     setLoading(true);
     try {
       const result = await authService.login(email, password);
+      if ('mfaRequired' in result) {
+        setMfaToken(result.mfaToken);
+        return;
+      }
       setAuth(result.user, result.tokens.accessToken, result.tokens.refreshToken);
       localStorage.setItem('valence-remember-me', rememberMe ? '1' : '0');
       if (!rememberMe) sessionStorage.setItem('valence-session-active', '1');
@@ -30,6 +38,23 @@ export default function LoginPage() {
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
       setError(msg ?? 'Authentication failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleMfaSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!mfaToken) return;
+    setError('');
+    setLoading(true);
+    try {
+      const result = await authService.verifyMfa(mfaToken, totp);
+      setAuth(result.user, result.tokens.accessToken, result.tokens.refreshToken);
+      navigate('/');
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      setError(msg ?? 'Invalid code');
     } finally {
       setLoading(false);
     }
@@ -54,7 +79,45 @@ export default function LoginPage() {
           </div>
         </div>
 
+        {/* MFA card */}
+        {mfaToken && (
+          <div className="rounded-2xl border border-surface-400/60 bg-surface-100/80 p-8 shadow-card backdrop-blur-sm">
+            <div className="mb-6">
+              <h2 className="text-base font-semibold text-white">Two-factor authentication</h2>
+              <p className="mt-0.5 text-xs text-slate-500">Enter the 6-digit code from your authenticator app.</p>
+            </div>
+            <form onSubmit={handleMfaSubmit} className="flex flex-col gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-medium text-slate-400 tracking-wide uppercase">Authenticator code</label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]{6}"
+                  maxLength={6}
+                  value={totp}
+                  onChange={(e) => setTotp(e.target.value.replace(/\D/g, ''))}
+                  placeholder="000000"
+                  required
+                  autoFocus
+                  className="h-9 w-full rounded-lg border border-surface-400 bg-surface-200 px-3 text-center text-lg tracking-widest text-slate-100 placeholder:text-slate-600 transition-colors focus:border-brand-500/60 focus:bg-surface-300 focus:outline-none focus:ring-1 focus:ring-brand-500/30"
+                />
+              </div>
+              {error && (
+                <div className="flex items-center gap-2 rounded-lg bg-danger/10 border border-danger/20 px-3 py-2.5">
+                  <AlertCircle className="h-4 w-4 shrink-0 text-danger" />
+                  <p className="text-xs text-danger">{error}</p>
+                </div>
+              )}
+              <Button type="submit" loading={loading} className="mt-1 w-full">Verify</Button>
+            </form>
+            <button onClick={() => { setMfaToken(null); setError(''); }} className="mt-4 text-xs text-slate-500 hover:text-slate-300 transition-colors">
+              ← Back
+            </button>
+          </div>
+        )}
+
         {/* Card */}
+        {!mfaToken && (
         <div className="rounded-2xl border border-surface-400/60 bg-surface-100/80 p-8 shadow-card backdrop-blur-sm">
           <div className="mb-6">
             <h2 className="text-base font-semibold text-white">Sign in</h2>
@@ -125,16 +188,18 @@ export default function LoginPage() {
             </Button>
           </form>
 
-          <div className="mt-4 flex items-center justify-between text-xs text-slate-600">
-            <span>
-              No account?{' '}
-              <Link to="/auth/register" className="text-brand-400 hover:text-brand-300 transition-colors">
-                Create one
+          <div className="mt-4 flex flex-col gap-2 text-xs">
+            <div className="flex items-center justify-between text-slate-600">
+              <span>
+                No account?{' '}
+                <Link to="/auth/register" className="text-brand-400 hover:text-brand-300 transition-colors">
+                  Create one
+                </Link>
+              </span>
+              <Link to="/auth/forgot-password" className="text-slate-500 hover:text-slate-300 transition-colors">
+                Forgot password?
               </Link>
-            </span>
-            <Link to="/pricing" className="text-slate-500 hover:text-slate-300 transition-colors">
-              View pricing →
-            </Link>
+            </div>
           </div>
 
           <div className="mt-5 rounded-lg border border-surface-400/40 bg-surface-200/50 p-3">
@@ -143,6 +208,7 @@ export default function LoginPage() {
             <p className="text-xs text-slate-300 font-mono">Admin1234!</p>
           </div>
         </div>
+        )}
       </div>
     </div>
   );

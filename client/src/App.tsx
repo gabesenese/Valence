@@ -8,6 +8,10 @@ import { UpgradeGate } from '@/components/ui/UpgradeGate';
 const LoginPage = lazy(() => import('@/features/auth/LoginPage'));
 const RegisterPage = lazy(() => import('@/features/auth/RegisterPage'));
 const AcceptInvitePage = lazy(() => import('@/features/auth/AcceptInvitePage'));
+const ForgotPasswordPage = lazy(() => import('@/features/auth/ForgotPasswordPage'));
+const ResetPasswordPage = lazy(() => import('@/features/auth/ResetPasswordPage'));
+const VerifyEmailPage = lazy(() => import('@/features/auth/VerifyEmailPage'));
+const ExportPage = lazy(() => import('@/features/export/ExportPage'));
 const DashboardPage = lazy(() => import('@/features/dashboard/DashboardPage'));
 const LeasesPage = lazy(() => import('@/features/leases/LeasesPage'));
 const LeaseDetailPage = lazy(() => import('@/features/leases/LeaseDetailPage'));
@@ -45,6 +49,9 @@ export default function App() {
         <Route path="/auth/login" element={<LoginPage />} />
         <Route path="/auth/register" element={<RegisterPage />} />
         <Route path="/auth/invite/:token" element={<AcceptInvitePage />} />
+        <Route path="/auth/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
+        <Route path="/auth/verify-email" element={<VerifyEmailPage />} />
 
         {/* Protected — setup outside AppLayout so it has its own full-page look */}
         <Route element={<ProtectedRoute />}>
@@ -75,6 +82,7 @@ export default function App() {
             <Route path="audit" element={<AuditPage />} />
             <Route path="organization" element={<OrganizationPage />} />
             <Route path="settings" element={<SettingsPage />} />
+            <Route path="export" element={<ExportPage />} />
           </Route>
         </Route>
 

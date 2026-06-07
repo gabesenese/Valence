@@ -11,6 +11,8 @@ interface AuthUser {
   role: string;
   plan: Plan;
   trialEndsAt: string | null;
+  emailVerifiedAt: string | null;
+  mfaEnabled: boolean;
 }
 
 interface AuthState {
