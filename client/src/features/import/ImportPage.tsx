@@ -3,6 +3,7 @@ import { Upload, Download, CheckCircle, XCircle, AlertCircle, Building2, Users, 
 import { importService, downloadTemplate, TEMPLATES, type ImportResult } from '@/services/import.service';
 import { Card, CardBody } from '@/components/ui/Card';
 import { cn } from '@/utils/cn';
+import { PageHeader } from '@/components/ui/PageHeader';
 
 type Tab = 'properties' | 'tenants' | 'leases';
 
@@ -197,10 +198,10 @@ export default function ImportPage() {
 
   return (
     <div className="flex flex-col gap-6 p-6 animate-fade-in">
-      <div>
-        <h1 className="text-xl font-bold text-white tracking-tight">Import Data</h1>
-        <p className="mt-0.5 text-sm text-slate-500">Bulk-upload properties, tenants, and leases from CSV files</p>
-      </div>
+      <PageHeader
+        title="Import Data"
+        description="Bulk-upload properties, tenants, and leases from CSV files"
+      />
 
       <Card>
         {/* Tab bar */}

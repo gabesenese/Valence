@@ -19,6 +19,7 @@ import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
 import { PageLoader } from '@/components/ui/Spinner';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { PageHeader } from '@/components/ui/PageHeader';
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
@@ -398,20 +399,16 @@ export default function AutomationPage() {
 
   return (
     <div className="flex flex-col gap-6 p-6 animate-fade-in">
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-white tracking-tight">Automation</h1>
-          <p className="mt-0.5 text-sm text-slate-500">
-            {activeCount} active rule{activeCount !== 1 ? 's' : ''} · {rules.length} total
-          </p>
-        </div>
-        {canEdit && (
+      <PageHeader
+        title="Automation"
+        description={`${activeCount} active rule${activeCount !== 1 ? 's' : ''} · ${rules.length} total`}
+        actions={canEdit ? (
           <Button size="sm" onClick={() => setShowCreate(true)}>
             <Plus className="h-4 w-4" />
             New Rule
           </Button>
-        )}
-      </div>
+        ) : undefined}
+      />
 
       {/* Empty state */}
       {!isLoading && rules.length === 0 && (

@@ -8,6 +8,7 @@ import { aiService, type ScenarioType, type SimulationResult } from '@/services/
 import { formatCurrency, compactCurrency } from '@/utils/format';
 import { Card, CardBody } from '@/components/ui/Card';
 import { Select } from '@/components/ui/Select';
+import { PageHeader } from '@/components/ui/PageHeader';
 
 // ─── Scenario config ──────────────────────────────────────────────────────────
 
@@ -269,13 +270,10 @@ export default function ImpactAnalysisPage() {
 
   return (
     <div className="flex flex-col gap-6 p-6 animate-fade-in">
-      {/* Header */}
-      <div>
-        <h1 className="text-xl font-bold text-white tracking-tight">Impact Analysis</h1>
-        <p className="mt-0.5 text-sm text-slate-500">
-          Model the financial impact of portfolio changes before they happen
-        </p>
-      </div>
+      <PageHeader
+        title="Impact Analysis"
+        description="Model the financial impact of portfolio changes before they happen"
+      />
 
       {/* Scenario tiles */}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">

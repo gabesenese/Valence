@@ -4,6 +4,7 @@ import { useAuthStore } from '@/state/auth.store';
 import { usePlan, PLAN_LABELS, PLAN_PRICES } from '@/hooks/usePlan';
 import { Card, CardHeader, CardTitle, CardBody } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
+import { PageHeader } from '@/components/ui/PageHeader';
 
 export default function SettingsPage() {
   const user = useAuthStore((s) => s.user);
@@ -21,10 +22,10 @@ export default function SettingsPage() {
 
   return (
     <div className="flex flex-col gap-6 p-6 animate-fade-in">
-      <div>
-        <h1 className="text-xl font-bold text-white tracking-tight">Settings</h1>
-        <p className="mt-0.5 text-sm text-slate-500">Account preferences & configuration</p>
-      </div>
+      <PageHeader
+        title="Settings"
+        description="Account preferences & configuration"
+      />
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         {/* Profile card */}

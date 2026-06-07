@@ -6,6 +6,7 @@ import {
 import { analyticsService } from '@/services/analytics.service';
 import { Card, CardHeader, CardTitle, CardBody } from '@/components/ui/Card';
 import { PageLoader } from '@/components/ui/Spinner';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { compactCurrency, formatCurrency } from '@/utils/format';
 
 const COLORS = ['#10b981', '#f59e0b', '#f97316', '#ef4444', '#6366f1', '#3b82f6'];
@@ -32,10 +33,10 @@ export default function AnalyticsPage() {
 
   return (
     <div className="flex flex-col gap-6 p-6 animate-fade-in">
-      <div>
-        <h1 className="text-xl font-bold text-white tracking-tight">Analytics</h1>
-        <p className="mt-0.5 text-sm text-slate-500">Portfolio performance & operational intelligence</p>
-      </div>
+      <PageHeader
+        title="Analytics"
+        description="Portfolio performance & operational intelligence"
+      />
 
       {/* Revenue vs Net */}
       <Card>

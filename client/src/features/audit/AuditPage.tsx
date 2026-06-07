@@ -4,6 +4,7 @@ import { auditService, type AuditLogEntry } from '@/services/audit.service';
 import { Card, CardBody } from '@/components/ui/Card';
 import { cn } from '@/utils/cn';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { PageHeader } from '@/components/ui/PageHeader';
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
@@ -117,21 +118,19 @@ export default function AuditPage() {
 
   return (
     <div className="flex flex-col gap-6 p-6 animate-fade-in">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-white tracking-tight">Audit Log</h1>
-          <p className="mt-0.5 text-sm text-slate-500">
-            {meta ? `${meta.total.toLocaleString()} events` : 'Loading…'}
-          </p>
-        </div>
-        <button
-          onClick={fetch}
-          className="flex items-center gap-1.5 rounded-lg border border-surface-400/30 bg-surface-200/50 px-3 py-1.5 text-xs text-slate-400 hover:text-slate-200 transition-colors"
-        >
-          <RefreshCw className="h-3.5 w-3.5" />
-          Refresh
-        </button>
-      </div>
+      <PageHeader
+        title="Audit Log"
+        description={meta ? `${meta.total.toLocaleString()} events` : 'Loading…'}
+        actions={
+          <button
+            onClick={fetch}
+            className="flex items-center gap-1.5 rounded-lg border border-surface-400/30 bg-surface-200/50 px-3 py-1.5 text-xs text-slate-400 hover:text-slate-200 transition-colors"
+          >
+            <RefreshCw className="h-3.5 w-3.5" />
+            Refresh
+          </button>
+        }
+      />
 
       <Card>
         {/* Filter bar */}

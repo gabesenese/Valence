@@ -4,6 +4,7 @@ import { Trophy, AlertTriangle, ChevronRight } from 'lucide-react';
 import { analyticsService, type PropertyScorecard } from '@/services/analytics.service';
 import { compactCurrency } from '@/utils/format';
 import { PageLoader } from '@/components/ui/Spinner';
+import { PageHeader } from '@/components/ui/PageHeader';
 
 // ─── Property card ────────────────────────────────────────────────────────────
 
@@ -119,12 +120,10 @@ export default function PortfolioPerformancePage() {
 
   return (
     <div className="flex flex-col gap-6 p-6 animate-fade-in">
-      <div>
-        <h1 className="text-xl font-bold text-white tracking-tight">Portfolio Performance</h1>
-        <p className="mt-0.5 text-sm text-slate-500">
-          {properties.length} propert{properties.length !== 1 ? 'ies' : 'y'}
-        </p>
-      </div>
+      <PageHeader
+        title="Portfolio Performance"
+        description={`${properties.length} propert${properties.length !== 1 ? 'ies' : 'y'}`}
+      />
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
         {/* Top Performers */}

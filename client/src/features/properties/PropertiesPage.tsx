@@ -7,6 +7,7 @@ import { Card, CardBody } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { PageLoader } from '@/components/ui/Spinner';
+import { PageHeader } from '@/components/ui/PageHeader';
 import PropertyFormModal from './PropertyFormModal';
 import { Select } from '@/components/ui/Select';
 
@@ -49,16 +50,16 @@ export default function PropertiesPage() {
 
   return (
     <div className="flex flex-col gap-6 p-6 animate-fade-in">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-white tracking-tight">Properties</h1>
-          <p className="mt-0.5 text-sm text-slate-500">{data?.meta.total ?? 0} properties in portfolio</p>
-        </div>
-        <Button size="sm" onClick={() => setAddOpen(true)}>
-          <Plus className="h-4 w-4" />
-          Add Property
-        </Button>
-      </div>
+      <PageHeader
+        title="Properties"
+        description={`${data?.meta.total ?? 0} properties in portfolio`}
+        actions={
+          <Button size="sm" onClick={() => setAddOpen(true)}>
+            <Plus className="h-4 w-4" />
+            Add Property
+          </Button>
+        }
+      />
 
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-3">

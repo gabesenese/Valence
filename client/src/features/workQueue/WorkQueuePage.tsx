@@ -23,6 +23,7 @@ import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { PageLoader } from '@/components/ui/Spinner';
+import { PageHeader } from '@/components/ui/PageHeader';
 
 const TYPE_LABEL: Record<string, string> = {
   LEASE_EXPIRATION: 'Lease Expiration',
@@ -384,20 +385,16 @@ export default function WorkQueuePage() {
 
   return (
     <div className="flex flex-col gap-6 p-6 animate-fade-in">
-      {/* Header */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-white tracking-tight">My Work</h1>
-          <p className="mt-0.5 text-sm text-slate-500">
-            {today}
-            {data?.summary.total ? ` · ${data.summary.total} item${data.summary.total === 1 ? '' : 's'} need attention` : ''}
-          </p>
-        </div>
-        <Button variant="outline" size="sm" onClick={() => refetch()}>
-          <RefreshCw className="h-3.5 w-3.5" />
-          Refresh
-        </Button>
-      </div>
+      <PageHeader
+        title="My Work"
+        description={`${today}${data?.summary.total ? ` · ${data.summary.total} item${data.summary.total === 1 ? '' : 's'} need attention` : ''}`}
+        actions={
+          <Button variant="outline" size="sm" onClick={() => refetch()}>
+            <RefreshCw className="h-3.5 w-3.5" />
+            Refresh
+          </Button>
+        }
+      />
 
       {/* Stats bar */}
       {data?.summary && (

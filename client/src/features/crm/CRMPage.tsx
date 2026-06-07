@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
 import { PageLoader } from '@/components/ui/Spinner';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { PageHeader } from '@/components/ui/PageHeader';
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
@@ -447,16 +448,14 @@ export default function CRMPage() {
 
   return (
     <div className="flex flex-col gap-6 p-6 animate-fade-in">
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-white tracking-tight">CRM</h1>
-          <p className="mt-0.5 text-sm text-slate-500">
-            {data?.meta.total ?? 0} tenants
-            {atRiskCount > 0 && ` · ${atRiskCount} at risk`}
-            {highValueCount > 0 && ` · ${highValueCount} high value`}
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        title="CRM"
+        description={[
+          `${data?.meta.total ?? 0} tenants`,
+          atRiskCount > 0 ? `${atRiskCount} at risk` : '',
+          highValueCount > 0 ? `${highValueCount} high value` : '',
+        ].filter(Boolean).join(' · ')}
+      />
 
       {/* Summary chips */}
       {(atRiskCount > 0 || noContactCount > 0) && (

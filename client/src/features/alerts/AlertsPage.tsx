@@ -13,6 +13,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { PageLoader } from '@/components/ui/Spinner';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { formatRelative } from '@/utils/format';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -332,15 +333,15 @@ export default function AlertsPage() {
 
   return (
     <div className="flex flex-col gap-6 p-6 animate-fade-in">
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-white tracking-tight">Alert Center</h1>
-          <p className="mt-0.5 text-sm text-slate-500">Operational risk tracking with full accountability</p>
-        </div>
-        <Button variant="outline" size="sm" onClick={() => scanMutation.mutate()} loading={scanMutation.isPending}>
-          <RefreshCw className="h-3.5 w-3.5" /> Run Scan
-        </Button>
-      </div>
+      <PageHeader
+        title="Alert Center"
+        description="Operational risk tracking with full accountability"
+        actions={
+          <Button variant="outline" size="sm" onClick={() => scanMutation.mutate()} loading={scanMutation.isPending}>
+            <RefreshCw className="h-3.5 w-3.5" /> Run Scan
+          </Button>
+        }
+      />
 
       {/* Summary strip */}
       {summary && (

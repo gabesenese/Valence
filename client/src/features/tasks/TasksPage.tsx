@@ -14,6 +14,7 @@ import { Select } from '@/components/ui/Select';
 import { DatePicker } from '@/components/ui/DatePicker';
 import { PageLoader } from '@/components/ui/Spinner';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { PageHeader } from '@/components/ui/PageHeader';
 
 // ─── Status config ─────────────────────────────────────────────────────────────
 
@@ -431,20 +432,16 @@ export default function TasksPage() {
 
   return (
     <div className="flex flex-col gap-6 p-6 animate-fade-in">
-      {/* Header */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-white tracking-tight">Tasks</h1>
-          <p className="mt-0.5 text-sm text-slate-500">
-            {openCount} open · {inProgressCount} in progress
-            {overdueCount > 0 ? ` · ${overdueCount} overdue` : ''}
-          </p>
-        </div>
-        <Button size="sm" onClick={() => setShowCreate(true)}>
-          <Plus className="h-4 w-4" />
-          New Task
-        </Button>
-      </div>
+      <PageHeader
+        title="Tasks"
+        description={`${openCount} open · ${inProgressCount} in progress${overdueCount > 0 ? ` · ${overdueCount} overdue` : ''}`}
+        actions={
+          <Button size="sm" onClick={() => setShowCreate(true)}>
+            <Plus className="h-4 w-4" />
+            New Task
+          </Button>
+        }
+      />
 
       {/* Filters */}
       <div className="flex flex-wrap gap-3 items-center">

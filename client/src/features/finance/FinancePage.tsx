@@ -8,6 +8,7 @@ import { financeService } from '@/services/finance.service';
 import { Card, CardHeader, CardTitle, CardBody } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { PageLoader } from '@/components/ui/Spinner';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { formatCurrency, formatDate, compactCurrency } from '@/utils/format';
 
 const STATUS_VARIANT: Record<string, 'success' | 'warning' | 'danger' | 'neutral' | 'info'> = {
@@ -41,10 +42,10 @@ export default function FinancePage() {
 
   return (
     <div className="flex flex-col gap-6 p-6 animate-fade-in">
-      <div>
-        <h1 className="text-xl font-bold text-white tracking-tight">Financial Intelligence</h1>
-        <p className="mt-0.5 text-sm text-slate-500">Revenue tracking, expense monitoring & discrepancy detection</p>
-      </div>
+      <PageHeader
+        title="Financial Intelligence"
+        description="Revenue tracking, expense monitoring & discrepancy detection"
+      />
 
       {/* KPIs */}
       {summary && (

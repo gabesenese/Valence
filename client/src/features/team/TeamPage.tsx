@@ -6,6 +6,7 @@ import { useAuthStore } from '@/state/auth.store';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { PageLoader } from '@/components/ui/Spinner';
+import { PageHeader } from '@/components/ui/PageHeader';
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
@@ -207,14 +208,10 @@ export default function TeamPage() {
 
   return (
     <div className="flex flex-col gap-6 p-6 animate-fade-in">
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-white tracking-tight">Team</h1>
-          <p className="mt-0.5 text-sm text-slate-500">
-            {activeCount} active member{activeCount !== 1 ? 's' : ''}
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        title="Team"
+        description={`${activeCount} active member${activeCount !== 1 ? 's' : ''}`}
+      />
 
       {/* Role summary */}
       <div className="flex flex-wrap gap-3">
