@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { persist, createJSONStorage } from 'zustand/middleware';
 
 export type Plan = 'ESSENTIALS' | 'PROFESSIONAL' | 'EXECUTIVE';
 
@@ -48,6 +48,7 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'valence-auth',
+      storage: createJSONStorage(() => sessionStorage),
       partialize: (state) => ({
         user: state.user,
         accessToken: state.accessToken,
