@@ -149,7 +149,7 @@ export function DataTable<T>({
                     key={keyExtractor(row)}
                     onClick={onRowClick ? () => onRowClick(row) : undefined}
                     className={cn(
-                      'border-b border-surface-400/30 transition-colors last:border-0',
+                      'group border-b border-surface-400/30 transition-colors last:border-0',
                       onRowClick
                         ? 'cursor-pointer hover:bg-surface-200/40'
                         : 'hover:bg-surface-200/20',
