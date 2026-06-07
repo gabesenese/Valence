@@ -32,6 +32,7 @@ const CRMPage = lazy(() => import('@/features/crm/CRMPage'));
 const DocumentsPage = lazy(() => import('@/features/documents/DocumentsPage'));
 const AutomationPage = lazy(() => import('@/features/automation/AutomationPage'));
 const LandingPage = lazy(() => import('@/features/landing/LandingPage'));
+const AdminPage = lazy(() => import('@/features/admin/AdminPage'));
 const PricingPage = lazy(() => import('@/features/pricing/PricingPage'));
 const ImportPage = lazy(() => import('@/features/import/ImportPage'));
 const AuditPage = lazy(() => import('@/features/audit/AuditPage'));
@@ -44,6 +45,7 @@ export default function App() {
       <Routes>
         {/* Public */}
         <Route path="/" element={<LandingPage />} />
+        <Route path="/admin" element={<AdminPage />} />
         <Route path="/pricing" element={<PricingPage />} />
         <Route path="/billing/success" element={<BillingSuccessPage />} />
 

@@ -26,6 +26,7 @@ const envSchema = z.object({
   RESEND_API_KEY: z.string().optional(),
   FROM_EMAIL: z.string().email().default('noreply@valence.app'),
   APP_URL: z.string().url().default('http://localhost:5173'),
+  PLATFORM_ADMIN_SECRET: z.string().optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);
