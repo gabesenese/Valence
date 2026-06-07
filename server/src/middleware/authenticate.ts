@@ -16,6 +16,21 @@ interface JwtPayload {
   exp: number;
 }
 
+export function tryAuthenticate(req: Request, _res: Response, next: NextFunction): void {
+  const authHeader = req.headers.authorization;
+  if (authHeader?.startsWith('Bearer ')) {
+    try {
+      const payload = jwt.verify(authHeader.slice(7), env.JWT_SECRET) as JwtPayload;
+      req.user = {
+        id: payload.sub, email: payload.email, role: payload.role,
+        plan: payload.plan ?? 'ESSENTIALS', trialEndsAt: payload.trialEndsAt ?? null,
+        firstName: payload.firstName, lastName: payload.lastName,
+      };
+    } catch { /* ignore — treat as unauthenticated */ }
+  }
+  next();
+}
+
 export function authenticate(req: Request, _res: Response, next: NextFunction): void {
   const authHeader = req.headers.authorization;
   if (!authHeader?.startsWith('Bearer ')) {

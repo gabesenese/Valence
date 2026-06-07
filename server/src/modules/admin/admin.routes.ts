@@ -9,6 +9,7 @@ import { env } from '../../config/env';
 import { sendSuccess } from '../../utils/response';
 import { ForbiddenError, NotFoundError } from '../../utils/errors';
 import * as authService from '../auth/auth.service';
+import { getFunnelStats } from '../analytics/funnel.service';
 
 const router = Router();
 
@@ -21,6 +22,15 @@ function requireAdminSecret(req: Request, _res: Response, next: NextFunction) {
 }
 
 router.use(authenticate, authorize('SUPER_ADMIN'), requireAdminSecret);
+
+// ─── Funnel ───────────────────────────────────────────────────────────────────
+
+router.get('/funnel', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const days = Math.min(90, parseInt(req.query.days as string) || 30);
+    sendSuccess(res, await getFunnelStats(days));
+  } catch (err) { next(err); }
+});
 
 // ─── Stats ────────────────────────────────────────────────────────────────────
 

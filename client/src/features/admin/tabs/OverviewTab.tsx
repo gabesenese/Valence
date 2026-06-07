@@ -11,6 +11,53 @@ const PLAN_COLORS: Record<string, string> = {
   EXECUTIVE: 'bg-amber-400',
 };
 
+const STEP_LABELS: Record<string, string> = {
+  visitor:        'Visitor',
+  signup:         'Sign Up',
+  demo_started:   'Demo Started',
+  setup_complete: 'Setup Complete',
+  data_imported:  'Data Imported',
+  team_invited:   'Team Invited',
+  upgrade_clicked:'Upgrade Clicked',
+  upgraded:       'Upgraded',
+};
+
+function FunnelSection({ secret }: { secret: string }) {
+  const { data } = useQuery({
+    queryKey: ['admin', 'funnel', secret],
+    queryFn: () => adminService.getFunnel(secret),
+    staleTime: 60_000,
+  });
+  if (!data) return null;
+  const max = Math.max(...data.map((s) => s.count), 1);
+  return (
+    <div>
+      <h2 className="mb-3 text-xs font-semibold uppercase tracking-widest text-slate-500">Activation Funnel — Last 30 Days</h2>
+      <div className="rounded-xl border border-surface-400/40 bg-surface-100 overflow-hidden">
+        {data.map((step, i) => (
+          <div key={step.step} className={cn('flex items-center gap-4 px-5 py-3', i > 0 && 'border-t border-surface-400/20')}>
+            <div className="w-32 shrink-0">
+              <p className="text-xs font-medium text-slate-300">{STEP_LABELS[step.step] ?? step.step}</p>
+              {step.convRate !== null && (
+                <p className={cn('text-[10px] tabular-nums', step.convRate >= 30 ? 'text-success' : step.convRate >= 10 ? 'text-amber-400' : 'text-danger')}>
+                  {step.convRate}% from prev
+                </p>
+              )}
+            </div>
+            <div className="flex-1 h-2 rounded-full bg-surface-400/40 overflow-hidden">
+              <div
+                className={cn('h-full rounded-full transition-all', i === 0 ? 'bg-brand-400' : 'bg-brand-500/70')}
+                style={{ width: `${max > 0 ? (step.count / max) * 100 : 0}%` }}
+              />
+            </div>
+            <p className="w-12 shrink-0 text-right text-sm font-bold tabular-nums text-white">{step.count}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function OverviewTab({ secret }: { secret: string }) {
   const { data, isLoading } = useQuery({
     queryKey: ['admin', 'analytics', secret],
@@ -27,6 +74,9 @@ export function OverviewTab({ secret }: { secret: string }) {
 
   return (
     <div className="space-y-8">
+      {/* Funnel */}
+      <FunnelSection secret={secret} />
+
       {/* Revenue KPIs */}
       <div>
         <h2 className="mb-3 text-xs font-semibold uppercase tracking-widest text-slate-500">Revenue</h2>

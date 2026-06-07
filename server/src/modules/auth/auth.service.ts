@@ -9,6 +9,7 @@ import { ConflictError, UnauthorizedError, NotFoundError, ValidationError } from
 import { logAudit } from '../audit/audit.service';
 import { sendPasswordResetEmail, sendVerificationEmail } from '../../lib/email';
 import { DemoPortfolioFactory } from '../demo/demo.factory';
+import { trackEvent } from '../analytics/funnel.service';
 import type { RegisterInput, LoginInput } from './auth.schemas';
 import type { UserRole, Plan } from '@prisma/client';
 
@@ -84,6 +85,7 @@ export async function register(input: RegisterInput, meta?: SessionMeta): Promis
   });
 
   void sendEmailVerificationLink(user.id, user.email);
+  void trackEvent('signup', user.id);
 
   const tokens = await createTokenPair(user, meta);
   return { user, tokens };
@@ -407,6 +409,7 @@ export async function demoLogin(meta?: SessionMeta): Promise<{ user: AuthUser; t
   });
 
   await new DemoPortfolioFactory().create(user.id);
+  void trackEvent('demo_started', user.id);
 
   const tokens = await createTokenPair(user, meta);
   return { user, tokens };

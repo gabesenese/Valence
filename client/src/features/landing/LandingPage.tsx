@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { useAuthStore } from '@/state/auth.store';
 import { authService } from '@/services/auth.service';
+import { eventService } from '@/services/event.service';
 import { cn } from '@/utils/cn';
 
 // ─── Work Queue Mock ──────────────────────────────────────────────────────────
@@ -175,6 +176,8 @@ export default function LandingPage() {
   useEffect(() => {
     if (user) navigate('/queue', { replace: true });
   }, [user, navigate]);
+
+  useEffect(() => { eventService.track('visitor'); }, []);
 
   if (user) return null;
 

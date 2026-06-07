@@ -37,6 +37,7 @@ import { organizationRouter } from './modules/organization/organization.routes';
 import { exportRouter } from './modules/export/export.routes';
 import { adminRouter } from './modules/admin/admin.routes';
 import { announcementsRouter } from './modules/announcements/announcements.routes';
+import { eventsRouter } from './modules/events/events.routes';
 import cron from 'node-cron';
 import { runAnomalyScan } from './modules/alerts/anomaly.service';
 import { runAllRules } from './modules/automation/automation.service';
@@ -109,6 +110,7 @@ app.use('/api/organization', organizationRouter);
 app.use('/api/export', exportRouter);
 app.use('/api/admin', adminRouter);
 app.use('/api/announcements', announcementsRouter);
+app.use('/api/events', eventsRouter);
 
 // ─── Error Handling ───────────────────────────────────────────────────────────
 Sentry.setupExpressErrorHandler(app);

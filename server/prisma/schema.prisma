@@ -782,3 +782,15 @@ model ErrorLog {
   @@index([createdAt])
   @@map("error_logs")
 }
+
+model FunnelEvent {
+  id        String   @id @default(uuid())
+  event     String
+  userId    String?  @map("user_id")
+  meta      Json     @default("{}")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([event, createdAt])
+  @@index([userId])
+  @@map("funnel_events")
+}

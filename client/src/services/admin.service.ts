@@ -97,4 +97,6 @@ export const adminService = {
   getMaintenance:     (s: string)                                        => api.get<{ data: { enabled: boolean; message: string } }>('/admin/maintenance', h(s)).then((r) => r.data.data),
   setMaintenance:     (s: string, enabled: boolean, message: string)    => api.patch('/admin/maintenance', { enabled, message }, h(s)).then((r) => r.data),
   getActiveAnnouncements: ()                                             => api.get<{ data: Announcement[] }>('/announcements').then((r) => r.data.data),
+  getFunnel: (s: string, days = 30) =>
+    api.get<{ data: { step: string; count: number; convRate: number | null }[] }>('/admin/funnel', { ...h(s), params: { days } }).then((r) => r.data.data),
 };

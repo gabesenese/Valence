@@ -10,6 +10,7 @@ import { propertiesService } from '@/services/properties.service';
 import { tenantsService } from '@/services/tenants.service';
 import { leasesService } from '@/services/leases.service';
 import { demoService } from '@/services/demo.service';
+import { eventService } from '@/services/event.service';
 import { Button } from '@/components/ui/Button';
 import PropertyFormModal from '@/features/properties/PropertyFormModal';
 import TenantFormModal from '@/features/tenants/TenantFormModal';
@@ -61,7 +62,7 @@ export default function SetupPage() {
 
   useEffect(() => {
     if (!allDone || mode !== 'manual') return;
-    const t = setTimeout(() => navigate('/queue'), 2500);
+    const t = setTimeout(() => { eventService.track('setup_complete'); navigate('/queue'); }, 2500);
     return () => clearTimeout(t);
   }, [allDone, mode, navigate]);
 
@@ -70,6 +71,7 @@ export default function SetupPage() {
     setDemoError('');
     try {
       await demoService.loadDemo();
+      eventService.track('setup_complete');
       navigate('/queue');
     } catch {
       setDemoError('Failed to load demo data. Please try again.');
@@ -271,7 +273,7 @@ export default function SetupPage() {
           </div>
 
           <div className="flex flex-col items-center gap-2">
-            <Button onClick={() => navigate('/queue')} size="md">
+            <Button onClick={() => { eventService.track('setup_complete'); navigate('/queue'); }} size="md">
               {allDone ? 'Go to Dashboard' : 'Skip for Now'}
               <ArrowRight className="h-4 w-4" />
             </Button>

@@ -3,6 +3,7 @@ import type { Request, Response, NextFunction } from 'express';
 import { authenticate } from '../../middleware/authenticate';
 import { authorize } from '../../middleware/authorize';
 import { sendSuccess } from '../../utils/response';
+import { trackEvent } from '../analytics/funnel.service';
 import * as teamService from './team.service';
 import type { UserRole } from '@prisma/client';
 
@@ -37,6 +38,7 @@ router.post('/invites', authorize('ADMIN', 'SUPER_ADMIN'), async (req: Request, 
   try {
     const { email, role } = req.body as { email: string; role: UserRole };
     const invite = await teamService.createInvite(email, role, req.user!.id);
+    void trackEvent('team_invited', req.user!.id);
     sendSuccess(res, invite, 201);
   } catch (e) { next(e); }
 });

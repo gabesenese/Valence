@@ -2,6 +2,7 @@ import Stripe from 'stripe';
 import type { Plan } from '@prisma/client';
 import { env } from '../../config/env';
 import { setPlan } from '../plans/plans.service';
+import { trackEvent } from '../analytics/funnel.service';
 
 // ─── Client ───────────────────────────────────────────────────────────────────
 
@@ -94,7 +95,7 @@ export async function handleWebhookEvent(payload: Buffer, sig: string): Promise<
     case 'checkout.session.completed': {
       const userId: string | undefined = obj.metadata?.userId;
       const plan = obj.metadata?.plan as Plan | undefined;
-      if (userId && plan) await setPlan(userId, plan);
+      if (userId && plan) { await setPlan(userId, plan); void trackEvent('upgraded', userId, { plan }); }
       break;
     }
 
