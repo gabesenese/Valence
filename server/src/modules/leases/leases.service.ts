@@ -102,12 +102,13 @@ async function logActivity(
 
 // ─── Read operations ──────────────────────────────────────────────────────────
 
-export async function getLeases(query: LeaseQuery) {
+export async function getLeases(query: LeaseQuery, userId: string) {
   const { page, limit, status, renewalRisk, renewalStage, propertyId, tenantId, ownerUserId,
     expiringWithinDays, search, sortBy, sortOrder, hasAlerts } = query;
   const skip = (page - 1) * limit;
 
   const where: Prisma.LeaseWhereInput = {
+    property: { ownerId: userId },
     ...(status && { status }),
     ...(renewalRisk && { renewalRisk }),
     ...(renewalStage && { renewalStage }),
@@ -159,11 +160,12 @@ export async function getLeases(query: LeaseQuery) {
   return { leases, total };
 }
 
-export async function getPriorityQueue() {
+export async function getPriorityQueue(userId: string) {
   const now = new Date();
 
   const candidates = await prisma.lease.findMany({
     where: {
+      property: { ownerId: userId },
       status: 'ACTIVE',
       endDate: { gte: now },
       OR: [{ snoozedUntil: null }, { snoozedUntil: { lt: now } }],
@@ -588,14 +590,15 @@ export async function deleteLease(id: string) {
   return prisma.lease.delete({ where: { id } });
 }
 
-export async function getLeaseStats() {
+export async function getLeaseStats(userId: string) {
   const now = new Date();
+  const owned = { property: { ownerId: userId } };
   const [byStatus, byRisk, expiringIn30, expiringIn90, totalActive] = await Promise.all([
-    prisma.lease.groupBy({ by: ['status'], _count: true }),
-    prisma.lease.groupBy({ by: ['renewalRisk'], where: { status: 'ACTIVE' }, _count: true }),
-    prisma.lease.count({ where: { status: 'ACTIVE', endDate: { gte: now, lte: addDays(now, 30) } } }),
-    prisma.lease.count({ where: { status: 'ACTIVE', endDate: { gte: now, lte: addDays(now, 90) } } }),
-    prisma.lease.count({ where: { status: 'ACTIVE' } }),
+    prisma.lease.groupBy({ by: ['status'], where: owned, _count: true }),
+    prisma.lease.groupBy({ by: ['renewalRisk'], where: { ...owned, status: 'ACTIVE' }, _count: true }),
+    prisma.lease.count({ where: { ...owned, status: 'ACTIVE', endDate: { gte: now, lte: addDays(now, 30) } } }),
+    prisma.lease.count({ where: { ...owned, status: 'ACTIVE', endDate: { gte: now, lte: addDays(now, 90) } } }),
+    prisma.lease.count({ where: { ...owned, status: 'ACTIVE' } }),
   ]);
   return { byStatus, byRisk, expiringIn30, expiringIn90, totalActive };
 }
@@ -610,9 +613,9 @@ const KANBAN_STAGES: RenewalStage[] = [
   'SIGNED',
 ];
 
-export async function getKanban() {
+export async function getKanban(userId: string) {
   const leases = await prisma.lease.findMany({
-    where: { status: 'ACTIVE' },
+    where: { property: { ownerId: userId }, status: 'ACTIVE' },
     include: {
       property: { select: { id: true, name: true, code: true } },
       tenant: { select: { id: true, name: true } },

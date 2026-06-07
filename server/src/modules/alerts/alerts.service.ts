@@ -33,7 +33,7 @@ export async function getAlerts(query: {
   statuses?: AlertStatus[];
   propertyId?: string;
   leaseId?: string;
-}) {
+}, userId: string) {
   const { page = 1, limit = 20, type, severity, status, statuses, propertyId, leaseId } = query;
   const skip = (page - 1) * limit;
 
@@ -44,7 +44,16 @@ export async function getAlerts(query: {
       ? { status }
       : {};
 
+  const ownerFilter: Prisma.AlertWhereInput = {
+    OR: [
+      { property: { ownerId: userId } },
+      { lease: { property: { ownerId: userId } } },
+      { createdById: userId },
+    ],
+  };
+
   const where: Prisma.AlertWhereInput = {
+    ...ownerFilter,
     ...statusFilter,
     ...(type && { type }),
     ...(severity && { severity }),
@@ -181,13 +190,20 @@ export async function getAlertActivity(alertId: string) {
   });
 }
 
-export async function getAlertSummary() {
+export async function getAlertSummary(userId: string) {
+  const owned: Prisma.AlertWhereInput = {
+    OR: [
+      { property: { ownerId: userId } },
+      { lease: { property: { ownerId: userId } } },
+      { createdById: userId },
+    ],
+  };
   const [openTotal, acknowledgedTotal, bySeverity, byType, byStatus] = await Promise.all([
-    prisma.alert.count({ where: { status: 'OPEN' } }),
-    prisma.alert.count({ where: { status: 'ACKNOWLEDGED' } }),
-    prisma.alert.groupBy({ by: ['severity'], where: { status: { in: ['OPEN', 'ACKNOWLEDGED'] } }, _count: true }),
-    prisma.alert.groupBy({ by: ['type'], where: { status: { in: ['OPEN', 'ACKNOWLEDGED'] } }, _count: true }),
-    prisma.alert.groupBy({ by: ['status'], _count: true }),
+    prisma.alert.count({ where: { ...owned, status: 'OPEN' } }),
+    prisma.alert.count({ where: { ...owned, status: 'ACKNOWLEDGED' } }),
+    prisma.alert.groupBy({ by: ['severity'], where: { ...owned, status: { in: ['OPEN', 'ACKNOWLEDGED'] } }, _count: true }),
+    prisma.alert.groupBy({ by: ['type'], where: { ...owned, status: { in: ['OPEN', 'ACKNOWLEDGED'] } }, _count: true }),
+    prisma.alert.groupBy({ by: ['status'], where: owned, _count: true }),
   ]);
 
   return { openTotal, acknowledgedTotal, bySeverity, byType, byStatus };

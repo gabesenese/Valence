@@ -3,11 +3,12 @@ import { prisma } from '../../infrastructure/database';
 import { NotFoundError, ConflictError } from '../../utils/errors';
 import type { CreatePropertyInput, UpdatePropertyInput, PropertyQuery } from './properties.schemas';
 
-export async function getProperties(query: PropertyQuery) {
+export async function getProperties(query: PropertyQuery, userId: string) {
   const { page, limit, status, type, search } = query;
   const skip = (page - 1) * limit;
 
   const where: Prisma.PropertyWhereInput = {
+    ownerId: userId,
     ...(status && { status }),
     ...(type && { type }),
     ...(search && {
@@ -52,13 +53,14 @@ export async function getPropertyById(id: string) {
   return property;
 }
 
-export async function createProperty(input: CreatePropertyInput) {
-  const existing = await prisma.property.findUnique({ where: { code: input.code } });
+export async function createProperty(input: CreatePropertyInput, userId: string) {
+  const existing = await prisma.property.findFirst({ where: { code: input.code, ownerId: userId } });
   if (existing) throw new ConflictError(`Property code "${input.code}" already exists`);
 
   return prisma.property.create({
     data: {
       ...input,
+      ownerId: userId,
       totalSqft: input.totalSqft,
       purchasePrice: input.purchasePrice,
       currentValue: input.currentValue,
@@ -66,11 +68,11 @@ export async function createProperty(input: CreatePropertyInput) {
   });
 }
 
-export async function updateProperty(id: string, input: UpdatePropertyInput) {
+export async function updateProperty(id: string, input: UpdatePropertyInput, userId: string) {
   await getPropertyById(id);
 
   if (input.code) {
-    const conflict = await prisma.property.findFirst({ where: { code: input.code, NOT: { id } } });
+    const conflict = await prisma.property.findFirst({ where: { code: input.code, ownerId: userId, NOT: { id } } });
     if (conflict) throw new ConflictError(`Property code "${input.code}" already exists`);
   }
 
@@ -82,11 +84,12 @@ export async function deleteProperty(id: string) {
   return prisma.property.delete({ where: { id } });
 }
 
-export async function getPropertySummary() {
+export async function getPropertySummary(userId: string) {
+  const ownerFilter = { ownerId: userId };
   const [total, byStatus, byType] = await Promise.all([
-    prisma.property.count(),
-    prisma.property.groupBy({ by: ['status'], _count: true }),
-    prisma.property.groupBy({ by: ['type'], _count: true }),
+    prisma.property.count({ where: ownerFilter }),
+    prisma.property.groupBy({ by: ['status'], where: ownerFilter, _count: true }),
+    prisma.property.groupBy({ by: ['type'], where: ownerFilter, _count: true }),
   ]);
 
   return { total, byStatus, byType };

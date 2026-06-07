@@ -8,20 +8,24 @@ const months = (base: Date, n: number) => {
 };
 
 export class DemoPortfolioFactory {
-  async reset() {
-    await prisma.task.deleteMany({});
-    await prisma.alert.deleteMany({});      // cascades AlertActivity
-    await prisma.insight.deleteMany({});
-    await prisma.financialRecord.deleteMany({});
-    await prisma.contactLog.deleteMany({});
-    await prisma.document.deleteMany({});
-    await prisma.lease.deleteMany({});       // cascades LeaseActivity, LeaseNote
-    await prisma.tenant.deleteMany({});
-    await prisma.property.deleteMany({});
+  async reset(userId: string) {
+    const propIds = (await prisma.property.findMany({ where: { ownerId: userId }, select: { id: true } })).map(p => p.id);
+    const leaseIds = (await prisma.lease.findMany({ where: { propertyId: { in: propIds } }, select: { id: true } })).map(l => l.id);
+    const alertIds = (await prisma.alert.findMany({ where: { OR: [{ propertyId: { in: propIds } }, { createdById: userId }] }, select: { id: true } })).map(a => a.id);
+
+    await prisma.task.deleteMany({ where: { OR: [{ propertyId: { in: propIds } }, { leaseId: { in: leaseIds } }, { alertId: { in: alertIds } }] } });
+    await prisma.alert.deleteMany({ where: { id: { in: alertIds } } }); // cascades AlertActivity
+    await prisma.insight.deleteMany({ where: { propertyId: { in: propIds } } });
+    await prisma.financialRecord.deleteMany({ where: { propertyId: { in: propIds } } });
+    await prisma.contactLog.deleteMany({ where: { tenant: { ownerId: userId } } });
+    await prisma.document.deleteMany({ where: { uploadedById: userId } });
+    await prisma.lease.deleteMany({ where: { propertyId: { in: propIds } } }); // cascades LeaseActivity, LeaseNote
+    await prisma.tenant.deleteMany({ where: { ownerId: userId } });
+    await prisma.property.deleteMany({ where: { ownerId: userId } });
   }
 
   async create(userId: string) {
-    await this.reset();
+    await this.reset(userId);
 
     const now = new Date();
 
@@ -29,6 +33,7 @@ export class DemoPortfolioFactory {
       // ── Properties ─────────────────────────────────────────────────────────────
       const [maple, king, riverside] = await Promise.all([
         tx.property.create({ data: {
+          ownerId: userId,
           name: 'Maple Towers',
           code: 'MAPLE',
           type: 'RESIDENTIAL',
@@ -44,6 +49,7 @@ export class DemoPortfolioFactory {
           currentValue: 10_200_000,
         }}),
         tx.property.create({ data: {
+          ownerId: userId,
           name: 'King Street Centre',
           code: 'KING',
           type: 'RETAIL',
@@ -59,6 +65,7 @@ export class DemoPortfolioFactory {
           currentValue: 4_600_000,
         }}),
         tx.property.create({ data: {
+          ownerId: userId,
           name: 'Riverside Plaza',
           code: 'RIVER',
           type: 'MIXED_USE',
@@ -78,16 +85,16 @@ export class DemoPortfolioFactory {
       // ── Tenants ────────────────────────────────────────────────────────────────
       const [meridian, peak, harbor, sunrise, westside, coretech, brighthorizon, axiom, metro, pacific] =
         await Promise.all([
-          tx.tenant.create({ data: { name: 'Meridian Analytics Group',   email: 'leasing@meridiananalytics.com',   company: 'Meridian Analytics Group',   creditScore: 820, crmStatus: 'HIGH_VALUE' } }),
-          tx.tenant.create({ data: { name: 'Peak Solutions LLC',         email: 'info@peaksolutions.com',          company: 'Peak Solutions LLC',         creditScore: 765, crmStatus: 'ACTIVE'     } }),
-          tx.tenant.create({ data: { name: 'Harbor Medical Partners',    email: 'leasing@harbormed.com',           company: 'Harbor Medical Partners',    creditScore: 798, crmStatus: 'HIGH_VALUE' } }),
-          tx.tenant.create({ data: { name: 'Sunrise Retail Co.',         email: 'retail@sunriseco.com',            company: 'Sunrise Retail Co.',         creditScore: 680, crmStatus: 'AT_RISK'    } }),
-          tx.tenant.create({ data: { name: 'Westside Legal Associates',  email: 'admin@westsidelegal.com',         company: 'Westside Legal Associates',  creditScore: 750, crmStatus: 'ACTIVE'     } }),
-          tx.tenant.create({ data: { name: 'CoreTech Systems',           email: 'facilities@coretech.io',          company: 'CoreTech Systems',           creditScore: 810, crmStatus: 'ACTIVE'     } }),
-          tx.tenant.create({ data: { name: 'Bright Horizon Café',        email: 'ops@brighthorizoncafe.com',       company: 'Bright Horizon Café',        creditScore: 650, crmStatus: 'AT_RISK'    } }),
-          tx.tenant.create({ data: { name: 'Axiom Capital Group',        email: 'leasing@axiomcapital.com',        company: 'Axiom Capital Group',        creditScore: 835, crmStatus: 'HIGH_VALUE' } }),
-          tx.tenant.create({ data: { name: 'Metro Community Health',     email: 'admin@metrocommunityhealth.org',  company: 'Metro Community Health',     creditScore: 775, crmStatus: 'ACTIVE'     } }),
-          tx.tenant.create({ data: { name: 'Pacific Trade Ventures',     email: 'leasing@pacifictrade.com',        company: 'Pacific Trade Ventures',     creditScore: 790, crmStatus: 'ACTIVE'     } }),
+          tx.tenant.create({ data: { ownerId: userId, name: 'Meridian Analytics Group',   email: 'leasing@meridiananalytics.com',   company: 'Meridian Analytics Group',   creditScore: 820, crmStatus: 'HIGH_VALUE' } }),
+          tx.tenant.create({ data: { ownerId: userId, name: 'Peak Solutions LLC',         email: 'info@peaksolutions.com',          company: 'Peak Solutions LLC',         creditScore: 765, crmStatus: 'ACTIVE'     } }),
+          tx.tenant.create({ data: { ownerId: userId, name: 'Harbor Medical Partners',    email: 'leasing@harbormed.com',           company: 'Harbor Medical Partners',    creditScore: 798, crmStatus: 'HIGH_VALUE' } }),
+          tx.tenant.create({ data: { ownerId: userId, name: 'Sunrise Retail Co.',         email: 'retail@sunriseco.com',            company: 'Sunrise Retail Co.',         creditScore: 680, crmStatus: 'AT_RISK'    } }),
+          tx.tenant.create({ data: { ownerId: userId, name: 'Westside Legal Associates',  email: 'admin@westsidelegal.com',         company: 'Westside Legal Associates',  creditScore: 750, crmStatus: 'ACTIVE'     } }),
+          tx.tenant.create({ data: { ownerId: userId, name: 'CoreTech Systems',           email: 'facilities@coretech.io',          company: 'CoreTech Systems',           creditScore: 810, crmStatus: 'ACTIVE'     } }),
+          tx.tenant.create({ data: { ownerId: userId, name: 'Bright Horizon Café',        email: 'ops@brighthorizoncafe.com',       company: 'Bright Horizon Café',        creditScore: 650, crmStatus: 'AT_RISK'    } }),
+          tx.tenant.create({ data: { ownerId: userId, name: 'Axiom Capital Group',        email: 'leasing@axiomcapital.com',        company: 'Axiom Capital Group',        creditScore: 835, crmStatus: 'HIGH_VALUE' } }),
+          tx.tenant.create({ data: { ownerId: userId, name: 'Metro Community Health',     email: 'admin@metrocommunityhealth.org',  company: 'Metro Community Health',     creditScore: 775, crmStatus: 'ACTIVE'     } }),
+          tx.tenant.create({ data: { ownerId: userId, name: 'Pacific Trade Ventures',     email: 'leasing@pacifictrade.com',        company: 'Pacific Trade Ventures',     creditScore: 790, crmStatus: 'ACTIVE'     } }),
         ]);
 
       // ── Leases (15) ────────────────────────────────────────────────────────────

@@ -4,7 +4,14 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { BrowserRouter } from 'react-router-dom';
 import App from './App';
+import { useAuthStore } from '@/state/auth.store';
 import './index.css';
+
+// If the user chose not to be remembered, clear auth when a new browser session starts.
+// sessionStorage is cleared on tab/browser close, so absence of the marker = new session.
+if (localStorage.getItem('valence-remember-me') === '0' && !sessionStorage.getItem('valence-session-active')) {
+  useAuthStore.getState().logout();
+}
 
 const queryClient = new QueryClient({
   defaultOptions: {

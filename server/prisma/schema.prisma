@@ -208,6 +208,8 @@ model User {
   createdRules       AutomationRule[] @relation("RuleCreatedBy")
   usageRecords       UsageRecord[]
   auditLogs          AuditLog[]
+  ownedProperties    Property[]      @relation("PropertyOwner")
+  ownedTenants       Tenant[]        @relation("TenantOwner")
 
   @@index([email])
   @@index([role])
@@ -232,7 +234,7 @@ model RefreshToken {
 model Property {
   id           String         @id @default(uuid())
   name         String
-  code         String         @unique
+  code         String
   type         PropertyType
   status       PropertyStatus @default(ACTIVE)
   address      String
@@ -249,7 +251,9 @@ model Property {
   metadata     Json?
   createdAt    DateTime       @default(now()) @map("created_at")
   updatedAt    DateTime       @updatedAt @map("updated_at")
+  ownerId      String?        @map("owner_id")
 
+  owner            User?             @relation("PropertyOwner", fields: [ownerId], references: [id], onDelete: SetNull)
   leases           Lease[]
   financialRecords FinancialRecord[]
   alerts           Alert[]
@@ -260,13 +264,14 @@ model Property {
   @@index([status])
   @@index([type])
   @@index([city, state])
+  @@index([ownerId])
   @@map("properties")
 }
 
 model Tenant {
   id                 String     @id @default(uuid())
   name               String
-  email              String?    @unique
+  email              String?
   phone              String?
   company            String?
   taxId              String?    @map("tax_id")
@@ -275,6 +280,7 @@ model Tenant {
   isActive           Boolean    @default(true) @map("is_active")
   createdAt          DateTime   @default(now()) @map("created_at")
   updatedAt          DateTime   @updatedAt @map("updated_at")
+  ownerId            String?    @map("owner_id")
 
   // CRM fields
   assignedManagerId  String?    @map("assigned_manager_id")
@@ -282,6 +288,7 @@ model Tenant {
   lastContactAt      DateTime?  @map("last_contact_at")
   crmStatus          CrmStatus  @default(ACTIVE) @map("crm_status")
 
+  owner           User?        @relation("TenantOwner", fields: [ownerId], references: [id], onDelete: SetNull)
   leases          Lease[]
   assignedManager User?        @relation("TenantManager", fields: [assignedManagerId], references: [id])
   contactLogs     ContactLog[]
@@ -289,6 +296,7 @@ model Tenant {
 
   @@index([name])
   @@index([email])
+  @@index([ownerId])
   @@index([assignedManagerId])
   @@index([crmStatus])
   @@map("tenants")

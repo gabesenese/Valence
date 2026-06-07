@@ -10,6 +10,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -23,6 +24,8 @@ export default function LoginPage() {
     try {
       const result = await authService.login(email, password);
       setAuth(result.user, result.tokens.accessToken, result.tokens.refreshToken);
+      localStorage.setItem('valence-remember-me', rememberMe ? '1' : '0');
+      if (!rememberMe) sessionStorage.setItem('valence-session-active', '1');
       navigate('/');
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
@@ -90,6 +93,25 @@ export default function LoginPage() {
                 </button>
               </div>
             </div>
+
+            <label className="flex items-center gap-2.5 cursor-pointer select-none">
+              <div className="relative flex items-center">
+                <input
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  className="sr-only peer"
+                />
+                <div className="h-4 w-4 rounded border border-surface-400 bg-surface-200 transition-colors peer-checked:border-brand-500 peer-checked:bg-brand-600 flex items-center justify-center">
+                  {rememberMe && (
+                    <svg className="h-2.5 w-2.5 text-white" viewBox="0 0 10 10" fill="none">
+                      <path d="M1.5 5L4 7.5L8.5 2.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  )}
+                </div>
+              </div>
+              <span className="text-xs text-slate-400">Remember me</span>
+            </label>
 
             {error && (
               <div className="flex items-center gap-2 rounded-lg bg-danger/10 border border-danger/20 px-3 py-2.5">

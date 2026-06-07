@@ -4,7 +4,7 @@ import { sendSuccess, sendPaginated } from '../../utils/response';
 
 export async function list(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const { records, total } = await service.getFinancialRecords(req.query as never);
+    const { records, total } = await service.getFinancialRecords(req.query as never, req.user!.id);
     sendPaginated(res, records, total, Number(req.query.page) || 1, Number(req.query.limit) || 20);
   } catch (err) { next(err); }
 }
@@ -35,6 +35,6 @@ export async function trend(req: Request, res: Response, next: NextFunction): Pr
 
 export async function summary(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    sendSuccess(res, await service.getFinancialSummary(req.query.propertyId as string | undefined));
+    sendSuccess(res, await service.getFinancialSummary(req.query.propertyId as string | undefined, req.user!.id));
   } catch (err) { next(err); }
 }

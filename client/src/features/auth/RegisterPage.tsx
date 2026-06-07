@@ -16,14 +16,32 @@ export default function RegisterPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    if (form.password.length < 8) {
+      setError('Password must be at least 8 characters.');
+      return;
+    }
+
     setLoading(true);
     try {
       const result = await authService.register(form);
       setAuth(result.user, result.tokens.accessToken, result.tokens.refreshToken);
       navigate('/setup');
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
-      setError(msg ?? 'Registration failed');
+      const data = (err as { response?: { data?: { message?: string; error?: string } } })?.response?.data;
+      if (data?.message === 'Validation failed' && data?.error) {
+        try {
+          const fields = JSON.parse(data.error) as Record<string, string[]>;
+          const first = Object.values(fields).flat()[0];
+          setError(first ?? 'Validation failed. Please check your inputs.');
+        } catch {
+          setError('Validation failed. Please check your inputs.');
+        }
+      } else if (data?.message) {
+        setError(data.message);
+      } else {
+        setError('Registration failed. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -49,7 +67,12 @@ export default function RegisterPage() {
               <Input label="Last name" value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} required />
             </div>
             <Input label="Email" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required />
-            <Input label="Password" type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required />
+            <div className="flex flex-col gap-1">
+              <Input label="Password" type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required />
+              {form.password.length > 0 && form.password.length < 8 && (
+                <p className="text-[11px] text-slate-500 px-1">{8 - form.password.length} more character{8 - form.password.length !== 1 ? 's' : ''} needed</p>
+              )}
+            </div>
 
             {error && (
               <div className="flex items-center gap-2 rounded-lg bg-danger/10 border border-danger/20 px-3 py-2.5">

@@ -9,11 +9,12 @@ import type {
   RevenueTrendQuery,
 } from './finance.schemas';
 
-export async function getFinancialRecords(query: FinanceQuery) {
+export async function getFinancialRecords(query: FinanceQuery, userId: string) {
   const { page, limit, type, status, propertyId, leaseId, from, to } = query;
   const skip = (page - 1) * limit;
 
   const where: Prisma.FinancialRecordWhereInput = {
+    property: { ownerId: userId },
     ...(type && { type }),
     ...(status && { status }),
     ...(propertyId && { propertyId }),
@@ -86,7 +87,7 @@ export async function updateFinancialRecord(id: string, input: UpdateFinancialRe
   });
 }
 
-export async function getRevenueTrend(query: RevenueTrendQuery) {
+export async function getRevenueTrend(query: RevenueTrendQuery, userId?: string) {
   const { propertyId, months } = query;
   const now = new Date();
 
@@ -98,6 +99,7 @@ export async function getRevenueTrend(query: RevenueTrendQuery) {
     const end = endOfMonth(monthDate);
 
     const where: Prisma.FinancialRecordWhereInput = {
+      ...(userId && { property: { ownerId: userId } }),
       ...(propertyId && { propertyId }),
       periodStart: { gte: start, lte: end },
       status: { not: 'VOID' },
@@ -128,8 +130,9 @@ export async function getRevenueTrend(query: RevenueTrendQuery) {
   return trend;
 }
 
-export async function getFinancialSummary(propertyId?: string) {
+export async function getFinancialSummary(propertyId: string | undefined, userId: string) {
   const where: Prisma.FinancialRecordWhereInput = {
+    property: { ownerId: userId },
     ...(propertyId && { propertyId }),
     status: { not: 'VOID' },
   };

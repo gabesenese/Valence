@@ -29,11 +29,11 @@ function toDate(val: string, field: string): string {
 
 const VALID_PROPERTY_TYPES = ['RESIDENTIAL', 'COMMERCIAL', 'MIXED_USE', 'INDUSTRIAL', 'RETAIL', 'OFFICE'];
 
-export async function importProperties(buffer: Buffer, plan: Plan): Promise<ImportResult> {
+export async function importProperties(buffer: Buffer, plan: Plan, userId: string): Promise<ImportResult> {
   const rows = parseRows(buffer);
   const result: ImportResult = { created: 0, skipped: 0, errors: [] };
   const limit = PLAN_LIMITS[plan].properties;
-  const startCount = await prisma.property.count();
+  const startCount = await prisma.property.count({ where: { ownerId: userId } });
 
   for (let i = 0; i < rows.length; i++) {
     const rowNum = i + 2;
@@ -63,7 +63,7 @@ export async function importProperties(buffer: Buffer, plan: Plan): Promise<Impo
       }
 
       const normalCode = code.toUpperCase().trim();
-      const existing = await prisma.property.findUnique({ where: { code: normalCode } });
+      const existing = await prisma.property.findFirst({ where: { code: normalCode, ownerId: userId } });
       if (existing) {
         result.errors.push({ row: rowNum, message: `Property code "${normalCode}" already exists — skipped` });
         result.skipped++;
@@ -72,6 +72,7 @@ export async function importProperties(buffer: Buffer, plan: Plan): Promise<Impo
 
       await prisma.property.create({
         data: {
+          ownerId: userId,
           name: name.trim(),
           code: normalCode,
           type: normalType as PropertyType,
@@ -101,7 +102,7 @@ export async function importProperties(buffer: Buffer, plan: Plan): Promise<Impo
 
 // ─── Tenants ──────────────────────────────────────────────────────────────────
 
-export async function importTenants(buffer: Buffer): Promise<ImportResult> {
+export async function importTenants(buffer: Buffer, userId: string): Promise<ImportResult> {
   const rows = parseRows(buffer);
   const result: ImportResult = { created: 0, skipped: 0, errors: [] };
 
@@ -113,7 +114,7 @@ export async function importTenants(buffer: Buffer): Promise<ImportResult> {
       if (!row.name) throw new Error('name is required');
 
       if (row.email) {
-        const existing = await prisma.tenant.findUnique({ where: { email: row.email.trim() } });
+        const existing = await prisma.tenant.findFirst({ where: { email: row.email.trim(), ownerId: userId } });
         if (existing) {
           result.errors.push({ row: rowNum, message: `Tenant with email "${row.email}" already exists — skipped` });
           result.skipped++;
@@ -123,6 +124,7 @@ export async function importTenants(buffer: Buffer): Promise<ImportResult> {
 
       await prisma.tenant.create({
         data: {
+          ownerId: userId,
           name: row.name.trim(),
           ...(row.email && { email: row.email.trim() }),
           ...(row.phone && { phone: row.phone.trim() }),
@@ -146,27 +148,27 @@ export async function importTenants(buffer: Buffer): Promise<ImportResult> {
 
 const VALID_LEASE_TYPES = ['GROSS', 'NET', 'MODIFIED_GROSS', 'PERCENTAGE', 'GROUND'];
 
-async function resolveTenant(name: string, email?: string): Promise<string> {
+async function resolveTenant(name: string, userId: string, email?: string): Promise<string> {
   if (email) {
-    const byEmail = await prisma.tenant.findUnique({ where: { email: email.trim() } });
+    const byEmail = await prisma.tenant.findFirst({ where: { email: email.trim(), ownerId: userId } });
     if (byEmail) return byEmail.id;
-    const created = await prisma.tenant.create({ data: { name: name.trim(), email: email.trim() } });
+    const created = await prisma.tenant.create({ data: { ownerId: userId, name: name.trim(), email: email.trim() } });
     return created.id;
   }
 
   const byName = await prisma.tenant.findFirst({
-    where: { name: { equals: name.trim(), mode: 'insensitive' } },
+    where: { ownerId: userId, name: { equals: name.trim(), mode: 'insensitive' } },
   });
   if (byName) return byName.id;
-  const created = await prisma.tenant.create({ data: { name: name.trim() } });
+  const created = await prisma.tenant.create({ data: { ownerId: userId, name: name.trim() } });
   return created.id;
 }
 
-export async function importLeases(buffer: Buffer, plan: Plan): Promise<ImportResult> {
+export async function importLeases(buffer: Buffer, plan: Plan, userId: string): Promise<ImportResult> {
   const rows = parseRows(buffer);
   const result: ImportResult = { created: 0, skipped: 0, errors: [] };
   const limit = PLAN_LIMITS[plan].leases;
-  const startCount = await prisma.lease.count();
+  const startCount = await prisma.lease.count({ where: { property: { ownerId: userId } } });
 
   for (let i = 0; i < rows.length; i++) {
     const rowNum = i + 2;
@@ -187,7 +189,7 @@ export async function importLeases(buffer: Buffer, plan: Plan): Promise<ImportRe
       if (!endDate) throw new Error('endDate is required (YYYY-MM-DD)');
       if (!baseRent) throw new Error('baseRent is required');
 
-      const property = await prisma.property.findUnique({ where: { code: propertyCode.toUpperCase().trim() } });
+      const property = await prisma.property.findFirst({ where: { code: propertyCode.toUpperCase().trim(), ownerId: userId } });
       if (!property) throw new Error(`Property with code "${propertyCode}" not found`);
 
       const existingLease = await prisma.lease.findUnique({ where: { leaseNumber: leaseNumber.trim() } });
@@ -197,7 +199,7 @@ export async function importLeases(buffer: Buffer, plan: Plan): Promise<ImportRe
         continue;
       }
 
-      const tenantId = await resolveTenant(tenantName, row.tenantEmail || undefined);
+      const tenantId = await resolveTenant(tenantName, userId, row.tenantEmail || undefined);
 
       const leaseType = row.type ? row.type.toUpperCase() : 'GROSS';
       if (!VALID_LEASE_TYPES.includes(leaseType)) {

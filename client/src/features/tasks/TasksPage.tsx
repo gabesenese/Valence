@@ -262,7 +262,7 @@ function CreateTaskModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
       <div className="w-full max-w-md rounded-2xl border border-surface-400/40 bg-surface-100 p-6 shadow-xl">
         <h2 className="text-base font-semibold text-white mb-4">New Task</h2>
         <div className="flex flex-col gap-3">

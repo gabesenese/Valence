@@ -1,12 +1,16 @@
 import { prisma } from '../../infrastructure/database';
 import { NotFoundError } from '../../utils/errors';
 
-export async function getTenants(query: { page?: number; limit?: number; search?: string; isActive?: boolean }) {
+export async function getTenants(
+  query: { page?: number; limit?: number; search?: string; isActive?: boolean },
+  userId: string,
+) {
   const page = query.page ?? 1;
   const limit = query.limit ?? 20;
   const skip = (page - 1) * limit;
 
   const where = {
+    ownerId: userId,
     ...(query.isActive !== undefined && { isActive: query.isActive }),
     ...(query.search && {
       OR: [
@@ -44,18 +48,18 @@ export interface CreateTenantInput {
   isActive?: boolean;
 }
 
-export async function createTenant(input: CreateTenantInput) {
+export async function createTenant(input: CreateTenantInput, userId: string) {
   if (input.email) {
-    const existing = await prisma.tenant.findUnique({ where: { email: input.email } });
+    const existing = await prisma.tenant.findFirst({ where: { email: input.email, ownerId: userId } });
     if (existing) throw new Error(`A tenant with email "${input.email}" already exists`);
   }
-  return prisma.tenant.create({ data: input });
+  return prisma.tenant.create({ data: { ...input, ownerId: userId } });
 }
 
-export async function updateTenant(id: string, input: Partial<CreateTenantInput>) {
+export async function updateTenant(id: string, input: Partial<CreateTenantInput>, userId: string) {
   await getTenantById(id);
   if (input.email) {
-    const conflict = await prisma.tenant.findFirst({ where: { email: input.email, NOT: { id } } });
+    const conflict = await prisma.tenant.findFirst({ where: { email: input.email, ownerId: userId, NOT: { id } } });
     if (conflict) throw new Error(`A tenant with email "${input.email}" already exists`);
   }
   return prisma.tenant.update({ where: { id }, data: input });

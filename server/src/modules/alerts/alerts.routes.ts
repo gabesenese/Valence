@@ -9,8 +9,8 @@ const router = Router();
 
 router.use(authenticate);
 
-router.get('/summary', async (_req: Request, res: Response, next: NextFunction) => {
-  try { sendSuccess(res, await service.getAlertSummary()); } catch (e) { next(e); }
+router.get('/summary', async (req: Request, res: Response, next: NextFunction) => {
+  try { sendSuccess(res, await service.getAlertSummary(req.user!.id)); } catch (e) { next(e); }
 });
 
 router.get('/', async (req: Request, res: Response, next: NextFunction) => {
@@ -27,7 +27,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
       propertyId: req.query.propertyId as string | undefined,
       leaseId: req.query.leaseId as string | undefined,
     };
-    const { alerts, total } = await service.getAlerts(query);
+    const { alerts, total } = await service.getAlerts(query, req.user!.id);
     sendPaginated(res, alerts, total, query.page, query.limit);
   } catch (e) { next(e); }
 });

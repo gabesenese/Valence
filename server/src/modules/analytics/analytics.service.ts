@@ -11,13 +11,15 @@ export interface PortfolioInsight {
   value?: string;
 }
 
-export async function getInsights(): Promise<PortfolioInsight[]> {
+export async function getInsights(userId: string): Promise<PortfolioInsight[]> {
   const now = new Date();
   const insights: PortfolioInsight[] = [];
+  const ownedLease = { property: { ownerId: userId } };
+  const ownedProp  = { ownerId: userId };
 
   // ── Critical expiring leases ────────────────────────────────────────────────
   const criticalLeases = await prisma.lease.findMany({
-    where: { status: 'ACTIVE', endDate: { gte: now, lte: addDays(now, 60) } },
+    where: { ...ownedLease, status: 'ACTIVE', endDate: { gte: now, lte: addDays(now, 60) } },
     include: { property: true, tenant: true },
     orderBy: { endDate: 'asc' },
   });
@@ -39,7 +41,7 @@ export async function getInsights(): Promise<PortfolioInsight[]> {
   // ── Revenue variance vs 3-month baseline ────────────────────────────────────
   const thisMonthStart = startOfMonth(now);
   const properties = await prisma.property.findMany({
-    where: { status: 'ACTIVE' },
+    where: { ...ownedProp, status: 'ACTIVE' },
     select: { id: true, name: true },
   });
 
@@ -123,11 +125,11 @@ export async function getInsights(): Promise<PortfolioInsight[]> {
 
   // ── Expiring leases summary (90-day window) ──────────────────────────────────
   const expiring90 = await prisma.lease.count({
-    where: { status: 'ACTIVE', endDate: { gte: now, lte: addDays(now, 90) } },
+    where: { ...ownedLease, status: 'ACTIVE', endDate: { gte: now, lte: addDays(now, 90) } },
   });
   if (expiring90 > 0) {
     const expiring30 = await prisma.lease.count({
-      where: { status: 'ACTIVE', endDate: { gte: now, lte: addDays(now, 30) } },
+      where: { ...ownedLease, status: 'ACTIVE', endDate: { gte: now, lte: addDays(now, 30) } },
     });
     insights.push({
       id: 'portfolio-renewal-pipeline',
@@ -144,7 +146,10 @@ export async function getInsights(): Promise<PortfolioInsight[]> {
 
   // ── Open critical alerts summary ─────────────────────────────────────────────
   const criticalAlertCount = await prisma.alert.count({
-    where: { status: 'OPEN', severity: 'CRITICAL' },
+    where: {
+      status: 'OPEN', severity: 'CRITICAL',
+      OR: [{ property: { ownerId: userId } }, { createdById: userId }],
+    },
   });
   if (criticalAlertCount > 0) {
     insights.push({
@@ -165,11 +170,15 @@ export async function getInsights(): Promise<PortfolioInsight[]> {
   return insights.slice(0, 8); // cap at 8 insights
 }
 
-export async function getExecutiveSummary() {
+export async function getExecutiveSummary(userId: string) {
   const now = new Date();
   const thisMonthStart = startOfMonth(now);
   const lastMonthStart = startOfMonth(subMonths(now, 1));
   const lastMonthEnd = endOfMonth(subMonths(now, 1));
+  const ownedProp  = { ownerId: userId };
+  const ownedLease = { property: { ownerId: userId } };
+  const ownedRecord = { property: { ownerId: userId } };
+  const ownedAlert  = { OR: [{ property: { ownerId: userId } }, { createdById: userId }] };
 
   const [
     totalProperties,
@@ -182,22 +191,22 @@ export async function getExecutiveSummary() {
     expiringIn90,
     occupancyData,
   ] = await Promise.all([
-    prisma.property.count({ where: { status: 'ACTIVE' } }),
-    prisma.lease.count({ where: { status: 'ACTIVE' } }),
+    prisma.property.count({ where: { ...ownedProp, status: 'ACTIVE' } }),
+    prisma.lease.count({ where: { ...ownedLease, status: 'ACTIVE' } }),
     prisma.financialRecord.aggregate({
-      where: { type: 'REVENUE', periodStart: { gte: thisMonthStart }, status: { not: 'VOID' } },
+      where: { ...ownedRecord, type: 'REVENUE', periodStart: { gte: thisMonthStart }, status: { not: 'VOID' } },
       _sum: { amount: true },
     }),
     prisma.financialRecord.aggregate({
-      where: { type: 'REVENUE', periodStart: { gte: lastMonthStart, lte: lastMonthEnd }, status: { not: 'VOID' } },
+      where: { ...ownedRecord, type: 'REVENUE', periodStart: { gte: lastMonthStart, lte: lastMonthEnd }, status: { not: 'VOID' } },
       _sum: { amount: true },
     }),
-    prisma.alert.count({ where: { status: 'OPEN' } }),
-    prisma.alert.count({ where: { status: 'OPEN', severity: 'CRITICAL' } }),
-    prisma.lease.count({ where: { status: 'ACTIVE', endDate: { gte: now, lte: addDays(now, 30) } } }),
-    prisma.lease.count({ where: { status: 'ACTIVE', endDate: { gte: now, lte: addDays(now, 90) } } }),
+    prisma.alert.count({ where: { ...ownedAlert, status: 'OPEN' } }),
+    prisma.alert.count({ where: { ...ownedAlert, status: 'OPEN', severity: 'CRITICAL' } }),
+    prisma.lease.count({ where: { ...ownedLease, status: 'ACTIVE', endDate: { gte: now, lte: addDays(now, 30) } } }),
+    prisma.lease.count({ where: { ...ownedLease, status: 'ACTIVE', endDate: { gte: now, lte: addDays(now, 90) } } }),
     prisma.property.findMany({
-      where: { status: 'ACTIVE' },
+      where: { ...ownedProp, status: 'ACTIVE' },
       select: {
         id: true,
         totalUnits: true,
@@ -237,19 +246,20 @@ export async function getExecutiveSummary() {
   };
 }
 
-export async function getLeaseDistribution() {
+export async function getLeaseDistribution(userId: string) {
+  const owned = { property: { ownerId: userId } };
   const [byStatus, byRisk, byType] = await Promise.all([
-    prisma.lease.groupBy({ by: ['status'], _count: true }),
-    prisma.lease.groupBy({ by: ['renewalRisk'], where: { status: 'ACTIVE' }, _count: true }),
-    prisma.lease.groupBy({ by: ['type'], _count: true }),
+    prisma.lease.groupBy({ by: ['status'], where: owned, _count: true }),
+    prisma.lease.groupBy({ by: ['renewalRisk'], where: { ...owned, status: 'ACTIVE' }, _count: true }),
+    prisma.lease.groupBy({ by: ['type'], where: owned, _count: true }),
   ]);
 
   return { byStatus, byRisk, byType };
 }
 
-export async function getPropertyPerformance() {
+export async function getPropertyPerformance(userId: string) {
   const properties = await prisma.property.findMany({
-    where: { status: 'ACTIVE' },
+    where: { ownerId: userId, status: 'ACTIVE' },
     select: {
       id: true,
       name: true,
@@ -298,9 +308,10 @@ export async function getPropertyPerformance() {
   return result.sort((a, b) => b.monthlyRevenue - a.monthlyRevenue);
 }
 
-export async function getRevenueTrend(months = 12) {
+export async function getRevenueTrend(months = 12, userId: string) {
   const now = new Date();
   const trend: Array<{ month: string; revenue: number; expenses: number; net: number }> = [];
+  const ownedRecord = { property: { ownerId: userId } };
 
   for (let i = months - 1; i >= 0; i--) {
     const monthDate = subMonths(now, i);
@@ -309,11 +320,11 @@ export async function getRevenueTrend(months = 12) {
 
     const [revenue, expenses] = await Promise.all([
       prisma.financialRecord.aggregate({
-        where: { type: 'REVENUE', periodStart: { gte: start, lte: end }, status: { not: 'VOID' } },
+        where: { ...ownedRecord, type: 'REVENUE', periodStart: { gte: start, lte: end }, status: { not: 'VOID' } },
         _sum: { amount: true },
       }),
       prisma.financialRecord.aggregate({
-        where: { type: 'EXPENSE', periodStart: { gte: start, lte: end }, status: { not: 'VOID' } },
+        where: { ...ownedRecord, type: 'EXPENSE', periodStart: { gte: start, lte: end }, status: { not: 'VOID' } },
         _sum: { amount: true },
       }),
     ]);

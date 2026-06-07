@@ -28,10 +28,10 @@ export function meetsMinPlan(userPlan: Plan, required: Plan): boolean {
 
 // ─── Resource limit checks ────────────────────────────────────────────────────
 
-export async function enforcePropertyLimit(plan: Plan): Promise<void> {
+export async function enforcePropertyLimit(plan: Plan, userId: string): Promise<void> {
   const limit = PLAN_LIMITS[plan].properties;
   if (limit === Infinity) return;
-  const count = await prisma.property.count();
+  const count = await prisma.property.count({ where: { ownerId: userId } });
   if (count >= limit) {
     throw new ForbiddenError(
       `Your ${plan} plan allows up to ${limit} properties. Upgrade to add more.`
@@ -39,10 +39,12 @@ export async function enforcePropertyLimit(plan: Plan): Promise<void> {
   }
 }
 
-export async function enforceLeaseLimit(plan: Plan): Promise<void> {
+export async function enforceLeaseLimit(plan: Plan, userId?: string): Promise<void> {
   const limit = PLAN_LIMITS[plan].leases;
   if (limit === Infinity) return;
-  const count = await prisma.lease.count();
+  const count = await prisma.lease.count(
+    userId ? { where: { property: { ownerId: userId } } } : undefined
+  );
   if (count >= limit) {
     throw new ForbiddenError(
       `Your ${plan} plan allows up to ${limit.toLocaleString()} leases. Upgrade to add more.`

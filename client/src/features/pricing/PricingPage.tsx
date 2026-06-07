@@ -21,8 +21,9 @@ interface Tier {
 
 interface UsageLine {
   name: string;
-  included: string;
-  overage: string;
+  essentials: string;
+  professional: string;
+  executive: string;
 }
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
@@ -32,14 +33,14 @@ const TIERS: Tier[] = [
     name: 'Essentials',
     plan: 'ESSENTIALS',
     price: 149,
-    tagline: 'Full visibility into your portfolio',
-    description: 'For operators who need a single source of truth across properties, leases, and tenants.',
+    tagline: 'Never miss a lease expiration or payment issue again.',
+    description: 'The operational system of record for your portfolio — properties, leases, tenants, and financials in one place.',
     limit: 'Up to 25 properties · 500 leases',
     outcomes: [
-      'Know every lease status, payment, and expiration date at a glance',
-      'Catch payment issues before they become revenue losses',
-      'Track financial performance across every property',
-      'Get instant alerts when something needs attention',
+      'Know the status of every lease before it becomes a problem',
+      'Get alerted to missed payments before they turn into delinquencies',
+      'Track revenue and expenses across every property in real time',
+      'Replace the spreadsheet with a single source of truth your whole team shares',
     ],
     cta: 'Start with Essentials',
   },
@@ -52,9 +53,9 @@ const TIERS: Tier[] = [
     limit: 'Up to 150 properties · 5,000 leases',
     outcomes: [
       'Start every morning knowing exactly what to work on',
-      'Get AI-generated briefs on your portfolio\'s biggest risks',
       'Automated monitoring flags lease expirations 90 days out',
-      'See which properties are underperforming and why',
+      'AI-generated briefs surface your portfolio\'s biggest risks daily',
+      'See which properties are underperforming and exactly why',
       'Build workflows that escalate problems before they become crises',
     ],
     cta: 'Start with Professional',
@@ -64,24 +65,24 @@ const TIERS: Tier[] = [
     name: 'Executive',
     plan: null,
     price: 1499,
-    tagline: 'AI intelligence for large portfolios',
-    description: 'For portfolio owners managing institutional-scale assets who need a permanent AI analyst.',
+    tagline: 'Strategic intelligence for portfolio leadership.',
+    description: 'For owners and executives who need forecasting, board reporting, and portfolio-wide contract intelligence — not just operations.',
     limit: 'Unlimited properties and leases',
     outcomes: [
-      'Model financial impact of any decision before you commit',
-      'Extract key terms and obligations from contracts automatically',
-      'Forecast revenue for the next 12 months across your portfolio',
-      'Executive reporting built for board-level conversations',
-      'Full AI operations analyst available on demand',
+      '12-month revenue forecasting across your entire portfolio',
+      'Board-ready reporting with executive-level portfolio summaries',
+      'Portfolio-wide contract intelligence and obligation tracking',
+      'Model the financial impact of any strategic decision before you commit',
+      'Dedicated AI analyst available on demand',
     ],
     cta: 'Talk to us',
   },
 ];
 
 const USAGE_LINES: UsageLine[] = [
-  { name: 'Contract Processing',  included: '100 / month included',  overage: '$0.50 per lease' },
-  { name: 'AI Analysis Runs',     included: '500 / month included',  overage: '$0.02 per run'   },
-  { name: 'Impact Simulations',   included: '100 / month included',  overage: '$0.25 each'      },
+  { name: 'Contract Processing', essentials: '100 / month',  professional: '1,000 / month', executive: 'Unlimited' },
+  { name: 'AI Analysis Runs',    essentials: '500 / month',  professional: '5,000 / month', executive: 'Unlimited' },
+  { name: 'Impact Simulations',  essentials: '100 / month',  professional: '500 / month',   executive: 'Unlimited' },
 ];
 
 const VALUE_PROPS = [
@@ -200,12 +201,21 @@ export default function PricingPage() {
           </div>
           Valence
         </button>
-        <button
-          onClick={() => navigate('/auth/login')}
-          className="text-sm text-slate-500 hover:text-slate-300 transition-colors"
-        >
-          Sign in →
-        </button>
+        {isAuthenticated ? (
+          <button
+            onClick={() => navigate('/')}
+            className="text-sm text-slate-500 hover:text-slate-300 transition-colors"
+          >
+            Go to dashboard →
+          </button>
+        ) : (
+          <button
+            onClick={() => navigate('/auth/login')}
+            className="text-sm text-slate-500 hover:text-slate-300 transition-colors"
+          >
+            Sign in →
+          </button>
+        )}
       </header>
 
       <div className="mx-auto max-w-6xl px-6 py-16">
@@ -242,7 +252,7 @@ export default function PricingPage() {
             <TierCard
               key={tier.name}
               tier={tier}
-              loading={checkoutLoading === tier.plan}
+              loading={tier.plan !== null && checkoutLoading === tier.plan}
               onSelect={() => handleSelect(tier)}
             />
           ))}
@@ -251,24 +261,34 @@ export default function PricingPage() {
         {/* Usage */}
         <div className="rounded-2xl border border-surface-400/40 bg-surface-100 overflow-hidden mb-16">
           <div className="px-6 py-5 border-b border-surface-400/30">
-            <h2 className="text-sm font-semibold text-white">Usage-based add-ons</h2>
+            <h2 className="text-sm font-semibold text-white">What's included in every plan</h2>
             <p className="mt-1 text-xs text-slate-500">
-              Each plan includes generous usage limits. Overages are billed monthly.
+              No surprise overages. Each plan comes with a fixed monthly allowance.
             </p>
           </div>
-          <div className="divide-y divide-surface-400/20">
-            {USAGE_LINES.map(line => (
-              <div key={line.name} className="flex items-center justify-between px-6 py-4">
-                <div>
-                  <p className="text-sm font-medium text-slate-200">{line.name}</p>
-                  <p className="text-xs text-slate-500 mt-0.5">{line.included}</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-xs font-semibold text-slate-400">{line.overage}</p>
-                  <p className="text-[10px] text-slate-600 mt-0.5">above included limit</p>
-                </div>
-              </div>
-            ))}
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="border-b border-surface-400/20">
+                  <th className="px-6 py-3 text-left font-medium text-slate-500 w-1/2" />
+                  {(['Essentials', 'Professional', 'Executive'] as const).map(col => (
+                    <th key={col} className={`px-4 py-3 text-center font-semibold ${col === 'Professional' ? 'text-brand-300' : 'text-slate-300'}`}>
+                      {col}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-surface-400/20">
+                {USAGE_LINES.map(line => (
+                  <tr key={line.name}>
+                    <td className="px-6 py-3.5 text-slate-300 font-medium">{line.name}</td>
+                    <td className="px-4 py-3.5 text-center text-slate-400">{line.essentials}</td>
+                    <td className="px-4 py-3.5 text-center text-slate-300">{line.professional}</td>
+                    <td className="px-4 py-3.5 text-center font-semibold text-brand-300">{line.executive}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
 

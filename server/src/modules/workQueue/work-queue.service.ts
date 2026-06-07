@@ -93,14 +93,16 @@ function suggestAction(
 
 // ─── Main query ───────────────────────────────────────────────────────────────
 
-export async function getWorkQueue(options: { assignedToUserId?: string } = {}) {
+export async function getWorkQueue(options: { userId: string; assignedToUserId?: string }) {
   const now = new Date();
   const ninetyDaysOut = new Date(now.getTime() + 90 * 86400000);
-  const { assignedToUserId } = options;
+  const { userId, assignedToUserId } = options;
+  const ownedAlert = { OR: [{ property: { ownerId: userId } }, { createdById: userId }] };
 
   // ── 1. Alerts ────────────────────────────────────────────────────────────────
   const alerts = await prisma.alert.findMany({
     where: {
+      ...ownedAlert,
       status: { in: ['OPEN', 'IN_PROGRESS'] },
       ...(assignedToUserId ? { assigneeUserId: assignedToUserId } : {}),
     },
@@ -129,6 +131,7 @@ export async function getWorkQueue(options: { assignedToUserId?: string } = {}) 
     ? []
     : await prisma.lease.findMany({
         where: {
+          property: { ownerId: userId },
           status: 'ACTIVE',
           endDate: { gte: now, lte: ninetyDaysOut },
           ...(coveredLeaseIds.size > 0 ? { id: { notIn: [...coveredLeaseIds] } } : {}),

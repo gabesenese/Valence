@@ -11,7 +11,10 @@ router.use(authenticate);
 router.get('/', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const myWork = req.query.myWork === 'true';
-    const result = await getWorkQueue(myWork ? { assignedToUserId: req.user!.id } : {});
+    const result = await getWorkQueue({
+      userId: req.user!.id,
+      ...(myWork ? { assignedToUserId: req.user!.id } : {}),
+    });
     sendSuccess(res, result);
   } catch (e) {
     next(e);

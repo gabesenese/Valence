@@ -7,14 +7,14 @@ import type { Plan } from '@prisma/client';
 
 export async function list(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const { leases, total } = await service.getLeases(req.query as never);
+    const { leases, total } = await service.getLeases(req.query as never, req.user!.id);
     sendPaginated(res, leases, total, Number(req.query.page) || 1, Number(req.query.limit) || 20);
   } catch (err) { next(err); }
 }
 
-export async function priorityQueue(_req: Request, res: Response, next: NextFunction): Promise<void> {
+export async function priorityQueue(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    sendSuccess(res, await service.getPriorityQueue());
+    sendSuccess(res, await service.getPriorityQueue(req.user!.id));
   } catch (err) { next(err); }
 }
 
@@ -69,15 +69,15 @@ export async function remove(req: Request, res: Response, next: NextFunction): P
   } catch (err) { next(err); }
 }
 
-export async function kanban(_req: Request, res: Response, next: NextFunction): Promise<void> {
+export async function kanban(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    sendSuccess(res, await service.getKanban());
+    sendSuccess(res, await service.getKanban(req.user!.id));
   } catch (err) { next(err); }
 }
 
-export async function stats(_req: Request, res: Response, next: NextFunction): Promise<void> {
+export async function stats(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    sendSuccess(res, await service.getLeaseStats());
+    sendSuccess(res, await service.getLeaseStats(req.user!.id));
   } catch (err) { next(err); }
 }
 

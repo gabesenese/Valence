@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -50,6 +50,12 @@ export default function SetupPage() {
 
   const stepsComplete = [hasProperty, hasTenant, hasLease].filter(Boolean).length;
   const allDone = stepsComplete === 3;
+
+  useEffect(() => {
+    if (!allDone) return;
+    const t = setTimeout(() => navigate('/'), 2500);
+    return () => clearTimeout(t);
+  }, [allDone, navigate]);
 
   const steps = [
     {
@@ -185,7 +191,9 @@ export default function SetupPage() {
           {allDone ? 'Go to Dashboard' : 'Skip for Now'}
           <ArrowRight className="h-4 w-4" />
         </Button>
-        {!allDone && (
+        {allDone ? (
+          <p className="text-xs text-slate-600">Taking you to your dashboard…</p>
+        ) : (
           <p className="text-xs text-slate-600">You can finish setup anytime from the dashboard.</p>
         )}
       </div>
