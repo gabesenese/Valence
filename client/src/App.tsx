@@ -29,6 +29,7 @@ const AutomationPage = lazy(() => import('@/features/automation/AutomationPage')
 const PricingPage = lazy(() => import('@/features/pricing/PricingPage'));
 const ImportPage = lazy(() => import('@/features/import/ImportPage'));
 const AuditPage = lazy(() => import('@/features/audit/AuditPage'));
+const BillingSuccessPage = lazy(() => import('@/features/billing/BillingSuccessPage'));
 
 export default function App() {
   return (
@@ -36,6 +37,7 @@ export default function App() {
       <Routes>
         {/* Public */}
         <Route path="/pricing" element={<PricingPage />} />
+        <Route path="/billing/success" element={<BillingSuccessPage />} />
 
         {/* Auth */}
         <Route path="/auth/login" element={<LoginPage />} />

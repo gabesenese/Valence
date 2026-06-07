@@ -28,6 +28,7 @@ import { automationRouter } from './modules/automation/automation.routes';
 import { importRouter } from './modules/import/import.routes';
 import { auditRouter } from './modules/audit/audit.routes';
 import { demoRouter } from './modules/demo/demo.routes';
+import { billingRouter } from './modules/billing/billing.routes';
 import cron from 'node-cron';
 import { runAnomalyScan } from './modules/alerts/anomaly.service';
 import { runAllRules } from './modules/automation/automation.service';
@@ -59,6 +60,8 @@ app.use(rateLimit({
 
 // ─── Parsing + Compression ────────────────────────────────────────────────────
 app.use(compression());
+// Stripe webhook needs raw body — must be registered before express.json()
+app.use('/api/billing/webhook', express.raw({ type: 'application/json' }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
@@ -90,6 +93,7 @@ app.use('/api/automation', automationRouter);
 app.use('/api/import', importRouter);
 app.use('/api/audit', auditRouter);
 app.use('/api/demo', demoRouter);
+app.use('/api/billing', billingRouter);
 
 // ─── Error Handling ───────────────────────────────────────────────────────────
 app.use(notFoundHandler);

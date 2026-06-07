@@ -1,10 +1,15 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Check, Zap, Shield, Eye, TrendingUp, ArrowRight } from 'lucide-react';
+import { Check, Zap, Shield, Eye, TrendingUp, ArrowRight, Loader2 } from 'lucide-react';
+import { billingService } from '@/services/billing.service';
+import { useAuthStore } from '@/state/auth.store';
+import type { Plan } from '@/state/auth.store';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface Tier {
   name: string;
+  plan: Plan | null;
   price: number;
   tagline: string;
   description: string;
@@ -25,6 +30,7 @@ interface UsageLine {
 const TIERS: Tier[] = [
   {
     name: 'Essentials',
+    plan: 'ESSENTIALS',
     price: 149,
     tagline: 'Full visibility into your portfolio',
     description: 'For operators who need a single source of truth across properties, leases, and tenants.',
@@ -39,6 +45,7 @@ const TIERS: Tier[] = [
   },
   {
     name: 'Professional',
+    plan: 'PROFESSIONAL',
     price: 499,
     tagline: 'Protect revenue. Stay ahead of risk.',
     description: 'For growing portfolios where every lease matters and daily operations need a command center.',
@@ -55,6 +62,7 @@ const TIERS: Tier[] = [
   },
   {
     name: 'Executive',
+    plan: null,
     price: 1499,
     tagline: 'AI intelligence for large portfolios',
     description: 'For portfolio owners managing institutional-scale assets who need a permanent AI analyst.',
@@ -102,7 +110,7 @@ const VALUE_PROPS = [
 
 // ─── Tier card ────────────────────────────────────────────────────────────────
 
-function TierCard({ tier, onSelect }: { tier: Tier; onSelect: () => void }) {
+function TierCard({ tier, onSelect, loading }: { tier: Tier; onSelect: () => void; loading: boolean }) {
   return (
     <div
       className={`relative flex flex-col rounded-2xl border p-6 transition-all ${
@@ -146,12 +154,14 @@ function TierCard({ tier, onSelect }: { tier: Tier; onSelect: () => void }) {
 
       <button
         onClick={onSelect}
-        className={`mt-6 w-full rounded-xl px-4 py-2.5 text-sm font-semibold transition-colors ${
+        disabled={loading}
+        className={`mt-6 w-full rounded-xl px-4 py-2.5 text-sm font-semibold transition-colors disabled:opacity-60 inline-flex items-center justify-center gap-2 ${
           tier.featured
             ? 'bg-brand-600 hover:bg-brand-500 text-white shadow-glow-brand'
             : 'bg-surface-300/60 hover:bg-surface-300 text-slate-200'
         }`}
       >
+        {loading && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
         {tier.cta}
       </button>
     </div>
@@ -162,6 +172,20 @@ function TierCard({ tier, onSelect }: { tier: Tier; onSelect: () => void }) {
 
 export default function PricingPage() {
   const navigate = useNavigate();
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const [checkoutLoading, setCheckoutLoading] = useState<Plan | null>(null);
+
+  const handleSelect = async (tier: Tier) => {
+    if (!isAuthenticated) { navigate('/auth/register'); return; }
+    if (!tier.plan) { navigate('/auth/register'); return; } // Executive: contact us
+    setCheckoutLoading(tier.plan);
+    try {
+      const url = await billingService.createCheckout(tier.plan);
+      window.location.href = url;
+    } catch {
+      setCheckoutLoading(null);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-surface-0 text-white">
@@ -218,7 +242,8 @@ export default function PricingPage() {
             <TierCard
               key={tier.name}
               tier={tier}
-              onSelect={() => navigate(tier.name === 'Executive' ? '/auth/register' : '/auth/register')}
+              loading={checkoutLoading === tier.plan}
+              onSelect={() => handleSelect(tier)}
             />
           ))}
         </div>
@@ -255,9 +280,11 @@ export default function PricingPage() {
             it becomes operationally critical — and the ROI is obvious.
           </p>
           <button
-            onClick={() => navigate('/auth/register')}
-            className="inline-flex items-center gap-2 rounded-xl bg-brand-600 hover:bg-brand-500 px-6 py-3 text-sm font-semibold text-white transition-colors shadow-glow-brand"
+            onClick={() => handleSelect(TIERS[1])}
+            disabled={checkoutLoading !== null}
+            className="inline-flex items-center gap-2 rounded-xl bg-brand-600 hover:bg-brand-500 disabled:opacity-60 px-6 py-3 text-sm font-semibold text-white transition-colors shadow-glow-brand"
           >
+            {checkoutLoading === 'PROFESSIONAL' && <Loader2 className="h-4 w-4 animate-spin" />}
             Get started
             <ArrowRight className="h-4 w-4" />
           </button>

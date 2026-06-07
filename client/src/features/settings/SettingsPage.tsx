@@ -1,17 +1,44 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, Mail, Shield, Bell, Moon, ArrowRight, Zap } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
+import { User, Mail, Shield, Bell, Moon, ArrowRight, Zap, CreditCard, Trash2, Loader2 } from 'lucide-react';
 import { useAuthStore } from '@/state/auth.store';
 import { usePlan, PLAN_LABELS, PLAN_PRICES } from '@/hooks/usePlan';
 import { Card, CardHeader, CardTitle, CardBody } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { billingService } from '@/services/billing.service';
+import { demoService } from '@/services/demo.service';
 
 export default function SettingsPage() {
   const user = useAuthStore((s) => s.user);
   const navigate = useNavigate();
+  const qc = useQueryClient();
   const { plan, limits } = usePlan();
+  const [portalLoading, setPortalLoading] = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
+  const [resetConfirm, setResetConfirm] = useState(false);
+  const [resetDone, setResetDone] = useState(false);
 
   const nextPlan = plan === 'ESSENTIALS' ? 'PROFESSIONAL' : plan === 'PROFESSIONAL' ? 'EXECUTIVE' : null;
+
+  const openPortal = async () => {
+    setPortalLoading(true);
+    try { window.location.href = await billingService.createPortal(); }
+    finally { setPortalLoading(false); }
+  };
+
+  const resetPortfolio = async () => {
+    setResetLoading(true);
+    try {
+      await demoService.resetDemo();
+      await qc.invalidateQueries();
+      setResetDone(true);
+      setResetConfirm(false);
+    } finally {
+      setResetLoading(false);
+    }
+  };
 
   const roleVariant: Record<string, 'brand' | 'success' | 'warning' | 'neutral'> = {
     ADMIN: 'brand',
@@ -162,6 +189,40 @@ export default function SettingsPage() {
         </CardBody>
       </Card>
 
+      {/* Billing */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <CreditCard className="h-4 w-4 text-brand-400" />
+            <CardTitle>Billing</CardTitle>
+          </div>
+        </CardHeader>
+        <CardBody className="flex items-center justify-between gap-4">
+          <div>
+            <p className="text-sm font-semibold text-white">{PLAN_LABELS[plan]} plan</p>
+            <p className="text-xs text-slate-500 mt-0.5">${PLAN_PRICES[plan].toLocaleString()} / month · manage invoices, payment method, and cancellation</p>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            {nextPlan && (
+              <button
+                onClick={() => navigate('/pricing')}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-brand-600/20 hover:bg-brand-600/30 border border-brand-500/30 px-3 py-1.5 text-xs font-semibold text-brand-300 transition-colors"
+              >
+                Upgrade <ArrowRight className="h-3 w-3" />
+              </button>
+            )}
+            <button
+              onClick={openPortal}
+              disabled={portalLoading}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-surface-400/40 bg-surface-200/50 hover:bg-surface-200 px-3 py-1.5 text-xs font-semibold text-slate-300 transition-colors disabled:opacity-60"
+            >
+              {portalLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CreditCard className="h-3.5 w-3.5" />}
+              Manage Billing
+            </button>
+          </div>
+        </CardBody>
+      </Card>
+
       {/* Preferences */}
       <Card>
         <CardHeader>
@@ -185,6 +246,58 @@ export default function SettingsPage() {
                 </div>
               </div>
             ))}
+          </div>
+        </CardBody>
+      </Card>
+      {/* Data */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Trash2 className="h-4 w-4 text-danger" />
+            <CardTitle>Portfolio Data</CardTitle>
+          </div>
+        </CardHeader>
+        <CardBody>
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="text-sm font-semibold text-white">Reset all portfolio data</p>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Permanently deletes all properties, leases, tenants, financial records, alerts, and tasks.
+                This cannot be undone.
+              </p>
+              {resetDone && (
+                <p className="text-xs text-success mt-2">Portfolio data cleared successfully.</p>
+              )}
+            </div>
+            <div className="shrink-0">
+              {!resetConfirm ? (
+                <button
+                  onClick={() => setResetConfirm(true)}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-danger/30 bg-danger/10 hover:bg-danger/20 px-3 py-1.5 text-xs font-semibold text-danger transition-colors"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  Reset data
+                </button>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-slate-400">Are you sure?</span>
+                  <button
+                    onClick={resetPortfolio}
+                    disabled={resetLoading}
+                    className="inline-flex items-center gap-1 rounded-lg bg-danger hover:bg-danger/80 px-3 py-1.5 text-xs font-semibold text-white transition-colors disabled:opacity-60"
+                  >
+                    {resetLoading && <Loader2 className="h-3 w-3 animate-spin" />}
+                    Confirm
+                  </button>
+                  <button
+                    onClick={() => setResetConfirm(false)}
+                    className="text-xs text-slate-500 hover:text-slate-300 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </CardBody>
       </Card>
