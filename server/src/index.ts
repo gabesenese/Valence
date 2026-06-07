@@ -27,6 +27,7 @@ import { documentsRouter } from './modules/documents/documents.routes';
 import { automationRouter } from './modules/automation/automation.routes';
 import { importRouter } from './modules/import/import.routes';
 import { auditRouter } from './modules/audit/audit.routes';
+import { demoRouter } from './modules/demo/demo.routes';
 import cron from 'node-cron';
 import { runAnomalyScan } from './modules/alerts/anomaly.service';
 import { runAllRules } from './modules/automation/automation.service';
@@ -88,6 +89,7 @@ app.use('/api/documents', documentsRouter);
 app.use('/api/automation', automationRouter);
 app.use('/api/import', importRouter);
 app.use('/api/audit', auditRouter);
+app.use('/api/demo', demoRouter);
 
 // ─── Error Handling ───────────────────────────────────────────────────────────
 app.use(notFoundHandler);

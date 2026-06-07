@@ -78,3 +78,7 @@ screenshots/
 *.mjs.bak
 claude_email.txt
 TODO.md
+bugs.md
+
+# Image Files
+*.png

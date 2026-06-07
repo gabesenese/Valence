@@ -10,7 +10,6 @@ import RenewalKanban from './RenewalKanban';
 import { leasesService, type RenewalStage, type PriorityLease, type Lease, type LeaseAlert } from '@/services/leases.service';
 import { authService } from '@/services/auth.service';
 import { Card } from '@/components/ui/Card';
-import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { PageLoader } from '@/components/ui/Spinner';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -424,7 +423,7 @@ export default function LeasesPage() {
   const activeFilters = useMemo(() => {
     const chips: Array<{ label: string; clear: () => void }> = [];
     if (riskFilter) chips.push({ label: `Risk: ${riskFilter}`, clear: () => setRiskFilter('') });
-    if (stageFilter) chips.push({ label: `Stage: ${STAGE_LABEL[stageFilter as RenewalStage] ?? stageFilter}`, clear: () => setStageFilter('') });
+    if (stageFilter) chips.push({ label: `Stage: ${STAGE_CONFIG[stageFilter]?.label ?? stageFilter}`, clear: () => setStageFilter('') });
     if (expiryFilter) chips.push({ label: `Expiring: ≤${expiryFilter}d`, clear: () => setExpiryFilter('') });
     if (hasAlertsFilter) chips.push({ label: `Alerts: ${hasAlertsFilter === 'true' ? 'Yes' : 'No'}`, clear: () => setHasAlertsFilter('') });
     if (propertyId) chips.push({ label: 'Filtered by property', clear: () => setSearchParams({}) });
@@ -588,7 +587,7 @@ export default function LeasesPage() {
                 <FilterGroup label="Renewal Stage">
                   {(['', 'NOT_STARTED', 'CONTACTED', 'NEGOTIATING', 'DRAFT_SENT', 'LEGAL_REVIEW', 'SCHEDULED_RENEWAL', 'SIGNED'] as const).map((s) => (
                     <FilterTab key={s} active={stageFilter === s} onClick={() => { setStageFilter(s); setPage(1); }}>
-                      {s ? STAGE_LABEL[s as RenewalStage] : 'All'}
+                      {s ? (STAGE_CONFIG[s]?.label ?? s) : 'All'}
                     </FilterTab>
                   ))}
                 </FilterGroup>
