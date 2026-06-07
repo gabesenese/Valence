@@ -1,11 +1,13 @@
+import { Inbox } from 'lucide-react';
+
 interface Props {
-  icon: React.ComponentType<{ className?: string }>;
+  icon?: React.ComponentType<{ className?: string }>;
   title: string;
   description?: string;
   action?: React.ReactNode;
 }
 
-export function EmptyState({ icon: Icon, title, description, action }: Props) {
+export function EmptyState({ icon: Icon = Inbox, title, description, action }: Props) {
   return (
     <div className="flex flex-col items-center justify-center py-16 text-center">
       <Icon className="mx-auto mb-3 h-8 w-8 text-slate-600" />
