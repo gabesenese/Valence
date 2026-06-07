@@ -88,6 +88,15 @@ export async function setUserPlan(req: Request, res: Response, next: NextFunctio
   }
 }
 
+export async function claimTrial(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const result = await authService.claimTrial(req.user!.id);
+    sendSuccess(res, result);
+  } catch (err) {
+    next(err);
+  }
+}
+
 export async function updateProfile(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const { firstName, lastName } = req.body as { firstName: string; lastName: string };

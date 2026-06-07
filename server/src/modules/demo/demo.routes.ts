@@ -25,7 +25,7 @@ router.post('/load', async (req: Request, res: Response, next: NextFunction) => 
 // POST /demo/reset — wipe all portfolio data
 router.post('/reset', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    await factory.reset();
+    await factory.reset(req.user!.id);
     logger.info('Demo portfolio reset', { userId: req.user!.id });
     sendSuccess(res, { message: 'Portfolio data cleared' });
   } catch (err) {

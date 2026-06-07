@@ -35,4 +35,7 @@ export const authService = {
 
   getUsers: (): Promise<AuthUser[]> =>
     api.get('/auth/users').then(extractData<AuthUser[]>),
+
+  claimTrial: (): Promise<AuthResult> =>
+    api.post('/auth/claim-trial').then(extractData<AuthResult>),
 };

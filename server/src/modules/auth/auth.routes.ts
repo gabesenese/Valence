@@ -12,6 +12,7 @@ router.post('/login', validate(loginSchema), controller.login);
 router.post('/refresh', validate(refreshSchema), controller.refresh);
 router.post('/logout', validate(refreshSchema), controller.logout);
 router.get('/me', authenticate, controller.getMe);
+router.post('/claim-trial', authenticate, controller.claimTrial);
 router.patch('/me', authenticate, controller.updateProfile);
 router.patch('/me/email', authenticate, controller.changeEmail);
 router.patch('/me/password', authenticate, controller.changePassword);

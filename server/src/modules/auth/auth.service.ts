@@ -49,15 +49,12 @@ export async function register(input: RegisterInput): Promise<{ user: AuthUser; 
 
   const passwordHash = await bcrypt.hash(input.password, env.BCRYPT_ROUNDS);
 
-  const trialEndsAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-
   const user = await prisma.user.create({
     data: {
       email: input.email,
       passwordHash,
       firstName: input.firstName,
       lastName: input.lastName,
-      trialEndsAt,
     },
     select: { id: true, email: true, firstName: true, lastName: true, role: true, plan: true, trialEndsAt: true },
   });
@@ -203,6 +200,25 @@ export async function changePassword(userId: string, currentPassword: string, ne
   if (!valid) throw new UnauthorizedError('Current password is incorrect');
   const passwordHash = await bcrypt.hash(newPassword, env.BCRYPT_ROUNDS);
   await prisma.user.update({ where: { id: userId }, data: { passwordHash } });
+}
+
+export async function claimTrial(userId: string): Promise<{ user: AuthUser; tokens: TokenPair }> {
+  const existing = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { trialEndsAt: true },
+  });
+  if (!existing) throw new NotFoundError('User');
+  if (existing.trialEndsAt !== null) throw new ConflictError('Trial already claimed');
+
+  const trialEndsAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+  const user = await prisma.user.update({
+    where: { id: userId },
+    data: { trialEndsAt },
+    select: { id: true, email: true, firstName: true, lastName: true, role: true, plan: true, trialEndsAt: true },
+  });
+
+  const tokens = await createTokenPair(user);
+  return { user, tokens };
 }
 
 async function createTokenPair(user: AuthUser): Promise<TokenPair> {

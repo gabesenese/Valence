@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Check, Zap, Shield, Eye, TrendingUp, ArrowRight, Loader2 } from 'lucide-react';
+import { Check, Zap, Shield, Eye, TrendingUp, ArrowRight, Loader2, AlertCircle } from 'lucide-react';
 import { billingService } from '@/services/billing.service';
+import { authService } from '@/services/auth.service';
 import { useAuthStore } from '@/state/auth.store';
 import type { Plan } from '@/state/auth.store';
 
@@ -174,7 +175,11 @@ function TierCard({ tier, onSelect, loading }: { tier: Tier; onSelect: () => voi
 export default function PricingPage() {
   const navigate = useNavigate();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const user = useAuthStore((s) => s.user);
+  const setAuth = useAuthStore((s) => s.setAuth);
   const [checkoutLoading, setCheckoutLoading] = useState<Plan | null>(null);
+  const [trialClaiming, setTrialClaiming] = useState(false);
+  const [trialError, setTrialError] = useState<string | null>(null);
 
   const handleSelect = async (tier: Tier) => {
     if (!isAuthenticated) { navigate('/auth/register'); return; }
@@ -185,6 +190,30 @@ export default function PricingPage() {
       window.location.href = url;
     } catch {
       setCheckoutLoading(null);
+    }
+  };
+
+  const handleGetStarted = async () => {
+    if (!isAuthenticated) { navigate('/auth/register'); return; }
+    if (user?.trialEndsAt) {
+      setTrialError('This account has already used the 7-day free trial. Choose a plan to continue.');
+      return;
+    }
+    setTrialClaiming(true);
+    setTrialError(null);
+    try {
+      const result = await authService.claimTrial();
+      setAuth(result.user, result.tokens.accessToken, result.tokens.refreshToken);
+      navigate('/');
+    } catch (err: unknown) {
+      const status = (err as { response?: { status?: number } })?.response?.status;
+      if (status === 409) {
+        setTrialError('This account has already used the 7-day free trial. Choose a plan to continue.');
+      } else {
+        setTrialError('Something went wrong. Please try again.');
+      }
+    } finally {
+      setTrialClaiming(false);
     }
   };
 
@@ -300,15 +329,22 @@ export default function PricingPage() {
             it becomes operationally critical — and the ROI is obvious.
           </p>
           <button
-            onClick={() => handleSelect(TIERS[1])}
-            disabled={checkoutLoading !== null}
+            onClick={handleGetStarted}
+            disabled={trialClaiming || checkoutLoading !== null}
             className="inline-flex items-center gap-2 rounded-xl bg-brand-600 hover:bg-brand-500 disabled:opacity-60 px-6 py-3 text-sm font-semibold text-white transition-colors shadow-glow-brand"
           >
-            {checkoutLoading === 'PROFESSIONAL' && <Loader2 className="h-4 w-4 animate-spin" />}
+            {trialClaiming && <Loader2 className="h-4 w-4 animate-spin" />}
             Get started
             <ArrowRight className="h-4 w-4" />
           </button>
-          <p className="mt-3 text-xs text-slate-600">No credit card required · 7-day free trial</p>
+          {trialError ? (
+            <div className="mt-3 inline-flex items-center gap-1.5 text-xs text-amber-400">
+              <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+              {trialError}
+            </div>
+          ) : (
+            <p className="mt-3 text-xs text-slate-600">No credit card required · 7-day free trial</p>
+          )}
         </div>
       </div>
     </div>
