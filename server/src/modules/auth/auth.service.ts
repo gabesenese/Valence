@@ -49,7 +49,7 @@ export async function register(input: RegisterInput): Promise<{ user: AuthUser; 
 
   const passwordHash = await bcrypt.hash(input.password, env.BCRYPT_ROUNDS);
 
-  const trialEndsAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
+  const trialEndsAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
   const user = await prisma.user.create({
     data: {
