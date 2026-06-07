@@ -5,6 +5,7 @@ import { tenantsService } from '@/services/tenants.service';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { PageLoader } from '@/components/ui/Spinner';
+import { EmptyState } from '@/components/ui/EmptyState';
 
 export default function TenantsPage() {
   const [search, setSearch] = useState('');
@@ -108,10 +109,7 @@ export default function TenantsPage() {
             </table>
 
             {data?.data.length === 0 && (
-              <div className="py-16 text-center">
-                <User className="mx-auto h-8 w-8 text-slate-700" />
-                <p className="mt-3 text-sm text-slate-500">No tenants found</p>
-              </div>
+              <EmptyState icon={User} title="No tenants found" />
             )}
 
             {data && data.meta.pages > 1 && (

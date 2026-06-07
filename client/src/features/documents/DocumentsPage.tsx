@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
 import { PageLoader } from '@/components/ui/Spinner';
+import { EmptyState } from '@/components/ui/EmptyState';
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
@@ -250,14 +251,16 @@ export default function DocumentsPage() {
         {isLoading ? (
           <PageLoader />
         ) : filtered.length === 0 ? (
-          <div className="py-16 text-center">
-            <FolderOpen className="mx-auto h-8 w-8 text-slate-600 mb-2" />
-            <p className="text-sm text-slate-500 mb-3">No documents yet</p>
-            <Button size="sm" onClick={() => setShowUpload(true)}>
-              <Upload className="h-4 w-4" />
-              Upload your first document
-            </Button>
-          </div>
+          <EmptyState
+            icon={FolderOpen}
+            title="No documents yet"
+            action={
+              <Button size="sm" onClick={() => setShowUpload(true)}>
+                <Upload className="h-4 w-4" />
+                Upload your first document
+              </Button>
+            }
+          />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">

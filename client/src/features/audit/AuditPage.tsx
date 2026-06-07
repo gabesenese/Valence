@@ -3,6 +3,7 @@ import { Building2, FileText, Users, UserCog, Upload, RefreshCw, ChevronLeft, Ch
 import { auditService, type AuditLogEntry } from '@/services/audit.service';
 import { Card, CardBody } from '@/components/ui/Card';
 import { cn } from '@/utils/cn';
+import { EmptyState } from '@/components/ui/EmptyState';
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
@@ -162,11 +163,11 @@ export default function AuditPage() {
               <span className="h-5 w-5 animate-spin rounded-full border-2 border-surface-400 border-t-brand-400" />
             </div>
           ) : logs.length === 0 ? (
-            <div className="flex flex-col items-center justify-center gap-2 py-16 text-center">
-              <Upload className="h-8 w-8 text-slate-700" />
-              <p className="text-sm text-slate-500">No events yet</p>
-              <p className="text-xs text-slate-600">Actions on properties, leases, and tenants will appear here</p>
-            </div>
+            <EmptyState
+              icon={Upload}
+              title="No events yet"
+              description="Actions on properties, leases, and tenants will appear here"
+            />
           ) : (
             <div>
               {logs.map((entry) => <AuditRow key={entry.id} entry={entry} />)}

@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
 import { DatePicker } from '@/components/ui/DatePicker';
 import { PageLoader } from '@/components/ui/Spinner';
+import { EmptyState } from '@/components/ui/EmptyState';
 
 // ─── Status config ─────────────────────────────────────────────────────────────
 
@@ -476,10 +477,7 @@ export default function TasksPage() {
         {isLoading ? (
           <PageLoader />
         ) : filtered.length === 0 ? (
-          <div className="py-16 text-center">
-            <ClipboardList className="mx-auto h-8 w-8 text-slate-600 mb-2" />
-            <p className="text-sm text-slate-500">No tasks match these filters</p>
-          </div>
+          <EmptyState icon={ClipboardList} title="No tasks match these filters" />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">

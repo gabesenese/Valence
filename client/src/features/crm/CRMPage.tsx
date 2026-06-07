@@ -12,6 +12,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
 import { PageLoader } from '@/components/ui/Spinner';
+import { EmptyState } from '@/components/ui/EmptyState';
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
@@ -509,10 +510,7 @@ export default function CRMPage() {
         <PageLoader />
       ) : tenants.length === 0 ? (
         <Card>
-          <div className="py-16 text-center">
-            <Users className="mx-auto h-8 w-8 text-slate-600 mb-2" />
-            <p className="text-sm text-slate-500">No tenants match these filters</p>
-          </div>
+          <EmptyState icon={Users} title="No tenants match these filters" />
         </Card>
       ) : (
         <div className="relative grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">

@@ -12,6 +12,7 @@ import { Card, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { PageLoader } from '@/components/ui/Spinner';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { formatRelative } from '@/utils/format';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -396,10 +397,7 @@ export default function AlertsPage() {
         {isLoading ? <PageLoader /> : (
           <div className="divide-y divide-surface-400/30">
             {data?.data.length === 0 && (
-              <div className="py-16 text-center">
-                <CheckCircle2 className="mx-auto h-8 w-8 text-success/40" />
-                <p className="mt-3 text-sm text-slate-500">No alerts in this category</p>
-              </div>
+              <EmptyState icon={CheckCircle2} title="No alerts in this category" />
             )}
             {data?.data.map((alert) => {
               const isExpanded = expandedActivity.has(alert.id);

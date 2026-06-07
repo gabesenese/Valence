@@ -11,6 +11,7 @@ import { Card, CardHeader, CardTitle, CardBody } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { PageLoader } from '@/components/ui/Spinner';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { formatCurrency, formatDate, daysUntil } from '@/utils/format';
 import PropertyFormModal from './PropertyFormModal';
 import LeaseImportModal from '../leases/LeaseImportModal';
@@ -144,10 +145,7 @@ export default function PropertyDetailPage() {
               </div>
             </CardHeader>
             {property.leases.length === 0 ? (
-              <div className="py-16 text-center">
-                <FileText className="mx-auto h-8 w-8 text-slate-700 mb-3" />
-                <p className="text-sm text-slate-500">No active leases on this property</p>
-              </div>
+              <EmptyState icon={FileText} title="No active leases on this property" />
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full">

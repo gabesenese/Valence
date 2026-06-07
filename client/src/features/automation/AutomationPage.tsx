@@ -18,6 +18,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
 import { PageLoader } from '@/components/ui/Spinner';
+import { EmptyState } from '@/components/ui/EmptyState';
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
@@ -415,19 +416,17 @@ export default function AutomationPage() {
       {/* Empty state */}
       {!isLoading && rules.length === 0 && (
         <Card>
-          <div className="py-16 text-center">
-            <Zap className="mx-auto h-8 w-8 text-slate-600 mb-2" />
-            <p className="text-sm font-medium text-slate-400 mb-1">No automation rules yet</p>
-            <p className="text-xs text-slate-600 max-w-xs mx-auto mb-4">
-              Automation rules run hourly and automatically create tasks when triggers fire — keeping your team ahead of issues without manual scanning.
-            </p>
-            {canEdit && (
+          <EmptyState
+            icon={Zap}
+            title="No automation rules yet"
+            description="Automation rules run hourly and automatically create tasks when triggers fire — keeping your team ahead of issues without manual scanning."
+            action={canEdit ? (
               <Button size="sm" onClick={() => setShowCreate(true)}>
                 <Plus className="h-4 w-4" />
                 Create First Rule
               </Button>
-            )}
-          </div>
+            ) : undefined}
+          />
         </Card>
       )}
 

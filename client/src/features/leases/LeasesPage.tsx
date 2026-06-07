@@ -13,6 +13,7 @@ import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { PageLoader } from '@/components/ui/Spinner';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { formatCurrency, formatDate, daysUntil } from '@/utils/format';
 import LeaseDrawer from './LeaseDrawer';
 import LeaseFormModal from './LeaseFormModal';
@@ -157,9 +158,8 @@ function PriorityQueueView({
 
   if (!data || data.length === 0) {
     return (
-      <Card className="py-16 text-center">
-        <Zap className="mx-auto h-8 w-8 text-slate-700" />
-        <p className="mt-3 text-sm text-slate-500">No leases need immediate attention</p>
+      <Card>
+        <EmptyState icon={Zap} title="No leases need immediate attention" />
       </Card>
     );
   }
@@ -667,10 +667,7 @@ export default function LeasesPage() {
                 </table>
 
                 {data?.data.length === 0 && (
-                  <div className="py-16 text-center">
-                    <FileText className="mx-auto h-8 w-8 text-slate-700" />
-                    <p className="mt-3 text-sm text-slate-500">No leases found</p>
-                  </div>
+                  <EmptyState icon={FileText} title="No leases found" />
                 )}
 
                 {data && data.meta.pages > 1 && (
