@@ -1,10 +1,14 @@
+import { useEffect } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import {
   LayoutDashboard, FileText, Building2, BarChart3, Bell, DollarSign,
   LogOut, ChevronLeft, Activity, Cpu, Users, Settings, Inbox, Layers,
   Wand2, ClipboardList, Heart, FolderOpen, Zap, Lock, Upload, ScrollText,
 } from 'lucide-react';
 import { cn } from '@/utils/cn';
+import { setOrgCurrency } from '@/utils/format';
+import { organizationService } from '@/services/organization.service';
 import { useAuthStore } from '@/state/auth.store';
 import { useUIStore } from '@/state/ui.store';
 import { authService } from '@/services/auth.service';
@@ -76,6 +80,15 @@ export function AppLayout() {
   const { sidebarCollapsed, toggleSidebar } = useUIStore();
   const navigate = useNavigate();
   const { canAccess, requiredPlan, label: planLabel } = usePlan();
+
+  const { data: org } = useQuery({
+    queryKey: ['organization'],
+    queryFn: organizationService.getOrganization,
+    staleTime: 5 * 60_000,
+  });
+  useEffect(() => {
+    if (org?.currency) setOrgCurrency(org.currency);
+  }, [org?.currency]);
 
   const handleLogout = async () => {
     try {

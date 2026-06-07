@@ -1,6 +1,17 @@
 import { format, formatDistanceToNow, parseISO, differenceInDays } from 'date-fns';
 
-export function formatCurrency(amount: number, currency = 'USD'): string {
+let _orgCurrency = 'USD';
+export function setOrgCurrency(currency: string) { _orgCurrency = currency; }
+
+function currencySymbol(currency: string): string {
+  return (
+    new Intl.NumberFormat('en-US', { style: 'currency', currency, minimumFractionDigits: 0 })
+      .formatToParts(0)
+      .find((p) => p.type === 'currency')?.value ?? currency
+  );
+}
+
+export function formatCurrency(amount: number, currency = _orgCurrency): string {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency,
@@ -40,8 +51,9 @@ export function daysUntil(date: string | Date): number {
   return differenceInDays(d, new Date());
 }
 
-export function compactCurrency(amount: number): string {
-  if (amount >= 1_000_000) return `$${(amount / 1_000_000).toFixed(1)}M`;
-  if (amount >= 1_000) return `$${(amount / 1_000).toFixed(0)}K`;
-  return `$${amount}`;
+export function compactCurrency(amount: number, currency = _orgCurrency): string {
+  const sym = currencySymbol(currency);
+  if (amount >= 1_000_000) return `${sym}${(amount / 1_000_000).toFixed(1)}M`;
+  if (amount >= 1_000) return `${sym}${(amount / 1_000).toFixed(0)}K`;
+  return `${sym}${amount}`;
 }
