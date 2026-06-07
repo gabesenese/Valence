@@ -179,6 +179,7 @@ export default function LeaseFormModal({ open, onClose, lease, initialValues }: 
     mutationFn: (input: CreateLeaseInput) => leasesService.createLease(input),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['leases'] });
+      qc.invalidateQueries({ queryKey: ['onboarding'] });
       onClose();
     },
   });

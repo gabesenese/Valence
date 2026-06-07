@@ -143,7 +143,7 @@ export default function PropertyFormModal({ open, onClose, property }: Props) {
 
   const createMutation = useMutation({
     mutationFn: propertiesService.createProperty,
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['properties'] }); onClose(); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['properties'] }); qc.invalidateQueries({ queryKey: ['onboarding'] }); onClose(); },
   });
 
   const updateMutation = useMutation({

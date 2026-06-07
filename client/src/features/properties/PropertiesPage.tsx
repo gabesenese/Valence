@@ -87,13 +87,38 @@ export default function PropertiesPage() {
 
       {/* Grid */}
       {data?.data.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 text-center">
-          <Building2 className="h-10 w-10 text-slate-700 mb-3" />
-          <p className="text-sm text-slate-500">No properties found</p>
-          {(search || type || status) && (
-            <p className="text-xs text-slate-600 mt-1">Try adjusting your filters</p>
-          )}
-        </div>
+        (search || type || status) ? (
+          <div className="flex flex-col items-center justify-center py-20 text-center">
+            <Building2 className="h-10 w-10 text-slate-700 mb-3" />
+            <p className="text-sm text-slate-500">No properties match your filters</p>
+            <p className="text-xs text-slate-600 mt-1">Try adjusting your search</p>
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center py-20 text-center">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-surface-200 mb-4">
+              <Building2 className="h-7 w-7 text-slate-600" />
+            </div>
+            <p className="text-sm font-semibold text-slate-300">No properties yet</p>
+            <p className="text-xs text-slate-500 mt-1.5 max-w-xs leading-relaxed">
+              Your portfolio starts with your first property. Add one manually or import a CSV to get started.
+            </p>
+            <div className="flex items-center gap-2 mt-5">
+              <button
+                onClick={() => setAddOpen(true)}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-brand-600 hover:bg-brand-500 px-4 py-2 text-xs font-semibold text-white transition-colors"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                Add Property
+              </button>
+              <button
+                onClick={() => navigate('/import')}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-surface-400/40 bg-surface-200 hover:bg-surface-300 px-4 py-2 text-xs font-semibold text-slate-300 transition-colors"
+              >
+                Import from CSV
+              </button>
+            </div>
+          </div>
+        )
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {data?.data.map((p) => (

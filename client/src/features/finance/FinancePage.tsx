@@ -3,7 +3,8 @@ import { useQuery } from '@tanstack/react-query';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from 'recharts';
-import { DollarSign, TrendingUp, TrendingDown, AlertTriangle, Clock } from 'lucide-react';
+import { DollarSign, TrendingUp, TrendingDown, AlertTriangle, Clock, FileText } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { financeService } from '@/services/finance.service';
 import { Card, CardHeader, CardTitle, CardBody } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
@@ -20,6 +21,7 @@ const STATUS_VARIANT: Record<string, 'success' | 'warning' | 'danger' | 'neutral
 };
 
 export default function FinancePage() {
+  const navigate = useNavigate();
   const [recordsPage, setRecordsPage] = useState(1);
 
   const { data: summary, isLoading: summaryLoading } = useQuery({
@@ -127,6 +129,21 @@ export default function FinancePage() {
               ))}
             </tbody>
           </table>
+          {records?.data.length === 0 && (
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <FileText className="h-9 w-9 text-slate-700 mb-3" />
+              <p className="text-sm font-semibold text-slate-300">No financial records yet</p>
+              <p className="text-xs text-slate-500 mt-1.5 max-w-xs leading-relaxed">
+                Once you have leases, log revenue and expenses here to unlock analytics and NOI tracking.
+              </p>
+              <button
+                onClick={() => navigate('/import')}
+                className="mt-5 inline-flex items-center gap-1.5 rounded-lg bg-brand-600 hover:bg-brand-500 px-4 py-2 text-xs font-semibold text-white transition-colors"
+              >
+                Import financial data
+              </button>
+            </div>
+          )}
         </div>
         {records && records.meta.pages > 1 && (
           <div className="flex items-center justify-between border-t border-surface-400/40 px-5 py-3">

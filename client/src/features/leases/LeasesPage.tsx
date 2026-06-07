@@ -659,7 +659,31 @@ export default function LeasesPage() {
                 </table>
 
                 {data?.data.length === 0 && (
-                  <EmptyState icon={FileText} title="No leases found" />
+                  (!search && !riskFilter && !stageFilter && !expiryFilter && !hasAlertsFilter && !propertyId) ? (
+                    <div className="flex flex-col items-center justify-center py-16 text-center">
+                      <FileText className="h-9 w-9 text-slate-700 mb-3" />
+                      <p className="text-sm font-semibold text-slate-300">No leases yet</p>
+                      <p className="text-xs text-slate-500 mt-1.5 max-w-xs leading-relaxed">
+                        Import leases from a CSV or add them individually once you have properties set up.
+                      </p>
+                      <div className="flex items-center gap-2 mt-5">
+                        <button
+                          onClick={() => setImportOpen(true)}
+                          className="inline-flex items-center gap-1.5 rounded-lg bg-brand-600 hover:bg-brand-500 px-4 py-2 text-xs font-semibold text-white transition-colors"
+                        >
+                          Import from CSV
+                        </button>
+                        <button
+                          onClick={() => setAddOpen(true)}
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-surface-400/40 bg-surface-200 hover:bg-surface-300 px-4 py-2 text-xs font-semibold text-slate-300 transition-colors"
+                        >
+                          Add manually
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <EmptyState icon={FileText} title="No leases match these filters" />
+                  )
                 )}
 
                 {data && data.meta.pages > 1 && (

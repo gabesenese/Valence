@@ -19,6 +19,7 @@ import { PageLoader } from '@/components/ui/Spinner';
 import { formatCurrency, compactCurrency, daysUntil, formatDate } from '@/utils/format';
 import { useAuthStore } from '@/state/auth.store';
 import { WelcomeScreen } from '@/features/onboarding/WelcomeScreen';
+import { OnboardingCard } from '@/features/onboarding/OnboardingCard';
 
 function getGreeting(): string {
   const h = new Date().getHours();
@@ -158,13 +159,16 @@ export default function DashboardPage() {
         <p className="mt-0.5 text-sm text-slate-500">Portfolio intelligence overview</p>
       </div>
 
+      {isEmpty && <WelcomeScreen />}
+
+      {/* Onboarding progress — shown until all milestones complete or dismissed */}
+      {!isEmpty && <OnboardingCard />}
+
       {/* Portfolio Health Score */}
       {!isEmpty && <HealthScoreCard />}
 
       {/* Executive Intelligence Brief */}
       {!isEmpty && <ExecutiveBriefCard />}
-
-      {isEmpty && <WelcomeScreen />}
 
       {/* KPI Grid */}
       {!isEmpty && <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-6">

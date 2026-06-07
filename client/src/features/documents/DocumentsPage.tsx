@@ -129,7 +129,7 @@ function UploadModal({ onClose }: { onClose: () => void }) {
       if (!file) throw new Error('No file');
       return documentsService.uploadDocument(file, { type: docType, name: name.trim() || file.name });
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['documents'] }); onClose(); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['documents'] }); qc.invalidateQueries({ queryKey: ['onboarding'] }); onClose(); },
   });
 
   const handleDrop = (e: React.DragEvent) => {
