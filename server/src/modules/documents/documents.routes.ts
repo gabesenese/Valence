@@ -4,6 +4,7 @@ import multer from 'multer';
 import path from 'path';
 import { v4 as uuid } from 'uuid';
 import { authenticate } from '../../middleware/authenticate';
+import { authorize } from '../../middleware/authorize';
 import { sendSuccess } from '../../utils/response';
 import {
   createDocument,
@@ -52,6 +53,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
 // POST /documents — multipart upload
 router.post(
   '/',
+  authorize('ANALYST'),
   upload.single('file'),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -101,7 +103,7 @@ router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
 });
 
 // DELETE /documents/:id
-router.delete('/:id', async (req: Request, res: Response, next: NextFunction) => {
+router.delete('/:id', authorize('ADMIN'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const result = await deleteDocument(req.params.id);
     sendSuccess(res, result);

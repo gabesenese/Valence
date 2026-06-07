@@ -1,7 +1,7 @@
 import type { Request, Response, NextFunction } from 'express';
 import * as service from './properties.service';
 import { enforcePropertyLimit } from '../plans/plans.service';
-import { logAudit } from '../audit/audit.service';
+import { logAudit, getEntityActivity } from '../audit/audit.service';
 import { sendSuccess, sendPaginated } from '../../utils/response';
 import type { Plan } from '@prisma/client';
 
@@ -42,6 +42,12 @@ export async function remove(req: Request, res: Response, next: NextFunction): P
     await service.deleteProperty(req.params.id);
     void logAudit({ userId: req.user?.id, action: 'DELETE', entity: 'property', entityId: req.params.id, entityName: existing.name });
     sendSuccess(res, { deleted: true });
+  } catch (err) { next(err); }
+}
+
+export async function activity(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    sendSuccess(res, await getEntityActivity('property', req.params.id));
   } catch (err) { next(err); }
 }
 

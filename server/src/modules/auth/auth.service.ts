@@ -172,6 +172,39 @@ export async function setPlan(targetUserId: string, plan: Plan, actorId?: string
   void logAudit({ userId: actorId, action: 'PLAN_CHANGE', entity: 'user', entityId: targetUserId, entityName: user.email, changes: { plan } });
 }
 
+export async function updateProfile(userId: string, firstName: string, lastName: string): Promise<AuthUser> {
+  const user = await prisma.user.update({
+    where: { id: userId },
+    data: { firstName: firstName.trim(), lastName: lastName.trim() },
+    select: { id: true, email: true, firstName: true, lastName: true, role: true, plan: true, trialEndsAt: true },
+  });
+  if (!user) throw new NotFoundError('User');
+  return user;
+}
+
+export async function changeEmail(userId: string, newEmail: string, currentPassword: string): Promise<AuthUser> {
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: { passwordHash: true } });
+  if (!user) throw new NotFoundError('User');
+  const valid = await bcrypt.compare(currentPassword, user.passwordHash);
+  if (!valid) throw new UnauthorizedError('Current password is incorrect');
+  const existing = await prisma.user.findUnique({ where: { email: newEmail } });
+  if (existing) throw new ConflictError('Email already in use');
+  return prisma.user.update({
+    where: { id: userId },
+    data: { email: newEmail },
+    select: { id: true, email: true, firstName: true, lastName: true, role: true, plan: true, trialEndsAt: true },
+  });
+}
+
+export async function changePassword(userId: string, currentPassword: string, newPassword: string): Promise<void> {
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: { passwordHash: true } });
+  if (!user) throw new NotFoundError('User');
+  const valid = await bcrypt.compare(currentPassword, user.passwordHash);
+  if (!valid) throw new UnauthorizedError('Current password is incorrect');
+  const passwordHash = await bcrypt.hash(newPassword, env.BCRYPT_ROUNDS);
+  await prisma.user.update({ where: { id: userId }, data: { passwordHash } });
+}
+
 async function createTokenPair(user: AuthUser): Promise<TokenPair> {
   const accessToken = signAccessToken(user);
   const refreshToken = signRefreshToken();

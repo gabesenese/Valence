@@ -1,24 +1,56 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import { User, Mail, Shield, Bell, Moon, ArrowRight, Zap, CreditCard, Trash2, Loader2 } from 'lucide-react';
+import {
+  User, Mail, Shield, Bell, Moon, ArrowRight, Zap, CreditCard,
+  Trash2, Loader2, Lock, CheckCircle2, Eye, EyeOff,
+} from 'lucide-react';
 import { useAuthStore } from '@/state/auth.store';
 import { usePlan, PLAN_LABELS, PLAN_PRICES } from '@/hooks/usePlan';
 import { Card, CardHeader, CardTitle, CardBody } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { Button } from '@/components/ui/Button';
 import { billingService } from '@/services/billing.service';
 import { demoService } from '@/services/demo.service';
+import { usersService } from '@/services/users.service';
 
 export default function SettingsPage() {
   const user = useAuthStore((s) => s.user);
+  const updateUser = useAuthStore((s) => s.updateUser);
   const navigate = useNavigate();
   const qc = useQueryClient();
   const { plan, limits } = usePlan();
+
+  // Portal / reset
   const [portalLoading, setPortalLoading] = useState(false);
   const [resetLoading, setResetLoading] = useState(false);
   const [resetConfirm, setResetConfirm] = useState(false);
   const [resetDone, setResetDone] = useState(false);
+
+  // Profile form
+  const [firstName, setFirstName] = useState(user?.firstName ?? '');
+  const [lastName, setLastName] = useState(user?.lastName ?? '');
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [profileError, setProfileError] = useState('');
+  const [profileSaved, setProfileSaved] = useState(false);
+
+  // Email form
+  const [newEmail, setNewEmail] = useState('');
+  const [emailPassword, setEmailPassword] = useState('');
+  const [emailSaving, setEmailSaving] = useState(false);
+  const [emailError, setEmailError] = useState('');
+  const [emailSaved, setEmailSaved] = useState(false);
+
+  // Password form
+  const [currentPw, setCurrentPw] = useState('');
+  const [newPw, setNewPw] = useState('');
+  const [confirmPw, setConfirmPw] = useState('');
+  const [showCurrentPw, setShowCurrentPw] = useState(false);
+  const [showNewPw, setShowNewPw] = useState(false);
+  const [pwSaving, setPwSaving] = useState(false);
+  const [pwError, setPwError] = useState('');
+  const [pwSaved, setPwSaved] = useState(false);
 
   const nextPlan = plan === 'ESSENTIALS' ? 'PROFESSIONAL' : plan === 'PROFESSIONAL' ? 'EXECUTIVE' : null;
 
@@ -40,6 +72,64 @@ export default function SettingsPage() {
     }
   };
 
+  const saveProfile = async () => {
+    setProfileError('');
+    setProfileSaved(false);
+    if (!firstName.trim() || !lastName.trim()) { setProfileError('First and last name are required.'); return; }
+    setProfileSaving(true);
+    try {
+      const updated = await usersService.updateProfile(firstName, lastName);
+      updateUser({ firstName: updated.firstName, lastName: updated.lastName });
+      setProfileSaved(true);
+      setTimeout(() => setProfileSaved(false), 3000);
+    } catch (err: unknown) {
+      setProfileError((err as Error).message || 'Failed to save.');
+    } finally {
+      setProfileSaving(false);
+    }
+  };
+
+  const saveEmail = async () => {
+    setEmailError('');
+    setEmailSaved(false);
+    if (!newEmail.trim()) { setEmailError('Email is required.'); return; }
+    if (!emailPassword) { setEmailError('Current password is required.'); return; }
+    setEmailSaving(true);
+    try {
+      const updated = await usersService.changeEmail(newEmail.trim(), emailPassword);
+      updateUser({ email: updated.email });
+      setNewEmail('');
+      setEmailPassword('');
+      setEmailSaved(true);
+      setTimeout(() => setEmailSaved(false), 3000);
+    } catch (err: unknown) {
+      setEmailError((err as Error).message || 'Failed to update email.');
+    } finally {
+      setEmailSaving(false);
+    }
+  };
+
+  const savePassword = async () => {
+    setPwError('');
+    setPwSaved(false);
+    if (!currentPw) { setPwError('Current password is required.'); return; }
+    if (newPw.length < 8) { setPwError('New password must be at least 8 characters.'); return; }
+    if (newPw !== confirmPw) { setPwError('Passwords do not match.'); return; }
+    setPwSaving(true);
+    try {
+      await usersService.changePassword(currentPw, newPw);
+      setCurrentPw('');
+      setNewPw('');
+      setConfirmPw('');
+      setPwSaved(true);
+      setTimeout(() => setPwSaved(false), 3000);
+    } catch (err: unknown) {
+      setPwError((err as Error).message || 'Failed to change password.');
+    } finally {
+      setPwSaving(false);
+    }
+  };
+
   const roleVariant: Record<string, 'brand' | 'success' | 'warning' | 'neutral'> = {
     ADMIN: 'brand',
     SUPER_ADMIN: 'danger' as never,
@@ -47,12 +137,11 @@ export default function SettingsPage() {
     VIEWER: 'neutral',
   };
 
+  const profileDirty = firstName !== user?.firstName || lastName !== user?.lastName;
+
   return (
     <div className="flex flex-col gap-6 p-6 animate-fade-in">
-      <PageHeader
-        title="Settings"
-        description="Account preferences & configuration"
-      />
+      <PageHeader title="Settings" description="Account preferences & configuration" />
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         {/* Profile card */}
@@ -61,7 +150,6 @@ export default function SettingsPage() {
             <CardTitle>Profile</CardTitle>
           </CardHeader>
           <CardBody className="flex flex-col gap-5">
-            {/* Avatar row */}
             <div className="flex items-center gap-4">
               <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-600/20 border border-brand-600/30">
                 <User className="h-7 w-7 text-brand-400" />
@@ -78,27 +166,52 @@ export default function SettingsPage() {
 
             <div className="h-px bg-surface-400/30" />
 
-            {/* Fields */}
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div>
-                <p className="mb-1.5 text-xs font-medium uppercase tracking-wider text-slate-400">First Name</p>
-                <div className="rounded-lg border border-surface-400/40 bg-surface-200/50 px-3 py-2.5 text-sm text-slate-300">
-                  {user?.firstName}
-                </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-medium uppercase tracking-wider text-slate-400">First Name</label>
+                <input
+                  type="text"
+                  value={firstName}
+                  onChange={(e) => { setFirstName(e.target.value); setProfileSaved(false); }}
+                  className="h-9 w-full rounded-lg border border-surface-400 bg-surface-200 px-3 text-sm text-slate-100 placeholder:text-slate-600 transition-colors focus:border-brand-500/60 focus:bg-surface-300 focus:outline-none focus:ring-1 focus:ring-brand-500/30"
+                />
               </div>
-              <div>
-                <p className="mb-1.5 text-xs font-medium uppercase tracking-wider text-slate-400">Last Name</p>
-                <div className="rounded-lg border border-surface-400/40 bg-surface-200/50 px-3 py-2.5 text-sm text-slate-300">
-                  {user?.lastName}
-                </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-medium uppercase tracking-wider text-slate-400">Last Name</label>
+                <input
+                  type="text"
+                  value={lastName}
+                  onChange={(e) => { setLastName(e.target.value); setProfileSaved(false); }}
+                  className="h-9 w-full rounded-lg border border-surface-400 bg-surface-200 px-3 text-sm text-slate-100 placeholder:text-slate-600 transition-colors focus:border-brand-500/60 focus:bg-surface-300 focus:outline-none focus:ring-1 focus:ring-brand-500/30"
+                />
               </div>
               <div className="sm:col-span-2">
-                <p className="mb-1.5 text-xs font-medium uppercase tracking-wider text-slate-400">Email</p>
+                <label className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-slate-400">Email</label>
                 <div className="flex items-center gap-2 rounded-lg border border-surface-400/40 bg-surface-200/50 px-3 py-2.5">
                   <Mail className="h-4 w-4 text-slate-600 shrink-0" />
-                  <span className="text-sm text-slate-300">{user?.email}</span>
+                  <span className="text-sm text-slate-400">{user?.email}</span>
                 </div>
               </div>
+            </div>
+
+            {profileError && (
+              <p className="text-xs text-danger">{profileError}</p>
+            )}
+
+            <div className="flex items-center gap-3">
+              <Button
+                size="sm"
+                onClick={saveProfile}
+                loading={profileSaving}
+                disabled={!profileDirty}
+              >
+                Save name
+              </Button>
+              {profileSaved && (
+                <span className="flex items-center gap-1 text-xs text-success">
+                  <CheckCircle2 className="h-3.5 w-3.5" /> Saved
+                </span>
+              )}
             </div>
           </CardBody>
         </Card>
@@ -139,6 +252,121 @@ export default function SettingsPage() {
         </Card>
       </div>
 
+      {/* Security — email + password */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Lock className="h-4 w-4 text-brand-400" />
+            <CardTitle>Security</CardTitle>
+          </div>
+        </CardHeader>
+        <CardBody className="flex flex-col gap-6">
+          {/* Change email */}
+          <div>
+            <p className="text-sm font-semibold text-white mb-3">Change email</p>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-medium uppercase tracking-wider text-slate-400">New email</label>
+                <input
+                  type="email"
+                  value={newEmail}
+                  onChange={(e) => { setNewEmail(e.target.value); setEmailSaved(false); }}
+                  placeholder={user?.email}
+                  className="h-9 w-full rounded-lg border border-surface-400 bg-surface-200 px-3 text-sm text-slate-100 placeholder:text-slate-600 transition-colors focus:border-brand-500/60 focus:bg-surface-300 focus:outline-none focus:ring-1 focus:ring-brand-500/30"
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-medium uppercase tracking-wider text-slate-400">Current password</label>
+                <input
+                  type="password"
+                  value={emailPassword}
+                  onChange={(e) => { setEmailPassword(e.target.value); setEmailSaved(false); }}
+                  placeholder="Confirm identity"
+                  className="h-9 w-full rounded-lg border border-surface-400 bg-surface-200 px-3 text-sm text-slate-100 placeholder:text-slate-600 transition-colors focus:border-brand-500/60 focus:bg-surface-300 focus:outline-none focus:ring-1 focus:ring-brand-500/30"
+                />
+              </div>
+            </div>
+            {emailError && <p className="mt-2 text-xs text-danger">{emailError}</p>}
+            <div className="mt-3 flex items-center gap-3">
+              <Button size="sm" onClick={saveEmail} loading={emailSaving} disabled={!newEmail || !emailPassword}>
+                Update email
+              </Button>
+              {emailSaved && (
+                <span className="flex items-center gap-1 text-xs text-success">
+                  <CheckCircle2 className="h-3.5 w-3.5" /> Email updated
+                </span>
+              )}
+            </div>
+          </div>
+
+          <div className="h-px bg-surface-400/30" />
+
+          {/* Change password */}
+          <div>
+            <p className="text-sm font-semibold text-white mb-3">Change password</p>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-medium uppercase tracking-wider text-slate-400">Current password</label>
+                <div className="relative">
+                  <input
+                    type={showCurrentPw ? 'text' : 'password'}
+                    value={currentPw}
+                    onChange={(e) => { setCurrentPw(e.target.value); setPwSaved(false); }}
+                    placeholder="••••••••"
+                    className="h-9 w-full rounded-lg border border-surface-400 bg-surface-200 px-3 pr-9 text-sm text-slate-100 placeholder:text-slate-600 transition-colors focus:border-brand-500/60 focus:bg-surface-300 focus:outline-none focus:ring-1 focus:ring-brand-500/30"
+                  />
+                  <button type="button" onClick={() => setShowCurrentPw(!showCurrentPw)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300">
+                    {showCurrentPw ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                  </button>
+                </div>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-medium uppercase tracking-wider text-slate-400">New password</label>
+                <div className="relative">
+                  <input
+                    type={showNewPw ? 'text' : 'password'}
+                    value={newPw}
+                    onChange={(e) => { setNewPw(e.target.value); setPwSaved(false); }}
+                    placeholder="Min. 8 characters"
+                    className="h-9 w-full rounded-lg border border-surface-400 bg-surface-200 px-3 pr-9 text-sm text-slate-100 placeholder:text-slate-600 transition-colors focus:border-brand-500/60 focus:bg-surface-300 focus:outline-none focus:ring-1 focus:ring-brand-500/30"
+                  />
+                  <button type="button" onClick={() => setShowNewPw(!showNewPw)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300">
+                    {showNewPw ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                  </button>
+                </div>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-medium uppercase tracking-wider text-slate-400">Confirm new password</label>
+                <input
+                  type="password"
+                  value={confirmPw}
+                  onChange={(e) => { setConfirmPw(e.target.value); setPwSaved(false); }}
+                  placeholder="••••••••"
+                  className="h-9 w-full rounded-lg border border-surface-400 bg-surface-200 px-3 text-sm text-slate-100 placeholder:text-slate-600 transition-colors focus:border-brand-500/60 focus:bg-surface-300 focus:outline-none focus:ring-1 focus:ring-brand-500/30"
+                />
+              </div>
+            </div>
+            {newPw.length > 0 && newPw.length < 8 && (
+              <p className="mt-1 text-[11px] text-slate-600">{8 - newPw.length} more character{8 - newPw.length !== 1 ? 's' : ''} needed</p>
+            )}
+            {confirmPw.length > 0 && newPw !== confirmPw && (
+              <p className="mt-1 text-[11px] text-danger">Passwords do not match</p>
+            )}
+            {pwError && <p className="mt-2 text-xs text-danger">{pwError}</p>}
+            <div className="mt-3 flex items-center gap-3">
+              <Button size="sm" onClick={savePassword} loading={pwSaving} disabled={!currentPw || !newPw || !confirmPw}>
+                Change password
+              </Button>
+              {pwSaved && (
+                <span className="flex items-center gap-1 text-xs text-success">
+                  <CheckCircle2 className="h-3.5 w-3.5" /> Password updated
+                </span>
+              )}
+            </div>
+          </div>
+        </CardBody>
+      </Card>
+
       {/* Plan card */}
       <Card>
         <CardHeader>
@@ -171,14 +399,8 @@ export default function SettingsPage() {
           </div>
           <div className="grid grid-cols-2 gap-3">
             {[
-              {
-                label: 'Properties',
-                limit: limits.properties === Infinity ? 'Unlimited' : limits.properties.toLocaleString(),
-              },
-              {
-                label: 'Leases',
-                limit: limits.leases === Infinity ? 'Unlimited' : limits.leases.toLocaleString(),
-              },
+              { label: 'Properties', limit: limits.properties === Infinity ? 'Unlimited' : limits.properties.toLocaleString() },
+              { label: 'Leases', limit: limits.leases === Infinity ? 'Unlimited' : limits.leases.toLocaleString() },
             ].map(({ label, limit }) => (
               <div key={label} className="rounded-lg border border-surface-400/30 bg-surface-200/30 px-3 py-2.5">
                 <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 mb-0.5">{label}</p>
@@ -249,6 +471,7 @@ export default function SettingsPage() {
           </div>
         </CardBody>
       </Card>
+
       {/* Data */}
       <Card>
         <CardHeader>

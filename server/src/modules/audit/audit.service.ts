@@ -26,6 +26,14 @@ export async function logAudit(input: LogAuditInput): Promise<void> {
   });
 }
 
+export async function getEntityActivity(entity: string, entityId: string) {
+  return prisma.auditLog.findMany({
+    where: { entity, entityId },
+    orderBy: { createdAt: 'asc' },
+    include: { user: { select: { id: true, firstName: true, lastName: true } } },
+  });
+}
+
 export async function getAuditLogs(query: {
   entity?: string;
   userId?: string;

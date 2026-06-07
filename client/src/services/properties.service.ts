@@ -63,12 +63,27 @@ export interface CreatePropertyInput {
 
 export type UpdatePropertyInput = Partial<CreatePropertyInput>;
 
+export interface PropertyActivityEntry {
+  id: string;
+  action: string;
+  entity: string;
+  entityId: string | null;
+  entityName: string | null;
+  changes: Record<string, unknown> | null;
+  meta: Record<string, unknown> | null;
+  createdAt: string;
+  user: { id: string; firstName: string; lastName: string } | null;
+}
+
 export const propertiesService = {
   getProperties: (query: PropertyQuery = {}): Promise<PaginatedResult<Property>> =>
     api.get('/properties', { params: { limit: 50, ...query } }).then(extractPaginated<Property>),
 
   getProperty: (id: string): Promise<PropertyDetail> =>
     api.get(`/properties/${id}`).then(extractData<PropertyDetail>),
+
+  getActivity: (id: string): Promise<PropertyActivityEntry[]> =>
+    api.get(`/properties/${id}/activity`).then(extractData<PropertyActivityEntry[]>),
 
   createProperty: (input: CreatePropertyInput): Promise<PropertyDetail> =>
     api.post('/properties', input).then(extractData<PropertyDetail>),

@@ -12,6 +12,7 @@ router.use(authenticate);
 router.get('/summary', controller.summary);
 router.get('/', validate(propertyQuerySchema, 'query'), controller.list);
 router.get('/:id', controller.show);
+router.get('/:id/activity', controller.activity);
 router.post('/', authorize('ADMIN'), validate(createPropertySchema), controller.create);
 router.patch('/:id', authorize('ADMIN'), validate(updatePropertySchema), controller.update);
 router.delete('/:id', authorize('ADMIN'), controller.remove);

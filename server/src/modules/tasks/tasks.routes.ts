@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import type { Request, Response, NextFunction } from 'express';
 import { authenticate } from '../../middleware/authenticate';
+import { authorize } from '../../middleware/authorize';
 import { sendSuccess } from '../../utils/response';
 import {
   getTasksForItem,
@@ -43,7 +44,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
 });
 
 // POST /tasks
-router.post('/', async (req: Request, res: Response, next: NextFunction) => {
+router.post('/', authorize('ANALYST'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { title, description, alertId, leaseId, propertyId, assigneeUserId, dueAt } = req.body as {
       title: string;
@@ -76,7 +77,7 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
 });
 
 // PATCH /tasks/:id
-router.patch('/:id', async (req: Request, res: Response, next: NextFunction) => {
+router.patch('/:id', authorize('ANALYST'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { title, description, assigneeUserId, dueAt } = req.body as {
       title?: string;
@@ -96,7 +97,7 @@ router.patch('/:id', async (req: Request, res: Response, next: NextFunction) => 
 });
 
 // PATCH /tasks/:id/status
-router.patch('/:id/status', async (req: Request, res: Response, next: NextFunction) => {
+router.patch('/:id/status', authorize('ANALYST'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { status, completionNote } = req.body as {
       status: TaskStatus;
@@ -115,7 +116,7 @@ router.patch('/:id/status', async (req: Request, res: Response, next: NextFuncti
 });
 
 // DELETE /tasks/:id
-router.delete('/:id', async (req: Request, res: Response, next: NextFunction) => {
+router.delete('/:id', authorize('ADMIN'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     await deleteTask(req.params.id);
     sendSuccess(res, { deleted: true });

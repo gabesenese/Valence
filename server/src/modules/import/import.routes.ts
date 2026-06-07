@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import multer from 'multer';
 import { authenticate } from '../../middleware/authenticate';
+import { authorize } from '../../middleware/authorize';
 import { importPropertiesHandler, importTenantsHandler, importLeasesHandler } from './import.controller';
 
 const upload = multer({
@@ -19,6 +20,6 @@ export const importRouter = Router();
 
 importRouter.use(authenticate);
 
-importRouter.post('/properties', upload.single('csv'), importPropertiesHandler);
-importRouter.post('/tenants',    upload.single('csv'), importTenantsHandler);
-importRouter.post('/leases',     upload.single('csv'), importLeasesHandler);
+importRouter.post('/properties', authorize('ANALYST'), upload.single('csv'), importPropertiesHandler);
+importRouter.post('/tenants',    authorize('ANALYST'), upload.single('csv'), importTenantsHandler);
+importRouter.post('/leases',     authorize('ANALYST'), upload.single('csv'), importLeasesHandler);

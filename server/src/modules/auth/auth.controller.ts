@@ -87,3 +87,49 @@ export async function setUserPlan(req: Request, res: Response, next: NextFunctio
     next(err);
   }
 }
+
+export async function updateProfile(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const { firstName, lastName } = req.body as { firstName: string; lastName: string };
+    if (!firstName?.trim() || !lastName?.trim()) {
+      res.status(400).json({ success: false, message: 'First and last name are required' });
+      return;
+    }
+    const user = await authService.updateProfile(req.user!.id, firstName, lastName);
+    sendSuccess(res, user);
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function changeEmail(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const { email, currentPassword } = req.body as { email: string; currentPassword: string };
+    if (!email?.trim() || !currentPassword) {
+      res.status(400).json({ success: false, message: 'Email and current password are required' });
+      return;
+    }
+    const user = await authService.changeEmail(req.user!.id, email.trim().toLowerCase(), currentPassword);
+    sendSuccess(res, user);
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function changePassword(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const { currentPassword, newPassword } = req.body as { currentPassword: string; newPassword: string };
+    if (!currentPassword || !newPassword) {
+      res.status(400).json({ success: false, message: 'Current and new password are required' });
+      return;
+    }
+    if (newPassword.length < 8) {
+      res.status(400).json({ success: false, message: 'New password must be at least 8 characters' });
+      return;
+    }
+    await authService.changePassword(req.user!.id, currentPassword, newPassword);
+    sendSuccess(res, { message: 'Password changed successfully' });
+  } catch (err) {
+    next(err);
+  }
+}

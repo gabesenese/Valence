@@ -4,15 +4,16 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   ArrowLeft, Building2, MapPin, FileText, AlertTriangle,
   DollarSign, Layers, Pencil, X, Play, Check, RotateCcw, Sparkles,
+  PlusCircle, Edit3, Trash2, History,
 } from 'lucide-react';
-import { propertiesService, type PropertyDetail } from '@/services/properties.service';
+import { propertiesService, type PropertyDetail, type PropertyActivityEntry } from '@/services/properties.service';
 import { alertsService } from '@/services/alerts.service';
 import { Card, CardHeader, CardTitle, CardBody } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { PageLoader } from '@/components/ui/Spinner';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { formatCurrency, formatDate, daysUntil } from '@/utils/format';
+import { formatCurrency, formatDate, daysUntil, formatRelative } from '@/utils/format';
 import PropertyFormModal from './PropertyFormModal';
 import LeaseImportModal from '../leases/LeaseImportModal';
 import LeaseFormModal from '../leases/LeaseFormModal';
@@ -51,6 +52,12 @@ export default function PropertyDetailPage() {
     qc.invalidateQueries({ queryKey: ['properties', id, 'alerts'] });
     qc.invalidateQueries({ queryKey: ['properties', id] });
   };
+
+  const { data: activityData } = useQuery({
+    queryKey: ['properties', id, 'activity'],
+    queryFn: () => propertiesService.getActivity(id!),
+    enabled: !!id,
+  });
 
   const resolveMutation = useMutation({ mutationFn: (aid: string) => alertsService.resolve(aid), onSuccess: invalidateAlerts });
   const dismissMutation = useMutation({ mutationFn: (aid: string) => alertsService.dismiss(aid), onSuccess: invalidateAlerts });
@@ -284,6 +291,49 @@ export default function PropertyDetailPage() {
 
         </div>
       </div>
+
+      {/* Activity history */}
+      {activityData && activityData.length > 0 && (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <History className="h-4 w-4 text-brand-400" />
+              <CardTitle>Activity History</CardTitle>
+            </div>
+          </CardHeader>
+          <CardBody>
+            <ol className="relative border-l border-surface-400/40 ml-2 flex flex-col gap-0">
+              {activityData.map((entry: PropertyActivityEntry) => {
+                const Icon = entry.action === 'CREATE' ? PlusCircle : entry.action === 'DELETE' ? Trash2 : Edit3;
+                const dotColor = entry.action === 'CREATE' ? 'bg-success' : entry.action === 'DELETE' ? 'bg-danger' : 'bg-brand-400';
+                const actionLabel = entry.action === 'CREATE' ? 'Created' : entry.action === 'DELETE' ? 'Deleted' : 'Updated';
+                const changedKeys = entry.changes ? Object.keys(entry.changes).filter((k) => k !== 'updatedAt') : [];
+                return (
+                  <li key={entry.id} className="mb-5 ml-5">
+                    <span className={`absolute -left-[7px] mt-1 flex h-3.5 w-3.5 items-center justify-center rounded-full ${dotColor}`}>
+                      <Icon className="h-2 w-2 text-white" />
+                    </span>
+                    <div className="flex items-baseline gap-2 flex-wrap">
+                      <p className="text-sm font-medium text-slate-200">{actionLabel}</p>
+                      {entry.user && (
+                        <span className="text-xs text-slate-500">
+                          by {entry.user.firstName} {entry.user.lastName}
+                        </span>
+                      )}
+                      <span className="text-xs text-slate-600 ml-auto">{formatRelative(entry.createdAt)}</span>
+                    </div>
+                    {changedKeys.length > 0 && (
+                      <p className="mt-0.5 text-xs text-slate-600">
+                        Changed: {changedKeys.join(', ')}
+                      </p>
+                    )}
+                  </li>
+                );
+              })}
+            </ol>
+          </CardBody>
+        </Card>
+      )}
 
       <PropertyFormModal
         open={editOpen}

@@ -30,8 +30,27 @@ export interface InviteInfo {
   invitedBy: { firstName: string; lastName: string };
 }
 
+export interface ProfileUser {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  role: UserRole;
+  plan: string;
+  trialEndsAt: string | null;
+}
+
 export const usersService = {
   listUsers: () => api.get('/auth/users').then(extractData<TeamMember[]>),
+
+  updateProfile: (firstName: string, lastName: string) =>
+    api.patch('/auth/me', { firstName, lastName }).then(extractData<ProfileUser>),
+
+  changeEmail: (email: string, currentPassword: string) =>
+    api.patch('/auth/me/email', { email, currentPassword }).then(extractData<ProfileUser>),
+
+  changePassword: (currentPassword: string, newPassword: string) =>
+    api.patch('/auth/me/password', { currentPassword, newPassword }).then(extractData<{ message: string }>),
 
   updateRole: (id: string, role: UserRole) =>
     api.patch(`/auth/users/${id}/role`, { role }).then(extractData<TeamMember>),
