@@ -731,3 +731,53 @@ model Organization {
 
   @@map("organization")
 }
+
+model FeatureFlag {
+  id          String   @id @default(uuid())
+  key         String   @unique
+  name        String
+  description String?
+  enabled     Boolean  @default(false)
+  rules       Json     @default("[]")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("feature_flags")
+}
+
+model Announcement {
+  id        String   @id @default(uuid())
+  title     String
+  body      String
+  type      String   @default("INFO")
+  target    String   @default("ALL")
+  active    Boolean  @default(true)
+  startsAt  DateTime @default(now()) @map("starts_at")
+  endsAt    DateTime? @map("ends_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([active])
+  @@map("announcements")
+}
+
+model SystemConfig {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("system_config")
+}
+
+model ErrorLog {
+  id        String   @id @default(uuid())
+  method    String
+  path      String
+  status    Int
+  message   String
+  stack     String?
+  userId    String?  @map("user_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([createdAt])
+  @@map("error_logs")
+}

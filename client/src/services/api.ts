@@ -19,6 +19,12 @@ api.interceptors.response.use(
     const original = error.config;
     if (error.response?.status === 401 && !original._retry) {
       original._retry = true;
+      // If impersonating, exit gracefully instead of logging out
+      if (useAuthStore.getState().isImpersonating) {
+        useAuthStore.getState().stopImpersonation();
+        window.location.href = '/admin';
+        return Promise.reject(error);
+      }
       try {
         const refreshToken = useAuthStore.getState().refreshToken;
         if (!refreshToken) throw new Error('No refresh token');

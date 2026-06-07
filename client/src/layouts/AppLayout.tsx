@@ -5,6 +5,7 @@ import {
   LayoutDashboard, FileText, Building2, BarChart3, Bell, DollarSign,
   LogOut, ChevronLeft, Activity, Cpu, Users, Settings, Inbox, Layers,
   Wand2, ClipboardList, Heart, FolderOpen, Zap, Lock, Upload, ScrollText, Download,
+  UserX,
 } from 'lucide-react';
 import { cn } from '@/utils/cn';
 import { setOrgCurrency } from '@/utils/format';
@@ -77,12 +78,20 @@ const NAV_SECTIONS: NavSection[] = [
 ];
 
 export function AppLayout() {
-  const user = useAuthStore((s) => s.user);
-  const refreshToken = useAuthStore((s) => s.refreshToken);
-  const logout = useAuthStore((s) => s.logout);
+  const user              = useAuthStore((s) => s.user);
+  const refreshToken      = useAuthStore((s) => s.refreshToken);
+  const logout            = useAuthStore((s) => s.logout);
+  const isImpersonating   = useAuthStore((s) => s.isImpersonating);
+  const stopImpersonation = useAuthStore((s) => s.stopImpersonation);
+  const originalSession   = useAuthStore((s) => s.originalSession);
   const { sidebarCollapsed, toggleSidebar } = useUIStore();
   const navigate = useNavigate();
   const { canAccess, requiredPlan, label: planLabel } = usePlan();
+
+  function handleExitImpersonation() {
+    stopImpersonation();
+    navigate('/admin');
+  }
 
   const { data: org } = useQuery({
     queryKey: ['organization'],
@@ -254,6 +263,25 @@ export function AppLayout() {
           </div>
         </header>
 
+        {isImpersonating && (
+          <div className="flex items-center justify-between bg-amber-500/15 border-b border-amber-500/30 px-6 py-2">
+            <div className="flex items-center gap-2.5">
+              <UserX className="h-4 w-4 text-amber-400 shrink-0" />
+              <span className="text-xs font-medium text-amber-300">
+                Impersonating <span className="font-bold">{user?.firstName} {user?.lastName}</span> ({user?.email})
+              </span>
+              {originalSession && (
+                <span className="text-[11px] text-amber-500/70">— logged in as {originalSession.user.email}</span>
+              )}
+            </div>
+            <button
+              onClick={handleExitImpersonation}
+              className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-1 text-xs font-semibold text-amber-300 hover:bg-amber-500/20 transition-colors"
+            >
+              Exit impersonation
+            </button>
+          </div>
+        )}
         <EmailVerificationBanner />
         <TrialBanner />
 

@@ -2,6 +2,7 @@ import type { Request, Response, NextFunction } from 'express';
 import { AppError } from '../utils/errors';
 import { logger } from '../utils/logger';
 import { Sentry } from '../lib/sentry';
+import { prisma } from '../infrastructure/database';
 
 export function errorHandler(
   err: Error,
@@ -23,6 +24,12 @@ export function errorHandler(
 
   logger.error('Unhandled error', { error: err.message, stack: err.stack, path: req.path });
   Sentry.captureException(err);
+
+  prisma.errorLog.create({ data: {
+    method: req.method, path: req.path, status: 500, message: err.message,
+    stack: err.stack?.slice(0, 2000),
+    userId: (req as { user?: { id: string } }).user?.id ?? null,
+  } }).catch(() => {});
 
   res.status(500).json({
     success: false,

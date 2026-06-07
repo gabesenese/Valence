@@ -36,6 +36,7 @@ import { teamRouter } from './modules/team/team.routes';
 import { organizationRouter } from './modules/organization/organization.routes';
 import { exportRouter } from './modules/export/export.routes';
 import { adminRouter } from './modules/admin/admin.routes';
+import { announcementsRouter } from './modules/announcements/announcements.routes';
 import cron from 'node-cron';
 import { runAnomalyScan } from './modules/alerts/anomaly.service';
 import { runAllRules } from './modules/automation/automation.service';
@@ -53,7 +54,7 @@ app.use(cors({
   origin: env.CLIENT_URL,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-admin-secret'],
 }));
 
 // ─── Rate Limiting ────────────────────────────────────────────────────────────
@@ -106,6 +107,7 @@ app.use('/api/team', teamRouter);
 app.use('/api/organization', organizationRouter);
 app.use('/api/export', exportRouter);
 app.use('/api/admin', adminRouter);
+app.use('/api/announcements', announcementsRouter);
 
 // ─── Error Handling ───────────────────────────────────────────────────────────
 Sentry.setupExpressErrorHandler(app);
