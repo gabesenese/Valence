@@ -177,8 +177,9 @@ export async function setUserActive(targetUserId: string, isActive: boolean) {
 }
 
 export async function setPlan(targetUserId: string, plan: Plan, actorId?: string) {
-  const user = await prisma.user.update({ where: { id: targetUserId }, data: { plan }, select: { email: true } });
+  const user = await prisma.user.update({ where: { id: targetUserId }, data: { plan }, select: USER_SELECT });
   void logAudit({ userId: actorId, action: 'PLAN_CHANGE', entity: 'user', entityId: targetUserId, entityName: user.email, changes: { plan } });
+  return user;
 }
 
 export async function updateProfile(userId: string, firstName: string, lastName: string): Promise<AuthUser> {
