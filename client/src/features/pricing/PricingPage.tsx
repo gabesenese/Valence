@@ -308,7 +308,7 @@ export default function PricingPage() {
             Get started
             <ArrowRight className="h-4 w-4" />
           </button>
-          <p className="mt-3 text-xs text-slate-600">No credit card required · 14-day free trial</p>
+          <p className="mt-3 text-xs text-slate-600">No credit card required · 7-day free trial</p>
         </div>
       </div>
     </div>
