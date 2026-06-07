@@ -31,6 +31,7 @@ import { demoRouter } from './modules/demo/demo.routes';
 import { billingRouter } from './modules/billing/billing.routes';
 import { onboardingRouter } from './modules/onboarding/onboarding.routes';
 import { teamRouter } from './modules/team/team.routes';
+import { organizationRouter } from './modules/organization/organization.routes';
 import cron from 'node-cron';
 import { runAnomalyScan } from './modules/alerts/anomaly.service';
 import { runAllRules } from './modules/automation/automation.service';
@@ -98,6 +99,7 @@ app.use('/api/demo', demoRouter);
 app.use('/api/billing', billingRouter);
 app.use('/api/onboarding', onboardingRouter);
 app.use('/api/team', teamRouter);
+app.use('/api/organization', organizationRouter);
 
 // ─── Error Handling ───────────────────────────────────────────────────────────
 app.use(notFoundHandler);

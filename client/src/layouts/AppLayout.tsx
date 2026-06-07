@@ -62,8 +62,9 @@ const NAV_SECTIONS: NavSection[] = [
       { to: '/documents', icon: FolderOpen,  label: 'Documents', feature: 'documents' },
       { to: '/import',    icon: Upload,      label: 'Import Data'                      },
       { to: '/audit',     icon: ScrollText,  label: 'Audit Log'                        },
-      { to: '/team',      icon: Users,       label: 'Team',      feature: 'team'       },
-      { to: '/settings',  icon: Settings,    label: 'Settings'                         },
+      { to: '/organization', icon: Building2,  label: 'Organization'                     },
+      { to: '/team',         icon: Users,    label: 'Team',      feature: 'team'       },
+      { to: '/settings',     icon: Settings, label: 'Settings'                         },
     ],
   },
 ];
