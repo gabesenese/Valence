@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -118,6 +119,8 @@ function UserActions({
 }) {
   const [open, setOpen] = useState(false);
   const [confirm, setConfirm] = useState<'delete' | null>(null);
+  const [pos, setPos] = useState({ top: 0, right: 0 });
+  const btnRef = useRef<HTMLButtonElement>(null);
   const qc = useQueryClient();
 
   const invalidate = () => { qc.invalidateQueries({ queryKey: ['admin'] }); onDone(); };
@@ -127,6 +130,14 @@ function UserActions({
   const activeMut = useMutation({ mutationFn: (v: boolean)  => adminService.setActive(secret, user.id, v),        onSuccess: invalidate });
   const resetMut  = useMutation({ mutationFn: () => adminService.sendPasswordReset(secret, user.id), onSuccess: () => setOpen(false) });
   const deleteMut = useMutation({ mutationFn: () => adminService.deleteUser(secret, user.id), onSuccess: invalidate });
+
+  function handleOpen() {
+    if (btnRef.current) {
+      const r = btnRef.current.getBoundingClientRect();
+      setPos({ top: r.bottom + 4, right: window.innerWidth - r.right });
+    }
+    setOpen(true);
+  }
 
   if (confirm === 'delete') {
     return (
@@ -145,18 +156,22 @@ function UserActions({
   }
 
   return (
-    <div className="relative">
+    <div>
       <button
-        onClick={() => setOpen(!open)}
+        ref={btnRef}
+        onClick={handleOpen}
         className="flex h-7 w-7 items-center justify-center rounded-md hover:bg-surface-300 text-slate-500 hover:text-slate-300 transition-colors"
       >
         <MoreHorizontal className="h-4 w-4" />
       </button>
 
-      {open && (
+      {open && createPortal(
         <>
-          <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 z-20 mt-1 w-52 rounded-xl border border-surface-400/60 bg-surface-200 shadow-card overflow-hidden">
+          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+          <div
+            className="fixed z-50 w-52 rounded-xl border border-surface-400/60 bg-surface-200 shadow-card overflow-hidden"
+            style={{ top: pos.top, right: pos.right }}
+          >
             {/* Plan */}
             <div className="px-3 py-1.5 border-b border-surface-400/30">
               <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-600">Plan</p>
@@ -223,7 +238,8 @@ function UserActions({
               </button>
             </div>
           </div>
-        </>
+        </>,
+        document.body,
       )}
     </div>
   );
