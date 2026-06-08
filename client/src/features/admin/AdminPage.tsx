@@ -90,7 +90,7 @@ function SecretGate({ onUnlock }: { onUnlock: (s: string) => void }) {
               disabled={loading || !value.trim()}
               className="h-10 w-full rounded-lg bg-brand-600 text-sm font-semibold text-white shadow-glow-brand hover:bg-brand-500 disabled:opacity-40 transition-colors flex items-center justify-center gap-2"
             >
-              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Lock className="h-4 w-4" />}
+              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Shield className="h-4 w-4" />}
               {loading ? 'Verifying…' : 'Enter Admin Panel'}
             </button>
           </form>
