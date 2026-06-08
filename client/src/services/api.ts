@@ -2,7 +2,7 @@ import axios, { type AxiosInstance, type InternalAxiosRequestConfig } from 'axio
 import { useAuthStore } from '@/state/auth.store';
 
 export const api: AxiosInstance = axios.create({
-  baseURL: '/api',
+  baseURL: import.meta.env.VITE_API_URL ?? '/api',
   headers: { 'Content-Type': 'application/json' },
   timeout: 15000,
 });
