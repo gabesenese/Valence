@@ -42,8 +42,15 @@ export const app = express();
 
 // ─── Security ─────────────────────────────────────────────────────────────────
 app.use(helmet());
+const allowedOrigins = new Set([
+  env.CLIENT_URL,
+  env.CLIENT_URL.replace('https://www.', 'https://'),
+  env.CLIENT_URL.replace('https://', 'https://www.'),
+  'http://localhost:5173',
+]);
+
 app.use(cors({
-  origin: env.CLIENT_URL,
+  origin: (origin, cb) => cb(null, !origin || allowedOrigins.has(origin)),
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'x-admin-secret'],
