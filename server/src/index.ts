@@ -1,131 +1,24 @@
-import './config/env';
-import './lib/sentry';
-import express from 'express';
-import helmet from 'helmet';
-import cors from 'cors';
-import compression from 'compression';
-import morgan from 'morgan';
-import rateLimit from 'express-rate-limit';
-import cookieParser from 'cookie-parser';
-
-import { env } from './config/env';
-import { logger } from './utils/logger';
+import { app } from './app';
 import { connectDatabase, disconnectDatabase } from './infrastructure/database';
-import { errorHandler, notFoundHandler } from './middleware/errorHandler';
-import { Sentry } from './lib/sentry';
-
-import { authRouter } from './modules/auth/auth.routes';
-import { propertiesRouter } from './modules/properties/properties.routes';
-import { leasesRouter } from './modules/leases/leases.routes';
-import { financeRouter } from './modules/finance/finance.routes';
-import { analyticsRouter } from './modules/analytics/analytics.routes';
-import { alertsRouter } from './modules/alerts/alerts.routes';
-import { aiRouter } from './modules/ai/ai.routes';
-import { tenantsRouter } from './modules/tenants/tenants.routes';
-import { workQueueRouter } from './modules/workQueue/work-queue.routes';
-import { tasksRouter } from './modules/tasks/tasks.routes';
-import { crmRouter } from './modules/crm/crm.routes';
-import { documentsRouter } from './modules/documents/documents.routes';
-import { automationRouter } from './modules/automation/automation.routes';
-import { importRouter } from './modules/import/import.routes';
-import { auditRouter } from './modules/audit/audit.routes';
-import { demoRouter } from './modules/demo/demo.routes';
-import { billingRouter } from './modules/billing/billing.routes';
-import { onboardingRouter } from './modules/onboarding/onboarding.routes';
-import { teamRouter } from './modules/team/team.routes';
-import { organizationRouter } from './modules/organization/organization.routes';
-import { exportRouter } from './modules/export/export.routes';
-import { adminRouter } from './modules/admin/admin.routes';
-import { announcementsRouter } from './modules/announcements/announcements.routes';
-import { eventsRouter } from './modules/events/events.routes';
-import cron from 'node-cron';
+import { logger } from './utils/logger';
 import { runAnomalyScan } from './modules/alerts/anomaly.service';
 import { runAllRules } from './modules/automation/automation.service';
 import { cleanupDemoAccounts } from './modules/auth/auth.service';
+import { env } from './config/env';
+import cron from 'node-cron';
 import { mkdirSync } from 'fs';
 import path from 'path';
 
-// Ensure upload directory exists
-mkdirSync(path.resolve('uploads/documents'), { recursive: true });
-
-const app = express();
-
-// ─── Security ─────────────────────────────────────────────────────────────────
-app.use(helmet());
-app.use(cors({
-  origin: env.CLIENT_URL,
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'x-admin-secret'],
-}));
-
-// ─── Rate Limiting ────────────────────────────────────────────────────────────
-app.use(rateLimit({
-  windowMs: env.RATE_LIMIT_WINDOW_MS,
-  max: env.RATE_LIMIT_MAX_REQUESTS,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { success: false, message: 'Too many requests' },
-}));
-
-// ─── Parsing + Compression ────────────────────────────────────────────────────
-app.use(compression());
-// Stripe webhook needs raw body — must be registered before express.json()
-app.use('/api/billing/webhook', express.raw({ type: 'application/json' }));
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true }));
-app.use(cookieParser());
-
-// ─── Logging ──────────────────────────────────────────────────────────────────
-app.use(morgan(env.NODE_ENV === 'production' ? 'combined' : 'dev', {
-  stream: { write: (msg) => logger.http(msg.trim()) },
-}));
-
-// ─── Health Check ─────────────────────────────────────────────────────────────
-app.get('/health', (_req, res) => {
-  res.json({ status: 'ok', version: '0.1.0', timestamp: new Date().toISOString() });
-});
-
-// ─── API Routes ───────────────────────────────────────────────────────────────
-app.use('/api/auth', authRouter);
-app.use('/api/properties', propertiesRouter);
-app.use('/api/leases', leasesRouter);
-app.use('/api/finance', financeRouter);
-app.use('/api/analytics', analyticsRouter);
-app.use('/api/alerts', alertsRouter);
-app.use('/api/ai', aiRouter);
-app.use('/api/tenants', tenantsRouter);
-app.use('/api/work-queue', workQueueRouter);
-app.use('/api/tasks', tasksRouter);
-app.use('/api/crm', crmRouter);
-app.use('/api/documents', documentsRouter);
-app.use('/api/automation', automationRouter);
-app.use('/api/import', importRouter);
-app.use('/api/audit', auditRouter);
-app.use('/api/demo', demoRouter);
-app.use('/api/billing', billingRouter);
-app.use('/api/onboarding', onboardingRouter);
-app.use('/api/team', teamRouter);
-app.use('/api/organization', organizationRouter);
-app.use('/api/export', exportRouter);
-app.use('/api/admin', adminRouter);
-app.use('/api/announcements', announcementsRouter);
-app.use('/api/events', eventsRouter);
-
-// ─── Error Handling ───────────────────────────────────────────────────────────
-Sentry.setupExpressErrorHandler(app);
-app.use(notFoundHandler);
-app.use(errorHandler);
-
-// ─── Startup ──────────────────────────────────────────────────────────────────
 async function start() {
   await connectDatabase();
+
+  // Ensure upload directory exists (local dev only)
+  try { mkdirSync(path.resolve('uploads/documents'), { recursive: true }); } catch {}
 
   const server = app.listen(env.PORT, () => {
     logger.info(`Valence API running on port ${env.PORT} [${env.NODE_ENV}]`);
   });
 
-  // Anomaly scan — runs every 6 hours; job lock prevents concurrent execution
   const scan = () =>
     runAnomalyScan()
       .then(({ total, breakdown }) => {
@@ -134,16 +27,14 @@ async function start() {
       .catch((err) => logger.warn('Anomaly scan failed', { error: err }));
 
   cron.schedule('0 */6 * * *', scan);
-  scan(); // run once at startup
+  scan();
 
-  // Demo account cleanup — runs every hour, deletes accounts > 2h old
   cron.schedule('0 * * * *', () => {
     cleanupDemoAccounts()
       .then((n) => { if (n > 0) logger.info(`Demo cleanup: removed ${n} expired demo accounts`); })
       .catch((err) => logger.warn('Demo cleanup failed', { error: err }));
   });
 
-  // Automation rules — runs every hour
   const automate = () =>
     runAllRules()
       .then(({ total, tasksCreated }) => {
@@ -153,7 +44,7 @@ async function start() {
       .catch((err) => logger.warn('Automation run failed', { error: err }));
 
   cron.schedule('0 * * * *', automate);
-  automate(); // run once at startup
+  automate();
 
   const shutdown = async (signal: string) => {
     logger.info(`${signal} received, shutting down gracefully`);
