@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  Shield, Lock, RefreshCw, BarChart2, Users, Activity, Flag, Cpu,
+  Shield, LogOut, RefreshCw, BarChart2, Users, Activity, Flag, Cpu,
   Eye, EyeOff, Loader2, TrendingUp, CheckCircle2,
 } from 'lucide-react';
 import { adminService } from '@/services/admin.service';
@@ -104,6 +104,7 @@ function SecretGate({ onUnlock }: { onUnlock: (s: string) => void }) {
 
 export default function AdminPage() {
   const user     = useAuthStore((s) => s.user);
+  const logout   = useAuthStore((s) => s.logout);
   const navigate = useNavigate();
   const qc       = useQueryClient();
 
@@ -130,11 +131,6 @@ export default function AdminPage() {
     staleTime: 60_000,
   });
 
-  function lock() {
-    sessionStorage.removeItem(SECRET_KEY);
-    setSecret(null);
-  }
-
   if (!secret) return <SecretGate onUnlock={setSecret} />;
 
   return (
@@ -155,10 +151,10 @@ export default function AdminPage() {
               <RefreshCw className="h-3.5 w-3.5" /> Refresh
             </button>
             <button
-              onClick={lock}
+              onClick={() => { logout(); navigate('/auth/login', { replace: true }); }}
               className="flex items-center gap-1.5 rounded-lg border border-surface-400/40 bg-surface-200 px-3 py-1.5 text-xs text-slate-400 hover:text-danger transition-colors"
             >
-              <Lock className="h-3.5 w-3.5" /> Lock
+              <LogOut className="h-3.5 w-3.5" /> Logout
             </button>
           </div>
         </div>
