@@ -124,13 +124,17 @@ async function gatherContext() {
 
 // ─── OpenAI call ──────────────────────────────────────────────────────────────
 
-const client = new Groq({ apiKey: process.env.GROQ_API_KEY });
+let _client: Groq | null = null;
+function getClient() {
+  if (!_client) _client = new Groq({ apiKey: process.env.GROQ_API_KEY });
+  return _client;
+}
 
 export async function generateExecutiveBrief(): Promise<ExecutiveBrief> {
   const ctx = await gatherContext();
   const contextBlock = JSON.stringify(ctx, null, 2);
 
-  const response = await client.chat.completions.create({
+  const response = await getClient().chat.completions.create({
     model: 'llama-3.3-70b-versatile',
     messages: [{
       role: 'user',

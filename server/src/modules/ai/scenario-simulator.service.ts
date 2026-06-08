@@ -152,7 +152,11 @@ function calcRentIncrease(params: RentIncreaseParams, state: Awaited<ReturnType<
 
 // ─── Groq analysis ────────────────────────────────────────────────────────────
 
-const client = new Groq({ apiKey: process.env.GROQ_API_KEY });
+let _client: Groq | null = null;
+function getClient() {
+  if (!_client) _client = new Groq({ apiKey: process.env.GROQ_API_KEY });
+  return _client;
+}
 
 const SCENARIO_LABELS: Record<ScenarioType, string> = {
   occupancy_drop:    'Occupancy Drop',
@@ -194,7 +198,7 @@ Financial Impact:
 
 Provide a concise, expert analysis of this scenario. Be specific about dollar figures and percentages. Focus on what the operator should actually do.`;
 
-  const response = await client.chat.completions.create({
+  const response = await getClient().chat.completions.create({
     model: 'llama-3.3-70b-versatile',
     messages: [{ role: 'user', content: prompt }],
     tools: [{
