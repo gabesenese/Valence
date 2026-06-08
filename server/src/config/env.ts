@@ -24,7 +24,7 @@ const envSchema = z.object({
   RATE_LIMIT_WINDOW_MS: z.coerce.number().default(900000),
   RATE_LIMIT_MAX_REQUESTS: z.coerce.number().default(100),
   RESEND_API_KEY: z.string().optional(),
-  FROM_EMAIL: z.string().email().default('noreply@valence.app'),
+  FROM_EMAIL: z.string().email().default('noreply@valenceos.ca'),
   APP_URL: z.string().url().default('http://localhost:5173'),
   PLATFORM_ADMIN_SECRET: z.string().optional(),
   OWNER_EMAIL: z.string().email().optional(),
