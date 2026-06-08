@@ -27,7 +27,7 @@ export async function trackEvent(
 ): Promise<void> {
   try {
     await prisma.funnelEvent.create({
-      data: { event, userId: userId ?? null, meta: meta ?? {} },
+      data: { event, userId: userId ?? null, meta: (meta ?? {}) as object },
     });
   } catch { /* non-blocking — never let tracking fail a real request */ }
 }
