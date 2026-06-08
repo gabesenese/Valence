@@ -83,7 +83,7 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'valence-auth',
-      storage: createJSONStorage(() => sessionStorage),
+      storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
         user: state.user,
         accessToken: state.accessToken,
