@@ -24,11 +24,11 @@ export default defineConfig({
     sourcemap: true,
     rollupOptions: {
       output: {
-        manualChunks: {
-          vendor: ['react', 'react-dom', 'react-router-dom'],
-          query: ['@tanstack/react-query'],
-          charts: ['recharts'],
-          state: ['zustand'],
+        manualChunks: (id) => {
+          if (id.includes('react') || id.includes('react-dom') || id.includes('react-router-dom')) return 'vendor';
+          if (id.includes('@tanstack/react-query')) return 'query';
+          if (id.includes('recharts')) return 'charts';
+          if (id.includes('zustand')) return 'state';
         },
       },
     },
