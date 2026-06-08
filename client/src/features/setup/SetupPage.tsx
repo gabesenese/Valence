@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
   Building2, Users, FileText, CheckCircle2, Circle,
-  ArrowRight, Activity, ChevronRight, Zap, Database, Loader2,
+  ArrowRight, ChevronRight, Zap, Database, Loader2,
 } from 'lucide-react';
 import { useAuthStore } from '@/state/auth.store';
 import { propertiesService } from '@/services/properties.service';
@@ -120,9 +120,7 @@ export default function SetupPage() {
     <div className="min-h-screen bg-surface-0 flex flex-col items-center px-4 py-16 animate-fade-in">
       {/* Logo */}
       <div className="flex items-center gap-2.5 mb-12">
-        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-600 shadow-glow-brand">
-          <Activity className="h-5 w-5 text-white" />
-        </div>
+        <img src="/logo.svg" alt="Valence" className="h-10 w-6" />
         <span className="text-lg font-bold text-white tracking-tight">Valence</span>
       </div>
 

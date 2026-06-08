@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { Activity, Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { useAuthStore } from '@/state/auth.store';
 import { authService } from '@/services/auth.service';
 import { Button } from '@/components/ui/Button';
@@ -72,9 +72,7 @@ export default function LoginPage() {
       <div className="relative w-full max-w-sm animate-slide-up px-4">
         {/* Logo */}
         <div className="mb-8 flex flex-col items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-600 shadow-glow-brand">
-            <Activity className="h-6 w-6 text-white" />
-          </div>
+          <img src="/logo.svg" alt="Valence" className="h-16 w-10" />
           <div className="text-center">
             <h1 className="text-xl font-bold text-white tracking-tight">Valence</h1>
             <p className="mt-0.5 text-xs text-slate-500">Operational Intelligence Platform</p>

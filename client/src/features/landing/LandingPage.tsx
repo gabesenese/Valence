@@ -204,9 +204,7 @@ export default function LandingPage() {
       <header className="relative z-10 border-b border-surface-400/20 bg-surface-0/80 backdrop-blur-sm">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
           <div className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-brand-600 shadow-glow-brand">
-              <Activity className="h-4 w-4 text-white" />
-            </div>
+            <img src="/logo.svg" alt="Valence" className="h-9 w-6" />
             <span className="text-sm font-bold tracking-tight text-white">Valence</span>
           </div>
 
@@ -217,9 +215,9 @@ export default function LandingPage() {
 
           <Link
             to="/auth/register"
-            className="inline-flex items-center gap-1.5 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white shadow-glow-brand hover:bg-brand-500 transition-colors"
+            className="text-sm font-medium text-slate-300 hover:text-white transition-colors"
           >
-            Start Free Trial <ArrowRight className="h-3.5 w-3.5" />
+            Get started
           </Link>
         </div>
       </header>

@@ -3,7 +3,7 @@ import { Outlet, NavLink, Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
   LayoutDashboard, FileText, Building2, BarChart3, Bell, DollarSign,
-  LogOut, ChevronLeft, Activity, Cpu, Users, Settings, Inbox, Layers,
+  LogOut, ChevronLeft, Cpu, Users, Settings, Inbox, Layers,
   Wand2, ClipboardList, Heart, FolderOpen, Zap, Lock, Upload, ScrollText, Download,
   UserX, Sparkles,
 } from 'lucide-react';
@@ -123,9 +123,7 @@ export function AppLayout() {
         {/* Logo */}
         <div className={cn('flex h-14 items-center border-b border-surface-400/40 px-4', sidebarCollapsed && 'justify-center px-0')}>
           <div className="flex items-center gap-2.5">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand-600 shadow-glow-brand shrink-0">
-              <Activity className="h-4 w-4 text-white" />
-            </div>
+            <img src="/logo.svg" alt="Valence" className="h-8 w-5 shrink-0" />
             {!sidebarCollapsed && (
               <span className="text-sm font-bold tracking-tight text-white">Valence</span>
             )}

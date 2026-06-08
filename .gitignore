@@ -75,6 +75,7 @@ coverage/
 
 # Local debug / exploration artifacts
 screenshots/
+imgs/
 *.mjs.bak
 claude_email.txt
 TODO.md
@@ -82,3 +83,6 @@ bugs.md
 
 # Image Files
 *.png
+*.svg
+!client/public/*.svg
+
