@@ -5,7 +5,7 @@ import {
   User, Mail, Shield, Bell, Moon, ArrowRight, Zap, CreditCard,
   Trash2, Loader2, Lock, CheckCircle2, Eye, EyeOff,
   Smartphone, Monitor, X, HelpCircle, Bug, Lightbulb, BookOpen,
-  MessageSquare, Paperclip, Send, ExternalLink,
+  MessageSquare, Paperclip, Send,
 } from 'lucide-react';
 import { cn } from '@/utils/cn';
 import { useAuthStore } from '@/state/auth.store';
@@ -796,13 +796,11 @@ export default function SettingsPage() {
               </button>
             ))}
             <a
-              href="https://valenceos.ca/docs"
-              target="_blank"
-              rel="noopener noreferrer"
+              href="mailto:support@valenceos.ca"
               className="flex flex-col items-center gap-2 rounded-xl border border-surface-400/30 bg-surface-200/40 px-3 py-3 text-center transition-colors hover:bg-surface-200/70"
             >
               <BookOpen className="h-4 w-4 text-slate-400" />
-              <span className="flex items-center gap-1 text-[11px] font-medium text-slate-300">Docs <ExternalLink className="h-2.5 w-2.5" /></span>
+              <span className="text-[11px] font-medium text-slate-300">Email Us</span>
             </a>
           </div>
 
