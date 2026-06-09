@@ -28,6 +28,10 @@ export interface ExtractedLease {
 }
 
 export async function extractLeaseFromPDF(pdfBuffer: Buffer): Promise<ExtractedLease> {
+  if (!process.env.GROQ_API_KEY) {
+    throw new Error('AI extraction is not configured on this server.');
+  }
+
   const { text } = await pdfParse(pdfBuffer);
 
   const response = await groq().chat.completions.create({

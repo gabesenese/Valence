@@ -130,15 +130,81 @@ function getClient() {
   return _client;
 }
 
+function buildFallbackBrief(ctx: Awaited<ReturnType<typeof gatherContext>>): ExecutiveBrief {
+  const { portfolioSummary, expiringLeases, criticalAlerts, flaggedFinancials, financialMetrics } = ctx;
+
+  const health: ExecutiveBrief['portfolioHealth'] =
+    portfolioSummary.criticalAlertsOpen >= 3 ? 'critical' :
+    portfolioSummary.criticalAlertsOpen >= 1 || expiringLeases.some(l => l.daysRemaining <= 30) ? 'at_risk' :
+    expiringLeases.length > 0 || portfolioSummary.flaggedFinancialCount > 0 ? 'stable' : 'healthy';
+
+  const urgentLeases = expiringLeases.filter(l => l.daysRemaining <= 30);
+  const headline = urgentLeases.length > 0
+    ? `${urgentLeases.length} lease${urgentLeases.length > 1 ? 's' : ''} expiring within 30 days — $${urgentLeases.reduce((s, l) => s + l.monthlyRent, 0).toLocaleString()}/mo at risk`
+    : portfolioSummary.criticalAlertsOpen > 0
+      ? `${portfolioSummary.criticalAlertsOpen} critical alert${portfolioSummary.criticalAlertsOpen > 1 ? 's' : ''} require immediate attention`
+      : `Portfolio at ${portfolioSummary.occupancyRate}% occupancy — $${portfolioSummary.totalMonthlyRevenue.toLocaleString()}/mo revenue`;
+
+  const revenueRisk: RiskItem[] = [
+    ...expiringLeases.slice(0, 3).map(l => ({
+      title:         `Lease expiring: ${l.tenantName}`,
+      description:   `${l.daysRemaining} days remaining — $${l.monthlyRent.toLocaleString()}/mo`,
+      severity:      (l.daysRemaining <= 30 ? 'critical' : l.daysRemaining <= 60 ? 'high' : 'medium') as RiskItem['severity'],
+      monthlyRevenue: l.monthlyRent,
+      leaseNumber:   l.leaseNumber,
+      tenantName:    l.tenantName,
+      daysRemaining: l.daysRemaining,
+    })),
+    ...flaggedFinancials.slice(0, 2).map(f => ({
+      title:       `Flagged payment: ${f.tenantName}`,
+      description: `$${f.amount.toLocaleString()} — ${f.status.toLowerCase()}`,
+      severity:    'high' as RiskItem['severity'],
+      leaseNumber: f.leaseNumber,
+      tenantName:  f.tenantName,
+    })),
+  ];
+
+  const actions: ActionItem[] = [
+    ...urgentLeases.slice(0, 3).map(l => ({
+      action:      `Contact ${l.tenantName} to start renewal`,
+      context:     `Lease ${l.leaseNumber} expires in ${l.daysRemaining} days — $${l.monthlyRent.toLocaleString()}/mo`,
+      urgency:     (l.daysRemaining <= 30 ? 'immediate' : 'this_week') as ActionItem['urgency'],
+      category:    'start_renewal' as ActionItem['category'],
+      entityName:  l.tenantName,
+      leaseNumber: l.leaseNumber,
+    })),
+    ...criticalAlerts.slice(0, 2).map(a => ({
+      action:     `Investigate: ${a.title}`,
+      context:    a.leaseRef ?? a.propertyName ?? '',
+      urgency:    'immediate' as ActionItem['urgency'],
+      category:   'investigate' as ActionItem['category'],
+      entityName: a.leaseRef ?? a.propertyName ?? undefined,
+    })),
+  ];
+
+  return {
+    portfolioHealth: health,
+    headline,
+    summary: `Portfolio has ${portfolioSummary.totalActiveLeases} active leases at ${portfolioSummary.occupancyRate}% occupancy generating $${portfolioSummary.totalMonthlyRevenue.toLocaleString()}/mo. ${financialMetrics.revenueAtRiskIn30Days > 0 ? `$${financialMetrics.revenueAtRiskIn30Days.toLocaleString()}/mo at risk from leases expiring in 30 days.` : ''}`,
+    revenueRisk,
+    actions,
+    generatedAt: new Date().toISOString(),
+  };
+}
+
 export async function generateExecutiveBrief(): Promise<ExecutiveBrief> {
   const ctx = await gatherContext();
+
+  if (!process.env.GROQ_API_KEY) return buildFallbackBrief(ctx);
+
   const contextBlock = JSON.stringify(ctx, null, 2);
 
-  const response = await getClient().chat.completions.create({
-    model: 'llama-3.3-70b-versatile',
-    messages: [{
-      role: 'user',
-      content: `You are an executive intelligence assistant for Valence, a commercial real estate portfolio management platform.
+  try {
+    const response = await getClient().chat.completions.create({
+      model: 'llama-3.3-70b-versatile',
+      messages: [{
+        role: 'user',
+        content: `You are an executive intelligence assistant for Valence, a commercial real estate portfolio management platform.
 
 Analyze this real-time portfolio snapshot and generate an executive brief. Be specific — use real tenant names, lease numbers, and dollar figures from the data. Every recommendation must be actionable and tied to real data.
 
@@ -156,93 +222,82 @@ Rules:
 - portfolioHealth must be one of: critical, at_risk, stable, healthy
 - urgency must be one of: immediate, this_week, this_month
 - category must be one of: contact_tenant, start_renewal, send_document, financial_review, investigate`,
-    }],
-    tools: [{
-      type: 'function',
-      function: {
-        name: 'generate_executive_brief',
-        description: 'Generate a structured executive intelligence brief for a commercial real estate portfolio.',
-        parameters: {
-          type: 'object',
-          required: ['portfolioHealth', 'headline', 'summary', 'revenueRisk', 'actions'],
-          properties: {
-            portfolioHealth: {
-              type: 'string',
-              description: 'Overall portfolio health: critical, at_risk, stable, or healthy',
-            },
-            headline: {
-              type: 'string',
-              description: 'One powerful sentence with a specific dollar amount and the single most urgent action.',
-            },
-            summary: {
-              type: 'string',
-              description: 'Two to three sentences. Mention specific tenants, revenue figures, and the single most important thing to know today.',
-            },
-            revenueRisk: {
-              type: 'array',
-              description: 'Top 3-5 revenue risk items ordered by severity and dollar impact.',
-              items: {
-                type: 'object',
-                properties: {
-                  title:         { type: 'string' },
-                  description:   { type: 'string' },
-                  severity:      { type: 'string' },
-                  monthlyRevenue:{ type: 'number' },
-                  leaseNumber:   { type: 'string' },
-                  tenantName:    { type: 'string' },
-                  daysRemaining: { type: 'number' },
+      }],
+      tools: [{
+        type: 'function',
+        function: {
+          name: 'generate_executive_brief',
+          description: 'Generate a structured executive intelligence brief for a commercial real estate portfolio.',
+          parameters: {
+            type: 'object',
+            required: ['portfolioHealth', 'headline', 'summary', 'revenueRisk', 'actions'],
+            properties: {
+              portfolioHealth: { type: 'string' },
+              headline:        { type: 'string' },
+              summary:         { type: 'string' },
+              revenueRisk: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    title:          { type: 'string' },
+                    description:    { type: 'string' },
+                    severity:       { type: 'string' },
+                    monthlyRevenue: { type: 'number' },
+                    leaseNumber:    { type: 'string' },
+                    tenantName:     { type: 'string' },
+                    daysRemaining:  { type: 'number' },
+                  },
                 },
               },
-            },
-            actions: {
-              type: 'array',
-              description: 'Three to six recommended actions ordered by urgency.',
-              items: {
-                type: 'object',
-                properties: {
-                  action:      { type: 'string' },
-                  context:     { type: 'string' },
-                  urgency:     { type: 'string' },
-                  category:    { type: 'string' },
-                  entityName:  { type: 'string' },
-                  leaseNumber: { type: 'string' },
+              actions: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    action:      { type: 'string' },
+                    context:     { type: 'string' },
+                    urgency:     { type: 'string' },
+                    category:    { type: 'string' },
+                    entityName:  { type: 'string' },
+                    leaseNumber: { type: 'string' },
+                  },
                 },
               },
             },
           },
         },
-      },
-    }],
-    tool_choice: { type: 'function', function: { name: 'generate_executive_brief' } },
-  });
+      }],
+      tool_choice: { type: 'function', function: { name: 'generate_executive_brief' } },
+    });
 
-  const toolCall = response.choices[0]?.message?.tool_calls?.[0];
-  if (!toolCall || toolCall.type !== 'function') {
-    throw new Error('Executive brief generation failed');
+    const toolCall = response.choices[0]?.message?.tool_calls?.[0];
+    if (!toolCall || toolCall.type !== 'function') return buildFallbackBrief(ctx);
+
+    const r = JSON.parse(toolCall.function.arguments) as Omit<ExecutiveBrief, 'generatedAt'>;
+
+    const validHealth   = new Set(['critical', 'at_risk', 'stable', 'healthy']);
+    const validSeverity = new Set(['critical', 'high', 'medium']);
+    const validUrgency  = new Set(['immediate', 'this_week', 'this_month']);
+    const validCategory = new Set(['contact_tenant', 'start_renewal', 'send_document', 'financial_review', 'investigate']);
+    const normalize     = (val: string, valid: Set<string>, fallback: string) =>
+      valid.has(val?.toLowerCase()) ? val.toLowerCase() : fallback;
+
+    return {
+      ...r,
+      portfolioHealth: normalize(r.portfolioHealth, validHealth, 'stable') as ExecutiveBrief['portfolioHealth'],
+      revenueRisk: (r.revenueRisk ?? []).map(item => ({
+        ...item,
+        severity: normalize(item.severity, validSeverity, 'medium') as RiskItem['severity'],
+      })),
+      actions: (r.actions ?? []).map(item => ({
+        ...item,
+        urgency:  normalize(item.urgency,  validUrgency,   'this_month') as ActionItem['urgency'],
+        category: normalize(item.category, validCategory,  'investigate') as ActionItem['category'],
+      })),
+      generatedAt: new Date().toISOString(),
+    };
+  } catch {
+    return buildFallbackBrief(ctx);
   }
-
-  const r = JSON.parse(toolCall.function.arguments) as Omit<ExecutiveBrief, 'generatedAt'>;
-
-  const validHealth = new Set(['critical', 'at_risk', 'stable', 'healthy']);
-  const validSeverity = new Set(['critical', 'high', 'medium']);
-  const validUrgency = new Set(['immediate', 'this_week', 'this_month']);
-  const validCategory = new Set(['contact_tenant', 'start_renewal', 'send_document', 'financial_review', 'investigate']);
-
-  const normalize = (val: string, valid: Set<string>, fallback: string) =>
-    valid.has(val?.toLowerCase()) ? val.toLowerCase() : fallback;
-
-  return {
-    ...r,
-    portfolioHealth: normalize(r.portfolioHealth, validHealth, 'stable') as ExecutiveBrief['portfolioHealth'],
-    revenueRisk: (r.revenueRisk ?? []).map(item => ({
-      ...item,
-      severity: normalize(item.severity, validSeverity, 'medium') as RiskItem['severity'],
-    })),
-    actions: (r.actions ?? []).map(item => ({
-      ...item,
-      urgency:  normalize(item.urgency,  validUrgency,   'this_month') as ActionItem['urgency'],
-      category: normalize(item.category, validCategory,  'investigate') as ActionItem['category'],
-    })),
-    generatedAt: new Date().toISOString(),
-  };
 }
