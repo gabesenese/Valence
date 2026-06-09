@@ -86,3 +86,5 @@ bugs.md
 *.svg
 !client/public/*.svg
 
+## Notes
+*.txt

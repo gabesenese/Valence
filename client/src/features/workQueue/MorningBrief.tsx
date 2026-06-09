@@ -2,9 +2,17 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { X, AlertTriangle, FileText, DollarSign, ChevronRight, Sparkles } from 'lucide-react';
 import { workQueueService, type WorkItem } from '@/services/workQueue.service';
+import { useAuthStore } from '@/state/auth.store';
 import { cn } from '@/utils/cn';
 
 const DISMISS_KEY = 'valence-brief-dismissed';
+
+function getTimeOfDay(): { label: string; greeting: string } {
+  const hour = new Date().getHours();
+  if (hour < 12) return { label: 'Morning Brief', greeting: 'Good morning' };
+  if (hour < 17) return { label: 'Afternoon Brief', greeting: 'Good afternoon' };
+  return { label: 'Evening Brief', greeting: 'Good evening' };
+}
 
 function wasDismissedToday(): boolean {
   try {
@@ -42,6 +50,8 @@ function TopItem({ item }: { item: WorkItem }) {
 
 export function MorningBrief() {
   const [dismissed, setDismissed] = useState(wasDismissedToday);
+  const user = useAuthStore((s) => s.user);
+  const { label, greeting } = getTimeOfDay();
 
   const { data, isLoading } = useQuery({
     queryKey: ['morning-brief'],
@@ -66,9 +76,9 @@ export function MorningBrief() {
         <div>
           <div className="flex items-center gap-2 mb-1">
             <Sparkles className="h-3.5 w-3.5 text-brand-400" />
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-brand-400">Morning Brief</span>
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-brand-400">{label}</span>
           </div>
-          <p className="text-base font-semibold text-white">{data.greeting}.</p>
+          <p className="text-base font-semibold text-white">{greeting}, {user?.firstName}.</p>
           <p className="mt-0.5 text-sm text-slate-400">{data.headline}</p>
         </div>
         <button
