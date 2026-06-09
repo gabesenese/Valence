@@ -4,7 +4,7 @@ import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import {
   User, Mail, Shield, Bell, Moon, ArrowRight, Zap, CreditCard,
   Trash2, Loader2, Lock, CheckCircle2, Eye, EyeOff,
-  Smartphone, Monitor, X, HelpCircle, Bug, Lightbulb, BookOpen,
+  Smartphone, Monitor, X, HelpCircle, Bug, Lightbulb,
   MessageSquare, Paperclip, Send,
 } from 'lucide-react';
 import { cn } from '@/utils/cn';
@@ -780,7 +780,7 @@ export default function SettingsPage() {
         </CardHeader>
         <CardBody>
           {/* Quick actions */}
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 mb-5">
+          <div className="grid grid-cols-3 gap-2 mb-5">
             {([
               { cat: 'General Support' as SupportCategory, icon: MessageSquare, label: 'Contact Support', color: 'text-blue-400', bg: 'bg-blue-500/10 border-blue-500/20 hover:bg-blue-500/20' },
               { cat: 'Bug Report'      as SupportCategory, icon: Bug,           label: 'Report a Bug',    color: 'text-danger',    bg: 'bg-danger/10 border-danger/20 hover:bg-danger/20' },
@@ -795,13 +795,6 @@ export default function SettingsPage() {
                 <span className="text-[11px] font-medium text-slate-300">{label}</span>
               </button>
             ))}
-            <a
-              href="mailto:support@valenceos.ca"
-              className="flex flex-col items-center gap-2 rounded-xl border border-surface-400/30 bg-surface-200/40 px-3 py-3 text-center transition-colors hover:bg-surface-200/70"
-            >
-              <BookOpen className="h-4 w-4 text-slate-400" />
-              <span className="text-[11px] font-medium text-slate-300">Email Us</span>
-            </a>
           </div>
 
           {/* Form */}
