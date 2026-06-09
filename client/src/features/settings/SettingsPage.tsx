@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import {
   User, Mail, Shield, Bell, Moon, ArrowRight, Zap, CreditCard,
   Trash2, Loader2, Lock, CheckCircle2, Eye, EyeOff,
-  Smartphone, Monitor, X,
+  Smartphone, Monitor, X, HelpCircle, Bug, Lightbulb, BookOpen,
+  MessageSquare, Paperclip, Send, ExternalLink,
 } from 'lucide-react';
 import { cn } from '@/utils/cn';
 import { useAuthStore } from '@/state/auth.store';
@@ -18,6 +19,7 @@ import { billingService } from '@/services/billing.service';
 import { demoService } from '@/services/demo.service';
 import { usersService } from '@/services/users.service';
 import { authService } from '@/services/auth.service';
+import { supportService, type SupportCategory } from '@/services/support.service';
 
 export default function SettingsPage() {
   const user = useAuthStore((s) => s.user);
@@ -74,6 +76,52 @@ export default function SettingsPage() {
   });
 
   const nextPlan = plan === 'ESSENTIALS' ? 'PROFESSIONAL' : plan === 'PROFESSIONAL' ? 'EXECUTIVE' : null;
+
+  // Support form
+  const [supportCategory, setSupportCategory] = useState<SupportCategory | null>(null);
+  const [supportSubject, setSupportSubject] = useState('');
+  const [supportMessage, setSupportMessage] = useState('');
+  const [supportScreenshot, setSupportScreenshot] = useState<string | null>(null);
+  const [supportScreenshotName, setSupportScreenshotName] = useState('');
+  const screenshotInputRef = useRef<HTMLInputElement>(null);
+  const supportMutation = useMutation({
+    mutationFn: () => supportService.submitTicket({
+      category:    supportCategory!,
+      subject:     supportSubject,
+      message:     supportMessage,
+      screenshot:  supportScreenshot,
+      pageUrl:     window.location.href,
+      browserInfo: navigator.userAgent,
+    }),
+    onSuccess: () => {
+      setTimeout(() => {
+        setSupportCategory(null);
+        setSupportSubject('');
+        setSupportMessage('');
+        setSupportScreenshot(null);
+        setSupportScreenshotName('');
+        supportMutation.reset();
+      }, 3000);
+    },
+  });
+
+  function openSupportForm(cat: SupportCategory) {
+    setSupportCategory(cat);
+    setSupportSubject('');
+    setSupportMessage('');
+    setSupportScreenshot(null);
+    setSupportScreenshotName('');
+    supportMutation.reset();
+  }
+
+  function handleScreenshotChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setSupportScreenshotName(file.name);
+    const reader = new FileReader();
+    reader.onload = () => setSupportScreenshot(reader.result as string);
+    reader.readAsDataURL(file);
+  }
 
   const openPortal = async () => {
     setPortalLoading(true);
@@ -719,6 +767,160 @@ export default function SettingsPage() {
               30 days
             </span>
           </div>
+        </CardBody>
+      </Card>
+
+      {/* Help & Support */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <HelpCircle className="h-4 w-4 text-brand-400" />
+            <CardTitle>Help & Support</CardTitle>
+          </div>
+        </CardHeader>
+        <CardBody>
+          {/* Quick actions */}
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 mb-5">
+            {([
+              { cat: 'General Support' as SupportCategory, icon: MessageSquare, label: 'Contact Support', color: 'text-blue-400', bg: 'bg-blue-500/10 border-blue-500/20 hover:bg-blue-500/20' },
+              { cat: 'Bug Report'      as SupportCategory, icon: Bug,           label: 'Report a Bug',    color: 'text-danger',    bg: 'bg-danger/10 border-danger/20 hover:bg-danger/20' },
+              { cat: 'Feature Request' as SupportCategory, icon: Lightbulb,     label: 'Request Feature', color: 'text-brand-400', bg: 'bg-brand-600/10 border-brand-500/20 hover:bg-brand-600/20' },
+            ] as const).map(({ cat, icon: Icon, label, color, bg }) => (
+              <button
+                key={cat}
+                onClick={() => openSupportForm(cat)}
+                className={cn('flex flex-col items-center gap-2 rounded-xl border px-3 py-3 text-center transition-colors', bg, supportCategory === cat && 'ring-1 ring-white/10')}
+              >
+                <Icon className={cn('h-4 w-4', color)} />
+                <span className="text-[11px] font-medium text-slate-300">{label}</span>
+              </button>
+            ))}
+            <a
+              href="https://valenceos.ca/docs"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex flex-col items-center gap-2 rounded-xl border border-surface-400/30 bg-surface-200/40 px-3 py-3 text-center transition-colors hover:bg-surface-200/70"
+            >
+              <BookOpen className="h-4 w-4 text-slate-400" />
+              <span className="flex items-center gap-1 text-[11px] font-medium text-slate-300">Docs <ExternalLink className="h-2.5 w-2.5" /></span>
+            </a>
+          </div>
+
+          {/* Form */}
+          {supportCategory && (
+            <div className="rounded-xl border border-surface-400/30 bg-surface-200/30 p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className={cn(
+                  'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-semibold border',
+                  supportCategory === 'Bug Report'      && 'text-danger bg-danger/10 border-danger/20',
+                  supportCategory === 'Feature Request' && 'text-brand-400 bg-brand-600/10 border-brand-500/20',
+                  supportCategory === 'General Support' && 'text-blue-400 bg-blue-500/10 border-blue-500/20',
+                )}>
+                  {supportCategory === 'Bug Report'      && <Bug className="h-3 w-3" />}
+                  {supportCategory === 'Feature Request' && <Lightbulb className="h-3 w-3" />}
+                  {supportCategory === 'General Support' && <MessageSquare className="h-3 w-3" />}
+                  {supportCategory}
+                </span>
+                <button onClick={() => setSupportCategory(null)} className="text-slate-600 hover:text-slate-400 transition-colors">
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              {supportCategory === 'Bug Report' && (
+                <div className="rounded-lg bg-surface-300/40 border border-surface-400/20 px-3 py-2">
+                  <p className="text-[11px] text-slate-500">Auto-included: your account, current page URL, browser info, and timestamp.</p>
+                </div>
+              )}
+
+              {supportMutation.isSuccess ? (
+                <div className="flex items-center gap-2 rounded-lg bg-success/10 border border-success/20 px-4 py-3">
+                  <CheckCircle2 className="h-4 w-4 text-success shrink-0" />
+                  <p className="text-sm text-success font-medium">Message sent — we'll get back to you at {user?.email}.</p>
+                </div>
+              ) : (
+                <>
+                  <div>
+                    <label className="text-[11px] font-medium text-slate-500 block mb-1.5">Subject</label>
+                    <input
+                      type="text"
+                      value={supportSubject}
+                      onChange={e => setSupportSubject(e.target.value)}
+                      placeholder={
+                        supportCategory === 'Bug Report'      ? 'e.g. Dashboard not loading after login' :
+                        supportCategory === 'Feature Request' ? 'e.g. Export leases to CSV' :
+                        'How can we help?'
+                      }
+                      className="w-full rounded-lg border border-surface-400/50 bg-surface-200 px-3 py-2 text-sm text-white placeholder-slate-600 focus:border-brand-500 focus:outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-medium text-slate-500 block mb-1.5">Message</label>
+                    <textarea
+                      rows={4}
+                      value={supportMessage}
+                      onChange={e => setSupportMessage(e.target.value)}
+                      placeholder={
+                        supportCategory === 'Bug Report'      ? 'Describe what happened and what you expected…' :
+                        supportCategory === 'Feature Request' ? 'Describe the feature and how it would help your workflow…' :
+                        'Tell us what you need help with…'
+                      }
+                      className="w-full rounded-lg border border-surface-400/50 bg-surface-200 px-3 py-2 text-sm text-white placeholder-slate-600 focus:border-brand-500 focus:outline-none resize-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-medium text-slate-500 block mb-1.5">Screenshot (optional)</label>
+                    <input
+                      ref={screenshotInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleScreenshotChange}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => screenshotInputRef.current?.click()}
+                      className="flex items-center gap-2 rounded-lg border border-dashed border-surface-400/50 bg-surface-200/50 px-3 py-2 text-xs text-slate-500 hover:border-brand-500/50 hover:text-slate-400 transition-colors"
+                    >
+                      <Paperclip className="h-3.5 w-3.5" />
+                      {supportScreenshotName || 'Attach a screenshot'}
+                    </button>
+                    {supportScreenshot && (
+                      <button
+                        type="button"
+                        onClick={() => { setSupportScreenshot(null); setSupportScreenshotName(''); }}
+                        className="mt-1 text-[11px] text-slate-600 hover:text-danger transition-colors"
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </div>
+
+                  {supportMutation.isError && (
+                    <p className="text-xs text-danger">{(supportMutation.error as Error)?.message ?? 'Failed to send. Please try again.'}</p>
+                  )}
+
+                  <div className="flex justify-end gap-2 pt-1">
+                    <button
+                      onClick={() => setSupportCategory(null)}
+                      className="rounded-lg px-3 py-1.5 text-xs text-slate-500 hover:text-slate-300 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={() => supportMutation.mutate()}
+                      disabled={supportMutation.isPending || !supportSubject.trim() || !supportMessage.trim()}
+                      className="inline-flex items-center gap-1.5 rounded-lg bg-brand-600 hover:bg-brand-500 disabled:opacity-40 disabled:cursor-not-allowed px-4 py-1.5 text-xs font-semibold text-white transition-colors"
+                    >
+                      {supportMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />}
+                      Send
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
         </CardBody>
       </Card>
 

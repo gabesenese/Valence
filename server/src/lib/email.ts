@@ -44,6 +44,78 @@ export async function sendPasswordResetEmail(to: string, resetUrl: string) {
   await send(to, 'Reset your Valence password', wrap('Reset your password', body));
 }
 
+export async function sendSupportTicket(opts: {
+  userName: string;
+  userEmail: string;
+  userId: string;
+  category: string;
+  subject: string;
+  message: string;
+  screenshot: string | null;
+  pageUrl: string | null;
+  browserInfo: string | null;
+  submittedAt: string;
+}) {
+  const categoryColors: Record<string, string> = {
+    'Bug Report':      '#ef4444',
+    'Feature Request': '#8b5cf6',
+    'General Support': '#3b82f6',
+  };
+  const color = categoryColors[opts.category] ?? '#64748b';
+
+  const metaRows = [
+    ['User',      `${opts.userName} (${opts.userEmail})`],
+    ['User ID',   opts.userId],
+    ['Category',  opts.category],
+    ['Timestamp', new Date(opts.submittedAt).toLocaleString('en-CA', { timeZone: 'America/Toronto' })],
+    ...(opts.pageUrl     ? [['Page', opts.pageUrl]]     : []),
+    ...(opts.browserInfo ? [['Browser', opts.browserInfo]] : []),
+  ];
+
+  const metaTable = `
+    <table style="width:100%;border-collapse:collapse;margin-bottom:24px">
+      ${metaRows.map(([k, v]) => `
+        <tr>
+          <td style="padding:6px 12px 6px 0;font-size:11px;font-weight:600;color:#64748b;white-space:nowrap;vertical-align:top">${k}</td>
+          <td style="padding:6px 0;font-size:12px;color:#94a3b8;word-break:break-all">${v}</td>
+        </tr>`).join('')}
+    </table>`;
+
+  const body = `
+    <div style="margin-bottom:16px">
+      <span style="display:inline-block;padding:3px 10px;border-radius:99px;font-size:11px;font-weight:700;background:${color}22;color:${color};border:1px solid ${color}44">${opts.category}</span>
+    </div>
+    <h3 style="margin:0 0 20px;font-size:16px;font-weight:600;color:#fff">${opts.subject}</h3>
+    <div style="background:#0d0d14;border:1px solid #1e1e2e;border-radius:8px;padding:16px;margin-bottom:24px">
+      <p style="margin:0;font-size:13px;color:#94a3b8;line-height:1.7;white-space:pre-wrap">${opts.message}</p>
+    </div>
+    <div style="border-top:1px solid #1e1e2e;padding-top:20px">
+      <p style="margin:0 0 12px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#4a5568">Submission details</p>
+      ${metaTable}
+    </div>
+    <p style="margin:0;font-size:11px;color:#4a5568">Reply directly to this email to respond to ${opts.userName}.</p>`;
+
+  const attachments: { filename: string; content: Buffer }[] = [];
+  if (opts.screenshot) {
+    const base64 = opts.screenshot.includes(',') ? opts.screenshot.split(',')[1] : opts.screenshot;
+    attachments.push({ filename: 'screenshot.png', content: Buffer.from(base64, 'base64') });
+  }
+
+  if (!resend) {
+    logger.info('[support ticket dev]', { to: 'support@valenceos.ca', subject: opts.subject });
+    return;
+  }
+
+  await resend.emails.send({
+    from:        env.FROM_EMAIL,
+    to:          'support@valenceos.ca',
+    replyTo:     opts.userEmail,
+    subject:     `[${opts.category}] ${opts.subject}`,
+    html:        wrap(`New ${opts.category}`, body),
+    attachments,
+  });
+}
+
 export async function sendVerificationEmail(to: string, verifyUrl: string) {
   const body = `
     <p style="margin:0 0 16px;font-size:14px;color:#94a3b8;line-height:1.6">
