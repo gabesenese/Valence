@@ -796,7 +796,7 @@ export default function SettingsPage() {
               </button>
             ))}
             <a
-              href="mailto:gabesenese@valenceos.ca"
+              href="mailto:support@valenceos.ca"
               className="flex flex-col items-center gap-2 rounded-xl border border-surface-400/30 bg-surface-200/40 px-3 py-3 text-center transition-colors hover:bg-surface-200/70"
             >
               <BookOpen className="h-4 w-4 text-slate-400" />

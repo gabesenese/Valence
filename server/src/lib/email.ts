@@ -102,13 +102,13 @@ export async function sendSupportTicket(opts: {
   }
 
   if (!resend) {
-    logger.info('[support ticket dev]', { to: 'gabesenese@valenceos.ca', subject: opts.subject });
+    logger.info('[support ticket dev]', { to: 'support@valenceos.ca', subject: opts.subject });
     return;
   }
 
   await resend.emails.send({
     from:        env.FROM_EMAIL,
-    to:          'gabesenese@valenceos.ca',
+    to:          'support@valenceos.ca',
     replyTo:     opts.userEmail,
     subject:     `[${opts.category}] ${opts.subject}`,
     html:        wrap(`New ${opts.category}`, body),
