@@ -602,278 +602,199 @@ export default function SettingsPage() {
 
       </div>{/* /grid */}
 
+      {/* ── Bottom grid: Help & Support (2/3) | Preferences + Portfolio Data (1/3) ── */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
 
-      {/* Preferences */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Preferences</CardTitle>
-        </CardHeader>
-        <CardBody className="flex flex-col gap-5">
-          {/* Theme */}
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-300">
-                <Moon className="h-4 w-4 text-slate-400" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-slate-300">Theme</p>
-                <p className="text-xs text-slate-500">Interface color scheme</p>
-              </div>
+        {/* Help & Support — left 2/3 */}
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <HelpCircle className="h-4 w-4 text-brand-400" />
+              <CardTitle>Help & Support</CardTitle>
             </div>
-            <span className="rounded-lg border border-surface-400/30 bg-surface-200/50 px-3 py-1.5 text-xs font-medium text-slate-400">
-              Dark
-            </span>
-          </div>
-
-          <div className="h-px bg-surface-400/30" />
-
-          {/* Notification severity filter */}
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-300">
-                <Bell className="h-4 w-4 text-slate-400" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-slate-300">Notification bell</p>
-                <p className="text-xs text-slate-500">Minimum severity shown in the alert bell</p>
-              </div>
-            </div>
-            <div className="flex rounded-lg border border-surface-400/30 bg-surface-200/30 p-0.5 shrink-0">
-              {(['all', 'warning', 'critical'] as AlertSeverityFilter[]).map((opt) => (
-                <button
-                  key={opt}
-                  onClick={() => setAlertSeverityFilter(opt)}
-                  className={cn(
-                    'rounded-md px-3 py-1 text-xs font-medium transition-colors capitalize',
-                    alertSeverityFilter === opt && opt === 'all'      && 'bg-brand-600/30 text-brand-300 border border-brand-600/40',
-                    alertSeverityFilter === opt && opt === 'warning'  && 'bg-danger/20 text-danger border border-danger/30',
-                    alertSeverityFilter === opt && opt === 'critical' && 'bg-amber-500/20 text-amber-400 border border-amber-500/30',
-                    alertSeverityFilter !== opt && 'text-slate-500 hover:text-slate-300',
-                  )}
-                >
-                  {opt === 'all' ? 'All' : opt === 'warning' ? 'Warning+' : 'Critical'}
+          </CardHeader>
+          <CardBody>
+            <div className="grid grid-cols-3 gap-2 mb-5">
+              {([
+                { cat: 'General Support' as SupportCategory, icon: MessageSquare, label: 'Contact Support', color: 'text-blue-400', bg: 'bg-blue-500/10 border-blue-500/20 hover:bg-blue-500/20' },
+                { cat: 'Bug Report'      as SupportCategory, icon: Bug,           label: 'Report a Bug',    color: 'text-danger',    bg: 'bg-danger/10 border-danger/20 hover:bg-danger/20' },
+                { cat: 'Feature Request' as SupportCategory, icon: Lightbulb,     label: 'Request Feature', color: 'text-brand-400', bg: 'bg-brand-600/10 border-brand-500/20 hover:bg-brand-600/20' },
+              ] as const).map(({ cat, icon: Icon, label, color, bg }) => (
+                <button key={cat} onClick={() => openSupportForm(cat)}
+                  className={cn('flex flex-col items-center gap-2 rounded-xl border px-3 py-3 text-center transition-colors', bg, supportCategory === cat && 'ring-1 ring-white/10')}>
+                  <Icon className={cn('h-4 w-4', color)} />
+                  <span className="text-[11px] font-medium text-slate-300">{label}</span>
                 </button>
               ))}
             </div>
-          </div>
-
-          <div className="h-px bg-surface-400/30" />
-
-          {/* Session */}
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-300">
-                <Shield className="h-4 w-4 text-slate-400" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-slate-300">Session duration</p>
-                <p className="text-xs text-slate-500">Stay signed in for up to 30 days</p>
-              </div>
-            </div>
-            <span className="rounded-lg border border-surface-400/30 bg-surface-200/50 px-3 py-1.5 text-xs font-medium text-slate-400">
-              30 days
-            </span>
-          </div>
-        </CardBody>
-      </Card>
-
-      {/* Help & Support */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <HelpCircle className="h-4 w-4 text-brand-400" />
-            <CardTitle>Help & Support</CardTitle>
-          </div>
-        </CardHeader>
-        <CardBody>
-          {/* Quick actions */}
-          <div className="grid grid-cols-3 gap-2 mb-5">
-            {([
-              { cat: 'General Support' as SupportCategory, icon: MessageSquare, label: 'Contact Support', color: 'text-blue-400', bg: 'bg-blue-500/10 border-blue-500/20 hover:bg-blue-500/20' },
-              { cat: 'Bug Report'      as SupportCategory, icon: Bug,           label: 'Report a Bug',    color: 'text-danger',    bg: 'bg-danger/10 border-danger/20 hover:bg-danger/20' },
-              { cat: 'Feature Request' as SupportCategory, icon: Lightbulb,     label: 'Request Feature', color: 'text-brand-400', bg: 'bg-brand-600/10 border-brand-500/20 hover:bg-brand-600/20' },
-            ] as const).map(({ cat, icon: Icon, label, color, bg }) => (
-              <button
-                key={cat}
-                onClick={() => openSupportForm(cat)}
-                className={cn('flex flex-col items-center gap-2 rounded-xl border px-3 py-3 text-center transition-colors', bg, supportCategory === cat && 'ring-1 ring-white/10')}
-              >
-                <Icon className={cn('h-4 w-4', color)} />
-                <span className="text-[11px] font-medium text-slate-300">{label}</span>
-              </button>
-            ))}
-          </div>
-
-          {/* Form */}
-          {supportCategory && (
-            <div className="rounded-xl border border-surface-400/30 bg-surface-200/30 p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <span className={cn(
-                  'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-semibold border',
-                  supportCategory === 'Bug Report'      && 'text-danger bg-danger/10 border-danger/20',
-                  supportCategory === 'Feature Request' && 'text-brand-400 bg-brand-600/10 border-brand-500/20',
-                  supportCategory === 'General Support' && 'text-blue-400 bg-blue-500/10 border-blue-500/20',
-                )}>
-                  {supportCategory === 'Bug Report'      && <Bug className="h-3 w-3" />}
-                  {supportCategory === 'Feature Request' && <Lightbulb className="h-3 w-3" />}
-                  {supportCategory === 'General Support' && <MessageSquare className="h-3 w-3" />}
-                  {supportCategory}
-                </span>
-                <button onClick={() => setSupportCategory(null)} className="text-slate-600 hover:text-slate-400 transition-colors">
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-
-              {supportCategory === 'Bug Report' && (
-                <div className="rounded-lg bg-surface-300/40 border border-surface-400/20 px-3 py-2">
-                  <p className="text-[11px] text-slate-500">Auto-included: your account, current page URL, browser info, and timestamp.</p>
+            {supportCategory && (
+              <div className="rounded-xl border border-surface-400/30 bg-surface-200/30 p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className={cn(
+                    'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-semibold border',
+                    supportCategory === 'Bug Report'      && 'text-danger bg-danger/10 border-danger/20',
+                    supportCategory === 'Feature Request' && 'text-brand-400 bg-brand-600/10 border-brand-500/20',
+                    supportCategory === 'General Support' && 'text-blue-400 bg-blue-500/10 border-blue-500/20',
+                  )}>
+                    {supportCategory === 'Bug Report'      && <Bug className="h-3 w-3" />}
+                    {supportCategory === 'Feature Request' && <Lightbulb className="h-3 w-3" />}
+                    {supportCategory === 'General Support' && <MessageSquare className="h-3 w-3" />}
+                    {supportCategory}
+                  </span>
+                  <button onClick={() => setSupportCategory(null)} className="text-slate-600 hover:text-slate-400 transition-colors">
+                    <X className="h-4 w-4" />
+                  </button>
                 </div>
-              )}
-
-              {supportMutation.isSuccess ? (
-                <div className="flex items-center gap-2 rounded-lg bg-success/10 border border-success/20 px-4 py-3">
-                  <CheckCircle2 className="h-4 w-4 text-success shrink-0" />
-                  <p className="text-sm text-success font-medium">Message sent — we'll be in touch shortly.</p>
-                </div>
-              ) : (
-                <>
-                  <div>
-                    <label className="text-[11px] font-medium text-slate-500 block mb-1.5">Subject</label>
-                    <input
-                      type="text"
-                      value={supportSubject}
-                      onChange={e => setSupportSubject(e.target.value)}
-                      placeholder={
-                        supportCategory === 'Bug Report'      ? 'e.g. Dashboard not loading after login' :
-                        supportCategory === 'Feature Request' ? 'e.g. Export leases to CSV' :
-                        'How can we help?'
-                      }
-                      className="w-full rounded-lg border border-surface-400/50 bg-surface-200 px-3 py-2 text-sm text-white placeholder-slate-600 focus:border-brand-500 focus:outline-none"
-                    />
+                {supportCategory === 'Bug Report' && (
+                  <div className="rounded-lg bg-surface-300/40 border border-surface-400/20 px-3 py-2">
+                    <p className="text-[11px] text-slate-500">Auto-included: your account, current page URL, browser info, and timestamp.</p>
                   </div>
-
-                  <div>
-                    <label className="text-[11px] font-medium text-slate-500 block mb-1.5">Message</label>
-                    <textarea
-                      rows={4}
-                      value={supportMessage}
-                      onChange={e => setSupportMessage(e.target.value)}
-                      placeholder={
-                        supportCategory === 'Bug Report'      ? 'Describe what happened and what you expected…' :
-                        supportCategory === 'Feature Request' ? 'Describe the feature and how it would help your workflow…' :
-                        'Tell us what you need help with…'
-                      }
-                      className="w-full rounded-lg border border-surface-400/50 bg-surface-200 px-3 py-2 text-sm text-white placeholder-slate-600 focus:border-brand-500 focus:outline-none resize-none"
-                    />
+                )}
+                {supportMutation.isSuccess ? (
+                  <div className="flex items-center gap-2 rounded-lg bg-success/10 border border-success/20 px-4 py-3">
+                    <CheckCircle2 className="h-4 w-4 text-success shrink-0" />
+                    <p className="text-sm text-success font-medium">Message sent — we will be in touch shortly.</p>
                   </div>
-
-                  <div>
-                    <label className="text-[11px] font-medium text-slate-500 block mb-1.5">Screenshot (optional)</label>
-                    <input
-                      ref={screenshotInputRef}
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={handleScreenshotChange}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => screenshotInputRef.current?.click()}
-                      className="flex items-center gap-2 rounded-lg border border-dashed border-surface-400/50 bg-surface-200/50 px-3 py-2 text-xs text-slate-500 hover:border-brand-500/50 hover:text-slate-400 transition-colors"
-                    >
-                      <Paperclip className="h-3.5 w-3.5" />
-                      {supportScreenshotName || 'Attach a screenshot'}
-                    </button>
-                    {supportScreenshot && (
-                      <button
-                        type="button"
-                        onClick={() => { setSupportScreenshot(null); setSupportScreenshotName(''); }}
-                        className="mt-1 text-[11px] text-slate-600 hover:text-danger transition-colors"
-                      >
-                        Remove
+                ) : (
+                  <>
+                    <div>
+                      <label className="text-[11px] font-medium text-slate-500 block mb-1.5">Subject</label>
+                      <input type="text" value={supportSubject} onChange={e => setSupportSubject(e.target.value)}
+                        placeholder={supportCategory === 'Bug Report' ? 'e.g. Dashboard not loading after login' : supportCategory === 'Feature Request' ? 'e.g. Export leases to CSV' : 'How can we help?'}
+                        className="w-full rounded-lg border border-surface-400/50 bg-surface-200 px-3 py-2 text-sm text-white placeholder-slate-600 focus:border-brand-500 focus:outline-none" />
+                    </div>
+                    <div>
+                      <label className="text-[11px] font-medium text-slate-500 block mb-1.5">Message</label>
+                      <textarea rows={4} value={supportMessage} onChange={e => setSupportMessage(e.target.value)}
+                        placeholder={supportCategory === 'Bug Report' ? 'Describe what happened and what you expected...' : supportCategory === 'Feature Request' ? 'Describe the feature and how it would help your workflow...' : 'Tell us what you need help with...'}
+                        className="w-full rounded-lg border border-surface-400/50 bg-surface-200 px-3 py-2 text-sm text-white placeholder-slate-600 focus:border-brand-500 focus:outline-none resize-none" />
+                    </div>
+                    <div>
+                      <label className="text-[11px] font-medium text-slate-500 block mb-1.5">Screenshot (optional)</label>
+                      <input ref={screenshotInputRef} type="file" accept="image/*" className="hidden" onChange={handleScreenshotChange} />
+                      <button type="button" onClick={() => screenshotInputRef.current?.click()}
+                        className="flex items-center gap-2 rounded-lg border border-dashed border-surface-400/50 bg-surface-200/50 px-3 py-2 text-xs text-slate-500 hover:border-brand-500/50 hover:text-slate-400 transition-colors">
+                        <Paperclip className="h-3.5 w-3.5" />
+                        {supportScreenshotName || 'Attach a screenshot'}
                       </button>
+                      {supportScreenshot && (
+                        <button type="button" onClick={() => { setSupportScreenshot(null); setSupportScreenshotName(''); }}
+                          className="mt-1 text-[11px] text-slate-600 hover:text-danger transition-colors">Remove</button>
+                      )}
+                    </div>
+                    {supportMutation.isError && (
+                      <p className="text-xs text-danger">{(supportMutation.error as Error)?.message ?? 'Failed to send. Please try again.'}</p>
                     )}
+                    <div className="flex justify-end gap-2 pt-1">
+                      <button onClick={() => setSupportCategory(null)} className="rounded-lg px-3 py-1.5 text-xs text-slate-500 hover:text-slate-300 transition-colors">Cancel</button>
+                      <button onClick={() => supportMutation.mutate()}
+                        disabled={supportMutation.isPending || !supportSubject.trim() || !supportMessage.trim()}
+                        className="inline-flex items-center gap-1.5 rounded-lg bg-brand-600 hover:bg-brand-500 disabled:opacity-40 disabled:cursor-not-allowed px-4 py-1.5 text-xs font-semibold text-white transition-colors">
+                        {supportMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />}
+                        Send
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+          </CardBody>
+        </Card>
+
+        {/* Preferences + Portfolio Data — right 1/3 */}
+        <div className="flex flex-col gap-4">
+
+          {/* Preferences */}
+          <Card>
+            <CardHeader><CardTitle>Preferences</CardTitle></CardHeader>
+            <CardBody className="flex flex-col gap-5">
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-300">
+                    <Moon className="h-4 w-4 text-slate-400" />
                   </div>
-
-                  {supportMutation.isError && (
-                    <p className="text-xs text-danger">{(supportMutation.error as Error)?.message ?? 'Failed to send. Please try again.'}</p>
-                  )}
-
-                  <div className="flex justify-end gap-2 pt-1">
-                    <button
-                      onClick={() => setSupportCategory(null)}
-                      className="rounded-lg px-3 py-1.5 text-xs text-slate-500 hover:text-slate-300 transition-colors"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={() => supportMutation.mutate()}
-                      disabled={supportMutation.isPending || !supportSubject.trim() || !supportMessage.trim()}
-                      className="inline-flex items-center gap-1.5 rounded-lg bg-brand-600 hover:bg-brand-500 disabled:opacity-40 disabled:cursor-not-allowed px-4 py-1.5 text-xs font-semibold text-white transition-colors"
-                    >
-                      {supportMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />}
-                      Send
-                    </button>
+                  <div>
+                    <p className="text-sm font-medium text-slate-300">Theme</p>
+                    <p className="text-xs text-slate-500">Interface color scheme</p>
                   </div>
-                </>
-              )}
-            </div>
-          )}
-        </CardBody>
-      </Card>
+                </div>
+                <span className="rounded-lg border border-surface-400/30 bg-surface-200/50 px-3 py-1.5 text-xs font-medium text-slate-400">Dark</span>
+              </div>
+              <div className="h-px bg-surface-400/30" />
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-300">
+                    <Bell className="h-4 w-4 text-slate-400" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-slate-300">Alert bell</p>
+                    <p className="text-xs text-slate-500">Min. severity shown</p>
+                  </div>
+                </div>
+                <div className="flex rounded-lg border border-surface-400/30 bg-surface-200/30 p-0.5 shrink-0">
+                  {(['all', 'warning', 'critical'] as AlertSeverityFilter[]).map((opt) => (
+                    <button key={opt} onClick={() => setAlertSeverityFilter(opt)}
+                      className={cn('rounded-md px-2.5 py-1 text-xs font-medium transition-colors capitalize',
+                        alertSeverityFilter === opt && opt === 'all'      && 'bg-brand-600/30 text-brand-300 border border-brand-600/40',
+                        alertSeverityFilter === opt && opt === 'warning'  && 'bg-danger/20 text-danger border border-danger/30',
+                        alertSeverityFilter === opt && opt === 'critical' && 'bg-amber-500/20 text-amber-400 border border-amber-500/30',
+                        alertSeverityFilter !== opt && 'text-slate-500 hover:text-slate-300',
+                      )}>
+                      {opt === 'all' ? 'All' : opt === 'warning' ? 'Warn+' : 'Crit'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="h-px bg-surface-400/30" />
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-300">
+                    <Shield className="h-4 w-4 text-slate-400" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-slate-300">Session</p>
+                    <p className="text-xs text-slate-500">Stays signed in</p>
+                  </div>
+                </div>
+                <span className="rounded-lg border border-surface-400/30 bg-surface-200/50 px-3 py-1.5 text-xs font-medium text-slate-400">30 days</span>
+              </div>
+            </CardBody>
+          </Card>
 
-      {/* Data */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <Trash2 className="h-4 w-4 text-danger" />
-            <CardTitle>Portfolio Data</CardTitle>
-          </div>
-        </CardHeader>
-        <CardBody>
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <p className="text-sm font-semibold text-white">Reset all portfolio data</p>
-              <p className="text-xs text-slate-500 mt-0.5">
-                Permanently deletes all properties, leases, tenants, financial records, alerts, and tasks.
-                This cannot be undone.
-              </p>
-              {resetDone && (
-                <p className="text-xs text-success mt-2">Portfolio data cleared successfully.</p>
-              )}
-            </div>
-            <div className="shrink-0">
+          {/* Portfolio Data */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Trash2 className="h-4 w-4 text-danger" />
+                <CardTitle>Portfolio Data</CardTitle>
+              </div>
+            </CardHeader>
+            <CardBody>
+              <p className="text-sm font-semibold text-white mb-1">Reset all portfolio data</p>
+              <p className="text-xs text-slate-500 mb-4">Permanently deletes all properties, leases, tenants, financial records, alerts, and tasks. This cannot be undone.</p>
+              {resetDone && <p className="text-xs text-success mb-3">Portfolio data cleared successfully.</p>}
               {!resetConfirm ? (
-                <button
-                  onClick={() => setResetConfirm(true)}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-danger/30 bg-danger/10 hover:bg-danger/20 px-3 py-1.5 text-xs font-semibold text-danger transition-colors"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                  Reset data
+                <button onClick={() => setResetConfirm(true)}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-danger/30 bg-danger/10 hover:bg-danger/20 px-3 py-1.5 text-xs font-semibold text-danger transition-colors">
+                  <Trash2 className="h-3.5 w-3.5" /> Reset data
                 </button>
               ) : (
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-slate-400">Are you sure?</span>
-                  <button
-                    onClick={resetPortfolio}
-                    disabled={resetLoading}
-                    className="inline-flex items-center gap-1 rounded-lg bg-danger hover:bg-danger/80 px-3 py-1.5 text-xs font-semibold text-white transition-colors disabled:opacity-60"
-                  >
-                    {resetLoading && <Loader2 className="h-3 w-3 animate-spin" />}
-                    Confirm
+                  <button onClick={resetPortfolio} disabled={resetLoading}
+                    className="inline-flex items-center gap-1 rounded-lg bg-danger hover:bg-danger/80 px-3 py-1.5 text-xs font-semibold text-white transition-colors disabled:opacity-60">
+                    {resetLoading && <Loader2 className="h-3 w-3 animate-spin" />} Confirm
                   </button>
-                  <button
-                    onClick={() => setResetConfirm(false)}
-                    className="text-xs text-slate-500 hover:text-slate-300 transition-colors"
-                  >
-                    Cancel
-                  </button>
+                  <button onClick={() => setResetConfirm(false)} className="text-xs text-slate-500 hover:text-slate-300 transition-colors">Cancel</button>
                 </div>
               )}
-            </div>
-          </div>
-        </CardBody>
-      </Card>
+            </CardBody>
+          </Card>
+
+        </div>{/* /right col */}
+
+      </div>{/* /bottom grid */}
+
     </div>
   );
 }
