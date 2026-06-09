@@ -268,9 +268,14 @@ export default function SettingsPage() {
     <div className="flex flex-col gap-6 p-6 animate-fade-in">
       <PageHeader title="Settings" description="Account preferences & configuration" />
 
+      {/* ── Two-column layout ── */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        {/* Profile card */}
-        <Card className="lg:col-span-2">
+
+        {/* ── Left column ── */}
+        <div className="lg:col-span-2 flex flex-col gap-4">
+
+        {/* Profile */}
+        <Card>
           <CardHeader>
             <CardTitle>Profile</CardTitle>
           </CardHeader>
@@ -341,7 +346,182 @@ export default function SettingsPage() {
           </CardBody>
         </Card>
 
-        {/* Access card */}
+        {/* Security */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <Lock className="h-4 w-4 text-brand-400" />
+              <CardTitle>Security</CardTitle>
+            </div>
+          </CardHeader>
+          <CardBody className="flex flex-col gap-6">
+            {/* Change email */}
+            <div>
+              <p className="text-sm font-semibold text-white mb-3">Change email</p>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-medium uppercase tracking-wider text-slate-400">New email</label>
+                  <input type="email" value={newEmail} onChange={(e) => { setNewEmail(e.target.value); setEmailSaved(false); }} placeholder={user?.email}
+                    className="h-9 w-full rounded-lg border border-surface-400 bg-surface-200 px-3 text-sm text-slate-100 placeholder:text-slate-600 transition-colors focus:border-brand-500/60 focus:bg-surface-300 focus:outline-none focus:ring-1 focus:ring-brand-500/30" />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-medium uppercase tracking-wider text-slate-400">Current password</label>
+                  <input type="password" value={emailPassword} onChange={(e) => { setEmailPassword(e.target.value); setEmailSaved(false); }} placeholder="Confirm identity"
+                    className="h-9 w-full rounded-lg border border-surface-400 bg-surface-200 px-3 text-sm text-slate-100 placeholder:text-slate-600 transition-colors focus:border-brand-500/60 focus:bg-surface-300 focus:outline-none focus:ring-1 focus:ring-brand-500/30" />
+                </div>
+              </div>
+              {emailError && <p className="mt-2 text-xs text-danger">{emailError}</p>}
+              <div className="mt-3 flex items-center gap-3">
+                <Button size="sm" onClick={saveEmail} loading={emailSaving} disabled={!newEmail || !emailPassword}>Update email</Button>
+                {emailSaved && <span className="flex items-center gap-1 text-xs text-success"><CheckCircle2 className="h-3.5 w-3.5" /> Email updated</span>}
+              </div>
+            </div>
+
+            <div className="h-px bg-surface-400/30" />
+
+            {/* Change password */}
+            <div>
+              <p className="text-sm font-semibold text-white mb-3">Change password</p>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-medium uppercase tracking-wider text-slate-400">Current password</label>
+                  <div className="relative">
+                    <input type={showCurrentPw ? 'text' : 'password'} value={currentPw} onChange={(e) => { setCurrentPw(e.target.value); setPwSaved(false); }} placeholder="••••••••"
+                      className="h-9 w-full rounded-lg border border-surface-400 bg-surface-200 px-3 pr-9 text-sm text-slate-100 placeholder:text-slate-600 transition-colors focus:border-brand-500/60 focus:bg-surface-300 focus:outline-none focus:ring-1 focus:ring-brand-500/30" />
+                    <button type="button" onClick={() => setShowCurrentPw(!showCurrentPw)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300">
+                      {showCurrentPw ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                    </button>
+                  </div>
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-medium uppercase tracking-wider text-slate-400">New password</label>
+                  <div className="relative">
+                    <input type={showNewPw ? 'text' : 'password'} value={newPw} onChange={(e) => { setNewPw(e.target.value); setPwSaved(false); }} placeholder="Min. 8 characters"
+                      className="h-9 w-full rounded-lg border border-surface-400 bg-surface-200 px-3 pr-9 text-sm text-slate-100 placeholder:text-slate-600 transition-colors focus:border-brand-500/60 focus:bg-surface-300 focus:outline-none focus:ring-1 focus:ring-brand-500/30" />
+                    <button type="button" onClick={() => setShowNewPw(!showNewPw)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300">
+                      {showNewPw ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                    </button>
+                  </div>
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-medium uppercase tracking-wider text-slate-400">Confirm new password</label>
+                  <input type="password" value={confirmPw} onChange={(e) => { setConfirmPw(e.target.value); setPwSaved(false); }} placeholder="••••••••"
+                    className="h-9 w-full rounded-lg border border-surface-400 bg-surface-200 px-3 text-sm text-slate-100 placeholder:text-slate-600 transition-colors focus:border-brand-500/60 focus:bg-surface-300 focus:outline-none focus:ring-1 focus:ring-brand-500/30" />
+                </div>
+              </div>
+              {newPw.length > 0 && newPw.length < 8 && <p className="mt-1 text-[11px] text-slate-600">{8 - newPw.length} more character{8 - newPw.length !== 1 ? 's' : ''} needed</p>}
+              {confirmPw.length > 0 && newPw !== confirmPw && <p className="mt-1 text-[11px] text-danger">Passwords do not match</p>}
+              {pwError && <p className="mt-2 text-xs text-danger">{pwError}</p>}
+              <div className="mt-3 flex items-center gap-3">
+                <Button size="sm" onClick={savePassword} loading={pwSaving} disabled={!currentPw || !newPw || !confirmPw}>Change password</Button>
+                {pwSaved && <span className="flex items-center gap-1 text-xs text-success"><CheckCircle2 className="h-3.5 w-3.5" /> Password updated</span>}
+              </div>
+            </div>
+          </CardBody>
+        </Card>
+
+        {/* Two-Factor Auth */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <Smartphone className="h-4 w-4 text-brand-400" />
+              <CardTitle>Two-Factor Authentication</CardTitle>
+            </div>
+          </CardHeader>
+          <CardBody className="flex flex-col gap-4">
+            {user?.mfaEnabled ? (
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <CheckCircle2 className="h-4 w-4 text-success" />
+                    <span className="text-sm font-semibold text-white">MFA is enabled</span>
+                  </div>
+                  <p className="text-xs text-slate-500">Your account requires an authenticator code on sign in.</p>
+                  {mfaDone && <p className="mt-1 text-xs text-success">MFA has been enabled successfully.</p>}
+                </div>
+                <Button size="sm" variant="danger" onClick={disableMfa} loading={mfaLoading}>Disable</Button>
+              </div>
+            ) : mfaSetupData ? (
+              <div className="flex flex-col gap-4">
+                <div>
+                  <p className="text-sm font-medium text-white mb-1">Scan with your authenticator app</p>
+                  <p className="text-xs text-slate-500 mb-3">Use Google Authenticator, Authy, or any TOTP app.</p>
+                  <img src={mfaSetupData.qrCode} alt="QR Code" className="w-40 h-40 rounded-lg bg-white p-2" />
+                  <p className="mt-2 text-xs text-slate-500">Or enter this code manually:</p>
+                  <code className="mt-1 inline-block rounded bg-surface-300 px-2 py-1 text-xs text-slate-300 tracking-widest">{mfaSetupData.secret}</code>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <label className="text-xs font-medium uppercase tracking-wider text-slate-400">Verify 6-digit code</label>
+                  <div className="flex gap-2">
+                    <input type="text" inputMode="numeric" maxLength={6} value={mfaTotp} onChange={(e) => setMfaTotp(e.target.value.replace(/\D/g, ''))} placeholder="000000"
+                      className="h-9 w-36 rounded-lg border border-surface-400 bg-surface-200 px-3 text-center text-lg tracking-widest text-slate-100 placeholder:text-slate-600 transition-colors focus:border-brand-500/60 focus:outline-none focus:ring-1 focus:ring-brand-500/30" />
+                    <Button size="sm" onClick={confirmMfaEnable} loading={mfaLoading} disabled={mfaTotp.length !== 6}>Enable MFA</Button>
+                    <button onClick={() => { setMfaSetupData(null); setMfaTotp(''); setMfaError(''); }} className="text-xs text-slate-500 hover:text-slate-300">Cancel</button>
+                  </div>
+                  {mfaError && <p className="text-xs text-danger">{mfaError}</p>}
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-sm font-medium text-slate-300 mb-0.5">Add a second layer of security</p>
+                  <p className="text-xs text-slate-500">Use an authenticator app to generate a code at every sign in.</p>
+                </div>
+                <Button size="sm" onClick={startMfaSetup} loading={mfaLoading}>Set up MFA</Button>
+              </div>
+            )}
+          </CardBody>
+        </Card>
+
+        </div>{/* /left column */}
+
+        {/* ── Right column ── */}
+        <div className="flex flex-col gap-4">
+
+        {/* Plan + Billing */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <Zap className="h-4 w-4 text-brand-400" />
+              <CardTitle>Plan & Billing</CardTitle>
+            </div>
+            <button onClick={() => navigate('/pricing')} className="text-xs text-brand-400 hover:text-brand-300 transition-colors">
+              All plans →
+            </button>
+          </CardHeader>
+          <CardBody className="flex flex-col gap-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-base font-bold text-white">{PLAN_LABELS[plan]}</p>
+                <p className="text-xs text-slate-500">${PLAN_PRICES[plan].toLocaleString()} / month</p>
+              </div>
+              {nextPlan && (
+                <button onClick={() => navigate('/pricing')} className="inline-flex items-center gap-1.5 rounded-lg bg-brand-600/20 hover:bg-brand-600/30 border border-brand-500/30 px-3 py-1.5 text-xs font-semibold text-brand-300 transition-colors">
+                  Upgrade <ArrowRight className="h-3 w-3" />
+                </button>
+              )}
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                { label: 'Properties', limit: limits.properties === Infinity ? 'Unlimited' : limits.properties.toLocaleString() },
+                { label: 'Leases', limit: limits.leases === Infinity ? 'Unlimited' : limits.leases.toLocaleString() },
+              ].map(({ label, limit }) => (
+                <div key={label} className="rounded-lg border border-surface-400/30 bg-surface-200/30 px-3 py-2.5">
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 mb-0.5">{label}</p>
+                  <p className="text-sm font-bold text-white">{limit}</p>
+                </div>
+              ))}
+            </div>
+            <div className="h-px bg-surface-400/30" />
+            <button onClick={openPortal} disabled={portalLoading}
+              className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-surface-400/40 bg-surface-200/50 hover:bg-surface-200 px-3 py-2 text-xs font-semibold text-slate-300 transition-colors disabled:opacity-60">
+              {portalLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CreditCard className="h-3.5 w-3.5" />}
+              Manage Billing
+            </button>
+          </CardBody>
+        </Card>
+
+        {/* Access */}
         <Card>
           <CardHeader>
             <CardTitle>Access</CardTitle>
@@ -356,7 +536,6 @@ export default function SettingsPage() {
                 <p className="text-xs text-slate-400">{user?.role}</p>
               </div>
             </div>
-
             <div className="flex flex-col gap-2 text-xs text-slate-500">
               <p className="font-medium text-slate-400 mb-1">Permissions</p>
               {[
@@ -367,334 +546,62 @@ export default function SettingsPage() {
               ].map(({ label, enabled }) => (
                 <div key={label} className="flex items-center justify-between">
                   <span className={enabled ? 'text-slate-400' : 'text-slate-600'}>{label}</span>
-                  <span className={`text-xs font-medium ${enabled ? 'text-success' : 'text-slate-500'}`}>
-                    {enabled ? '✓' : '—'}
-                  </span>
+                  <span className={`text-xs font-medium ${enabled ? 'text-success' : 'text-slate-500'}`}>{enabled ? '✓' : '—'}</span>
                 </div>
               ))}
             </div>
           </CardBody>
         </Card>
-      </div>
 
-      {/* Security — email + password */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <Lock className="h-4 w-4 text-brand-400" />
-            <CardTitle>Security</CardTitle>
-          </div>
-        </CardHeader>
-        <CardBody className="flex flex-col gap-6">
-          {/* Change email */}
-          <div>
-            <p className="text-sm font-semibold text-white mb-3">Change email</p>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium uppercase tracking-wider text-slate-400">New email</label>
-                <input
-                  type="email"
-                  value={newEmail}
-                  onChange={(e) => { setNewEmail(e.target.value); setEmailSaved(false); }}
-                  placeholder={user?.email}
-                  className="h-9 w-full rounded-lg border border-surface-400 bg-surface-200 px-3 text-sm text-slate-100 placeholder:text-slate-600 transition-colors focus:border-brand-500/60 focus:bg-surface-300 focus:outline-none focus:ring-1 focus:ring-brand-500/30"
-                />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium uppercase tracking-wider text-slate-400">Current password</label>
-                <input
-                  type="password"
-                  value={emailPassword}
-                  onChange={(e) => { setEmailPassword(e.target.value); setEmailSaved(false); }}
-                  placeholder="Confirm identity"
-                  className="h-9 w-full rounded-lg border border-surface-400 bg-surface-200 px-3 text-sm text-slate-100 placeholder:text-slate-600 transition-colors focus:border-brand-500/60 focus:bg-surface-300 focus:outline-none focus:ring-1 focus:ring-brand-500/30"
-                />
-              </div>
+        {/* Active Sessions */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <Monitor className="h-4 w-4 text-brand-400" />
+              <CardTitle>Active Sessions</CardTitle>
             </div>
-            {emailError && <p className="mt-2 text-xs text-danger">{emailError}</p>}
-            <div className="mt-3 flex items-center gap-3">
-              <Button size="sm" onClick={saveEmail} loading={emailSaving} disabled={!newEmail || !emailPassword}>
-                Update email
-              </Button>
-              {emailSaved && (
-                <span className="flex items-center gap-1 text-xs text-success">
-                  <CheckCircle2 className="h-3.5 w-3.5" /> Email updated
-                </span>
-              )}
-            </div>
-          </div>
-
-          <div className="h-px bg-surface-400/30" />
-
-          {/* Change password */}
-          <div>
-            <p className="text-sm font-semibold text-white mb-3">Change password</p>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium uppercase tracking-wider text-slate-400">Current password</label>
-                <div className="relative">
-                  <input
-                    type={showCurrentPw ? 'text' : 'password'}
-                    value={currentPw}
-                    onChange={(e) => { setCurrentPw(e.target.value); setPwSaved(false); }}
-                    placeholder="••••••••"
-                    className="h-9 w-full rounded-lg border border-surface-400 bg-surface-200 px-3 pr-9 text-sm text-slate-100 placeholder:text-slate-600 transition-colors focus:border-brand-500/60 focus:bg-surface-300 focus:outline-none focus:ring-1 focus:ring-brand-500/30"
-                  />
-                  <button type="button" onClick={() => setShowCurrentPw(!showCurrentPw)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300">
-                    {showCurrentPw ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-                  </button>
-                </div>
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium uppercase tracking-wider text-slate-400">New password</label>
-                <div className="relative">
-                  <input
-                    type={showNewPw ? 'text' : 'password'}
-                    value={newPw}
-                    onChange={(e) => { setNewPw(e.target.value); setPwSaved(false); }}
-                    placeholder="Min. 8 characters"
-                    className="h-9 w-full rounded-lg border border-surface-400 bg-surface-200 px-3 pr-9 text-sm text-slate-100 placeholder:text-slate-600 transition-colors focus:border-brand-500/60 focus:bg-surface-300 focus:outline-none focus:ring-1 focus:ring-brand-500/30"
-                  />
-                  <button type="button" onClick={() => setShowNewPw(!showNewPw)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300">
-                    {showNewPw ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-                  </button>
-                </div>
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium uppercase tracking-wider text-slate-400">Confirm new password</label>
-                <input
-                  type="password"
-                  value={confirmPw}
-                  onChange={(e) => { setConfirmPw(e.target.value); setPwSaved(false); }}
-                  placeholder="••••••••"
-                  className="h-9 w-full rounded-lg border border-surface-400 bg-surface-200 px-3 text-sm text-slate-100 placeholder:text-slate-600 transition-colors focus:border-brand-500/60 focus:bg-surface-300 focus:outline-none focus:ring-1 focus:ring-brand-500/30"
-                />
-              </div>
-            </div>
-            {newPw.length > 0 && newPw.length < 8 && (
-              <p className="mt-1 text-[11px] text-slate-600">{8 - newPw.length} more character{8 - newPw.length !== 1 ? 's' : ''} needed</p>
+            {sessions && sessions.length > 1 && (
+              <button onClick={revokeAll} disabled={revokingAll} className="inline-flex items-center gap-1 text-xs text-danger hover:text-danger/80 transition-colors disabled:opacity-60">
+                {revokingAll ? <Loader2 className="h-3 w-3 animate-spin" /> : null}
+                Revoke all
+              </button>
             )}
-            {confirmPw.length > 0 && newPw !== confirmPw && (
-              <p className="mt-1 text-[11px] text-danger">Passwords do not match</p>
-            )}
-            {pwError && <p className="mt-2 text-xs text-danger">{pwError}</p>}
-            <div className="mt-3 flex items-center gap-3">
-              <Button size="sm" onClick={savePassword} loading={pwSaving} disabled={!currentPw || !newPw || !confirmPw}>
-                Change password
-              </Button>
-              {pwSaved && (
-                <span className="flex items-center gap-1 text-xs text-success">
-                  <CheckCircle2 className="h-3.5 w-3.5" /> Password updated
-                </span>
-              )}
-            </div>
-          </div>
-        </CardBody>
-      </Card>
-
-      {/* MFA card */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <Smartphone className="h-4 w-4 text-brand-400" />
-            <CardTitle>Two-Factor Authentication</CardTitle>
-          </div>
-        </CardHeader>
-        <CardBody className="flex flex-col gap-4">
-          {user?.mfaEnabled ? (
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <CheckCircle2 className="h-4 w-4 text-success" />
-                  <span className="text-sm font-semibold text-white">MFA is enabled</span>
-                </div>
-                <p className="text-xs text-slate-500">Your account requires an authenticator code on sign in.</p>
-                {mfaDone && <p className="mt-1 text-xs text-success">MFA has been enabled successfully.</p>}
-              </div>
-              <Button size="sm" variant="danger" onClick={disableMfa} loading={mfaLoading}>
-                Disable
-              </Button>
-            </div>
-          ) : mfaSetupData ? (
-            <div className="flex flex-col gap-4">
-              <div>
-                <p className="text-sm font-medium text-white mb-1">Scan with your authenticator app</p>
-                <p className="text-xs text-slate-500 mb-3">Use Google Authenticator, Authy, or any TOTP app.</p>
-                <img src={mfaSetupData.qrCode} alt="QR Code" className="w-40 h-40 rounded-lg bg-white p-2" />
-                <p className="mt-2 text-xs text-slate-500">Or enter this code manually:</p>
-                <code className="mt-1 inline-block rounded bg-surface-300 px-2 py-1 text-xs text-slate-300 tracking-widest">
-                  {mfaSetupData.secret}
-                </code>
-              </div>
-              <div className="flex flex-col gap-2">
-                <label className="text-xs font-medium uppercase tracking-wider text-slate-400">Verify 6-digit code</label>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    maxLength={6}
-                    value={mfaTotp}
-                    onChange={(e) => setMfaTotp(e.target.value.replace(/\D/g, ''))}
-                    placeholder="000000"
-                    className="h-9 w-36 rounded-lg border border-surface-400 bg-surface-200 px-3 text-center text-lg tracking-widest text-slate-100 placeholder:text-slate-600 transition-colors focus:border-brand-500/60 focus:outline-none focus:ring-1 focus:ring-brand-500/30"
-                  />
-                  <Button size="sm" onClick={confirmMfaEnable} loading={mfaLoading} disabled={mfaTotp.length !== 6}>
-                    Enable MFA
-                  </Button>
-                  <button onClick={() => { setMfaSetupData(null); setMfaTotp(''); setMfaError(''); }} className="text-xs text-slate-500 hover:text-slate-300">
-                    Cancel
-                  </button>
-                </div>
-                {mfaError && <p className="text-xs text-danger">{mfaError}</p>}
-              </div>
-            </div>
-          ) : (
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="text-sm font-medium text-slate-300 mb-0.5">Add a second layer of security</p>
-                <p className="text-xs text-slate-500">Use an authenticator app to generate a code at every sign in.</p>
-                {mfaDone && <p className="mt-1 text-xs text-success">MFA enabled successfully.</p>}
-              </div>
-              <Button size="sm" onClick={startMfaSetup} loading={mfaLoading}>
-                Set up MFA
-              </Button>
-            </div>
-          )}
-        </CardBody>
-      </Card>
-
-      {/* Sessions card */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <Monitor className="h-4 w-4 text-brand-400" />
-            <CardTitle>Active Sessions</CardTitle>
-          </div>
-          {sessions && sessions.length > 1 && (
-            <button
-              onClick={revokeAll}
-              disabled={revokingAll}
-              className="inline-flex items-center gap-1 text-xs text-danger hover:text-danger/80 transition-colors disabled:opacity-60"
-            >
-              {revokingAll ? <Loader2 className="h-3 w-3 animate-spin" /> : null}
-              Revoke all
-            </button>
-          )}
-        </CardHeader>
-        <CardBody>
-          {!sessions || sessions.length === 0 ? (
-            <p className="text-xs text-slate-500">No active sessions.</p>
-          ) : (
-            <div className="flex flex-col divide-y divide-surface-400/20">
-              {sessions.map((s) => (
-                <div key={s.id} className="flex items-center justify-between gap-4 py-3 first:pt-0 last:pb-0">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-300/60">
-                      <Monitor className="h-3.5 w-3.5 text-slate-400" />
+          </CardHeader>
+          <CardBody>
+            {!sessions || sessions.length === 0 ? (
+              <p className="text-xs text-slate-500">No active sessions.</p>
+            ) : (
+              <div className="flex flex-col divide-y divide-surface-400/20">
+                {sessions.map((s) => (
+                  <div key={s.id} className="flex items-center justify-between gap-4 py-3 first:pt-0 last:pb-0">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-300/60">
+                        <Monitor className="h-3.5 w-3.5 text-slate-400" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-xs font-medium text-slate-300 truncate">
+                          {s.userAgent ? s.userAgent.replace(/\s*\(.*?\)\s*/g, ' ').trim().slice(0, 60) : 'Unknown device'}
+                        </p>
+                        <p className="text-[11px] text-slate-600 mt-0.5">
+                          {s.ipAddress ?? 'Unknown IP'} · Started {new Date(s.createdAt).toLocaleDateString()}
+                        </p>
+                      </div>
                     </div>
-                    <div className="min-w-0">
-                      <p className="text-xs font-medium text-slate-300 truncate">
-                        {s.userAgent
-                          ? s.userAgent.replace(/\s*\(.*?\)\s*/g, ' ').trim().slice(0, 60)
-                          : 'Unknown device'}
-                      </p>
-                      <p className="text-[11px] text-slate-600 mt-0.5">
-                        {s.ipAddress ?? 'Unknown IP'} · Started {new Date(s.createdAt).toLocaleDateString()}
-                      </p>
-                    </div>
+                    <button onClick={() => revokeSession(s.id)} disabled={revokingId === s.id}
+                      className="shrink-0 text-slate-500 hover:text-danger transition-colors disabled:opacity-40" title="Revoke session">
+                      {revokingId === s.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <X className="h-3.5 w-3.5" />}
+                    </button>
                   </div>
-                  <button
-                    onClick={() => revokeSession(s.id)}
-                    disabled={revokingId === s.id}
-                    className="shrink-0 text-slate-500 hover:text-danger transition-colors disabled:opacity-40"
-                    title="Revoke session"
-                  >
-                    {revokingId === s.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <X className="h-3.5 w-3.5" />}
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardBody>
-      </Card>
-
-      {/* Plan card */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <Zap className="h-4 w-4 text-brand-400" />
-            <CardTitle>Plan</CardTitle>
-          </div>
-          <button
-            onClick={() => navigate('/pricing')}
-            className="text-xs text-brand-400 hover:text-brand-300 transition-colors"
-          >
-            View all plans →
-          </button>
-        </CardHeader>
-        <CardBody>
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <p className="text-base font-bold text-white">{PLAN_LABELS[plan]}</p>
-              <p className="text-xs text-slate-500">${PLAN_PRICES[plan].toLocaleString()} / month</p>
-            </div>
-            {nextPlan && (
-              <button
-                onClick={() => navigate('/pricing')}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-brand-600/20 hover:bg-brand-600/30 border border-brand-500/30 px-3 py-1.5 text-xs font-semibold text-brand-300 transition-colors"
-              >
-                Upgrade to {PLAN_LABELS[nextPlan]}
-                <ArrowRight className="h-3 w-3" />
-              </button>
-            )}
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            {[
-              { label: 'Properties', limit: limits.properties === Infinity ? 'Unlimited' : limits.properties.toLocaleString() },
-              { label: 'Leases', limit: limits.leases === Infinity ? 'Unlimited' : limits.leases.toLocaleString() },
-            ].map(({ label, limit }) => (
-              <div key={label} className="rounded-lg border border-surface-400/30 bg-surface-200/30 px-3 py-2.5">
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 mb-0.5">{label}</p>
-                <p className="text-sm font-bold text-white">{limit}</p>
+                ))}
               </div>
-            ))}
-          </div>
-        </CardBody>
-      </Card>
-
-      {/* Billing */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <CreditCard className="h-4 w-4 text-brand-400" />
-            <CardTitle>Billing</CardTitle>
-          </div>
-        </CardHeader>
-        <CardBody className="flex items-center justify-between gap-4">
-          <div>
-            <p className="text-sm font-semibold text-white">{PLAN_LABELS[plan]} plan</p>
-            <p className="text-xs text-slate-500 mt-0.5">${PLAN_PRICES[plan].toLocaleString()} / month · manage invoices, payment method, and cancellation</p>
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
-            {nextPlan && (
-              <button
-                onClick={() => navigate('/pricing')}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-brand-600/20 hover:bg-brand-600/30 border border-brand-500/30 px-3 py-1.5 text-xs font-semibold text-brand-300 transition-colors"
-              >
-                Upgrade <ArrowRight className="h-3 w-3" />
-              </button>
             )}
-            <button
-              onClick={openPortal}
-              disabled={portalLoading}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-surface-400/40 bg-surface-200/50 hover:bg-surface-200 px-3 py-1.5 text-xs font-semibold text-slate-300 transition-colors disabled:opacity-60"
-            >
-              {portalLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CreditCard className="h-3.5 w-3.5" />}
-              Manage Billing
-            </button>
-          </div>
-        </CardBody>
-      </Card>
+          </CardBody>
+        </Card>
+
+        </div>{/* /right column */}
+
+      </div>{/* /grid */}
+
 
       {/* Preferences */}
       <Card>
@@ -826,7 +733,7 @@ export default function SettingsPage() {
               {supportMutation.isSuccess ? (
                 <div className="flex items-center gap-2 rounded-lg bg-success/10 border border-success/20 px-4 py-3">
                   <CheckCircle2 className="h-4 w-4 text-success shrink-0" />
-                  <p className="text-sm text-success font-medium">Message sent — we'll get back to you at {user?.email}.</p>
+                  <p className="text-sm text-success font-medium">Message sent — we'll be in touch shortly.</p>
                 </div>
               ) : (
                 <>
