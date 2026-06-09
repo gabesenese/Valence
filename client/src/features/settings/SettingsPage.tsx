@@ -711,12 +711,12 @@ export default function SettingsPage() {
                 <Shield className="h-4 w-4 text-slate-400" />
               </div>
               <div>
-                <p className="text-sm font-medium text-slate-300">Session timeout</p>
-                <p className="text-xs text-slate-500">Access token expiry</p>
+                <p className="text-sm font-medium text-slate-300">Session duration</p>
+                <p className="text-xs text-slate-500">Stay signed in for up to 30 days</p>
               </div>
             </div>
             <span className="rounded-lg border border-surface-400/30 bg-surface-200/50 px-3 py-1.5 text-xs font-medium text-slate-400">
-              15 min
+              30 days
             </span>
           </div>
         </CardBody>
