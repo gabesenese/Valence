@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import {
-  MessageSquare, Bug, Lightbulb, ExternalLink, X,
+  MessageSquare, Bug, Lightbulb, X,
   Paperclip, Send, Loader2, CheckCircle2,
 } from 'lucide-react';
 import { cn } from '@/utils/cn';
@@ -212,19 +212,6 @@ export default function SupportPage() {
         </div>
       )}
 
-      {/* Status page link */}
-      <div className="max-w-3xl">
-        <a
-          href="https://valenceos.ca/status"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-2 text-xs text-slate-600 hover:text-slate-400 transition-colors"
-        >
-          <span className="h-1.5 w-1.5 rounded-full bg-success" />
-          System status
-          <ExternalLink className="h-3 w-3" />
-        </a>
-      </div>
     </div>
   );
 }
