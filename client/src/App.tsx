@@ -38,6 +38,7 @@ const ImportPage = lazy(() => import('@/features/import/ImportPage'));
 const AuditPage = lazy(() => import('@/features/audit/AuditPage'));
 const BillingSuccessPage = lazy(() => import('@/features/billing/BillingSuccessPage'));
 const OrganizationPage = lazy(() => import('@/features/organization/OrganizationPage'));
+const SupportPage = lazy(() => import('@/features/support/SupportPage'));
 
 export default function App() {
   return (
@@ -86,6 +87,7 @@ export default function App() {
             <Route path="audit" element={<AuditPage />} />
             <Route path="organization" element={<OrganizationPage />} />
             <Route path="settings" element={<SettingsPage />} />
+            <Route path="support" element={<SupportPage />} />
             <Route path="export" element={<ExportPage />} />
           </Route>
         </Route>
