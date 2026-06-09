@@ -329,7 +329,29 @@ export async function runSimulation(req: SimulationRequest): Promise<SimulationR
     estimatedAnnualImpact: Math.round((revChange - expChange) * 12),
   };
 
-  const analysis = await generateAnalysis(req.scenario, req.params, current, projected, impact);
+  let analysis: SimulationResult['analysis'];
+  try {
+    analysis = await generateAnalysis(req.scenario, req.params, current, projected, impact);
+  } catch {
+    analysis = {
+      findings: [
+        `${SCENARIO_LABELS[req.scenario]} would change monthly revenue by ${impact.revenueChange >= 0 ? '+' : ''}$${Math.abs(impact.revenueChange).toLocaleString()}`,
+        `NOI impact: ${impact.noiChange >= 0 ? '+' : ''}$${Math.abs(impact.noiChange).toLocaleString()}/mo (${impact.noiChangePct >= 0 ? '+' : ''}${impact.noiChangePct}%)`,
+        `Estimated annual impact: ${impact.estimatedAnnualImpact >= 0 ? '+' : ''}$${Math.abs(impact.estimatedAnnualImpact).toLocaleString()}`,
+      ],
+      recommendations: [
+        'Review current leases and renewal timelines',
+        'Assess reserve funds against projected revenue change',
+        'Consult with your property management team on mitigation strategies',
+      ],
+      riskFactors: [
+        'Market conditions may accelerate or delay impact',
+        'Secondary effects on operating costs not captured in this model',
+      ],
+      timeToImpact: 'Immediate to 3 months',
+      confidence: 'medium',
+    };
+  }
 
   return {
     scenario:      req.scenario,
