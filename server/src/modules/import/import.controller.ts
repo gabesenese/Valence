@@ -1,5 +1,5 @@
 import type { Request, Response, NextFunction } from 'express';
-import { importProperties, importTenants, importLeases, type ColumnMap } from './import.service';
+import { importProperties, importTenants, importLeases, type ColumnMap, type FieldDefaults } from './import.service';
 import { logAudit } from '../audit/audit.service';
 import { trackEvent } from '../analytics/funnel.service';
 import { sendSuccess } from '../../utils/response';
@@ -9,16 +9,16 @@ function getPlan(req: Request): Plan {
   return (req.user?.plan ?? 'ESSENTIALS') as Plan;
 }
 
-function readColumnMap(req: Request): ColumnMap | undefined {
-  const raw = (req.body as Record<string, unknown>)?.columnMap;
+function readJson<T>(req: Request, field: string): T | undefined {
+  const raw = (req.body as Record<string, unknown>)?.[field];
   if (!raw) return undefined;
-  try { return JSON.parse(raw as string) as ColumnMap; } catch { return undefined; }
+  try { return JSON.parse(raw as string) as T; } catch { return undefined; }
 }
 
 export async function importPropertiesHandler(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     if (!req.file) { res.status(400).json({ error: 'No CSV file uploaded' }); return; }
-    const result = await importProperties(req.file.buffer, getPlan(req), req.user!.id, readColumnMap(req));
+    const result = await importProperties(req.file.buffer, getPlan(req), req.user!.id, readJson<ColumnMap>(req, 'columnMap'), readJson<FieldDefaults>(req, 'defaults'));
     void logAudit({ userId: req.user?.id, action: 'IMPORT', entity: 'property', meta: { created: result.created, skipped: result.skipped, errors: result.errors.length } });
     void trackEvent('data_imported', req.user?.id, { entity: 'property' });
     sendSuccess(res, result);
@@ -28,7 +28,7 @@ export async function importPropertiesHandler(req: Request, res: Response, next:
 export async function importTenantsHandler(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     if (!req.file) { res.status(400).json({ error: 'No CSV file uploaded' }); return; }
-    const result = await importTenants(req.file.buffer, req.user!.id, readColumnMap(req));
+    const result = await importTenants(req.file.buffer, req.user!.id, readJson<ColumnMap>(req, 'columnMap'), readJson<FieldDefaults>(req, 'defaults'));
     void logAudit({ userId: req.user?.id, action: 'IMPORT', entity: 'tenant', meta: { created: result.created, skipped: result.skipped, errors: result.errors.length } });
     void trackEvent('data_imported', req.user?.id, { entity: 'tenant' });
     sendSuccess(res, result);
@@ -38,7 +38,7 @@ export async function importTenantsHandler(req: Request, res: Response, next: Ne
 export async function importLeasesHandler(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     if (!req.file) { res.status(400).json({ error: 'No CSV file uploaded' }); return; }
-    const result = await importLeases(req.file.buffer, getPlan(req), req.user!.id, readColumnMap(req));
+    const result = await importLeases(req.file.buffer, getPlan(req), req.user!.id, readJson<ColumnMap>(req, 'columnMap'), readJson<FieldDefaults>(req, 'defaults'));
     void logAudit({ userId: req.user?.id, action: 'IMPORT', entity: 'lease', meta: { created: result.created, skipped: result.skipped, errors: result.errors.length } });
     void trackEvent('data_imported', req.user?.id, { entity: 'lease' });
     sendSuccess(res, result);

@@ -78,7 +78,7 @@ const FIELD_DEFS: Record<CsvTab, FieldDef[]> = {
     { value: 'state',         label: 'State / Province',  required: true,  hint: '2-letter code (TX, ON, BC)' },
     { value: 'zipCode',       label: 'ZIP / Postal Code', required: true  },
     { value: 'totalUnits',    label: 'Total Units',       required: true  },
-    { value: 'totalSqft',     label: 'Total Sq Ft',      required: true  },
+    { value: 'totalSqft',     label: 'Total Sq Ft',      required: false },
     { value: 'yearBuilt',     label: 'Year Built',        required: false },
     { value: 'purchasePrice', label: 'Purchase Price',    required: false },
     { value: 'currentValue',  label: 'Current Value',     required: false },
@@ -107,18 +107,30 @@ const FIELD_DEFS: Record<CsvTab, FieldDef[]> = {
 function norm(s: string) { return s.toLowerCase().replace(/[\s_\-.]+/g, ''); }
 
 const PROP_ALIASES: Record<string, string> = {
+  // name
   name: 'name', propertyname: 'name', buildingname: 'name', assetname: 'name', title: 'name', sitename: 'name',
+  // code — includes Toronto RSN (Registration Serial Number) and common assessor IDs
   code: 'code', propertycode: 'code', propcode: 'code', rollnumber: 'code', roll: 'code',
   parcelid: 'code', apn: 'code', propertyid: 'code', assessmentrollnumber: 'code', pid: 'code',
+  rsn: 'code', registrationserialnumber: 'code', serialnumber: 'code', registrationno: 'code',
+  // type
   type: 'type', propertytype: 'type', assettype: 'type', usetype: 'type', landuse: 'type', useclass: 'type', propertyclass: 'type',
+  // address
   address: 'address', streetaddress: 'address', addressfull: 'address', fulladdress: 'address',
   street: 'address', addressline1: 'address', civicaddress: 'address', siteaddress: 'address',
+  // city
   city: 'city', municipality: 'city', town: 'city', cityname: 'city', locality: 'city',
+  // state / province
   state: 'state', province: 'state', stateprovince: 'state', prov: 'state', statecode: 'state', provincecode: 'state',
-  zipcode: 'zipCode', zip: 'zipCode', postalcode: 'zipCode', postcode: 'zipCode', postal: 'zipCode',
+  // zip / postal — includes Toronto PCODE
+  zipcode: 'zipCode', zip: 'zipCode', postalcode: 'zipCode', postcode: 'zipCode', postal: 'zipCode', pcode: 'zipCode',
+  // units — includes Toronto CONFIRMED_UNITS and NO_OF_UNITS
   totalunits: 'totalUnits', units: 'totalUnits', numunits: 'totalUnits', unitcount: 'totalUnits', totalsuites: 'totalUnits',
+  confirmedunits: 'totalUnits', noofunits: 'totalUnits', nofunits: 'totalUnits', numberofunits: 'totalUnits',
+  // sqft
   totalsqft: 'totalSqft', sqft: 'totalSqft', squarefeet: 'totalSqft', area: 'totalSqft',
   totalarea: 'totalSqft', gfa: 'totalSqft', grossfloorarea: 'totalSqft', buildingarea: 'totalSqft',
+  // optional
   yearbuilt: 'yearBuilt', constructionyear: 'yearBuilt', builtyear: 'yearBuilt',
   purchaseprice: 'purchasePrice', acquisitionprice: 'purchasePrice',
   currentvalue: 'currentValue', assessedvalue: 'currentValue', marketvalue: 'currentValue', appraisedvalue: 'currentValue',
@@ -148,11 +160,9 @@ function autoSuggest(headers: string[], tab: CsvTab): Record<string, string> {
   const aliases = TAB_ALIASES[tab];
   const fields  = FIELD_DEFS[tab];
   const mapping: Record<string, string> = {};
-  const used = new Set<string>();
   for (const field of fields) {
     for (const h of headers) {
-      if (used.has(h)) continue;
-      if (aliases[norm(h)] === field.value) { mapping[field.value] = h; used.add(h); break; }
+      if (aliases[norm(h)] === field.value) { mapping[field.value] = h; break; }
     }
   }
   return mapping;
@@ -161,12 +171,14 @@ function autoSuggest(headers: string[], tab: CsvTab): Record<string, string> {
 // ─── Mapping view ─────────────────────────────────────────────────────────────
 
 function MappingView({
-  tab, preview, mapping, onChange, onBack, onImport, loading, error,
+  tab, preview, mapping, defaults, onChange, onDefaultsChange, onBack, onImport, loading, error,
 }: {
   tab: CsvTab;
   preview: CsvPreview;
-  mapping: Record<string, string>; // valenceField → csvHeader
+  mapping: Record<string, string>;  // valenceField → csvHeader
+  defaults: Record<string, string>; // valenceField → fixed value
   onChange: (m: Record<string, string>) => void;
+  onDefaultsChange: (d: Record<string, string>) => void;
   onBack: () => void;
   onImport: () => void;
   loading: boolean;
@@ -175,42 +187,53 @@ function MappingView({
   const fields           = FIELD_DEFS[tab];
   const required         = fields.filter(f => f.required);
   const optional         = fields.filter(f => !f.required);
-  const unmappedRequired = required.filter(f => !mapping[f.value]);
+  // A required field is satisfied by either a CSV column OR a fixed default value
+  const unmappedRequired = required.filter(f => !mapping[f.value] && !defaults[f.value]?.trim());
   const autoCount        = Object.values(mapping).filter(Boolean).length;
   const canImport        = unmappedRequired.length === 0;
 
   const row = (field: FieldDef) => {
-    const selected  = mapping[field.value] ?? '';
-    const sampleVal = selected ? preview.sample[selected] : '';
+    const selected   = mapping[field.value] ?? '';
+    const fixedVal   = defaults[field.value] ?? '';
+    const sampleVal  = selected ? preview.sample[selected] : '';
+    const isSatisfied = selected || fixedVal.trim();
     return (
       <div key={field.value} className="grid grid-cols-2 gap-4 px-4 py-3 items-start">
         <div className="min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-sm text-slate-300 font-medium">{field.label}</span>
             {field.required
-              ? <span className="text-[10px] font-bold text-red-400 bg-red-400/10 border border-red-400/20 px-1.5 py-0.5 rounded">Required</span>
+              ? <span className={cn('text-[10px] font-bold px-1.5 py-0.5 rounded border', isSatisfied ? 'text-success bg-success/10 border-success/20' : 'text-red-400 bg-red-400/10 border-red-400/20')}>Required</span>
               : <span className="text-[10px] text-slate-600">Optional</span>}
           </div>
           {field.hint && <p className="text-[11px] text-slate-600 mt-0.5 leading-tight">{field.hint}</p>}
         </div>
-        <div className="flex flex-col gap-1">
+        <div className="flex flex-col gap-1.5">
           <select
             value={selected}
-            onChange={e => onChange({ ...mapping, [field.value]: e.target.value })}
+            onChange={e => {
+              onChange({ ...mapping, [field.value]: e.target.value });
+              if (e.target.value) onDefaultsChange({ ...defaults, [field.value]: '' });
+            }}
             className={cn(
               'w-full rounded-lg border bg-surface-200 px-2.5 py-1.5 text-sm outline-none transition-colors cursor-pointer',
-              selected
-                ? 'border-surface-400/40 text-white'
-                : field.required ? 'border-red-400/30 text-slate-500' : 'border-surface-400/40 text-slate-500',
+              selected ? 'border-surface-400/40 text-white' : 'border-surface-400/40 text-slate-500',
             )}
           >
             <option value="">— Not mapped —</option>
             {preview.headers.map(h => <option key={h} value={h}>{h}</option>)}
           </select>
           {sampleVal && (
-            <p className="text-[11px] text-slate-600 truncate" title={sampleVal}>
-              e.g. &ldquo;{sampleVal}&rdquo;
-            </p>
+            <p className="text-[11px] text-slate-600 truncate" title={sampleVal}>e.g. &ldquo;{sampleVal}&rdquo;</p>
+          )}
+          {!selected && (
+            <input
+              type="text"
+              value={fixedVal}
+              onChange={e => onDefaultsChange({ ...defaults, [field.value]: e.target.value })}
+              placeholder="or type a fixed value for all rows…"
+              className="w-full rounded-lg border border-surface-400/30 bg-surface-200/50 px-2.5 py-1.5 text-sm text-slate-300 placeholder:text-slate-600 outline-none focus:border-brand-500/50 transition-colors"
+            />
           )}
         </div>
       </div>
@@ -224,7 +247,7 @@ function MappingView({
         <Sparkles className="h-4 w-4 text-brand-400 shrink-0" />
         <p className="text-sm text-slate-300">
           <span className="font-semibold text-white">{autoCount} of {preview.headers.length} columns</span> auto-matched.
-          {' '}Review the mapping below then click Import.
+          {' '}For fields with no matching column, type a fixed value (e.g. <span className="text-white font-medium">Toronto</span> for City).
           {' '}
           <button onClick={onBack} className="text-brand-400 hover:text-brand-300 underline text-sm">Change file</button>
         </p>
@@ -295,13 +318,14 @@ function CsvStep({
   result: ImportResult | null;
   onResult: (r: ImportResult) => void;
 }) {
-  const [phase,   setPhase]   = useState<Phase>(result ? 'done' : 'upload');
-  const [file,    setFile]    = useState<File | null>(null);
-  const [preview, setPreview] = useState<CsvPreview | null>(null);
-  const [mapping, setMapping] = useState<Record<string, string>>({});
-  const [loading, setLoading] = useState(false);
+  const [phase,    setPhase]    = useState<Phase>(result ? 'done' : 'upload');
+  const [file,     setFile]     = useState<File | null>(null);
+  const [preview,  setPreview]  = useState<CsvPreview | null>(null);
+  const [mapping,  setMapping]  = useState<Record<string, string>>({});
+  const [defaults, setDefaults] = useState<Record<string, string>>({});
+  const [loading,  setLoading]  = useState(false);
   const [dragging, setDragging] = useState(false);
-  const [error,   setError]   = useState<string | null>(null);
+  const [error,    setError]    = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleFile = useCallback(async (f: File) => {
@@ -311,6 +335,7 @@ function CsvStep({
       setFile(f);
       setPreview(prev);
       setMapping(autoSuggest(prev.headers, tab));
+      setDefaults({});
       setPhase('mapping');
     } catch {
       setError('Could not read CSV headers — check the file is a valid UTF-8 CSV');
@@ -325,7 +350,10 @@ function CsvStep({
       for (const [valenceField, csvHeader] of Object.entries(mapping)) {
         if (csvHeader) columnMap[csvHeader] = valenceField;
       }
-      const res = await importService[tab](file, columnMap);
+      const fixedDefaults: Record<string, string> = Object.fromEntries(
+        Object.entries(defaults).filter(([, v]) => v.trim())
+      );
+      const res = await importService[tab](file, columnMap, Object.keys(fixedDefaults).length ? fixedDefaults : undefined);
       onResult(res);
       setPhase('done');
     } catch (err) {
@@ -384,8 +412,10 @@ function CsvStep({
         tab={tab}
         preview={preview}
         mapping={mapping}
+        defaults={defaults}
         onChange={setMapping}
-        onBack={() => { setPhase('upload'); setFile(null); setPreview(null); setError(null); }}
+        onDefaultsChange={setDefaults}
+        onBack={() => { setPhase('upload'); setFile(null); setPreview(null); setError(null); setDefaults({}); }}
         onImport={runImport}
         loading={loading}
         error={error}

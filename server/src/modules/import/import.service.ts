@@ -10,9 +10,16 @@ export interface ImportResult {
 }
 
 export type ColumnMap = Record<string, string>; // csvHeader → valenceField
+export type FieldDefaults = Record<string, string>; // valenceField → constant value
 
-function applyColumnMap(row: Record<string, string>, map: ColumnMap): Record<string, string> {
+function applyColumnMap(row: Record<string, string>, map: ColumnMap, defaults?: FieldDefaults): Record<string, string> {
   const result = { ...row };
+  // Defaults applied first — column mappings override them
+  if (defaults) {
+    for (const [field, val] of Object.entries(defaults)) {
+      if (val) result[field] = val;
+    }
+  }
   for (const [csvCol, valenceField] of Object.entries(map)) {
     if (valenceField && Object.prototype.hasOwnProperty.call(row, csvCol)) {
       result[valenceField] = row[csvCol];
@@ -41,7 +48,7 @@ function toDate(val: string, field: string): string {
 
 const VALID_PROPERTY_TYPES = ['RESIDENTIAL', 'COMMERCIAL', 'MIXED_USE', 'INDUSTRIAL', 'RETAIL', 'OFFICE'];
 
-export async function importProperties(buffer: Buffer, plan: Plan, userId: string, columnMap?: ColumnMap): Promise<ImportResult> {
+export async function importProperties(buffer: Buffer, plan: Plan, userId: string, columnMap?: ColumnMap, defaults?: FieldDefaults): Promise<ImportResult> {
   const rows = parseRows(buffer);
   const result: ImportResult = { created: 0, skipped: 0, errors: [] };
   const limit = PLAN_LIMITS[plan].properties;
@@ -49,7 +56,7 @@ export async function importProperties(buffer: Buffer, plan: Plan, userId: strin
 
   for (let i = 0; i < rows.length; i++) {
     const rowNum = i + 2;
-    const row = columnMap ? applyColumnMap(rows[i], columnMap) : rows[i];
+    const row = (columnMap || defaults) ? applyColumnMap(rows[i], columnMap ?? {}, defaults) : rows[i];
 
     if (limit !== Infinity && startCount + result.created >= limit) {
       result.errors.push({ row: rowNum, message: `Plan limit of ${limit} properties reached — upgrade to import more` });
@@ -67,12 +74,11 @@ export async function importProperties(buffer: Buffer, plan: Plan, userId: strin
       if (!state) throw new Error('state is required (2-letter)');
       if (!zipCode) throw new Error('zipCode is required');
       if (!totalUnits) throw new Error('totalUnits is required');
-      if (!totalSqft) throw new Error('totalSqft is required');
 
-      const normalType = type.toUpperCase();
-      if (!VALID_PROPERTY_TYPES.includes(normalType)) {
-        throw new Error(`type must be one of: ${VALID_PROPERTY_TYPES.join(', ')}`);
-      }
+      // Normalize type — unknown values fall back to RESIDENTIAL rather than hard-failing
+      const normalType = VALID_PROPERTY_TYPES.includes(type.toUpperCase())
+        ? type.toUpperCase()
+        : 'RESIDENTIAL';
 
       const normalCode = code.toUpperCase().trim();
       const existing = await prisma.property.findFirst({ where: { code: normalCode, ownerId: userId } });
@@ -94,7 +100,7 @@ export async function importProperties(buffer: Buffer, plan: Plan, userId: strin
           zipCode: zipCode.trim(),
           country: row.country?.trim() || 'US',
           totalUnits: parseInt(totalUnits),
-          totalSqft: parseFloat(totalSqft),
+          totalSqft: totalSqft ? parseFloat(totalSqft) : 0,
           ...(row.yearBuilt && { yearBuilt: parseInt(row.yearBuilt) }),
           ...(row.purchasePrice && { purchasePrice: parseFloat(row.purchasePrice) }),
           ...(row.currentValue && { currentValue: parseFloat(row.currentValue) }),
@@ -114,13 +120,13 @@ export async function importProperties(buffer: Buffer, plan: Plan, userId: strin
 
 // ─── Tenants ──────────────────────────────────────────────────────────────────
 
-export async function importTenants(buffer: Buffer, userId: string, columnMap?: ColumnMap): Promise<ImportResult> {
+export async function importTenants(buffer: Buffer, userId: string, columnMap?: ColumnMap, defaults?: FieldDefaults): Promise<ImportResult> {
   const rows = parseRows(buffer);
   const result: ImportResult = { created: 0, skipped: 0, errors: [] };
 
   for (let i = 0; i < rows.length; i++) {
     const rowNum = i + 2;
-    const row = columnMap ? applyColumnMap(rows[i], columnMap) : rows[i];
+    const row = (columnMap || defaults) ? applyColumnMap(rows[i], columnMap ?? {}, defaults) : rows[i];
 
     try {
       if (!row.name) throw new Error('name is required');
@@ -176,7 +182,7 @@ async function resolveTenant(name: string, userId: string, email?: string): Prom
   return created.id;
 }
 
-export async function importLeases(buffer: Buffer, plan: Plan, userId: string, columnMap?: ColumnMap): Promise<ImportResult> {
+export async function importLeases(buffer: Buffer, plan: Plan, userId: string, columnMap?: ColumnMap, defaults?: FieldDefaults): Promise<ImportResult> {
   const rows = parseRows(buffer);
   const result: ImportResult = { created: 0, skipped: 0, errors: [] };
   const limit = PLAN_LIMITS[plan].leases;
@@ -184,7 +190,7 @@ export async function importLeases(buffer: Buffer, plan: Plan, userId: string, c
 
   for (let i = 0; i < rows.length; i++) {
     const rowNum = i + 2;
-    const row = columnMap ? applyColumnMap(rows[i], columnMap) : rows[i];
+    const row = (columnMap || defaults) ? applyColumnMap(rows[i], columnMap ?? {}, defaults) : rows[i];
 
     if (limit !== Infinity && startCount + result.created >= limit) {
       result.errors.push({ row: rowNum, message: `Plan limit of ${limit.toLocaleString()} leases reached — upgrade to import more` });

@@ -43,10 +43,11 @@ export async function parseCsvPreview(file: File): Promise<CsvPreview> {
   });
 }
 
-async function postCsv(endpoint: string, file: File, columnMap?: Record<string, string>): Promise<ImportResult> {
+async function postCsv(endpoint: string, file: File, columnMap?: Record<string, string>, defaults?: Record<string, string>): Promise<ImportResult> {
   const form = new FormData();
   form.append('csv', file);
-  if (columnMap) form.append('columnMap', JSON.stringify(columnMap));
+  if (columnMap && Object.keys(columnMap).length) form.append('columnMap', JSON.stringify(columnMap));
+  if (defaults && Object.keys(defaults).length)   form.append('defaults',  JSON.stringify(defaults));
   const res = await api.post(endpoint, form, {
     headers: { 'Content-Type': 'multipart/form-data' },
   });
@@ -54,9 +55,9 @@ async function postCsv(endpoint: string, file: File, columnMap?: Record<string, 
 }
 
 export const importService = {
-  properties: (file: File, columnMap?: Record<string, string>) => postCsv('/import/properties', file, columnMap),
-  tenants:    (file: File, columnMap?: Record<string, string>) => postCsv('/import/tenants',    file, columnMap),
-  leases:     (file: File, columnMap?: Record<string, string>) => postCsv('/import/leases',     file, columnMap),
+  properties: (file: File, columnMap?: Record<string, string>, defaults?: Record<string, string>) => postCsv('/import/properties', file, columnMap, defaults),
+  tenants:    (file: File, columnMap?: Record<string, string>, defaults?: Record<string, string>) => postCsv('/import/tenants',    file, columnMap, defaults),
+  leases:     (file: File, columnMap?: Record<string, string>, defaults?: Record<string, string>) => postCsv('/import/leases',     file, columnMap, defaults),
 };
 
 // ─── CSV templates ────────────────────────────────────────────────────────────
