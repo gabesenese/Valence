@@ -39,6 +39,10 @@ const AuditPage = lazy(() => import('@/features/audit/AuditPage'));
 const BillingSuccessPage = lazy(() => import('@/features/billing/BillingSuccessPage'));
 const OrganizationPage = lazy(() => import('@/features/organization/OrganizationPage'));
 const SupportPage = lazy(() => import('@/features/support/SupportPage'));
+const MissionPage = lazy(() => import('@/features/about/MissionPage'));
+const PrivacyTermsPage = lazy(() => import('@/features/about/PrivacyTermsPage'));
+const DataControlsPage = lazy(() => import('@/features/about/DataControlsPage'));
+const SecurityPage = lazy(() => import('@/features/about/SecurityPage'));
 
 export default function App() {
   return (
@@ -48,6 +52,10 @@ export default function App() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/admin" element={<AdminPage />} />
         <Route path="/pricing" element={<PricingPage />} />
+        <Route path="/mission" element={<MissionPage />} />
+        <Route path="/privacy" element={<PrivacyTermsPage />} />
+        <Route path="/data-controls" element={<DataControlsPage />} />
+        <Route path="/security" element={<SecurityPage />} />
         <Route path="/billing/success" element={<BillingSuccessPage />} />
 
         {/* Auth */}

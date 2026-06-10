@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
-  Activity, ArrowRight, Building2, FileText, Users, Bell, Inbox,
+  ArrowRight, Building2, FileText, Users, Bell, Inbox,
   ChevronRight, CheckCircle2,
   Cpu, BarChart3, Shield, Zap, Play, Loader2,
 } from 'lucide-react';
@@ -9,6 +9,8 @@ import { useAuthStore } from '@/state/auth.store';
 import { authService } from '@/services/auth.service';
 import { eventService } from '@/services/event.service';
 import { cn } from '@/utils/cn';
+import { PublicHeader } from '@/components/public/PublicHeader';
+import { PublicFooter } from '@/components/public/PublicFooter';
 
 // ─── Work Queue Mock ──────────────────────────────────────────────────────────
 
@@ -201,26 +203,7 @@ export default function LandingPage() {
       </div>
 
       {/* ── Nav ─────────────────────────────────────────────────────────────── */}
-      <header className="relative z-10 border-b border-surface-400/20 bg-surface-0/80 backdrop-blur-sm">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-          <div className="flex items-center gap-2.5">
-            <img src="/logo.svg" alt="Valence" className="h-9 w-6" />
-            <span className="text-sm font-bold tracking-tight text-white">Valence</span>
-          </div>
-
-          <nav className="hidden items-center gap-6 md:flex">
-            <Link to="/pricing" className="text-sm text-slate-500 hover:text-slate-300 transition-colors">Pricing</Link>
-            <Link to="/auth/login" className="text-sm text-slate-500 hover:text-slate-300 transition-colors">Sign in</Link>
-          </nav>
-
-          <Link
-            to="/auth/register"
-            className="text-sm font-medium text-slate-300 hover:text-white transition-colors"
-          >
-            Get started
-          </Link>
-        </div>
-      </header>
+      <PublicHeader />
 
       {/* ── Hero ────────────────────────────────────────────────────────────── */}
       <section className="relative z-10 mx-auto max-w-6xl px-6 pt-20 pb-12 text-center">
@@ -417,22 +400,7 @@ export default function LandingPage() {
       </section>
 
       {/* ── Footer ───────────────────────────────────────────────────────────── */}
-      <footer className="relative z-10 border-t border-surface-400/20 py-10">
-        <div className="mx-auto max-w-6xl px-6 flex flex-col items-center gap-4 md:flex-row md:justify-between">
-          <div className="flex items-center gap-2">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand-600">
-              <Activity className="h-3.5 w-3.5 text-white" />
-            </div>
-            <span className="text-sm font-semibold text-white">Valence</span>
-            <span className="text-xs text-slate-600 ml-1">Commercial Real Estate Operating System</span>
-          </div>
-          <div className="flex items-center gap-6">
-            <Link to="/pricing" className="text-xs text-slate-600 hover:text-slate-400 transition-colors">Pricing</Link>
-            <Link to="/auth/login" className="text-xs text-slate-600 hover:text-slate-400 transition-colors">Sign in</Link>
-            <Link to="/auth/register" className="text-xs text-slate-600 hover:text-slate-400 transition-colors">Start Free Trial</Link>
-          </div>
-        </div>
-      </footer>
+      <PublicFooter />
     </div>
   );
 }
