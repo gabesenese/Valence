@@ -9,6 +9,18 @@ export interface ImportResult {
   errors: Array<{ row: number; message: string }>;
 }
 
+export type ColumnMap = Record<string, string>; // csvHeader → valenceField
+
+function applyColumnMap(row: Record<string, string>, map: ColumnMap): Record<string, string> {
+  const result = { ...row };
+  for (const [csvCol, valenceField] of Object.entries(map)) {
+    if (valenceField && Object.prototype.hasOwnProperty.call(row, csvCol)) {
+      result[valenceField] = row[csvCol];
+    }
+  }
+  return result;
+}
+
 function parseRows(buffer: Buffer): Record<string, string>[] {
   return parse(buffer, {
     columns: true,
@@ -29,7 +41,7 @@ function toDate(val: string, field: string): string {
 
 const VALID_PROPERTY_TYPES = ['RESIDENTIAL', 'COMMERCIAL', 'MIXED_USE', 'INDUSTRIAL', 'RETAIL', 'OFFICE'];
 
-export async function importProperties(buffer: Buffer, plan: Plan, userId: string): Promise<ImportResult> {
+export async function importProperties(buffer: Buffer, plan: Plan, userId: string, columnMap?: ColumnMap): Promise<ImportResult> {
   const rows = parseRows(buffer);
   const result: ImportResult = { created: 0, skipped: 0, errors: [] };
   const limit = PLAN_LIMITS[plan].properties;
@@ -37,7 +49,7 @@ export async function importProperties(buffer: Buffer, plan: Plan, userId: strin
 
   for (let i = 0; i < rows.length; i++) {
     const rowNum = i + 2;
-    const row = rows[i];
+    const row = columnMap ? applyColumnMap(rows[i], columnMap) : rows[i];
 
     if (limit !== Infinity && startCount + result.created >= limit) {
       result.errors.push({ row: rowNum, message: `Plan limit of ${limit} properties reached — upgrade to import more` });
@@ -102,13 +114,13 @@ export async function importProperties(buffer: Buffer, plan: Plan, userId: strin
 
 // ─── Tenants ──────────────────────────────────────────────────────────────────
 
-export async function importTenants(buffer: Buffer, userId: string): Promise<ImportResult> {
+export async function importTenants(buffer: Buffer, userId: string, columnMap?: ColumnMap): Promise<ImportResult> {
   const rows = parseRows(buffer);
   const result: ImportResult = { created: 0, skipped: 0, errors: [] };
 
   for (let i = 0; i < rows.length; i++) {
     const rowNum = i + 2;
-    const row = rows[i];
+    const row = columnMap ? applyColumnMap(rows[i], columnMap) : rows[i];
 
     try {
       if (!row.name) throw new Error('name is required');
@@ -164,7 +176,7 @@ async function resolveTenant(name: string, userId: string, email?: string): Prom
   return created.id;
 }
 
-export async function importLeases(buffer: Buffer, plan: Plan, userId: string): Promise<ImportResult> {
+export async function importLeases(buffer: Buffer, plan: Plan, userId: string, columnMap?: ColumnMap): Promise<ImportResult> {
   const rows = parseRows(buffer);
   const result: ImportResult = { created: 0, skipped: 0, errors: [] };
   const limit = PLAN_LIMITS[plan].leases;
@@ -172,7 +184,7 @@ export async function importLeases(buffer: Buffer, plan: Plan, userId: string): 
 
   for (let i = 0; i < rows.length; i++) {
     const rowNum = i + 2;
-    const row = rows[i];
+    const row = columnMap ? applyColumnMap(rows[i], columnMap) : rows[i];
 
     if (limit !== Infinity && startCount + result.created >= limit) {
       result.errors.push({ row: rowNum, message: `Plan limit of ${limit.toLocaleString()} leases reached — upgrade to import more` });

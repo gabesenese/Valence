@@ -6,9 +6,47 @@ export interface ImportResult {
   errors: Array<{ row: number; message: string }>;
 }
 
-async function postCsv(endpoint: string, file: File): Promise<ImportResult> {
+export interface CsvPreview {
+  headers: string[];
+  sample: Record<string, string>; // header → first data row value
+}
+
+export async function parseCsvPreview(file: File): Promise<CsvPreview> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = (e.target?.result as string) ?? '';
+      const lines = text.split(/\r?\n/);
+      const headerLine = (lines[0] ?? '').replace(/^﻿/, ''); // strip BOM
+      const dataLine   = lines[1] ?? '';
+
+      const parseLine = (line: string): string[] => {
+        const out: string[] = [];
+        let cur = '', inQ = false;
+        for (const ch of line) {
+          if (ch === '"') { inQ = !inQ; }
+          else if (ch === ',' && !inQ) { out.push(cur.trim()); cur = ''; }
+          else { cur += ch; }
+        }
+        out.push(cur.trim());
+        return out;
+      };
+
+      const headers = parseLine(headerLine).filter(Boolean);
+      const values  = parseLine(dataLine);
+      const sample: Record<string, string> = {};
+      headers.forEach((h, i) => { sample[h] = values[i] ?? ''; });
+      resolve({ headers, sample });
+    };
+    reader.onerror = () => reject(new Error('Failed to read file'));
+    reader.readAsText(file);
+  });
+}
+
+async function postCsv(endpoint: string, file: File, columnMap?: Record<string, string>): Promise<ImportResult> {
   const form = new FormData();
   form.append('csv', file);
+  if (columnMap) form.append('columnMap', JSON.stringify(columnMap));
   const res = await api.post(endpoint, form, {
     headers: { 'Content-Type': 'multipart/form-data' },
   });
@@ -16,9 +54,9 @@ async function postCsv(endpoint: string, file: File): Promise<ImportResult> {
 }
 
 export const importService = {
-  properties: (file: File) => postCsv('/import/properties', file),
-  tenants:    (file: File) => postCsv('/import/tenants', file),
-  leases:     (file: File) => postCsv('/import/leases', file),
+  properties: (file: File, columnMap?: Record<string, string>) => postCsv('/import/properties', file, columnMap),
+  tenants:    (file: File, columnMap?: Record<string, string>) => postCsv('/import/tenants',    file, columnMap),
+  leases:     (file: File, columnMap?: Record<string, string>) => postCsv('/import/leases',     file, columnMap),
 };
 
 // ─── CSV templates ────────────────────────────────────────────────────────────

@@ -6,7 +6,7 @@ import {
   Building2, FileText, Paperclip, Sparkles, ChevronRight, ArrowLeft,
   Loader2,
 } from 'lucide-react';
-import { importService, downloadTemplate, TEMPLATES, type ImportResult } from '@/services/import.service';
+import { importService, parseCsvPreview, downloadTemplate, TEMPLATES, type ImportResult, type CsvPreview } from '@/services/import.service';
 import { documentsService } from '@/services/documents.service';
 import { analyticsService } from '@/services/analytics.service';
 import { Card, CardBody } from '@/components/ui/Card';
@@ -59,6 +59,233 @@ function Stepper({ current }: { current: number }) {
 
 type CsvTab = 'properties' | 'leases';
 
+// ─── Field definitions ────────────────────────────────────────────────────────
+
+interface FieldDef {
+  value: string;
+  label: string;
+  required: boolean;
+  hint?: string;
+}
+
+const FIELD_DEFS: Record<CsvTab, FieldDef[]> = {
+  properties: [
+    { value: 'name',          label: 'Property Name',     required: true  },
+    { value: 'code',          label: 'Property Code',     required: true,  hint: 'Unique ID used to link leases (e.g. roll number, APN)' },
+    { value: 'type',          label: 'Type',              required: true,  hint: 'RESIDENTIAL · COMMERCIAL · MIXED_USE · INDUSTRIAL · RETAIL · OFFICE' },
+    { value: 'address',       label: 'Street Address',    required: true  },
+    { value: 'city',          label: 'City',              required: true  },
+    { value: 'state',         label: 'State / Province',  required: true,  hint: '2-letter code (TX, ON, BC)' },
+    { value: 'zipCode',       label: 'ZIP / Postal Code', required: true  },
+    { value: 'totalUnits',    label: 'Total Units',       required: true  },
+    { value: 'totalSqft',     label: 'Total Sq Ft',      required: true  },
+    { value: 'yearBuilt',     label: 'Year Built',        required: false },
+    { value: 'purchasePrice', label: 'Purchase Price',    required: false },
+    { value: 'currentValue',  label: 'Current Value',     required: false },
+    { value: 'purchaseDate',  label: 'Purchase Date',     required: false },
+    { value: 'country',       label: 'Country',           required: false },
+  ],
+  leases: [
+    { value: 'propertyCode',    label: 'Property Code',    required: true,  hint: 'Must match an existing property' },
+    { value: 'tenantName',      label: 'Tenant Name',      required: true  },
+    { value: 'leaseNumber',     label: 'Lease Number',     required: true,  hint: 'Unique identifier' },
+    { value: 'startDate',       label: 'Start Date',       required: true,  hint: 'YYYY-MM-DD' },
+    { value: 'endDate',         label: 'End Date',         required: true,  hint: 'YYYY-MM-DD' },
+    { value: 'baseRent',        label: 'Base Rent',        required: true,  hint: 'Monthly amount' },
+    { value: 'tenantEmail',     label: 'Tenant Email',     required: false },
+    { value: 'type',            label: 'Lease Type',       required: false, hint: 'GROSS · NET · MODIFIED_GROSS · PERCENTAGE · GROUND' },
+    { value: 'unitNumber',      label: 'Unit Number',      required: false },
+    { value: 'rentEscalation',  label: 'Rent Escalation',  required: false, hint: 'Annual rate (e.g. 0.03 = 3%)' },
+    { value: 'securityDeposit', label: 'Security Deposit', required: false },
+    { value: 'sqft',            label: 'Leased Sq Ft',    required: false },
+    { value: 'notes',           label: 'Notes',            required: false },
+  ],
+};
+
+// ─── Auto-suggest ─────────────────────────────────────────────────────────────
+
+function norm(s: string) { return s.toLowerCase().replace(/[\s_\-.]+/g, ''); }
+
+const PROP_ALIASES: Record<string, string> = {
+  name: 'name', propertyname: 'name', buildingname: 'name', assetname: 'name', title: 'name', sitename: 'name',
+  code: 'code', propertycode: 'code', propcode: 'code', rollnumber: 'code', roll: 'code',
+  parcelid: 'code', apn: 'code', propertyid: 'code', assessmentrollnumber: 'code', pid: 'code',
+  type: 'type', propertytype: 'type', assettype: 'type', usetype: 'type', landuse: 'type', useclass: 'type', propertyclass: 'type',
+  address: 'address', streetaddress: 'address', addressfull: 'address', fulladdress: 'address',
+  street: 'address', addressline1: 'address', civicaddress: 'address', siteaddress: 'address',
+  city: 'city', municipality: 'city', town: 'city', cityname: 'city', locality: 'city',
+  state: 'state', province: 'state', stateprovince: 'state', prov: 'state', statecode: 'state', provincecode: 'state',
+  zipcode: 'zipCode', zip: 'zipCode', postalcode: 'zipCode', postcode: 'zipCode', postal: 'zipCode',
+  totalunits: 'totalUnits', units: 'totalUnits', numunits: 'totalUnits', unitcount: 'totalUnits', totalsuites: 'totalUnits',
+  totalsqft: 'totalSqft', sqft: 'totalSqft', squarefeet: 'totalSqft', area: 'totalSqft',
+  totalarea: 'totalSqft', gfa: 'totalSqft', grossfloorarea: 'totalSqft', buildingarea: 'totalSqft',
+  yearbuilt: 'yearBuilt', constructionyear: 'yearBuilt', builtyear: 'yearBuilt',
+  purchaseprice: 'purchasePrice', acquisitionprice: 'purchasePrice',
+  currentvalue: 'currentValue', assessedvalue: 'currentValue', marketvalue: 'currentValue', appraisedvalue: 'currentValue',
+  purchasedate: 'purchaseDate', acquisitiondate: 'purchaseDate',
+  country: 'country', countrycode: 'country',
+};
+
+const LEASE_ALIASES: Record<string, string> = {
+  propertycode: 'propertyCode', propcode: 'propertyCode', property: 'propertyCode',
+  tenantname: 'tenantName', tenant: 'tenantName', lessee: 'tenantName',
+  leasenumber: 'leaseNumber', leaseno: 'leaseNumber', leaseid: 'leaseNumber', leaseref: 'leaseNumber',
+  startdate: 'startDate', leasestart: 'startDate', commencement: 'startDate', commencementdate: 'startDate',
+  enddate: 'endDate', leaseend: 'endDate', expiry: 'endDate', expirydate: 'endDate', expirationdate: 'endDate',
+  baserent: 'baseRent', rent: 'baseRent', monthlyrent: 'baseRent', annualrent: 'baseRent', rentamount: 'baseRent',
+  tenantemail: 'tenantEmail', email: 'tenantEmail',
+  type: 'type', leasetype: 'type',
+  unitnumber: 'unitNumber', unit: 'unitNumber', suite: 'unitNumber',
+  rentescalation: 'rentEscalation', escalation: 'rentEscalation',
+  securitydeposit: 'securityDeposit', deposit: 'securityDeposit',
+  sqft: 'sqft', squarefeet: 'sqft', leasedarea: 'sqft',
+  notes: 'notes', comments: 'notes', remarks: 'notes',
+};
+
+const TAB_ALIASES: Record<CsvTab, Record<string, string>> = { properties: PROP_ALIASES, leases: LEASE_ALIASES };
+
+function autoSuggest(headers: string[], tab: CsvTab): Record<string, string> {
+  const aliases = TAB_ALIASES[tab];
+  const fields  = FIELD_DEFS[tab];
+  const mapping: Record<string, string> = {};
+  const used = new Set<string>();
+  for (const field of fields) {
+    for (const h of headers) {
+      if (used.has(h)) continue;
+      if (aliases[norm(h)] === field.value) { mapping[field.value] = h; used.add(h); break; }
+    }
+  }
+  return mapping;
+}
+
+// ─── Mapping view ─────────────────────────────────────────────────────────────
+
+function MappingView({
+  tab, preview, mapping, onChange, onBack, onImport, loading, error,
+}: {
+  tab: CsvTab;
+  preview: CsvPreview;
+  mapping: Record<string, string>; // valenceField → csvHeader
+  onChange: (m: Record<string, string>) => void;
+  onBack: () => void;
+  onImport: () => void;
+  loading: boolean;
+  error: string | null;
+}) {
+  const fields           = FIELD_DEFS[tab];
+  const required         = fields.filter(f => f.required);
+  const optional         = fields.filter(f => !f.required);
+  const unmappedRequired = required.filter(f => !mapping[f.value]);
+  const autoCount        = Object.values(mapping).filter(Boolean).length;
+  const canImport        = unmappedRequired.length === 0;
+
+  const row = (field: FieldDef) => {
+    const selected  = mapping[field.value] ?? '';
+    const sampleVal = selected ? preview.sample[selected] : '';
+    return (
+      <div key={field.value} className="grid grid-cols-2 gap-4 px-4 py-3 items-start">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-sm text-slate-300 font-medium">{field.label}</span>
+            {field.required
+              ? <span className="text-[10px] font-bold text-red-400 bg-red-400/10 border border-red-400/20 px-1.5 py-0.5 rounded">Required</span>
+              : <span className="text-[10px] text-slate-600">Optional</span>}
+          </div>
+          {field.hint && <p className="text-[11px] text-slate-600 mt-0.5 leading-tight">{field.hint}</p>}
+        </div>
+        <div className="flex flex-col gap-1">
+          <select
+            value={selected}
+            onChange={e => onChange({ ...mapping, [field.value]: e.target.value })}
+            className={cn(
+              'w-full rounded-lg border bg-surface-200 px-2.5 py-1.5 text-sm outline-none transition-colors cursor-pointer',
+              selected
+                ? 'border-surface-400/40 text-white'
+                : field.required ? 'border-red-400/30 text-slate-500' : 'border-surface-400/40 text-slate-500',
+            )}
+          >
+            <option value="">— Not mapped —</option>
+            {preview.headers.map(h => <option key={h} value={h}>{h}</option>)}
+          </select>
+          {sampleVal && (
+            <p className="text-[11px] text-slate-600 truncate" title={sampleVal}>
+              e.g. &ldquo;{sampleVal}&rdquo;
+            </p>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="flex flex-col gap-4">
+      {/* Banner */}
+      <div className="flex items-center gap-2 rounded-xl border border-brand-500/20 bg-brand-600/10 px-4 py-3">
+        <Sparkles className="h-4 w-4 text-brand-400 shrink-0" />
+        <p className="text-sm text-slate-300">
+          <span className="font-semibold text-white">{autoCount} of {preview.headers.length} columns</span> auto-matched.
+          {' '}Review the mapping below then click Import.
+          {' '}
+          <button onClick={onBack} className="text-brand-400 hover:text-brand-300 underline text-sm">Change file</button>
+        </p>
+      </div>
+
+      {/* Mapping table */}
+      <div className="rounded-xl border border-surface-400/30 overflow-hidden">
+        <div className="grid grid-cols-2 gap-4 border-b border-surface-400/20 bg-surface-200/60 px-4 py-2">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Valence field</p>
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Your CSV column</p>
+        </div>
+        <div className="divide-y divide-surface-400/20 max-h-96 overflow-y-auto">
+          {required.map(row)}
+          {optional.length > 0 && (
+            <div className="px-4 py-2 bg-surface-200/30">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-600">Optional fields</p>
+            </div>
+          )}
+          {optional.map(row)}
+        </div>
+      </div>
+
+      {/* Validation warning */}
+      {unmappedRequired.length > 0 && (
+        <div className="flex items-start gap-2 rounded-lg border border-warning/20 bg-warning/10 px-4 py-3">
+          <AlertCircle className="h-4 w-4 text-warning shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-semibold text-warning">
+              {unmappedRequired.length} required field{unmappedRequired.length > 1 ? 's' : ''} not mapped
+            </p>
+            <p className="text-xs text-warning/70 mt-0.5">{unmappedRequired.map(f => f.label).join(' · ')}</p>
+          </div>
+        </div>
+      )}
+
+      {error && (
+        <div className="flex items-center gap-2 rounded-lg border border-danger/20 bg-danger/10 px-4 py-3 text-sm text-danger">
+          <XCircle className="h-4 w-4 shrink-0" /> {error}
+        </div>
+      )}
+
+      <div className="flex items-center justify-between">
+        <button onClick={onBack} className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm text-slate-400 hover:text-slate-200 transition-colors">
+          <ArrowLeft className="h-4 w-4" /> Change file
+        </button>
+        <button
+          onClick={onImport}
+          disabled={!canImport || loading}
+          className="inline-flex items-center gap-2 rounded-xl bg-brand-600 hover:bg-brand-500 disabled:opacity-50 px-5 py-2.5 text-sm font-semibold text-white transition-colors"
+        >
+          {loading ? <><Loader2 className="h-4 w-4 animate-spin" /> Importing…</> : <><Upload className="h-4 w-4" /> Import {tab}</>}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── CsvStep ──────────────────────────────────────────────────────────────────
+
+type Phase = 'upload' | 'mapping' | 'done';
+
 function CsvStep({
   tab,
   result,
@@ -68,26 +295,39 @@ function CsvStep({
   result: ImportResult | null;
   onResult: (r: ImportResult) => void;
 }) {
-  const [file, setFile]       = useState<File | null>(null);
+  const [phase,   setPhase]   = useState<Phase>(result ? 'done' : 'upload');
+  const [file,    setFile]    = useState<File | null>(null);
+  const [preview, setPreview] = useState<CsvPreview | null>(null);
+  const [mapping, setMapping] = useState<Record<string, string>>({});
+  const [loading, setLoading] = useState(false);
   const [dragging, setDragging] = useState(false);
-  const [loading, setLoading]  = useState(false);
-  const [error, setError]      = useState<string | null>(null);
+  const [error,   setError]   = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const handleFile = (f: File) => { setFile(f); setError(null); };
-
-  const onDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault(); setDragging(false);
-    const f = e.dataTransfer.files[0];
-    if (f) handleFile(f);
-  }, []);
+  const handleFile = useCallback(async (f: File) => {
+    setError(null);
+    try {
+      const prev = await parseCsvPreview(f);
+      setFile(f);
+      setPreview(prev);
+      setMapping(autoSuggest(prev.headers, tab));
+      setPhase('mapping');
+    } catch {
+      setError('Could not read CSV headers — check the file is a valid UTF-8 CSV');
+    }
+  }, [tab]);
 
   const runImport = async () => {
     if (!file) return;
     setLoading(true); setError(null);
     try {
-      const res = await importService[tab](file);
+      const columnMap: Record<string, string> = {};
+      for (const [valenceField, csvHeader] of Object.entries(mapping)) {
+        if (csvHeader) columnMap[csvHeader] = valenceField;
+      }
+      const res = await importService[tab](file, columnMap);
       onResult(res);
+      setPhase('done');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Import failed');
     } finally {
@@ -97,7 +337,8 @@ function CsvStep({
 
   const tpl = TEMPLATES[tab];
 
-  if (result) {
+  // ── Done ──
+  if (phase === 'done' && result) {
     return (
       <div className="flex flex-col gap-4">
         <div className="grid grid-cols-3 gap-3">
@@ -136,9 +377,25 @@ function CsvStep({
     );
   }
 
+  // ── Mapping ──
+  if (phase === 'mapping' && preview) {
+    return (
+      <MappingView
+        tab={tab}
+        preview={preview}
+        mapping={mapping}
+        onChange={setMapping}
+        onBack={() => { setPhase('upload'); setFile(null); setPreview(null); setError(null); }}
+        onImport={runImport}
+        loading={loading}
+        error={error}
+      />
+    );
+  }
+
+  // ── Upload ──
   return (
     <div className="flex flex-col gap-4">
-      {/* Template download */}
       <div className="flex items-start justify-between gap-4 rounded-xl border border-surface-400/30 bg-surface-100/50 p-4">
         <div>
           <p className="text-sm font-semibold text-white mb-0.5">Download CSV template</p>
@@ -148,14 +405,12 @@ function CsvStep({
           onClick={() => downloadTemplate(tab)}
           className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-brand-500/30 bg-brand-600/15 hover:bg-brand-600/25 px-3 py-1.5 text-xs font-semibold text-brand-300 transition-colors"
         >
-          <Download className="h-3.5 w-3.5" />
-          {tpl.filename}
+          <Download className="h-3.5 w-3.5" /> {tpl.filename}
         </button>
       </div>
 
-      {/* Drop zone */}
       <div
-        onDrop={onDrop}
+        onDrop={(e) => { e.preventDefault(); setDragging(false); const f = e.dataTransfer.files[0]; if (f) void handleFile(f); }}
         onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
         onDragLeave={() => setDragging(false)}
         onClick={() => inputRef.current?.click()}
@@ -167,36 +422,18 @@ function CsvStep({
         <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-surface-300/60">
           <Upload className="h-5 w-5 text-slate-400" />
         </div>
-        {file ? (
-          <div className="text-center">
-            <p className="text-sm font-semibold text-white">{file.name}</p>
-            <p className="text-xs text-slate-500">{(file.size / 1024).toFixed(1)} KB · click to change</p>
-          </div>
-        ) : (
-          <div className="text-center">
-            <p className="text-sm font-medium text-slate-300">Drop a CSV file here</p>
-            <p className="text-xs text-slate-600">or click to browse</p>
-          </div>
-        )}
-        <input ref={inputRef} type="file" accept=".csv,text/csv" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }} />
+        <div className="text-center">
+          <p className="text-sm font-medium text-slate-300">Drop a CSV file here</p>
+          <p className="text-xs text-slate-600">or click to browse — we&apos;ll detect your columns automatically</p>
+        </div>
+        <input ref={inputRef} type="file" accept=".csv,text/csv" className="hidden"
+          onChange={(e) => { const f = e.target.files?.[0]; if (f) void handleFile(f); }} />
       </div>
 
       {error && (
         <div className="flex items-center gap-2 rounded-lg border border-danger/20 bg-danger/10 px-4 py-3 text-sm text-danger">
           <XCircle className="h-4 w-4 shrink-0" /> {error}
         </div>
-      )}
-
-      {file && (
-        <button
-          onClick={runImport}
-          disabled={loading}
-          className="inline-flex items-center justify-center gap-2 rounded-xl bg-brand-600 hover:bg-brand-500 disabled:opacity-50 px-5 py-2.5 text-sm font-semibold text-white transition-colors"
-        >
-          {loading
-            ? <><Loader2 className="h-4 w-4 animate-spin" /> Importing…</>
-            : <><Upload className="h-4 w-4" /> Import {tab}</>}
-        </button>
       )}
     </div>
   );
