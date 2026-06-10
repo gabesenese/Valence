@@ -3,9 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Link, useNavigate } from 'react-router-dom';
 import { CheckCircle2, Circle, ChevronRight, X, Building2, FileText, Users } from 'lucide-react';
 import { onboardingService } from '@/services/onboarding.service';
-
-const DISMISS_KEY = 'valence-onboarding-dismissed';
-const COMPLETE_KEY = 'valence-onboarding-complete-seen';
+import { useAuthStore } from '@/state/auth.store';
 
 function StatPill({
   icon: Icon,
@@ -27,6 +25,12 @@ function StatPill({
 
 export function OnboardingCard() {
   const navigate = useNavigate();
+  const userId = useAuthStore((s) => s.user?.id ?? 'anon');
+
+  // Keys are user-scoped so a new account on the same browser always starts fresh.
+  const DISMISS_KEY = `valence-onboarding-dismissed-${userId}`;
+  const COMPLETE_KEY = `valence-onboarding-complete-seen-${userId}`;
+
   const [dismissed, setDismissed] = useState(() => localStorage.getItem(DISMISS_KEY) === '1');
   const [completeSeen, setCompleteSeen] = useState(() => localStorage.getItem(COMPLETE_KEY) === '1');
 
