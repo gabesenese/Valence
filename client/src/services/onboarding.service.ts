@@ -5,6 +5,7 @@ export interface Milestone {
   label: string;
   description: string;
   done: boolean;
+  optional?: boolean;
   href: string | null;
   cta: string | null;
 }
@@ -15,6 +16,11 @@ export interface OnboardingProgress {
   total: number;
   percent: number;
   allDone: boolean;
+  counts: {
+    properties: number;
+    leases: number;
+    invites: number;
+  };
 }
 
 export const onboardingService = {

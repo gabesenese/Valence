@@ -5,6 +5,7 @@ export interface Milestone {
   label: string;
   description: string;
   done: boolean;
+  optional?: boolean;
   href: string | null;
   cta: string | null;
 }
@@ -15,24 +16,30 @@ export interface OnboardingProgress {
   total: number;
   percent: number;
   allDone: boolean;
+  counts: {
+    properties: number;
+    leases: number;
+    invites: number;
+  };
 }
 
 export async function getOnboardingProgress(userId: string): Promise<OnboardingProgress> {
-  const [propertyCount, leaseCount, financialCount, documentCount] = await Promise.all([
+  const [user, propertyCount, leaseCount, alertCount, inviteCount] = await Promise.all([
+    prisma.user.findUnique({ where: { id: userId }, select: { isDemo: true } }),
     prisma.property.count({ where: { ownerId: userId } }),
     prisma.lease.count({ where: { property: { ownerId: userId } } }),
-    prisma.financialRecord.count({ where: { property: { ownerId: userId } } }),
-    prisma.document.count({ where: { uploadedById: userId } }),
+    prisma.alert.count({ where: { property: { ownerId: userId } } }),
+    prisma.invite.count({ where: { invitedById: userId } }),
   ]);
 
   const milestones: Milestone[] = [
     {
-      id: 'account_created',
-      label: 'Create your account',
-      description: "You're in. Welcome to Valence.",
-      done: true,
-      href: null,
-      cta: null,
+      id: 'data_loaded',
+      label: 'Load demo portfolio or import real data',
+      description: 'Explore with sample data or bring your own portfolio.',
+      done: (user?.isDemo ?? false) || propertyCount > 0 || leaseCount > 0,
+      href: '/import',
+      cta: 'Import data',
     },
     {
       id: 'first_property',
@@ -51,26 +58,35 @@ export async function getOnboardingProgress(userId: string): Promise<OnboardingP
       cta: 'Import leases',
     },
     {
-      id: 'financial_data',
-      label: 'Log financial data',
-      description: 'Connect revenue and expenses to unlock analytics.',
-      done: financialCount > 0,
-      href: '/finance',
-      cta: 'Go to Finance',
+      id: 'reviewed_queue',
+      label: 'Review your Work Queue',
+      description: 'See what Valence has flagged across your portfolio.',
+      done: alertCount > 0,
+      href: '/queue',
+      cta: 'Open Work Queue',
     },
     {
-      id: 'document_uploaded',
-      label: 'Upload a contract',
-      description: 'Store lease documents for AI contract intelligence.',
-      done: documentCount > 0,
-      href: '/documents',
-      cta: 'Upload document',
+      id: 'team_member',
+      label: 'Invite a team member',
+      description: 'Give your team visibility into the portfolio.',
+      done: inviteCount > 0,
+      optional: true,
+      href: '/team',
+      cta: 'Invite someone',
     },
   ];
 
-  const completed = milestones.filter((m) => m.done).length;
-  const total = milestones.length;
+  const required = milestones.filter((m) => !m.optional);
+  const completed = required.filter((m) => m.done).length;
+  const total = required.length;
   const percent = Math.round((completed / total) * 100);
 
-  return { milestones, completed, total, percent, allDone: completed === total };
+  return {
+    milestones,
+    completed,
+    total,
+    percent,
+    allDone: completed === total,
+    counts: { properties: propertyCount, leases: leaseCount, invites: inviteCount },
+  };
 }

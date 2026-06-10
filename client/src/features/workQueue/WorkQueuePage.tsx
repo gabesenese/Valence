@@ -25,6 +25,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { PageLoader } from '@/components/ui/Spinner';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { OnboardingCard } from '@/features/onboarding/OnboardingCard';
 
 const TYPE_LABEL: Record<string, string> = {
   LEASE_EXPIRATION: 'Lease Expiration',
@@ -387,6 +388,7 @@ export default function WorkQueuePage() {
   return (
     <div className="flex flex-col gap-6 p-6 animate-fade-in">
       <MorningBrief />
+      <OnboardingCard />
       <PageHeader
         title="My Work"
         description={`${today}${data?.summary.total ? ` · ${data.summary.total} item${data.summary.total === 1 ? '' : 's'} need attention` : ''}`}

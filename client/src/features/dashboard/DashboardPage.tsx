@@ -159,6 +159,9 @@ export default function DashboardPage() {
         <p className="mt-0.5 text-sm text-slate-500">Portfolio intelligence overview</p>
       </div>
 
+      {/* Onboarding checklist — top of page, shown to all users until dismissed or complete */}
+      <OnboardingCard />
+
       {isEmpty && <WelcomeScreen />}
 
       {/* Attention Required — only shown when there's something urgent */}
@@ -195,9 +198,6 @@ export default function DashboardPage() {
           })}
         </div>
       )}
-
-      {/* Onboarding progress — shown until all milestones complete or dismissed */}
-      {!isEmpty && <OnboardingCard />}
 
       {/* Portfolio Health Score */}
       {!isEmpty && <HealthScoreCard />}
