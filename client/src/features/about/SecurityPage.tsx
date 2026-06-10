@@ -64,8 +64,8 @@ export default function SecurityPage() {
       <Section heading="Reporting a vulnerability">
         <p>
           Found something that looks off? We appreciate responsible disclosure. Email{' '}
-          <a href="mailto:security@valenceos.ca" className="text-brand-300 hover:text-brand-200 transition-colors">
-            security@valenceos.ca
+          <a href="mailto:support@valenceos.ca" className="text-brand-300 hover:text-brand-200 transition-colors">
+            support@valenceos.ca
           </a>{' '}
           with the details and we'll respond quickly. Please give us a reasonable window to remediate before
           any public disclosure.

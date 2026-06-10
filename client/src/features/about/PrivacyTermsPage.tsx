@@ -72,8 +72,8 @@ export default function PrivacyTermsPage() {
       <Section heading="8. Contact">
         <p>
           Questions about privacy or these terms? Reach us at{' '}
-          <a href="mailto:privacy@valenceos.ca" className="text-brand-300 hover:text-brand-200 transition-colors">
-            privacy@valenceos.ca
+          <a href="mailto:support@valenceos.ca" className="text-brand-300 hover:text-brand-200 transition-colors">
+            support@valenceos.ca
           </a>
           .
         </p>

@@ -73,8 +73,8 @@ export default function DataControlsPage() {
         <p>
           Most exports are self-serve from within the app. For a full account export or a deletion request,
           email{' '}
-          <a href="mailto:privacy@valenceos.ca" className="text-brand-300 hover:text-brand-200 transition-colors">
-            privacy@valenceos.ca
+          <a href="mailto:support@valenceos.ca" className="text-brand-300 hover:text-brand-200 transition-colors">
+            support@valenceos.ca
           </a>{' '}
           from your account address and we'll process it promptly.
         </p>
