@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { Building2, MapPin, Plus, Search, Trash2, X } from 'lucide-react';
+import { Building2, MapPin, Plus, Search, Trash2 } from 'lucide-react';
 import { propertiesService, type PropertyType, type PropertyStatus } from '@/services/properties.service';
 import { Card, CardBody } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
@@ -10,6 +10,7 @@ import { PageLoader } from '@/components/ui/Spinner';
 import { PageHeader } from '@/components/ui/PageHeader';
 import PropertyFormModal from './PropertyFormModal';
 import { Select } from '@/components/ui/Select';
+import { cn } from '@/utils/cn';
 
 const TYPE_OPTIONS: { value: PropertyType | ''; label: string }[] = [
   { value: '', label: 'All Types' },
