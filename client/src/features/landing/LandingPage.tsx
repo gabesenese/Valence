@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import {
   ArrowRight, Building2, FileText, Users, Bell, Inbox,
   ChevronRight, CheckCircle2,
-  Cpu, BarChart3, Shield, Zap, Play, Loader2,
+  Cpu, BarChart3, Shield, Zap, Play, Loader2, BookOpen, Lock, Database,
 } from 'lucide-react';
 import { useAuthStore } from '@/state/auth.store';
 import { authService } from '@/services/auth.service';
@@ -361,6 +361,71 @@ export default function LandingPage() {
                   <h3 className="text-sm font-semibold text-white">{f.title}</h3>
                   <p className="mt-1 text-xs leading-relaxed text-slate-500">{f.body}</p>
                 </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── About ───────────────────────────────────────────────────────────── */}
+      <section className="relative z-10 py-20">
+        <div className="mx-auto max-w-5xl px-6">
+          <div className="mb-12 text-center">
+            <p className="text-xs font-semibold uppercase tracking-widest text-brand-400 mb-2">About Valence</p>
+            <h2 className="text-3xl font-bold text-white">Built with intention.<br />Operated with trust.</h2>
+            <p className="mt-4 mx-auto max-w-lg text-sm leading-relaxed text-slate-500">
+              We built Valence because commercial real estate operators deserve better than spreadsheets and inboxes.
+              Here's what drives us, and how we handle your data.
+            </p>
+          </div>
+
+          <div className="grid gap-5 md:grid-cols-3">
+            {[
+              {
+                icon: BookOpen,
+                iconColor: 'text-brand-400',
+                iconBg: 'bg-brand-600/10',
+                eyebrow: 'Mission & Story',
+                heading: 'Why we built Valence',
+                body: 'Revenue slips through the cracks when no one has a clear picture. Valence exists to give operators the one answer that matters: what to do today.',
+                href: '/about/mission',
+                linkLabel: 'Read our story',
+              },
+              {
+                icon: Lock,
+                iconColor: 'text-violet-400',
+                iconBg: 'bg-violet-500/10',
+                eyebrow: 'Privacy & Terms',
+                heading: 'How we handle your data',
+                body: 'We collect only what we need to run the product, never sell it, and give you clear rights to access, export, or delete it at any time.',
+                href: '/about/privacy',
+                linkLabel: 'Read privacy terms',
+              },
+              {
+                icon: Database,
+                iconColor: 'text-success',
+                iconBg: 'bg-success/10',
+                eyebrow: 'Data Controls',
+                heading: 'You control your data',
+                body: 'Export everything in one click, set retention policies, and manage team access. Your portfolio data belongs to you — not us.',
+                href: '/about/data-controls',
+                linkLabel: 'View data controls',
+              },
+            ].map((card) => (
+              <div key={card.heading} className="flex flex-col rounded-2xl border border-surface-400/40 bg-surface-100 p-6">
+                <div className={cn('flex h-9 w-9 items-center justify-center rounded-xl mb-4', card.iconBg)}>
+                  <card.icon className={cn('h-4 w-4', card.iconColor)} />
+                </div>
+                <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-600 mb-1">{card.eyebrow}</p>
+                <h3 className="text-sm font-semibold text-white">{card.heading}</h3>
+                <p className="mt-2 text-xs leading-relaxed text-slate-500 flex-1">{card.body}</p>
+                <Link
+                  to={card.href}
+                  className="mt-4 inline-flex items-center gap-1 text-xs font-medium text-brand-400 hover:text-brand-300 transition-colors group"
+                >
+                  {card.linkLabel}
+                  <ChevronRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
+                </Link>
               </div>
             ))}
           </div>
