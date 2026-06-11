@@ -142,49 +142,21 @@ export default function PropertiesPage() {
             <Card
               key={p.id}
               hover={confirmId !== p.id}
-              className={cn('overflow-hidden cursor-pointer', confirmId === p.id && 'border-danger/40')}
+              className={cn('overflow-hidden cursor-pointer', confirmId === p.id && 'border-danger/30')}
               onClick={confirmId === p.id ? undefined : () => navigate(`/properties/${p.id}`)}
             >
-              <div className={cn('h-1.5 bg-gradient-to-r', confirmId === p.id ? 'from-danger/50 to-danger/20' : 'from-brand-600 to-brand-800')} />
-
-              {confirmId === p.id ? (
-                <CardBody>
-                  <div className="flex flex-col items-center justify-center gap-3 py-4 text-center" onClick={(e) => e.stopPropagation()}>
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-danger/10 border border-danger/20">
-                      <Trash2 className="h-5 w-5 text-danger" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold text-white">Delete {p.name}?</p>
-                      <p className="text-xs text-slate-500 mt-0.5">This cannot be undone.</p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={cancelConfirm}
-                        className="rounded-lg border border-surface-400/40 px-4 py-1.5 text-xs text-slate-300 hover:text-white hover:border-surface-400 transition-colors"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        onClick={(e) => void handleDelete(e, p.id)}
-                        disabled={deletingId === p.id}
-                        className="rounded-lg bg-danger hover:bg-red-600 px-4 py-1.5 text-xs font-semibold text-white disabled:opacity-50 transition-colors"
-                      >
-                        {deletingId === p.id ? 'Deleting…' : 'Delete'}
-                      </button>
-                    </div>
+              <div className="h-1.5 bg-gradient-to-r from-brand-600 to-brand-800" />
+              <CardBody>
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-surface-300">
+                    <Building2 className="h-5 w-5 text-brand-400" />
                   </div>
-                </CardBody>
-              ) : (
-                <CardBody>
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-surface-300">
-                      <Building2 className="h-5 w-5 text-brand-400" />
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <Badge variant={p.status === 'ACTIVE' ? 'success' : p.status === 'UNDER_RENOVATION' ? 'warning' : 'neutral'}>
-                        {p.status.replace('_', ' ')}
-                      </Badge>
-                      <Badge variant="neutral">{p.type.replace('_', ' ')}</Badge>
+                  <div className="flex items-center gap-1.5">
+                    <Badge variant={p.status === 'ACTIVE' ? 'success' : p.status === 'UNDER_RENOVATION' ? 'warning' : 'neutral'}>
+                      {p.status.replace('_', ' ')}
+                    </Badge>
+                    <Badge variant="neutral">{p.type.replace('_', ' ')}</Badge>
+                    {confirmId !== p.id && (
                       <button
                         onClick={(e) => { e.stopPropagation(); setConfirmId(p.id); }}
                         className="ml-1 flex h-6 w-6 items-center justify-center rounded-md text-slate-600 hover:bg-danger/15 hover:text-danger transition-colors"
@@ -192,33 +164,60 @@ export default function PropertiesPage() {
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </button>
-                    </div>
+                    )}
                   </div>
-                  <h3 className="font-semibold text-white">{p.name}</h3>
-                  <div className="mt-1 flex items-center gap-1 text-xs text-slate-500">
-                    <MapPin className="h-3 w-3" />
-                    {p.city}, {p.state}
+                </div>
+                <h3 className="font-semibold text-white">{p.name}</h3>
+                <div className="mt-1 flex items-center gap-1 text-xs text-slate-500">
+                  <MapPin className="h-3 w-3" />
+                  {p.city}, {p.state}
+                </div>
+                <div className="mt-4 grid grid-cols-2 gap-2 border-t border-surface-400/30 pt-3">
+                  {(() => {
+                    const pct = p.totalUnits > 0 ? Math.round((p._count.leases / p.totalUnits) * 100) : null;
+                    return (
+                      <div className="text-center">
+                        <p className={`text-base font-bold ${pct === null ? 'text-slate-500' : pct >= 80 ? 'text-success' : pct >= 60 ? 'text-warning' : 'text-danger'}`}>
+                          {pct !== null ? `${pct}%` : '—'}
+                        </p>
+                        <p className="text-xs text-slate-400">Occupancy</p>
+                      </div>
+                    );
+                  })()}
+                  <div className="text-center">
+                    <p className="text-base font-bold text-brand-400">
+                      {p.currentValue ? `$${(p.currentValue / 1_000_000).toFixed(1)}M` : '—'}
+                    </p>
+                    <p className="text-xs text-slate-400">Value</p>
                   </div>
-                  <div className="mt-4 grid grid-cols-2 gap-2 border-t border-surface-400/30 pt-3">
-                    {(() => {
-                      const pct = p.totalUnits > 0 ? Math.round((p._count.leases / p.totalUnits) * 100) : null;
-                      return (
-                        <div className="text-center">
-                          <p className={`text-base font-bold ${pct === null ? 'text-slate-500' : pct >= 80 ? 'text-success' : pct >= 60 ? 'text-warning' : 'text-danger'}`}>
-                            {pct !== null ? `${pct}%` : '—'}
-                          </p>
-                          <p className="text-xs text-slate-400">Occupancy</p>
-                        </div>
-                      );
-                    })()}
-                    <div className="text-center">
-                      <p className="text-base font-bold text-brand-400">
-                        {p.currentValue ? `$${(p.currentValue / 1_000_000).toFixed(1)}M` : '—'}
-                      </p>
-                      <p className="text-xs text-slate-400">Value</p>
-                    </div>
+                </div>
+              </CardBody>
+
+              {/* Confirmation footer — slides in below card content */}
+              {confirmId === p.id && (
+                <div
+                  className="flex items-center justify-between border-t border-danger/20 bg-danger/5 px-4 py-3"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <p className="text-xs text-slate-400">
+                    Delete <span className="font-semibold text-white">{p.name}</span>?
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={cancelConfirm}
+                      className="text-xs text-slate-500 hover:text-slate-200 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={(e) => void handleDelete(e, p.id)}
+                      disabled={deletingId === p.id}
+                      className="rounded-md bg-danger px-3 py-1 text-xs font-semibold text-white hover:bg-red-600 disabled:opacity-50 transition-colors"
+                    >
+                      {deletingId === p.id ? 'Deleting…' : 'Delete'}
+                    </button>
                   </div>
-                </CardBody>
+                </div>
               )}
             </Card>
           ))}
