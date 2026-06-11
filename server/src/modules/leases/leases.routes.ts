@@ -29,7 +29,7 @@ router.get('/:id/activity', controller.activity);
 router.get('/:id/notes', controller.notes);
 router.post('/', authorize('ANALYST'), validate(createLeaseSchema), controller.create);
 router.patch('/:id', authorize('ANALYST'), validate(updateLeaseSchema), controller.update);
-router.delete('/:id', authorize('ADMIN'), controller.remove);
+router.delete('/:id', authorize('ANALYST'), controller.remove);
 
 // Workflow actions
 router.post('/:id/start-renewal', authorize('ANALYST'), controller.startRenewal);

@@ -4,7 +4,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Search, FileText, ChevronRight, X, ChevronUp, ChevronDown,
   LayoutList, Zap, CheckSquare, Square, RefreshCw, Phone,
-  BellOff, Download, SlidersHorizontal, Users, Plus, Columns3, Sparkles,
+  BellOff, Download, SlidersHorizontal, Users, Plus, Columns3, Sparkles, Trash2,
 } from 'lucide-react';
 import RenewalKanban from './RenewalKanban';
 import { leasesService, type RenewalStage, type PriorityLease, type Lease, type LeaseAlert } from '@/services/leases.service';
@@ -358,6 +358,22 @@ export default function LeasesPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const propertyId = searchParams.get('propertyId') ?? undefined;
 
+  const [deletingLeaseId, setDeletingLeaseId] = useState<string | null>(null);
+  const [confirmLeaseId, setConfirmLeaseId]   = useState<string | null>(null);
+
+  const handleDeleteLease = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    if (confirmLeaseId !== id) { setConfirmLeaseId(id); return; }
+    setConfirmLeaseId(null);
+    setDeletingLeaseId(id);
+    try {
+      await leasesService.deleteLease(id);
+      await qc.invalidateQueries({ queryKey: ['leases'] });
+    } finally {
+      setDeletingLeaseId(null);
+    }
+  };
+
   const bulkMutation = useMutation({
     mutationFn: async (payload: { action: 'startRenewal' | 'exportCsv' | 'assignOwner'; ownerUserId?: string }) => {
       const { action, ownerUserId } = payload;
@@ -653,6 +669,10 @@ export default function LeasesPage() {
                         onToggle={() => toggleRow(lease.id)}
                         onRowClick={() => setDrawerLeaseId(lease.id)}
                         onNavigate={() => navigate(`/leases/${lease.id}`)}
+                        onDelete={(e) => void handleDeleteLease(e, lease.id)}
+                        confirming={confirmLeaseId === lease.id}
+                        onCancelDelete={(e) => { e.stopPropagation(); setConfirmLeaseId(null); }}
+                        deleting={deletingLeaseId === lease.id}
                       />
                     ))}
                   </tbody>
@@ -782,13 +802,17 @@ function AlertTooltip({ alerts }: { alerts: LeaseAlert[] }) {
 }
 
 function LeaseRow({
-  lease, selected, onToggle, onRowClick, onNavigate,
+  lease, selected, onToggle, onRowClick, onNavigate, onDelete, confirming, onCancelDelete, deleting,
 }: {
   lease: Lease;
   selected: boolean;
   onToggle: () => void;
   onRowClick: () => void;
   onNavigate: () => void;
+  onDelete: (e: React.MouseEvent) => void;
+  confirming: boolean;
+  onCancelDelete: (e: React.MouseEvent) => void;
+  deleting: boolean;
 }) {
   const openAlerts = lease.alerts?.length ?? 0;
   return (
@@ -831,8 +855,28 @@ function LeaseRow({
       <td className="px-4 py-3" onClick={onRowClick}>
         <StatusBadge status={lease.status} config={LEASE_STATUS_CONFIG} />
       </td>
-      <td className="px-4 py-3" onClick={onNavigate}>
-        <ChevronRight className="h-4 w-4 text-slate-600 opacity-0 group-hover:opacity-100 transition-opacity" />
+      <td className="px-4 py-3">
+        <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          {confirming ? (
+            <>
+              <button onClick={onDelete} disabled={deleting} className="flex h-6 w-6 items-center justify-center rounded bg-danger/20 text-danger disabled:opacity-40" title="Confirm delete">
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+              <button onClick={onCancelDelete} className="flex h-6 w-6 items-center justify-center rounded text-slate-500 hover:text-slate-300" title="Cancel">
+                <X className="h-3 w-3" />
+              </button>
+            </>
+          ) : (
+            <>
+              <button onClick={onDelete} disabled={deleting} className="flex h-6 w-6 items-center justify-center rounded text-slate-600 hover:bg-danger/15 hover:text-danger disabled:opacity-40" title="Delete lease">
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+              <button onClick={onNavigate} className="flex h-6 w-6 items-center justify-center rounded text-slate-600 hover:text-slate-300">
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </>
+          )}
+        </div>
       </td>
     </tr>
   );

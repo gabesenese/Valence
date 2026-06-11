@@ -3,6 +3,7 @@ import * as service from './properties.service';
 import { enforcePropertyLimit } from '../plans/plans.service';
 import { logAudit, getEntityActivity } from '../audit/audit.service';
 import { sendSuccess, sendPaginated } from '../../utils/response';
+import { ForbiddenError } from '../../utils/errors';
 import type { Plan } from '@prisma/client';
 
 export async function list(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -39,6 +40,7 @@ export async function update(req: Request, res: Response, next: NextFunction): P
 export async function remove(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const existing = await service.getPropertyById(req.params.id);
+    if (existing.ownerId !== req.user!.id) throw new ForbiddenError('Not your property');
     await service.deleteProperty(req.params.id);
     void logAudit({ userId: req.user?.id, action: 'DELETE', entity: 'property', entityId: req.params.id, entityName: existing.name });
     sendSuccess(res, { deleted: true });

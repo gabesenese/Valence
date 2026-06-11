@@ -3,6 +3,7 @@ import * as service from './leases.service';
 import { enforceLeaseLimit } from '../plans/plans.service';
 import { logAudit } from '../audit/audit.service';
 import { sendSuccess, sendPaginated } from '../../utils/response';
+import { ForbiddenError } from '../../utils/errors';
 import type { Plan } from '@prisma/client';
 
 export async function list(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -63,6 +64,7 @@ export async function update(req: Request, res: Response, next: NextFunction): P
 export async function remove(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const existing = await service.getLeaseById(req.params.id);
+    if (existing.property.ownerId !== req.user!.id) throw new ForbiddenError('Not your lease');
     await service.deleteLease(req.params.id);
     void logAudit({ userId: req.user?.id, action: 'DELETE', entity: 'lease', entityId: req.params.id, entityName: existing.leaseNumber });
     sendSuccess(res, { deleted: true });

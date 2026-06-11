@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { Building2, MapPin, Plus, Search, Trash2 } from 'lucide-react';
+import { Building2, MapPin, Plus, Search, Trash2, X } from 'lucide-react';
 import { propertiesService, type PropertyType, type PropertyStatus } from '@/services/properties.service';
 import { Card, CardBody } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
@@ -38,9 +38,12 @@ export default function PropertiesPage() {
   const [status, setStatus] = useState<PropertyStatus | ''>('');
   const [addOpen, setAddOpen] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [confirmId, setConfirmId] = useState<string | null>(null);
 
   const handleDelete = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
+    if (confirmId !== id) { setConfirmId(id); return; }
+    setConfirmId(null);
     setDeletingId(id);
     try {
       await propertiesService.deleteProperty(id);
@@ -49,6 +52,8 @@ export default function PropertiesPage() {
       setDeletingId(null);
     }
   };
+
+  const cancelConfirm = (e: React.MouseEvent) => { e.stopPropagation(); setConfirmId(null); };
 
   const { data, isLoading } = useQuery({
     queryKey: ['properties', { search, type, status }],
@@ -147,13 +152,34 @@ export default function PropertiesPage() {
                       {p.status.replace('_', ' ')}
                     </Badge>
                     <Badge variant="neutral">{p.type.replace('_', ' ')}</Badge>
-                    <button
-                      onClick={(e) => void handleDelete(e, p.id)}
-                      disabled={deletingId === p.id}
-                      className="ml-1 flex h-6 w-6 items-center justify-center rounded-md text-slate-600 hover:bg-danger/15 hover:text-danger disabled:opacity-40 transition-colors"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
+                    {confirmId === p.id ? (
+                      <>
+                        <button
+                          onClick={(e) => void handleDelete(e, p.id)}
+                          disabled={deletingId === p.id}
+                          className="ml-1 flex h-6 w-6 items-center justify-center rounded-md bg-danger/20 text-danger disabled:opacity-40 transition-colors"
+                          title="Confirm delete"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          onClick={cancelConfirm}
+                          className="flex h-6 w-6 items-center justify-center rounded-md text-slate-500 hover:text-slate-300 transition-colors"
+                          title="Cancel"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        onClick={(e) => void handleDelete(e, p.id)}
+                        disabled={deletingId === p.id}
+                        className="ml-1 flex h-6 w-6 items-center justify-center rounded-md text-slate-600 hover:bg-danger/15 hover:text-danger disabled:opacity-40 transition-colors"
+                        title="Delete property"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    )}
                   </div>
                 </div>
                 <h3 className="font-semibold text-white">{p.name}</h3>
