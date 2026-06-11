@@ -41,6 +41,9 @@ import { supportRouter } from './modules/support/support.routes';
 
 export const app = express();
 
+// Trust Vercel/reverse-proxy forwarded headers (fixes X-Forwarded-For validation errors)
+app.set('trust proxy', 1);
+
 // ─── Security ─────────────────────────────────────────────────────────────────
 app.use(helmet());
 const allowedOrigins = new Set([
