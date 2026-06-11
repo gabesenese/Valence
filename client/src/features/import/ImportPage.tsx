@@ -388,15 +388,16 @@ function CsvStep({
 
         {/* Plan limit banner — separated from CSV data errors */}
         {planLimitErrors.length > 0 && (() => {
-          const m = planLimitErrors[0].message.match(/Your (\w+) plan includes up to (\d+)/);
+          const m = planLimitErrors[0].message.match(/Your (\w+) plan/);
           const planName = m?.[1] ?? 'current';
-          const cap = m?.[2];
+          const used = result.currentCount ?? '?';
+          const cap  = result.planLimit   ?? '?';
           return (
             <div className="flex items-center gap-3 rounded-xl border border-brand-500/20 bg-brand-600/10 px-4 py-3">
               <TrendingUp className="h-4 w-4 text-brand-400 shrink-0" />
               <p className="flex-1 text-sm min-w-0">
                 <span className="font-semibold text-white">{planLimitErrors.length.toLocaleString()} rows skipped</span>
-                <span className="text-slate-400"> — {planName} plan{cap ? ` · ${cap} property limit` : ' limit'} reached</span>
+                <span className="text-slate-400"> — {planName} plan · {used}/{cap} properties used</span>
               </p>
               <a
                 href="/settings?tab=billing"

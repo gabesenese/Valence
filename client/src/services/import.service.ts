@@ -4,6 +4,8 @@ export interface ImportResult {
   created: number;
   skipped: number;
   errors: Array<{ row: number; message: string }>;
+  currentCount?: number;
+  planLimit?: number;
 }
 
 export interface CsvPreview {

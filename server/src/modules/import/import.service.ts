@@ -7,6 +7,8 @@ export interface ImportResult {
   created: number;
   skipped: number;
   errors: Array<{ row: number; message: string }>;
+  currentCount?: number;
+  planLimit?: number;
 }
 
 export type ColumnMap = Record<string, string>; // csvHeader → valenceField
@@ -50,19 +52,20 @@ const VALID_PROPERTY_TYPES = ['RESIDENTIAL', 'COMMERCIAL', 'MIXED_USE', 'INDUSTR
 
 export async function importProperties(buffer: Buffer, plan: Plan, userId: string, columnMap?: ColumnMap, defaults?: FieldDefaults): Promise<ImportResult> {
   const rows = parseRows(buffer);
-  const result: ImportResult = { created: 0, skipped: 0, errors: [] };
   const limit = PLAN_LIMITS[plan].properties;
   const startCount = await prisma.property.count({ where: { ownerId: userId } });
+  // Only net-new properties count against the plan limit; updates are free
+  const netNewAllowed = limit === Infinity ? Infinity : Math.max(0, limit - startCount);
+  let netNewCreated = 0;
+  const result: ImportResult = {
+    created: 0, skipped: 0, errors: [],
+    currentCount: startCount,
+    planLimit: limit === Infinity ? undefined : limit,
+  };
 
   for (let i = 0; i < rows.length; i++) {
     const rowNum = i + 2;
     const row = (columnMap || defaults) ? applyColumnMap(rows[i], columnMap ?? {}, defaults) : rows[i];
-
-    if (limit !== Infinity && startCount + result.created >= limit) {
-      result.errors.push({ row: rowNum, message: `Your ${plan} plan includes up to ${limit} properties and you've reached the limit — upgrade your plan to import more` });
-      result.skipped++;
-      continue;
-    }
 
     try {
       const { name, code, type, address, city, state, zipCode, totalUnits, totalSqft } = row;
@@ -75,15 +78,37 @@ export async function importProperties(buffer: Buffer, plan: Plan, userId: strin
       if (!zipCode) throw new Error('zipCode is required');
       if (!totalUnits) throw new Error('totalUnits is required');
 
-      // Normalize type — unknown values fall back to RESIDENTIAL rather than hard-failing
-      const normalType = VALID_PROPERTY_TYPES.includes(type.toUpperCase())
-        ? type.toUpperCase()
-        : 'RESIDENTIAL';
-
+      const normalType = VALID_PROPERTY_TYPES.includes(type.toUpperCase()) ? type.toUpperCase() : 'RESIDENTIAL';
       const normalCode = code.toUpperCase().trim();
       const existing = await prisma.property.findFirst({ where: { code: normalCode, ownerId: userId } });
+
       if (existing) {
-        result.errors.push({ row: rowNum, message: `Property code "${normalCode}" already exists — skipped` });
+        // Upsert: update existing record, doesn't consume plan quota
+        await prisma.property.update({
+          where: { id: existing.id },
+          data: {
+            name: name.trim(),
+            type: normalType as PropertyType,
+            address: address.trim(),
+            city: city.trim(),
+            state: state.toUpperCase().trim(),
+            zipCode: zipCode.trim(),
+            ...(row.country && { country: row.country.trim() }),
+            totalUnits: parseInt(totalUnits),
+            totalSqft: totalSqft ? parseFloat(totalSqft) : existing.totalSqft,
+            ...(row.yearBuilt && { yearBuilt: parseInt(row.yearBuilt) }),
+            ...(row.purchasePrice && { purchasePrice: parseFloat(row.purchasePrice) }),
+            ...(row.currentValue && { currentValue: parseFloat(row.currentValue) }),
+            ...(row.purchaseDate && { purchaseDate: new Date(row.purchaseDate) }),
+          },
+        });
+        result.created++;
+        continue;
+      }
+
+      // New property — check plan limit
+      if (netNewAllowed !== Infinity && netNewCreated >= netNewAllowed) {
+        result.errors.push({ row: rowNum, message: `Your ${plan} plan includes up to ${limit} properties and you've reached the limit — upgrade your plan to import more` });
         result.skipped++;
         continue;
       }
@@ -98,7 +123,7 @@ export async function importProperties(buffer: Buffer, plan: Plan, userId: strin
           city: city.trim(),
           state: state.toUpperCase().trim(),
           zipCode: zipCode.trim(),
-          country: row.country?.trim() || 'US',
+          country: row.country?.trim() || 'CA',
           totalUnits: parseInt(totalUnits),
           totalSqft: totalSqft ? parseFloat(totalSqft) : 0,
           ...(row.yearBuilt && { yearBuilt: parseInt(row.yearBuilt) }),
@@ -107,7 +132,7 @@ export async function importProperties(buffer: Buffer, plan: Plan, userId: strin
           ...(row.purchaseDate && { purchaseDate: new Date(row.purchaseDate) }),
         },
       });
-
+      netNewCreated++;
       result.created++;
     } catch (err) {
       result.errors.push({ row: rowNum, message: err instanceof Error ? err.message : 'Unknown error' });
