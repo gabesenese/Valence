@@ -4,7 +4,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import {
   Upload, Download, CheckCircle, CheckCircle2, XCircle, AlertCircle,
   Building2, FileText, Paperclip, Sparkles, ChevronRight, ArrowLeft,
-  Loader2,
+  Loader2, TrendingUp,
 } from 'lucide-react';
 import { importService, parseCsvPreview, downloadTemplate, TEMPLATES, type ImportResult, type CsvPreview } from '@/services/import.service';
 import { documentsService } from '@/services/documents.service';
@@ -367,13 +367,16 @@ function CsvStep({
 
   // ── Done ──
   if (phase === 'done' && result) {
+    const planLimitErrors = result.errors.filter(e => e.message.includes('upgrade your plan'));
+    const dataErrors      = result.errors.filter(e => !e.message.includes('upgrade your plan'));
+
     return (
       <div className="flex flex-col gap-4">
         <div className="grid grid-cols-3 gap-3">
           {[
-            { label: 'Created', value: result.created,        icon: CheckCircle, color: 'text-success' },
-            { label: 'Skipped', value: result.skipped,        icon: AlertCircle, color: 'text-warning'  },
-            { label: 'Errors',  value: result.errors.length,  icon: XCircle,     color: 'text-danger'   },
+            { label: 'Imported', value: result.created,     icon: CheckCircle, color: 'text-success' },
+            { label: 'Skipped',  value: result.skipped,     icon: AlertCircle, color: 'text-warning'  },
+            { label: 'Errors',   value: dataErrors.length,  icon: XCircle,     color: 'text-danger'   },
           ].map(({ label, value, icon: Icon, color }) => (
             <div key={label} className="flex flex-col items-center gap-1 rounded-xl border border-surface-400/30 bg-surface-100/50 py-4">
               <Icon className={cn('h-5 w-5', color)} />
@@ -382,13 +385,36 @@ function CsvStep({
             </div>
           ))}
         </div>
-        {result.errors.length > 0 && (
+
+        {/* Plan limit banner — separated from CSV data errors */}
+        {planLimitErrors.length > 0 && (
+          <div className="flex items-start gap-3 rounded-xl border border-brand-500/20 bg-brand-600/10 px-4 py-3.5">
+            <TrendingUp className="h-4 w-4 text-brand-400 shrink-0 mt-0.5" />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-white">
+                {planLimitErrors.length.toLocaleString()} rows skipped — plan limit reached
+              </p>
+              <p className="text-xs text-slate-400 mt-0.5 leading-relaxed">
+                {planLimitErrors[0].message}
+              </p>
+            </div>
+            <a
+              href="/settings?tab=billing"
+              className="shrink-0 inline-flex items-center gap-1.5 rounded-lg bg-brand-600 hover:bg-brand-500 px-3 py-1.5 text-xs font-semibold text-white transition-colors"
+            >
+              Upgrade
+            </a>
+          </div>
+        )}
+
+        {/* Real CSV data errors */}
+        {dataErrors.length > 0 && (
           <div className="rounded-xl border border-surface-400/30 bg-surface-100/50 overflow-hidden">
             <div className="border-b border-surface-400/20 px-4 py-2.5">
               <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Row errors</p>
             </div>
             <div className="max-h-40 overflow-y-auto divide-y divide-surface-400/20">
-              {result.errors.map(({ row, message }) => (
+              {dataErrors.map(({ row, message }) => (
                 <div key={row} className="flex items-start gap-3 px-4 py-2.5">
                   <span className="shrink-0 rounded bg-surface-300/60 px-1.5 py-0.5 text-[10px] font-bold text-slate-400">Row {row}</span>
                   <span className="text-xs text-slate-400">{message}</span>
@@ -397,6 +423,7 @@ function CsvStep({
             </div>
           </div>
         )}
+
         <p className="text-xs text-slate-500">
           {result.created > 0 ? `${result.created} ${tab} imported successfully.` : 'No records were imported.'}{' '}
           Continue to the next step or go back to re-import.
