@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import {
-  ClipboardList, X, Plus, Building2, FileText, AlertTriangle, ChevronDown,
+  ClipboardList, X, Plus, Building2, FileText, AlertTriangle, ChevronDown, Pencil, Calendar, User,
 } from 'lucide-react';
 import { tasksService, type Task, type TaskStatus, type CreateTaskInput } from '@/services/tasks.service';
 import { usersService, type TeamMember } from '@/services/users.service';
@@ -145,41 +145,105 @@ function EditTaskModal({
     });
   };
 
+  const context = task.lease
+    ? { icon: FileText, label: task.lease.tenant.name }
+    : task.property
+    ? { icon: Building2, label: task.property.name }
+    : task.alert
+    ? { icon: AlertTriangle, label: task.alert.title }
+    : null;
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-      <div className="w-full max-w-md rounded-2xl border border-surface-400/40 bg-surface-100 p-6 shadow-xl">
-        <h2 className="text-base font-semibold text-white mb-4">Edit Task</h2>
-        <div className="flex flex-col gap-3">
-          <input
-            autoFocus
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter') submit(); if (e.key === 'Escape') onClose(); }}
-            placeholder="Task title"
-            className="rounded-lg border border-surface-400/40 bg-surface-200 px-3 py-2 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-brand-500/50"
-          />
-          <textarea
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="Description (optional)"
-            rows={2}
-            className="rounded-lg border border-surface-400/40 bg-surface-200 px-3 py-2 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-brand-500/50 resize-none"
-          />
-          <Select
-            size="md"
-            value={assigneeUserId}
-            onChange={setAssigneeUserId}
-            options={assigneeOptions}
-            placeholder="Assign to..."
-          />
-          <DatePicker
-            value={dueAt}
-            onChange={setDueAt}
-            onClear={dueAt ? () => setDueAt('') : undefined}
-            placeholder="Due date (optional)"
-          />
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70"
+      onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div className="w-full max-w-lg rounded-2xl border border-surface-400/40 bg-surface-100 shadow-2xl shadow-black/60 overflow-hidden">
+
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-surface-400/20">
+          <div className="flex items-center gap-3">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-600/20">
+              <Pencil className="h-3.5 w-3.5 text-brand-400" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-white">Edit Task</p>
+              {context && (
+                <div className="flex items-center gap-1 mt-0.5">
+                  <context.icon className="h-3 w-3 text-slate-500" />
+                  <span className="text-xs text-slate-500 truncate max-w-[220px]">{context.label}</span>
+                </div>
+              )}
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-500 hover:bg-surface-300 hover:text-slate-300 transition-colors"
+          >
+            <X className="h-4 w-4" />
+          </button>
         </div>
-        <div className="flex justify-end gap-2 mt-5">
+
+        {/* Body */}
+        <div className="px-6 py-5 flex flex-col gap-5">
+
+          {/* Title */}
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">Title</label>
+            <input
+              autoFocus
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') submit(); if (e.key === 'Escape') onClose(); }}
+              placeholder="Task title"
+              className="rounded-lg border border-surface-400/40 bg-surface-200 px-3 py-2.5 text-sm text-slate-100 placeholder-slate-600 focus:border-brand-500/60 focus:outline-none focus:ring-1 focus:ring-brand-500/30 transition-colors"
+            />
+          </div>
+
+          {/* Description */}
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">Description</label>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Add details, context, or instructions…"
+              rows={3}
+              className="rounded-lg border border-surface-400/40 bg-surface-200 px-3 py-2.5 text-sm text-slate-100 placeholder-slate-600 focus:border-brand-500/60 focus:outline-none focus:ring-1 focus:ring-brand-500/30 resize-none transition-colors leading-relaxed"
+            />
+          </div>
+
+          {/* Assignee + Due date side by side */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="flex flex-col gap-1.5">
+              <label className="flex items-center gap-1.5 text-xs font-medium text-slate-400 uppercase tracking-wider">
+                <User className="h-3 w-3" />
+                Assignee
+              </label>
+              <Select
+                size="md"
+                value={assigneeUserId}
+                onChange={setAssigneeUserId}
+                options={assigneeOptions}
+                placeholder="Unassigned"
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="flex items-center gap-1.5 text-xs font-medium text-slate-400 uppercase tracking-wider">
+                <Calendar className="h-3 w-3" />
+                Due Date
+              </label>
+              <DatePicker
+                value={dueAt}
+                onChange={setDueAt}
+                onClear={dueAt ? () => setDueAt('') : undefined}
+                placeholder="No due date"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-surface-400/20 bg-surface-200/30">
           <Button variant="ghost" size="sm" onClick={onClose}>Cancel</Button>
           <Button size="sm" disabled={!title.trim()} onClick={submit}>
             Save Changes
