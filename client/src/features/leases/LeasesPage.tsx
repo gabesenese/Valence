@@ -361,9 +361,7 @@ export default function LeasesPage() {
   const [deletingLeaseId, setDeletingLeaseId] = useState<string | null>(null);
   const [confirmLeaseId, setConfirmLeaseId]   = useState<string | null>(null);
 
-  const handleDeleteLease = async (e: React.MouseEvent, id: string) => {
-    e.stopPropagation();
-    if (confirmLeaseId !== id) { setConfirmLeaseId(id); return; }
+  const handleDeleteLease = async (id: string) => {
     setConfirmLeaseId(null);
     setDeletingLeaseId(id);
     try {
@@ -669,9 +667,10 @@ export default function LeasesPage() {
                         onToggle={() => toggleRow(lease.id)}
                         onRowClick={() => setDrawerLeaseId(lease.id)}
                         onNavigate={() => navigate(`/leases/${lease.id}`)}
-                        onDelete={(e) => void handleDeleteLease(e, lease.id)}
+                        onRequestDelete={() => setConfirmLeaseId(lease.id)}
+                        onConfirmDelete={() => void handleDeleteLease(lease.id)}
+                        onCancelDelete={() => setConfirmLeaseId(null)}
                         confirming={confirmLeaseId === lease.id}
-                        onCancelDelete={(e) => { e.stopPropagation(); setConfirmLeaseId(null); }}
                         deleting={deletingLeaseId === lease.id}
                       />
                     ))}
@@ -802,16 +801,18 @@ function AlertTooltip({ alerts }: { alerts: LeaseAlert[] }) {
 }
 
 function LeaseRow({
-  lease, selected, onToggle, onRowClick, onNavigate, onDelete, confirming, onCancelDelete, deleting,
+  lease, selected, onToggle, onRowClick, onNavigate,
+  onRequestDelete, onConfirmDelete, onCancelDelete, confirming, deleting,
 }: {
   lease: Lease;
   selected: boolean;
   onToggle: () => void;
   onRowClick: () => void;
   onNavigate: () => void;
-  onDelete: (e: React.MouseEvent) => void;
+  onRequestDelete: () => void;
+  onConfirmDelete: () => void;
+  onCancelDelete: () => void;
   confirming: boolean;
-  onCancelDelete: (e: React.MouseEvent) => void;
   deleting: boolean;
 }) {
   const openAlerts = lease.alerts?.length ?? 0;
@@ -856,27 +857,37 @@ function LeaseRow({
         <StatusBadge status={lease.status} config={LEASE_STATUS_CONFIG} />
       </td>
       <td className="px-4 py-3">
-        <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          {confirming ? (
-            <>
-              <button onClick={onDelete} disabled={deleting} className="flex h-6 w-6 items-center justify-center rounded bg-danger/20 text-danger disabled:opacity-40" title="Confirm delete">
-                <Trash2 className="h-3.5 w-3.5" />
-              </button>
-              <button onClick={onCancelDelete} className="flex h-6 w-6 items-center justify-center rounded text-slate-500 hover:text-slate-300" title="Cancel">
-                <X className="h-3 w-3" />
-              </button>
-            </>
-          ) : (
-            <>
-              <button onClick={onDelete} disabled={deleting} className="flex h-6 w-6 items-center justify-center rounded text-slate-600 hover:bg-danger/15 hover:text-danger disabled:opacity-40" title="Delete lease">
-                <Trash2 className="h-3.5 w-3.5" />
-              </button>
-              <button onClick={onNavigate} className="flex h-6 w-6 items-center justify-center rounded text-slate-600 hover:text-slate-300">
-                <ChevronRight className="h-4 w-4" />
-              </button>
-            </>
-          )}
-        </div>
+        {confirming ? (
+          <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
+            <span className="text-xs text-slate-400">Delete?</span>
+            <button
+              onClick={onConfirmDelete}
+              disabled={deleting}
+              className="rounded-md bg-danger px-2.5 py-1 text-xs font-semibold text-white hover:bg-red-600 disabled:opacity-50 transition-colors"
+            >
+              {deleting ? 'Deleting…' : 'Delete'}
+            </button>
+            <button
+              onClick={(e) => { e.stopPropagation(); onCancelDelete(); }}
+              className="rounded-md border border-surface-400/40 px-2.5 py-1 text-xs text-slate-400 hover:text-white transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <button
+              onClick={(e) => { e.stopPropagation(); onRequestDelete(); }}
+              className="flex h-6 w-6 items-center justify-center rounded text-slate-600 hover:bg-danger/15 hover:text-danger transition-colors"
+              title="Delete lease"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+            <button onClick={onNavigate} className="flex h-6 w-6 items-center justify-center rounded text-slate-600 hover:text-slate-300">
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
+        )}
       </td>
     </tr>
   );
