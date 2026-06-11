@@ -157,15 +157,16 @@ export default function PropertiesPage() {
                       {p.status.replace('_', ' ')}
                     </Badge>
                     <Badge variant="neutral">{p.type.replace('_', ' ')}</Badge>
-                    {confirmId !== p.id && (
-                      <button
-                        onClick={(e) => { e.stopPropagation(); setConfirmId(p.id); }}
-                        className="ml-1 flex h-6 w-6 items-center justify-center rounded-md text-slate-600 hover:bg-danger/15 hover:text-danger transition-colors"
-                        title="Delete property"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
-                    )}
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setConfirmId(p.id); }}
+                      className={cn(
+                        'ml-1 flex h-6 w-6 items-center justify-center rounded-md text-slate-600 hover:bg-danger/15 hover:text-danger transition-all duration-200',
+                        confirmId === p.id && 'opacity-0 pointer-events-none',
+                      )}
+                      title="Delete property"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
                   </div>
                 </div>
                 <h3 className="font-semibold text-white">{p.name}</h3>
@@ -194,12 +195,15 @@ export default function PropertiesPage() {
                 </div>
               </CardBody>
 
-              {/* Confirmation footer — slides in below card content */}
-              {confirmId === p.id && (
-                <div
-                  className="flex items-center justify-between border-t border-danger/20 bg-danger/5 px-4 py-3"
-                  onClick={(e) => e.stopPropagation()}
-                >
+              {/* Confirmation footer — animates in with max-height + opacity */}
+              <div
+                className={cn(
+                  'overflow-hidden transition-all duration-250 ease-in-out',
+                  confirmId === p.id ? 'max-h-20 opacity-100' : 'max-h-0 opacity-0 pointer-events-none',
+                )}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="flex items-center justify-between border-t border-danger/20 bg-danger/5 px-4 py-3">
                   <p className="text-xs text-slate-400">
                     Delete <span className="font-semibold text-white">{p.name}</span>?
                   </p>
@@ -219,7 +223,7 @@ export default function PropertiesPage() {
                     </button>
                   </div>
                 </div>
-              )}
+              </div>
             </Card>
           ))}
         </div>
