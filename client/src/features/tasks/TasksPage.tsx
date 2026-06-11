@@ -110,16 +110,98 @@ function StatusPicker({ status, onChange }: { status: TaskStatus; onChange: (s: 
   );
 }
 
+// ─── Edit task modal ──────────────────────────────────────────────────────────
+
+function EditTaskModal({
+  task,
+  onClose,
+  onSubmit,
+  users,
+}: {
+  task: Task;
+  onClose: () => void;
+  onSubmit: (data: { title: string; description?: string; assigneeUserId?: string | null; dueAt?: string | null }) => void;
+  users: TeamMember[];
+}) {
+  const [title, setTitle] = useState(task.title);
+  const [description, setDescription] = useState(task.description ?? '');
+  const [assigneeUserId, setAssigneeUserId] = useState(task.assignee?.id ?? '');
+  const [dueAt, setDueAt] = useState(task.dueAt ? task.dueAt.slice(0, 10) : '');
+
+  const assigneeOptions = [
+    { value: '', label: 'Unassigned' },
+    ...users
+      .filter((u) => u.isActive)
+      .map((u) => ({ value: u.id, label: `${u.firstName} ${u.lastName}` })),
+  ];
+
+  const submit = () => {
+    if (!title.trim()) return;
+    onSubmit({
+      title: title.trim(),
+      description: description.trim() || undefined,
+      assigneeUserId: assigneeUserId || null,
+      dueAt: dueAt || null,
+    });
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+      <div className="w-full max-w-md rounded-2xl border border-surface-400/40 bg-surface-100 p-6 shadow-xl">
+        <h2 className="text-base font-semibold text-white mb-4">Edit Task</h2>
+        <div className="flex flex-col gap-3">
+          <input
+            autoFocus
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') submit(); if (e.key === 'Escape') onClose(); }}
+            placeholder="Task title"
+            className="rounded-lg border border-surface-400/40 bg-surface-200 px-3 py-2 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-brand-500/50"
+          />
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Description (optional)"
+            rows={2}
+            className="rounded-lg border border-surface-400/40 bg-surface-200 px-3 py-2 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-brand-500/50 resize-none"
+          />
+          <Select
+            size="md"
+            value={assigneeUserId}
+            onChange={setAssigneeUserId}
+            options={assigneeOptions}
+            placeholder="Assign to..."
+          />
+          <DatePicker
+            value={dueAt}
+            onChange={setDueAt}
+            onClear={dueAt ? () => setDueAt('') : undefined}
+            placeholder="Due date (optional)"
+          />
+        </div>
+        <div className="flex justify-end gap-2 mt-5">
+          <Button variant="ghost" size="sm" onClick={onClose}>Cancel</Button>
+          <Button size="sm" disabled={!title.trim()} onClick={submit}>
+            Save Changes
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Task row ─────────────────────────────────────────────────────────────────
 
 function TaskRow({
   task,
   onStatusChange,
   onDelete,
+  onEdit,
 }: {
   task: Task;
   onStatusChange: (id: string, status: TaskStatus) => void;
   onDelete: (id: string) => void;
+  onEdit: (task: Task) => void;
 }) {
   const navigate = useNavigate();
   const isTemp = task.id.startsWith('temp-');
@@ -132,17 +214,25 @@ function TaskRow({
   return (
     <tr className={`border-b border-surface-400/30 transition-colors group ${isTemp ? 'opacity-60' : 'hover:bg-surface-200/30'}`}>
       <td className="px-4 py-3">
-        <p
-          className={`text-sm font-medium ${
-            task.status === 'COMPLETED' ? 'line-through text-slate-500' :
-            task.status === 'CANCELLED' ? 'text-slate-600' : 'text-slate-200'
-          }`}
+        <button
+          type="button"
+          disabled={isTemp}
+          onClick={() => !isTemp && onEdit(task)}
+          className={`text-left w-full group/title ${isTemp ? 'cursor-default' : 'cursor-pointer'}`}
         >
-          {task.title}
-        </p>
-        {task.description && (
-          <p className="text-xs text-slate-500 mt-0.5 line-clamp-1">{task.description}</p>
-        )}
+          <p
+            className={`text-sm font-medium transition-colors ${
+              task.status === 'COMPLETED' ? 'line-through text-slate-500' :
+              task.status === 'CANCELLED' ? 'text-slate-600' :
+              isTemp ? 'text-slate-200' : 'text-slate-200 group-hover/title:text-white'
+            }`}
+          >
+            {task.title}
+          </p>
+          {task.description && (
+            <p className="text-xs text-slate-500 mt-0.5 line-clamp-1">{task.description}</p>
+          )}
+        </button>
       </td>
 
       <td className="px-4 py-3">
@@ -314,6 +404,7 @@ export default function TasksPage() {
   const [statusFilter, setStatusFilter] = useState('OPEN');
   const [assigneeFilter, setAssigneeFilter] = useState('');
   const [showCreate, setShowCreate] = useState(false);
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
 
   const { data: tasks = [], isLoading } = useQuery({
     queryKey: ['tasks'],
@@ -417,6 +508,33 @@ export default function TasksPage() {
     onSettled: () => qc.invalidateQueries({ queryKey: ['tasks'] }),
   });
 
+  // ── Optimistic update ─────────────────────────────────────────────────────
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Parameters<typeof tasksService.update>[1] }) =>
+      tasksService.update(id, data),
+    onMutate: async ({ id, data }) => {
+      setEditingTask(null);
+      await qc.cancelQueries({ queryKey: ['tasks'] });
+      const prev = qc.getQueryData<Task[]>(['tasks']);
+      qc.setQueryData<Task[]>(['tasks'], (old) =>
+        old?.map((t) => t.id === id ? {
+          ...t,
+          title: data.title ?? t.title,
+          description: data.description !== undefined ? (data.description ?? null) : t.description,
+          dueAt: data.dueAt !== undefined ? (data.dueAt ?? null) : t.dueAt,
+          assignee: data.assigneeUserId === null
+            ? null
+            : data.assigneeUserId
+              ? (t.assignee?.id === data.assigneeUserId ? t.assignee : t.assignee)
+              : t.assignee,
+        } : t) ?? [],
+      );
+      return { prev };
+    },
+    onError: (_e, _v, ctx) => { if (ctx?.prev) qc.setQueryData(['tasks'], ctx.prev); },
+    onSettled: () => qc.invalidateQueries({ queryKey: ['tasks'] }),
+  });
+
   // ── Optimistic delete ─────────────────────────────────────────────────────
   const deleteMutation = useMutation({
     mutationFn: tasksService.delete,
@@ -494,6 +612,7 @@ export default function TasksPage() {
                     task={t}
                     onStatusChange={(id, status) => statusMutation.mutate({ id, status })}
                     onDelete={(id) => deleteMutation.mutate(id)}
+                    onEdit={setEditingTask}
                   />
                 ))}
               </tbody>
@@ -506,6 +625,15 @@ export default function TasksPage() {
         <CreateTaskModal
           onClose={() => setShowCreate(false)}
           onSubmit={(data) => createMutation.mutate(data)}
+          users={users}
+        />
+      )}
+
+      {editingTask && (
+        <EditTaskModal
+          task={editingTask}
+          onClose={() => setEditingTask(null)}
+          onSubmit={(data) => updateMutation.mutate({ id: editingTask.id, data })}
           users={users}
         />
       )}
