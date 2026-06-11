@@ -34,7 +34,7 @@ export async function enforcePropertyLimit(plan: Plan, userId: string): Promise<
   const count = await prisma.property.count({ where: { ownerId: userId } });
   if (count >= limit) {
     throw new ForbiddenError(
-      `Your ${plan} plan allows up to ${limit} properties. Upgrade to add more.`
+      `Your ${plan} plan includes up to ${limit} properties — upgrade your plan to add more.`
     );
   }
 }
@@ -47,7 +47,7 @@ export async function enforceLeaseLimit(plan: Plan, userId?: string): Promise<vo
   );
   if (count >= limit) {
     throw new ForbiddenError(
-      `Your ${plan} plan allows up to ${limit.toLocaleString()} leases. Upgrade to add more.`
+      `Your ${plan} plan includes up to ${limit.toLocaleString()} leases — upgrade your plan to add more.`
     );
   }
 }

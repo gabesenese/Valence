@@ -59,7 +59,7 @@ export async function importProperties(buffer: Buffer, plan: Plan, userId: strin
     const row = (columnMap || defaults) ? applyColumnMap(rows[i], columnMap ?? {}, defaults) : rows[i];
 
     if (limit !== Infinity && startCount + result.created >= limit) {
-      result.errors.push({ row: rowNum, message: `Plan limit of ${limit} properties reached — upgrade to import more` });
+      result.errors.push({ row: rowNum, message: `Your ${plan} plan includes up to ${limit} properties and you've reached the limit — upgrade your plan to import more` });
       result.skipped++;
       continue;
     }
@@ -193,7 +193,7 @@ export async function importLeases(buffer: Buffer, plan: Plan, userId: string, c
     const row = (columnMap || defaults) ? applyColumnMap(rows[i], columnMap ?? {}, defaults) : rows[i];
 
     if (limit !== Infinity && startCount + result.created >= limit) {
-      result.errors.push({ row: rowNum, message: `Plan limit of ${limit.toLocaleString()} leases reached — upgrade to import more` });
+      result.errors.push({ row: rowNum, message: `Your ${plan} plan includes up to ${limit.toLocaleString()} leases and you've reached the limit — upgrade your plan to import more` });
       result.skipped++;
       continue;
     }
