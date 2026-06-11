@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { Building2, MapPin, Plus, Search } from 'lucide-react';
+import { Building2, MapPin, Plus, Search, Trash2 } from 'lucide-react';
 import { propertiesService, type PropertyType, type PropertyStatus } from '@/services/properties.service';
 import { Card, CardBody } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
@@ -32,10 +32,23 @@ const STATUS_OPTIONS: { value: PropertyStatus | ''; label: string }[] = [
 
 export default function PropertiesPage() {
   const navigate = useNavigate();
+  const qc = useQueryClient();
   const [search, setSearch] = useState('');
   const [type, setType] = useState<PropertyType | ''>('');
   const [status, setStatus] = useState<PropertyStatus | ''>('');
   const [addOpen, setAddOpen] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const handleDelete = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    setDeletingId(id);
+    try {
+      await propertiesService.deleteProperty(id);
+      await qc.invalidateQueries({ queryKey: ['properties'] });
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   const { data, isLoading } = useQuery({
     queryKey: ['properties', { search, type, status }],
@@ -129,11 +142,18 @@ export default function PropertiesPage() {
                   <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-surface-300">
                     <Building2 className="h-5 w-5 text-brand-400" />
                   </div>
-                  <div className="flex gap-1.5">
+                  <div className="flex items-center gap-1.5">
                     <Badge variant={p.status === 'ACTIVE' ? 'success' : p.status === 'UNDER_RENOVATION' ? 'warning' : 'neutral'}>
                       {p.status.replace('_', ' ')}
                     </Badge>
                     <Badge variant="neutral">{p.type.replace('_', ' ')}</Badge>
+                    <button
+                      onClick={(e) => void handleDelete(e, p.id)}
+                      disabled={deletingId === p.id}
+                      className="ml-1 flex h-6 w-6 items-center justify-center rounded-md text-slate-600 hover:bg-danger/15 hover:text-danger disabled:opacity-40 transition-colors"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
                   </div>
                 </div>
                 <h3 className="font-semibold text-white">{p.name}</h3>
