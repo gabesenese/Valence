@@ -4,8 +4,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import {
   CheckCircle,
-  FileText,
-  Building2,
   ClipboardList,
   RefreshCw,
   AlertTriangle,
