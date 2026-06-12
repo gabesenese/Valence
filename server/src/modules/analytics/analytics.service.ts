@@ -175,8 +175,8 @@ export async function getExecutiveSummary(userId: string) {
   const thisMonthStart = startOfMonth(now);
   const lastMonthStart = startOfMonth(subMonths(now, 1));
   const lastMonthEnd = endOfMonth(subMonths(now, 1));
-  const ownedProp  = { ownerId: userId };
-  const ownedLease = { property: { ownerId: userId } };
+  const ownedProp  = { ownerId: userId, deletedAt: null };
+  const ownedLease = { property: { ownerId: userId, deletedAt: null } };
   const ownedRecord = { property: { ownerId: userId } };
   const ownedAlert  = { OR: [{ property: { ownerId: userId } }, { createdById: userId }] };
 
@@ -259,7 +259,7 @@ export async function getLeaseDistribution(userId: string) {
 
 export async function getPropertyPerformance(userId: string) {
   const properties = await prisma.property.findMany({
-    where: { ownerId: userId, status: 'ACTIVE' },
+    where: { ownerId: userId, status: 'ACTIVE', deletedAt: null },
     select: {
       id: true,
       name: true,
