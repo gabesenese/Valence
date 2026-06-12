@@ -19,16 +19,16 @@
     "db:reset": "npm run db:reset --workspace=server"
   },
   "devDependencies": {
+    "@prisma/client": "^7.8.0",
     "concurrently": "^8.2.2",
     "playwright": "^1.60.0",
-    "prisma": "^6.19.3"
+    "prisma": "^7.8.0"
   },
   "engines": {
     "node": ">=20.0.0",
     "npm": ">=10.0.0"
   },
   "dependencies": {
-    "@prisma/client": "^7.8.0",
     "uuid": "^9.0.0",
     "vite": "8.0.14"
   }

@@ -109,6 +109,7 @@ export async function getLeases(query: LeaseQuery, userId: string) {
 
   const where: Prisma.LeaseWhereInput = {
     property: { ownerId: userId },
+    deletedAt: null,
     ...(status && { status }),
     ...(renewalRisk && { renewalRisk }),
     ...(renewalStage && { renewalStage }),
@@ -166,6 +167,7 @@ export async function getPriorityQueue(userId: string) {
   const candidates = await prisma.lease.findMany({
     where: {
       property: { ownerId: userId },
+      deletedAt: null,
       status: 'ACTIVE',
       endDate: { gte: now },
       OR: [{ snoozedUntil: null }, { snoozedUntil: { lt: now } }],
@@ -217,7 +219,7 @@ export async function getLeaseById(id: string) {
       },
     },
   });
-  if (!lease) throw new NotFoundError('Lease');
+  if (!lease || lease.deletedAt) throw new NotFoundError('Lease');
   return lease;
 }
 
@@ -587,12 +589,12 @@ export async function updateLease(id: string, input: UpdateLeaseInput) {
 
 export async function deleteLease(id: string) {
   await getLeaseById(id);
-  return prisma.lease.delete({ where: { id } });
+  return prisma.lease.update({ where: { id }, data: { deletedAt: new Date() } });
 }
 
 export async function getLeaseStats(userId: string) {
   const now = new Date();
-  const owned = { property: { ownerId: userId } };
+  const owned = { property: { ownerId: userId }, deletedAt: null };
   const [byStatus, byRisk, expiringIn30, expiringIn90, totalActive] = await Promise.all([
     prisma.lease.groupBy({ by: ['status'], where: owned, _count: true }),
     prisma.lease.groupBy({ by: ['renewalRisk'], where: { ...owned, status: 'ACTIVE' }, _count: true }),
@@ -615,7 +617,7 @@ const KANBAN_STAGES: RenewalStage[] = [
 
 export async function getKanban(userId: string) {
   const leases = await prisma.lease.findMany({
-    where: { property: { ownerId: userId }, status: 'ACTIVE' },
+    where: { property: { ownerId: userId }, deletedAt: null, status: 'ACTIVE' },
     include: {
       property: { select: { id: true, name: true, code: true } },
       tenant: { select: { id: true, name: true } },

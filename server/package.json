@@ -19,7 +19,8 @@
     "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
-    "@prisma/client": "^5.14.0",
+    "@prisma/adapter-pg": "^7.8.0",
+    "@prisma/client": "^7.8.0",
     "@sentry/node": "^10.56.0",
     "@valence/shared": "*",
     "bcryptjs": "^2.4.3",
@@ -38,6 +39,7 @@
     "multer": "^2.1.1",
     "node-cron": "^4.2.1",
     "pdf-parse": "^1.1.1",
+    "pg": "^8.21.0",
     "qrcode": "^1.5.4",
     "resend": "^6.12.4",
     "speakeasy": "^2.0.0",
@@ -58,10 +60,11 @@
     "@types/node": "^20.14.2",
     "@types/node-cron": "^3.0.11",
     "@types/pdf-parse": "^1.1.5",
+    "@types/pg": "^8.20.0",
     "@types/qrcode": "^1.5.6",
     "@types/speakeasy": "^2.0.10",
     "@types/uuid": "^10.0.0",
-    "prisma": "^5.14.0",
+    "prisma": "^7.8.0",
     "tsx": "^4.15.1",
     "typescript": "^5.4.5"
   }

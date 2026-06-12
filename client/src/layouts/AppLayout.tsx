@@ -5,7 +5,7 @@ import {
   LayoutDashboard, FileText, Building2, BarChart3, Bell, DollarSign,
   LogOut, ChevronLeft, Cpu, Users, Settings, Inbox, Layers,
   Wand2, ClipboardList, Heart, FolderOpen, Zap, Lock, Upload, ScrollText, Download,
-  UserX, Sparkles, HelpCircle,
+  UserX, Sparkles, HelpCircle, Trash2,
 } from 'lucide-react';
 import { cn } from '@/utils/cn';
 import { setOrgCurrency } from '@/utils/format';
@@ -72,6 +72,7 @@ const NAV_SECTIONS: NavSection[] = [
       { to: '/organization', icon: Building2,   label: 'Organization'                   },
       { to: '/team',         icon: Users,      label: 'Team',    feature: 'team'       },
       { to: '/export',       icon: Download,   label: 'Export'                         },
+      { to: '/trash',        icon: Trash2,     label: 'Trash'                          },
       { to: '/settings',     icon: Settings,   label: 'Account'                        },
       { to: '/support',      icon: HelpCircle, label: 'Support'                        },
     ],

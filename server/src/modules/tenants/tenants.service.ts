@@ -11,6 +11,7 @@ export async function getTenants(
 
   const where = {
     ownerId: userId,
+    deletedAt: null,
     ...(query.isActive !== undefined && { isActive: query.isActive }),
     ...(query.search && {
       OR: [
@@ -76,6 +77,11 @@ export async function getTenantById(id: string) {
       _count: { select: { leases: true } },
     },
   });
-  if (!tenant) throw new NotFoundError('Tenant');
+  if (!tenant || tenant.deletedAt) throw new NotFoundError('Tenant');
   return tenant;
+}
+
+export async function deleteTenant(id: string) {
+  await getTenantById(id);
+  return prisma.tenant.update({ where: { id }, data: { deletedAt: new Date() } });
 }

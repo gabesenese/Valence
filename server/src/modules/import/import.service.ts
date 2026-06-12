@@ -5,14 +5,15 @@ import type { Plan, PropertyType, LeaseType } from '@prisma/client';
 
 export interface ImportResult {
   created: number;
+  updated: number;
   skipped: number;
   errors: Array<{ row: number; message: string }>;
   currentCount?: number;
   planLimit?: number;
 }
 
-export type ColumnMap = Record<string, string>; // csvHeader → valenceField
-export type FieldDefaults = Record<string, string>; // valenceField → constant value
+export type ColumnMap = Record<string, string>; 
+export type FieldDefaults = Record<string, string>;
 
 function applyColumnMap(row: Record<string, string>, map: ColumnMap, defaults?: FieldDefaults): Record<string, string> {
   const result = { ...row };
@@ -58,7 +59,7 @@ export async function importProperties(buffer: Buffer, plan: Plan, userId: strin
   const netNewAllowed = limit === Infinity ? Infinity : Math.max(0, limit - startCount);
   let netNewCreated = 0;
   const result: ImportResult = {
-    created: 0, skipped: 0, errors: [],
+    created: 0, updated: 0, skipped: 0, errors: [],
     currentCount: startCount,
     planLimit: limit === Infinity ? undefined : limit,
   };
@@ -80,10 +81,9 @@ export async function importProperties(buffer: Buffer, plan: Plan, userId: strin
 
       const normalType = VALID_PROPERTY_TYPES.includes(type.toUpperCase()) ? type.toUpperCase() : 'RESIDENTIAL';
       const normalCode = code.toUpperCase().trim();
-      const existing = await prisma.property.findFirst({ where: { code: normalCode, ownerId: userId } });
+      const existing = await prisma.property.findFirst({ where: { code: normalCode, ownerId: userId, deletedAt: null } });
 
       if (existing) {
-        // Upsert: update existing record, doesn't consume plan quota
         await prisma.property.update({
           where: { id: existing.id },
           data: {
@@ -102,7 +102,7 @@ export async function importProperties(buffer: Buffer, plan: Plan, userId: strin
             ...(row.purchaseDate && { purchaseDate: new Date(row.purchaseDate) }),
           },
         });
-        result.created++;
+        result.updated++;
         continue;
       }
 
@@ -147,7 +147,7 @@ export async function importProperties(buffer: Buffer, plan: Plan, userId: strin
 
 export async function importTenants(buffer: Buffer, userId: string, columnMap?: ColumnMap, defaults?: FieldDefaults): Promise<ImportResult> {
   const rows = parseRows(buffer);
-  const result: ImportResult = { created: 0, skipped: 0, errors: [] };
+  const result: ImportResult = { created: 0, updated: 0, skipped: 0, errors: [] };
 
   for (let i = 0; i < rows.length; i++) {
     const rowNum = i + 2;
@@ -160,6 +160,13 @@ export async function importTenants(buffer: Buffer, userId: string, columnMap?: 
         const existing = await prisma.tenant.findFirst({ where: { email: row.email.trim(), ownerId: userId } });
         if (existing) {
           result.errors.push({ row: rowNum, message: `Tenant with email "${row.email}" already exists — skipped` });
+          result.skipped++;
+          continue;
+        }
+      } else {
+        const existing = await prisma.tenant.findFirst({ where: { ownerId: userId, name: { equals: row.name.trim(), mode: 'insensitive' } } });
+        if (existing) {
+          result.errors.push({ row: rowNum, message: `Tenant "${row.name}" already exists — skipped` });
           result.skipped++;
           continue;
         }
@@ -209,7 +216,7 @@ async function resolveTenant(name: string, userId: string, email?: string): Prom
 
 export async function importLeases(buffer: Buffer, plan: Plan, userId: string, columnMap?: ColumnMap, defaults?: FieldDefaults): Promise<ImportResult> {
   const rows = parseRows(buffer);
-  const result: ImportResult = { created: 0, skipped: 0, errors: [] };
+  const result: ImportResult = { created: 0, updated: 0, skipped: 0, errors: [] };
   const limit = PLAN_LIMITS[plan].leases;
   const startCount = await prisma.lease.count({ where: { property: { ownerId: userId } } });
 
@@ -232,12 +239,12 @@ export async function importLeases(buffer: Buffer, plan: Plan, userId: string, c
       if (!endDate) throw new Error('endDate is required (YYYY-MM-DD)');
       if (!baseRent) throw new Error('baseRent is required');
 
-      const property = await prisma.property.findFirst({ where: { code: propertyCode.toUpperCase().trim(), ownerId: userId } });
+      const property = await prisma.property.findFirst({ where: { code: propertyCode.toUpperCase().trim(), ownerId: userId, deletedAt: null } });
       if (!property) throw new Error(`Property with code "${propertyCode}" not found`);
 
-      const existingLease = await prisma.lease.findUnique({ where: { leaseNumber: leaseNumber.trim() } });
+      const existingLease = await prisma.lease.findUnique({ where: { leaseNumber_propertyId: { leaseNumber: leaseNumber.trim(), propertyId: property.id } } });
       if (existingLease) {
-        result.errors.push({ row: rowNum, message: `Lease number "${leaseNumber}" already exists — skipped` });
+        result.errors.push({ row: rowNum, message: `Lease number "${leaseNumber}" already exists on this property — skipped` });
         result.skipped++;
         continue;
       }

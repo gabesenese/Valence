@@ -43,6 +43,7 @@ const MissionPage = lazy(() => import('@/features/about/MissionPage'));
 const PrivacyTermsPage = lazy(() => import('@/features/about/PrivacyTermsPage'));
 const DataControlsPage = lazy(() => import('@/features/about/DataControlsPage'));
 const SecurityPage = lazy(() => import('@/features/about/SecurityPage'));
+const TrashPage = lazy(() => import('@/features/trash/TrashPage'));
 
 export default function App() {
   return (
@@ -97,6 +98,7 @@ export default function App() {
             <Route path="settings" element={<SettingsPage />} />
             <Route path="support" element={<SupportPage />} />
             <Route path="export" element={<ExportPage />} />
+            <Route path="trash" element={<TrashPage />} />
           </Route>
         </Route>
 

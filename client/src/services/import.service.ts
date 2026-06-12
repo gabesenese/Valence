@@ -2,6 +2,7 @@ import { api } from './api';
 
 export interface ImportResult {
   created: number;
+  updated: number;
   skipped: number;
   errors: Array<{ row: number; message: string }>;
   currentCount?: number;

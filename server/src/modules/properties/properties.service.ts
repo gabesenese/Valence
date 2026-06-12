@@ -9,6 +9,7 @@ export async function getProperties(query: PropertyQuery, userId: string) {
 
   const where: Prisma.PropertyWhereInput = {
     ownerId: userId,
+    deletedAt: null,
     ...(status && { status }),
     ...(type && { type }),
     ...(search && {
@@ -28,7 +29,7 @@ export async function getProperties(query: PropertyQuery, userId: string) {
       take: limit,
       orderBy: { createdAt: 'desc' },
       include: {
-        _count: { select: { leases: { where: { status: 'ACTIVE' } } } },
+        _count: { select: { leases: { where: { status: 'ACTIVE', deletedAt: null } } } },
       },
     }),
     prisma.property.count({ where }),
@@ -42,19 +43,19 @@ export async function getPropertyById(id: string) {
     where: { id },
     include: {
       leases: {
-        where: { status: 'ACTIVE' },
+        where: { status: 'ACTIVE', deletedAt: null },
         include: { tenant: true },
         orderBy: { endDate: 'asc' },
       },
-      _count: { select: { leases: true, alerts: { where: { status: 'OPEN' } } } },
+      _count: { select: { leases: { where: { deletedAt: null } }, alerts: { where: { status: 'OPEN' } } } },
     },
   });
-  if (!property) throw new NotFoundError('Property');
+  if (!property || property.deletedAt) throw new NotFoundError('Property');
   return property;
 }
 
 export async function createProperty(input: CreatePropertyInput, userId: string) {
-  const existing = await prisma.property.findFirst({ where: { code: input.code, ownerId: userId } });
+  const existing = await prisma.property.findFirst({ where: { code: input.code, ownerId: userId, deletedAt: null } });
   if (existing) throw new ConflictError(`Property code "${input.code}" already exists`);
 
   return prisma.property.create({
@@ -72,7 +73,7 @@ export async function updateProperty(id: string, input: UpdatePropertyInput, use
   await getPropertyById(id);
 
   if (input.code) {
-    const conflict = await prisma.property.findFirst({ where: { code: input.code, ownerId: userId, NOT: { id } } });
+    const conflict = await prisma.property.findFirst({ where: { code: input.code, ownerId: userId, NOT: { id }, deletedAt: null } });
     if (conflict) throw new ConflictError(`Property code "${input.code}" already exists`);
   }
 
@@ -81,11 +82,11 @@ export async function updateProperty(id: string, input: UpdatePropertyInput, use
 
 export async function deleteProperty(id: string) {
   await getPropertyById(id);
-  return prisma.property.delete({ where: { id } });
+  return prisma.property.update({ where: { id }, data: { deletedAt: new Date() } });
 }
 
 export async function getPropertySummary(userId: string) {
-  const ownerFilter = { ownerId: userId };
+  const ownerFilter = { ownerId: userId, deletedAt: null };
   const [total, byStatus, byType] = await Promise.all([
     prisma.property.count({ where: ownerFilter }),
     prisma.property.groupBy({ by: ['status'], where: ownerFilter, _count: true }),

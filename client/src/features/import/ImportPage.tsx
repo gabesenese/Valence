@@ -370,13 +370,16 @@ function CsvStep({
     const planLimitErrors = result.errors.filter(e => e.message.includes('upgrade your plan'));
     const dataErrors      = result.errors.filter(e => !e.message.includes('upgrade your plan'));
 
+    const hasUpdates = (result.updated ?? 0) > 0;
+
     return (
       <div className="flex flex-col gap-4">
-        <div className="grid grid-cols-3 gap-3">
+        <div className={cn('grid gap-3', hasUpdates ? 'grid-cols-4' : 'grid-cols-3')}>
           {[
-            { label: 'Imported', value: result.created,     icon: CheckCircle, color: 'text-success' },
-            { label: 'Skipped',  value: result.skipped,     icon: AlertCircle, color: 'text-warning'  },
-            { label: 'Errors',   value: dataErrors.length,  icon: XCircle,     color: 'text-danger'   },
+            { label: 'Created',  value: result.created,        icon: CheckCircle, color: 'text-success' },
+            ...(hasUpdates ? [{ label: 'Updated', value: result.updated ?? 0, icon: CheckCircle2, color: 'text-brand-400' }] : []),
+            { label: 'Skipped',  value: result.skipped,        icon: AlertCircle, color: 'text-warning'  },
+            { label: 'Errors',   value: dataErrors.length,     icon: XCircle,     color: 'text-danger'   },
           ].map(({ label, value, icon: Icon, color }) => (
             <div key={label} className="flex flex-col items-center gap-1 rounded-xl border border-surface-400/30 bg-surface-100/50 py-4">
               <Icon className={cn('h-5 w-5', color)} />
@@ -427,7 +430,9 @@ function CsvStep({
         )}
 
         <p className="text-xs text-slate-500">
-          {result.created > 0 ? `${result.created} ${tab} imported successfully.` : 'No records were imported.'}{' '}
+          {result.created > 0 || (result.updated ?? 0) > 0
+            ? [result.created > 0 && `${result.created} created`, (result.updated ?? 0) > 0 && `${result.updated} updated`].filter(Boolean).join(', ') + '.'
+            : 'No records were imported.'}{' '}
           Continue to the next step or go back to re-import.
         </p>
       </div>

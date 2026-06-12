@@ -4,6 +4,7 @@ import { logger } from './utils/logger';
 import { runAnomalyScan } from './modules/alerts/anomaly.service';
 import { runAllRules } from './modules/automation/automation.service';
 import { cleanupDemoAccounts } from './modules/auth/auth.service';
+import { purgeStaleTrashed } from './modules/trash/trash.service';
 import { env } from './config/env';
 import cron from 'node-cron';
 import { mkdirSync } from 'fs';
@@ -45,6 +46,13 @@ async function start() {
 
   cron.schedule('0 * * * *', automate);
   automate();
+
+  // Purge items that have been in trash for 30+ days — runs daily at 2am
+  cron.schedule('0 2 * * *', () => {
+    purgeStaleTrashed()
+      .then(() => logger.info('Trash purge: stale items permanently deleted'))
+      .catch((err) => logger.warn('Trash purge failed', { error: err }));
+  });
 
   const shutdown = async (signal: string) => {
     logger.info(`${signal} received, shutting down gracefully`);
