@@ -21,7 +21,7 @@ const QUEUE_ITEMS = [
     icon: FileText,
     title: 'Marina Bay Complex — Lease expires in 12 days',
     meta: 'Suite 4B · $8,400 / mo · Tenant has not responded',
-    action: 'Send renewal offer',
+    action: 'Send Renewal Offer',
   },
   {
     id: 2,
@@ -29,7 +29,7 @@ const QUEUE_ITEMS = [
     icon: FileText,
     title: 'Pacific Heights Office — Lease expires in 18 days',
     meta: 'Unit 12 · $5,100 / mo · Renewal risk: high',
-    action: 'Schedule call',
+    action: 'Schedule Call',
   },
   {
     id: 3,
@@ -37,7 +37,7 @@ const QUEUE_ITEMS = [
     icon: Bell,
     title: 'Riverfront Tower — Overdue payment $4,200',
     meta: '22 days past due · 3rd notice sent',
-    action: 'Escalate to collections',
+    action: 'Escalate to Collections',
   },
   {
     id: 4,
@@ -45,7 +45,7 @@ const QUEUE_ITEMS = [
     icon: Building2,
     title: 'Oakwood Plaza — Occupancy at 68%',
     meta: 'Below 75% threshold · 3 units vacant 60+ days',
-    action: 'Review pricing strategy',
+    action: 'Review Pricing Strategy',
   },
 ];
 

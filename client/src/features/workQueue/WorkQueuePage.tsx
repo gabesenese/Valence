@@ -15,6 +15,8 @@ import {
   User,
   ChevronDown,
   ChevronRight,
+  Phone,
+  TrendingUp,
 } from 'lucide-react';
 import { workQueueService, type WorkItem } from '@/services/workQueue.service';
 import { TaskPanel } from './TaskPanel';
@@ -75,73 +77,63 @@ function ItemActions({
         {item.source === 'finance' && item.property && (
           <Button variant="outline" size="sm" onClick={() => navigate('/finance')}>
             <DollarSign className="h-3.5 w-3.5" />
-            Review Invoice
+            Escalate to Collections
           </Button>
         )}
         {item.source === 'lease' && item.leaseId && (
           <Button variant="outline" size="sm" onClick={() => navigate(`/leases/${item.leaseId}`)}>
             <RefreshCw className="h-3.5 w-3.5" />
-            Start Renewal
+            Send Renewal Offer
           </Button>
         )}
       </div>
     );
   }
 
-  const isOpen = item.status === 'OPEN';
-  const isInProgress = item.status === 'IN_PROGRESS';
   const alertId = item.alertId;
   const actions: React.ReactNode[] = [];
 
-  if (isOpen) {
+  if (item.type === 'LEASE_EXPIRATION' && item.leaseId) {
+    actions.push(
+      <Button key="renew" variant="outline" size="sm" onClick={() => navigate(`/leases/${item.leaseId}`)}>
+        <RefreshCw className="h-3.5 w-3.5" />
+        Send Renewal Offer
+      </Button>,
+    );
+  } else if (item.type === 'RENEWAL_RISK' && item.leaseId) {
+    actions.push(
+      <Button key="call" variant="outline" size="sm" onClick={() => navigate(`/leases/${item.leaseId}`)}>
+        <Phone className="h-3.5 w-3.5" />
+        Schedule Call
+      </Button>,
+    );
+  } else if (item.type === 'PAYMENT_ANOMALY' || item.type === 'OVERDUE_INVOICE') {
+    actions.push(
+      <Button key="collections" variant="outline" size="sm" onClick={() => navigate('/finance')}>
+        <DollarSign className="h-3.5 w-3.5" />
+        Escalate to Collections
+      </Button>,
+    );
+  } else if (item.type === 'FINANCIAL_DISCREPANCY') {
+    actions.push(
+      <Button key="finance" variant="outline" size="sm" onClick={() => navigate('/finance')}>
+        <ClipboardList className="h-3.5 w-3.5" />
+        Review Finance
+      </Button>,
+    );
+  } else if (item.type === 'OCCUPANCY_CHANGE' && item.property) {
+    actions.push(
+      <Button key="pricing" variant="outline" size="sm" onClick={() => navigate(`/properties/${item.property!.id}`)}>
+        <TrendingUp className="h-3.5 w-3.5" />
+        Review Pricing Strategy
+      </Button>,
+    );
+  } else {
     actions.push(
       <Button key="progress" variant="outline" size="sm" onClick={() => onProgress(alertId)} loading={busy}>
         Start Review
       </Button>,
     );
-  }
-
-  if (item.type === 'LEASE_EXPIRATION' || item.type === 'RENEWAL_RISK') {
-    if (item.leaseId) {
-      if (isInProgress) {
-        actions.push(
-          <Button key="renew" variant="outline" size="sm" onClick={() => navigate(`/leases/${item.leaseId}`)}>
-            <RefreshCw className="h-3.5 w-3.5" />
-            Manage Renewal
-          </Button>,
-        );
-      }
-      actions.push(
-        <Button key="view-lease" variant="ghost" size="sm" onClick={() => navigate(`/leases/${item.leaseId}`)}>
-          <FileText className="h-3.5 w-3.5" />
-          View Lease
-        </Button>,
-      );
-    }
-  } else if (item.type === 'PAYMENT_ANOMALY' || item.type === 'FINANCIAL_DISCREPANCY') {
-    actions.push(
-      <Button key="finance" variant="ghost" size="sm" onClick={() => navigate('/finance')}>
-        <ClipboardList className="h-3.5 w-3.5" />
-        Review Finance
-      </Button>,
-    );
-    if (item.property) {
-      actions.push(
-        <Button key="property" variant="ghost" size="sm" onClick={() => navigate(`/properties/${item.property!.id}`)}>
-          <Building2 className="h-3.5 w-3.5" />
-          View Property
-        </Button>,
-      );
-    }
-  } else if (item.type === 'OCCUPANCY_CHANGE') {
-    if (item.property) {
-      actions.push(
-        <Button key="property" variant="ghost" size="sm" onClick={() => navigate(`/properties/${item.property!.id}`)}>
-          <Building2 className="h-3.5 w-3.5" />
-          View Property
-        </Button>,
-      );
-    }
   }
 
   actions.push(
