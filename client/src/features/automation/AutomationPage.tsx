@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-  Zap, Plus, Play, ToggleLeft, ToggleRight, CheckCircle,
+  Zap, Plus, Play, CheckCircle,
   Clock, Calendar, AlertTriangle, ClipboardList, X, ChevronDown,
-  TrendingDown,
+  TrendingDown, Pencil,
 } from 'lucide-react';
 import {
   automationService,
@@ -248,11 +248,118 @@ function CreateRuleModal({ onClose }: { onClose: () => void }) {
   );
 }
 
+// ─── Edit rule modal ──────────────────────────────────────────────────────────
+
+function EditRuleModal({ rule, onClose }: { rule: AutomationRule; onClose: () => void }) {
+  const qc = useQueryClient();
+  const trig = TRIGGER_CONFIG[rule.trigger];
+  const existingConditions = rule.conditions as RuleConditions;
+  const existingConfig    = rule.actionConfig as ActionConfig;
+
+  const [name,            setName]            = useState(rule.name);
+  const [description,     setDescription]     = useState(rule.description ?? '');
+  const [conditionValue,  setConditionValue]  = useState<number>(existingConditions[trig.conditionKey] ?? trig.defaultValue);
+  const [taskTitle,       setTaskTitle]       = useState(existingConfig.taskTitle ?? '');
+  const [taskDescription, setTaskDescription] = useState(existingConfig.taskDescription ?? '');
+  const [assignTo,        setAssignTo]        = useState(existingConfig.assignTo ?? 'lease_owner');
+  const [daysUntilDue,    setDaysUntilDue]    = useState(existingConfig.daysUntilDue ?? 7);
+
+  const inputCls = 'w-full rounded-lg border border-surface-400/40 bg-surface-200 px-3 py-2 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-brand-500/50';
+  const innerCls = 'w-full rounded-lg border border-surface-400/40 bg-surface-300/60 px-3 py-2 text-sm text-slate-300 placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-brand-500/50';
+
+  const mutation = useMutation({
+    mutationFn: () => automationService.updateRule(rule.id, {
+      name: name.trim(),
+      description: description.trim() || undefined,
+      conditions: { [trig.conditionKey]: conditionValue },
+      actionConfig: { taskTitle: taskTitle || undefined, taskDescription: taskDescription || undefined, assignTo: assignTo || undefined, daysUntilDue },
+    }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['automation-rules'] }); onClose(); },
+  });
+
+  const TrigIcon = trig.icon;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      <div className="w-full max-w-lg rounded-2xl border border-surface-400/40 bg-surface-100 p-6 shadow-xl overflow-y-auto max-h-[90vh]">
+        <h2 className="text-base font-semibold text-white mb-5">Edit Rule</h2>
+
+        <div className="flex flex-col gap-4">
+          <div>
+            <label className="text-[11px] text-slate-500 mb-1 block">Rule Name</label>
+            <input autoFocus value={name} onChange={e => setName(e.target.value)} className={inputCls} />
+          </div>
+          <div>
+            <label className="text-[11px] text-slate-500 mb-1 block">Description</label>
+            <input value={description} onChange={e => setDescription(e.target.value)} placeholder="Optional description" className={inputCls} />
+          </div>
+
+          {/* Trigger — read-only, only condition value editable */}
+          <div className="rounded-xl border border-surface-400/40 bg-surface-200/30 p-4">
+            <p className="text-xs font-medium text-slate-400 mb-3">When this happens</p>
+            <div className="flex items-center gap-2 mb-3 rounded-lg border border-brand-500/30 bg-brand-600/10 px-3 py-2">
+              <TrigIcon className="h-3.5 w-3.5 text-brand-400 shrink-0" />
+              <span className="text-xs font-medium text-brand-300">{trig.label}</span>
+              <span className="ml-auto text-[10px] text-slate-600">trigger locked</span>
+            </div>
+            <p className="text-[11px] text-slate-500 mb-2">{trig.description}</p>
+            <div>
+              <label className="text-[11px] text-slate-500 mb-1 block">{trig.conditionLabel}</label>
+              <input type="number" value={conditionValue} onChange={e => setConditionValue(Number(e.target.value))} className={innerCls} />
+            </div>
+          </div>
+
+          {/* Action config */}
+          {rule.action === 'CREATE_TASK' && (
+            <div className="rounded-xl border border-surface-400/40 bg-surface-200/30 p-4">
+              <p className="text-xs font-medium text-slate-400 mb-3">Then do this</p>
+              <div className="flex flex-col gap-3">
+                <div>
+                  <label className="text-[11px] text-slate-500 mb-1 block">
+                    Task Title <span className="text-slate-600">(use {'{tenant}'}, {'{property}'}, {'{days}'})</span>
+                  </label>
+                  <input value={taskTitle} onChange={e => setTaskTitle(e.target.value)} placeholder="Lease expiring in {days} days — {tenant}" className={innerCls} />
+                </div>
+                <div>
+                  <label className="text-[11px] text-slate-500 mb-1 block">Task Description</label>
+                  <input value={taskDescription} onChange={e => setTaskDescription(e.target.value)} placeholder="Optional" className={innerCls} />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-[11px] text-slate-500 mb-1 block">Assign To</label>
+                    <Select value={assignTo} onChange={setAssignTo} options={[
+                      { value: 'lease_owner', label: 'Lease Owner' },
+                      { value: 'manager',     label: 'Assigned Manager' },
+                      { value: '',            label: 'Unassigned' },
+                    ]} />
+                  </div>
+                  <div>
+                    <label className="text-[11px] text-slate-500 mb-1 block">Due In (days)</label>
+                    <input type="number" value={daysUntilDue} onChange={e => setDaysUntilDue(Number(e.target.value))} className={innerCls} />
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="flex justify-end gap-2 mt-5">
+          <Button variant="ghost" size="sm" onClick={onClose}>Cancel</Button>
+          <Button size="sm" disabled={!name.trim()} loading={mutation.isPending} onClick={() => mutation.mutate()}>
+            Save Changes
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Rule card ────────────────────────────────────────────────────────────────
 
 function RuleCard({ rule, canEdit }: { rule: AutomationRule; canEdit: boolean }) {
   const qc = useQueryClient();
   const [showLogs, setShowLogs] = useState(false);
+  const [showEdit, setShowEdit] = useState(false);
   const trig = TRIGGER_CONFIG[rule.trigger];
   const actionCfg = ACTION_CONFIG[rule.action];
   const ActionIcon = actionCfg?.icon ?? ClipboardList;
@@ -285,6 +392,7 @@ function RuleCard({ rule, canEdit }: { rule: AutomationRule; canEdit: boolean })
   const conditionVal = (rule.conditions as RuleConditions)[trig.conditionKey];
 
   return (
+    <>
     <div className={!rule.isActive ? 'opacity-50' : undefined}>
       <div className="flex items-start gap-4 px-4 py-3.5">
         <div className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${rule.isActive ? 'bg-brand-600/20' : 'bg-surface-300/50'}`}>
@@ -320,24 +428,24 @@ function RuleCard({ rule, canEdit }: { rule: AutomationRule; canEdit: boolean })
 
         {canEdit && (
           <div className="flex items-center gap-1 shrink-0">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => runMutation.mutate()}
-              loading={runMutation.isPending}
-              title="Run now"
-            >
+            <Button variant="ghost" size="sm" onClick={() => runMutation.mutate()} loading={runMutation.isPending} title="Run now">
               <Play className="h-3.5 w-3.5" />
             </Button>
+            <Button variant="ghost" size="sm" onClick={() => setShowEdit(true)} title="Edit">
+              <Pencil className="h-3.5 w-3.5" />
+            </Button>
+            {/* CSS toggle switch */}
             <button
               onClick={() => toggleMutation.mutate()}
               disabled={toggleMutation.isPending}
               title={rule.isActive ? 'Pause' : 'Activate'}
-              className="p-1.5 text-slate-500 hover:text-slate-200 transition-colors"
+              className={`relative mx-1 inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors duration-200 disabled:opacity-50 ${
+                rule.isActive ? 'bg-success' : 'bg-surface-400'
+              }`}
             >
-              {rule.isActive
-                ? <ToggleRight className="h-5 w-5 text-success" />
-                : <ToggleLeft className="h-5 w-5" />}
+              <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow-sm transition-transform duration-200 ${
+                rule.isActive ? 'translate-x-[18px]' : 'translate-x-[2px]'
+              }`} />
             </button>
             <button
               onClick={() => deleteMutation.mutate()}
@@ -387,6 +495,8 @@ function RuleCard({ rule, canEdit }: { rule: AutomationRule; canEdit: boolean })
         )}
       </div>
     </div>
+    {showEdit && <EditRuleModal rule={rule} onClose={() => setShowEdit(false)} />}
+    </>
   );
 }
 
