@@ -403,132 +403,51 @@ export default function LeaseDetailPage() {
         </div>
       </div>
 
-      {/* Info grid */}
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-        <Card>
-          <CardHeader><CardTitle>Property</CardTitle></CardHeader>
-          <CardBody className="flex flex-col gap-3">
-            <button
-              onClick={() => navigate(`/properties/${lease.property.id}`)}
-              className="flex items-center gap-2 hover:text-brand-300 transition-colors text-left"
-            >
-              <Building2 className="h-4 w-4 text-brand-400 shrink-0" />
-              <span className="text-sm text-slate-200">{lease.property.name}</span>
-            </button>
-            <p className="text-xs text-slate-500 font-mono">{lease.property.code}</p>
-          </CardBody>
-        </Card>
+      {/* Main + Sidebar layout */}
+      <div className="flex gap-6 items-start">
+        {/* Main column */}
+        <div className="flex-1 min-w-0 flex flex-col gap-4">
 
-        <Card>
-          <CardHeader><CardTitle>Tenant</CardTitle></CardHeader>
-          <CardBody className="flex flex-col gap-3">
-            <div className="flex items-center gap-2">
-              <User className="h-4 w-4 text-success shrink-0" />
-              <span className="text-sm text-slate-200">{lease.tenant.name}</span>
-            </div>
-            {lease.tenant.email && (
-              <a href={`mailto:${lease.tenant.email}`} className="text-xs text-slate-500 hover:text-brand-300 transition-colors">
-                {lease.tenant.email}
-              </a>
-            )}
-            <div className="pt-1 border-t border-surface-400/30">
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-slate-500 flex items-center gap-1.5">
-                  <User className="h-3.5 w-3.5" />Owner
-                </span>
-                {!assigningOwner ? (
-                  <button
-                    onClick={() => setAssigningOwner(true)}
-                    className="text-xs text-slate-400 hover:text-brand-300 transition-colors"
-                  >
-                    {lease.owner ? `${lease.owner.firstName} ${lease.owner.lastName}` : '+ Assign'}
-                  </button>
-                ) : (
-                  <div className="flex items-center gap-1.5">
-                    <Select
-                      value={lease.ownerUserId ?? ''}
-                      onChange={(v) => { if (v) assignOwnerMutation.mutate(v); }}
-                      disabled={assignOwnerMutation.isPending}
-                      placeholder="Select user…"
-                      options={users?.map((u) => ({ value: u.id, label: `${u.firstName} ${u.lastName}` })) ?? []}
-                      className="w-40"
-                    />
-                    <button
-                      onClick={() => setAssigningOwner(false)}
-                      className="text-xs text-slate-600 hover:text-slate-300 transition-colors"
-                    >✕</button>
+          {/* Lease Term + Renewal Date — compact side-by-side panel */}
+          <div className="rounded-xl border border-surface-400/30 flex divide-x divide-surface-400/20">
+            <div className="flex-1 p-4">
+              <p className="mb-3 text-[10px] font-semibold uppercase tracking-wider text-slate-500">Lease Term</p>
+              <div className="flex flex-col gap-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-slate-500 flex items-center gap-1.5"><Calendar className="h-3 w-3" />Start</span>
+                  <span className="text-sm text-slate-300">{formatDate(lease.startDate)}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-slate-500">End</span>
+                  <span className={`text-sm font-medium ${days <= 60 ? 'text-warning' : 'text-slate-300'}`}>{formatDate(lease.endDate)}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-slate-500">Type</span>
+                  <span className="text-sm text-slate-300">{lease.type}</span>
+                </div>
+                {lease.sqft && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-slate-500">Sq. Ft.</span>
+                    <span className="text-sm text-slate-300">{Number(lease.sqft).toLocaleString()}</span>
                   </div>
                 )}
               </div>
             </div>
-          </CardBody>
-        </Card>
 
-        <Card>
-          <CardHeader><CardTitle>Financials</CardTitle></CardHeader>
-          <CardBody className="flex flex-col gap-3">
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-slate-500 flex items-center gap-1.5"><DollarSign className="h-3.5 w-3.5" />Base Rent</span>
-              <span className="text-sm font-semibold text-white">{formatCurrency(Number(lease.baseRent))}/mo</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-slate-500 flex items-center gap-1.5"><TrendingUp className="h-3.5 w-3.5" />Annual</span>
-              <span className="text-sm text-slate-300">{formatCurrency(Number(lease.baseRent) * 12)}/yr</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-slate-500">Escalation</span>
-              <span className="text-sm font-medium text-success">{formatPercent(Number(lease.rentEscalation) * 100, 2)} / yr</span>
-            </div>
-            {lease.securityDeposit && (
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-slate-500">Security Deposit</span>
-                <span className="text-sm text-slate-300">{formatCurrency(Number(lease.securityDeposit))}</span>
+            <div className="flex-1 p-4">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Renewal Date</p>
+                {needsRenewal && <Badge variant="danger">Action needed</Badge>}
               </div>
-            )}
-          </CardBody>
-        </Card>
-
-        <Card>
-          <CardHeader><CardTitle>Lease Term</CardTitle></CardHeader>
-          <CardBody className="flex flex-col gap-3">
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-slate-500 flex items-center gap-1.5"><Calendar className="h-3.5 w-3.5" />Start</span>
-              <span className="text-sm text-slate-300">{formatDate(lease.startDate)}</span>
+              <DatePicker
+                value={lease.renewalDate?.slice(0, 10) ?? ''}
+                onChange={(date) => renewalMutation.mutate(date)}
+                onClear={lease.renewalDate ? () => clearRenewalMutation.mutate() : undefined}
+                disabled={!isActive || renewalMutation.isPending || clearRenewalMutation.isPending}
+                placeholder={isActive ? 'Set renewal date' : 'No renewal date'}
+              />
             </div>
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-slate-500">End</span>
-              <span className={`text-sm font-medium ${days <= 60 ? 'text-warning' : 'text-slate-300'}`}>{formatDate(lease.endDate)}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-slate-500">Type</span>
-              <span className="text-sm text-slate-300">{lease.type}</span>
-            </div>
-            {lease.sqft && (
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-slate-500">Sq. Ft.</span>
-                <span className="text-sm text-slate-300">{Number(lease.sqft).toLocaleString()}</span>
-              </div>
-            )}
-          </CardBody>
-        </Card>
-
-        {/* Renewal date card */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Renewal Date</CardTitle>
-            {needsRenewal && <Badge variant="danger">Action needed</Badge>}
-          </CardHeader>
-          <CardBody className="flex flex-col gap-3">
-            <DatePicker
-              value={lease.renewalDate?.slice(0, 10) ?? ''}
-              onChange={(date) => renewalMutation.mutate(date)}
-              onClear={lease.renewalDate ? () => clearRenewalMutation.mutate() : undefined}
-              disabled={!isActive || renewalMutation.isPending || clearRenewalMutation.isPending}
-              placeholder={isActive ? 'Set renewal date' : 'No renewal date'}
-            />
-          </CardBody>
-        </Card>
-      </div>
+          </div>
 
       {/* ── Renewal Pipeline ─────────────────────────────────────────────────── */}
       {isActive && (
@@ -915,6 +834,92 @@ export default function LeaseDetailPage() {
           </CardBody>
         </Card>
       )}
+
+        </div>{/* end main column */}
+
+        {/* Sidebar — Property, Tenant, Financials */}
+        <div className="w-64 shrink-0 rounded-xl border border-surface-400/30 divide-y divide-surface-400/20 overflow-hidden">
+          {/* Property */}
+          <div className="p-4">
+            <p className="mb-2.5 text-[10px] font-semibold uppercase tracking-wider text-slate-500">Property</p>
+            <button
+              onClick={() => navigate(`/properties/${lease.property.id}`)}
+              className="flex items-center gap-2 hover:text-brand-300 transition-colors text-left"
+            >
+              <Building2 className="h-4 w-4 text-brand-400 shrink-0" />
+              <span className="text-sm text-slate-200">{lease.property.name}</span>
+            </button>
+            <p className="mt-1 text-xs text-slate-500 font-mono">{lease.property.code}</p>
+          </div>
+
+          {/* Tenant */}
+          <div className="p-4">
+            <p className="mb-2.5 text-[10px] font-semibold uppercase tracking-wider text-slate-500">Tenant</p>
+            <div className="flex items-center gap-2">
+              <User className="h-4 w-4 text-success shrink-0" />
+              <span className="text-sm text-slate-200">{lease.tenant.name}</span>
+            </div>
+            {lease.tenant.email && (
+              <a href={`mailto:${lease.tenant.email}`} className="mt-1 block text-xs text-slate-500 hover:text-brand-300 transition-colors">
+                {lease.tenant.email}
+              </a>
+            )}
+            <div className="mt-2.5 pt-2.5 border-t border-surface-400/30 flex items-center justify-between">
+              <span className="text-xs text-slate-500 flex items-center gap-1.5">
+                <User className="h-3 w-3" />Owner
+              </span>
+              {!assigningOwner ? (
+                <button
+                  onClick={() => setAssigningOwner(true)}
+                  className="text-xs text-slate-400 hover:text-brand-300 transition-colors"
+                >
+                  {lease.owner ? `${lease.owner.firstName} ${lease.owner.lastName}` : '+ Assign'}
+                </button>
+              ) : (
+                <div className="flex items-center gap-1.5">
+                  <Select
+                    value={lease.ownerUserId ?? ''}
+                    onChange={(v) => { if (v) assignOwnerMutation.mutate(v); }}
+                    disabled={assignOwnerMutation.isPending}
+                    placeholder="Select user…"
+                    options={users?.map((u) => ({ value: u.id, label: `${u.firstName} ${u.lastName}` })) ?? []}
+                    className="w-32"
+                  />
+                  <button
+                    onClick={() => setAssigningOwner(false)}
+                    className="text-xs text-slate-600 hover:text-slate-300 transition-colors"
+                  >✕</button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Financials */}
+          <div className="p-4">
+            <p className="mb-2.5 text-[10px] font-semibold uppercase tracking-wider text-slate-500">Financials</p>
+            <div className="flex flex-col gap-2.5">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-slate-500 flex items-center gap-1.5"><DollarSign className="h-3.5 w-3.5" />Base Rent</span>
+                <span className="text-sm font-semibold text-white">{formatCurrency(Number(lease.baseRent))}/mo</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-slate-500 flex items-center gap-1.5"><TrendingUp className="h-3.5 w-3.5" />Annual</span>
+                <span className="text-sm text-slate-300">{formatCurrency(Number(lease.baseRent) * 12)}/yr</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-slate-500">Escalation</span>
+                <span className="text-sm font-medium text-success">{formatPercent(Number(lease.rentEscalation) * 100, 2)} / yr</span>
+              </div>
+              {lease.securityDeposit && (
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-slate-500">Security Deposit</span>
+                  <span className="text-sm text-slate-300">{formatCurrency(Number(lease.securityDeposit))}</span>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>{/* end flex layout */}
 
       <LeaseFormModal open={editOpen} onClose={() => setEditOpen(false)} lease={lease} />
     </div>
