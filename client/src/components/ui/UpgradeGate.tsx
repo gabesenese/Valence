@@ -49,7 +49,7 @@ export function UpgradeGate({ feature, children, overlay }: UpgradeGateProps) {
       <div className="relative">
         <div className="pointer-events-none select-none opacity-30 blur-[2px]">{children}</div>
         <div className="absolute inset-0 flex items-center justify-center">
-          <div className="rounded-xl border border-surface-400/60 bg-surface-100/95 backdrop-blur-sm px-6 py-4 text-center shadow-xl">
+          <div className="rounded-xl border border-surface-400/60 bg-surface-100 px-6 py-4 text-center shadow-xl">
             <Lock className="mx-auto mb-2 h-4 w-4 text-slate-400" />
             <p className="text-xs font-semibold text-white">{PLAN_LABELS[required]} required</p>
           </div>

@@ -161,7 +161,7 @@ function TenantPanel({ tenant, onClose }: { tenant: CrmTenant; onClose: () => vo
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end">
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
       <div className="relative flex h-full w-full max-w-lg flex-col bg-surface-50 border-l border-surface-400/40 shadow-2xl overflow-y-auto">
         {/* Header */}
         <div className="flex items-start justify-between p-5 border-b border-surface-400/30 sticky top-0 bg-surface-50 z-10">

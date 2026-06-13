@@ -250,7 +250,7 @@ export function AppLayout() {
 
       {/* Main content */}
       <main className="flex flex-1 flex-col overflow-hidden">
-        <header className="flex h-14 items-center justify-between border-b border-surface-400/40 bg-surface-50/50 px-6 backdrop-blur-sm">
+        <header className="flex h-14 items-center justify-between border-b border-surface-400/40 bg-surface-50 px-6">
           <div className="flex items-center gap-2">
             <Cpu className="h-4 w-4 text-brand-400" />
             <span className="text-xs text-slate-600">Operational Intelligence Platform</span>

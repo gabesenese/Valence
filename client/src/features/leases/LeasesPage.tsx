@@ -251,7 +251,7 @@ function BulkBar({
 
   if (count === 0) return null;
   return (
-    <div className="fixed bottom-6 left-1/2 z-30 -translate-x-1/2 flex items-center gap-3 rounded-xl border border-surface-400/60 bg-surface-100/95 px-5 py-3 shadow-2xl backdrop-blur">
+    <div className="fixed bottom-6 left-1/2 z-30 -translate-x-1/2 flex items-center gap-3 rounded-xl border border-surface-400/60 bg-surface-100 px-5 py-3 shadow-2xl">
       <span className="text-sm font-medium text-white">{count} selected</span>
       <div className="h-4 w-px bg-surface-400/60" />
       <div className="relative">
