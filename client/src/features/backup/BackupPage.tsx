@@ -39,11 +39,12 @@ function RestoreBanner({ result, onDismiss }: { result: RestoreResult; onDismiss
 
 // ─── Backup row ────────────────────────────────────────────────────────────────
 
-function BackupRow({ backup, onRestore, onDelete, apiBase }: {
+function BackupRow({ backup, onRestore, onDelete, apiBase, busy }: {
   backup: BackupMeta;
   onRestore: (id: string) => void;
   onDelete: (id: string) => void;
   apiBase: string;
+  busy: boolean;
 }) {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [confirmRestore, setConfirmRestore] = useState(false);
@@ -81,8 +82,9 @@ function BackupRow({ backup, onRestore, onDelete, apiBase }: {
           <div className="flex items-center gap-2">
             <span className="text-xs text-slate-400">Overwrite current data?</span>
             <button
-              onClick={() => { onRestore(backup.id); setConfirmRestore(false); }}
-              className="rounded-lg bg-brand-600 hover:bg-brand-500 px-2.5 py-1.5 text-xs font-semibold text-white transition-colors"
+              onClick={() => { setConfirmRestore(false); onRestore(backup.id); }}
+              disabled={busy}
+              className="rounded-lg bg-brand-600 hover:bg-brand-500 disabled:opacity-50 px-2.5 py-1.5 text-xs font-semibold text-white transition-colors"
             >
               Yes, restore
             </button>
@@ -91,7 +93,8 @@ function BackupRow({ backup, onRestore, onDelete, apiBase }: {
         ) : (
           <button
             onClick={() => setConfirmRestore(true)}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-surface-400/30 bg-surface-200/60 hover:bg-brand-600/20 hover:border-brand-500/30 hover:text-brand-300 px-2.5 py-1.5 text-xs text-slate-300 transition-colors"
+            disabled={busy}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-surface-400/30 bg-surface-200/60 hover:bg-brand-600/20 hover:border-brand-500/30 hover:text-brand-300 disabled:opacity-50 px-2.5 py-1.5 text-xs text-slate-300 transition-colors"
             title="Restore from this backup"
           >
             <RotateCcw className="h-3.5 w-3.5" /> Restore
@@ -101,8 +104,9 @@ function BackupRow({ backup, onRestore, onDelete, apiBase }: {
         {confirmDelete ? (
           <div className="flex items-center gap-2">
             <button
-              onClick={() => { onDelete(backup.id); setConfirmDelete(false); }}
-              className="rounded-lg bg-danger hover:bg-danger/80 px-2.5 py-1.5 text-xs font-semibold text-white transition-colors"
+              onClick={() => { setConfirmDelete(false); onDelete(backup.id); }}
+              disabled={busy}
+              className="rounded-lg bg-danger hover:bg-danger/80 disabled:opacity-50 px-2.5 py-1.5 text-xs font-semibold text-white transition-colors"
             >
               Delete
             </button>
@@ -111,7 +115,8 @@ function BackupRow({ backup, onRestore, onDelete, apiBase }: {
         ) : (
           <button
             onClick={() => setConfirmDelete(true)}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-danger/20 bg-danger/10 hover:bg-danger/20 px-2.5 py-1.5 text-xs text-danger transition-colors"
+            disabled={busy}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-danger/20 bg-danger/10 hover:bg-danger/20 disabled:opacity-50 px-2.5 py-1.5 text-xs text-danger transition-colors"
             title="Delete this backup"
           >
             <Trash2 className="h-3.5 w-3.5" />
@@ -229,6 +234,7 @@ export default function BackupPage() {
                   key={backup.id}
                   backup={backup}
                   apiBase={apiBase}
+                  busy={restoreMutation.isPending || deleteMutation.isPending}
                   onRestore={(id) => restoreMutation.mutate(id)}
                   onDelete={(id) => deleteMutation.mutate(id)}
                 />

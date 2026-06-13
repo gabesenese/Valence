@@ -147,7 +147,13 @@ export async function dismissAlert(id: string, userId: string, note?: string) {
 export async function dismissAllAlerts(userId: string): Promise<number> {
   const now = new Date();
   const { count } = await prisma.alert.updateMany({
-    where: { status: 'OPEN', property: { ownerId: userId } },
+    where: {
+      status: 'OPEN',
+      OR: [
+        { property: { ownerId: userId } },
+        { assigneeUserId: userId },
+      ],
+    },
     data: { status: 'DISMISSED', dismissedAt: now, dismissedById: userId },
   });
   return count;

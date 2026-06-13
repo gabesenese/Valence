@@ -32,10 +32,12 @@ export function NotificationBell() {
     refetchInterval: 60_000,
   });
 
+  const safeStatuses = SEVERITY_STATUSES[severityFilter] ?? SEVERITY_STATUSES['all'];
+
   const { data: recent } = useQuery({
     queryKey: ['alerts', 'recent-bell', severityFilter],
     queryFn: () => alertsService.getAlerts({
-      statuses: SEVERITY_STATUSES[severityFilter],
+      statuses: safeStatuses,
       ...(severityFilter !== 'all' && { severity: severityFilter.toUpperCase() }),
       limit: 5,
     }),

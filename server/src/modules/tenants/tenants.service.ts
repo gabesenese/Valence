@@ -1,5 +1,5 @@
 import { prisma } from '../../infrastructure/database';
-import { NotFoundError } from '../../utils/errors';
+import { NotFoundError, ConflictError } from '../../utils/errors';
 import { trackIfFirstTime } from '../analytics/funnel.service';
 
 export async function getTenants(
@@ -53,7 +53,7 @@ export interface CreateTenantInput {
 export async function createTenant(input: CreateTenantInput, userId: string) {
   if (input.email) {
     const existing = await prisma.tenant.findFirst({ where: { email: input.email, ownerId: userId } });
-    if (existing) throw new Error(`A tenant with email "${input.email}" already exists`);
+    if (existing) throw new ConflictError(`A tenant with email "${input.email}" already exists`);
   }
   const tenant = await prisma.tenant.create({ data: { ...input, ownerId: userId } });
   void trackIfFirstTime('data_imported', userId, { source: 'manual', entity: 'tenant' });
@@ -64,7 +64,7 @@ export async function updateTenant(id: string, input: Partial<CreateTenantInput>
   await getTenantById(id);
   if (input.email) {
     const conflict = await prisma.tenant.findFirst({ where: { email: input.email, ownerId: userId, NOT: { id } } });
-    if (conflict) throw new Error(`A tenant with email "${input.email}" already exists`);
+    if (conflict) throw new ConflictError(`A tenant with email "${input.email}" already exists`);
   }
   return prisma.tenant.update({ where: { id }, data: input });
 }

@@ -9,7 +9,7 @@ import { ConflictError, UnauthorizedError, NotFoundError, ValidationError } from
 import { logAudit } from '../audit/audit.service';
 import { sendPasswordResetEmail, sendVerificationEmail } from '../../lib/email';
 import { DemoPortfolioFactory } from '../demo/demo.factory';
-import { trackEvent } from '../analytics/funnel.service';
+import { trackEvent, trackReturnVisit } from '../analytics/funnel.service';
 import type { RegisterInput, LoginInput } from './auth.schemas';
 import type { UserRole, Plan } from '@prisma/client';
 
@@ -120,7 +120,7 @@ export async function login(
 
   const isReturn = !!user.lastLoginAt;
   await prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } });
-  if (isReturn) void trackEvent('return_visit', user.id);
+  if (isReturn) void trackReturnVisit(user.id);
 
   const { passwordHash: _, isActive: __, mfaSecret: ___, ...authUser } = user;
   const tokens = await createTokenPair(authUser, meta);

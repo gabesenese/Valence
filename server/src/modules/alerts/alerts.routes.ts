@@ -57,7 +57,7 @@ router.post('/:id/dismiss', authorize('ANALYST'), async (req: Request, res: Resp
   } catch (e) { next(e); }
 });
 
-router.post('/dismiss-all', authorize('ANALYST'), async (req: Request, res: Response, next: NextFunction) => {
+router.post('/dismiss-all', authorize('ADMIN'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const count = await service.dismissAllAlerts(req.user!.id);
     sendSuccess(res, { dismissed: count });

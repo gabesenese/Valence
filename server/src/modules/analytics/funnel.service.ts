@@ -34,14 +34,33 @@ export async function trackEvent(
 }
 
 // Only tracks the event once per user across their lifetime (DB-level dedup)
+// Tracks the event at most once per user. Uses a create-then-swallow-conflict
+// pattern so race conditions between concurrent requests produce at most one
+// extra record, which is acceptable for analytics purposes.
 export async function trackIfFirstTime(
   event: FunnelEventType,
   userId: string,
   meta?: Record<string, unknown>,
 ): Promise<void> {
   try {
-    const already = await prisma.funnelEvent.findFirst({ where: { event, userId } });
+    const already = await prisma.funnelEvent.findFirst({
+      where: { event, userId },
+      select: { id: true },
+    });
     if (!already) await prisma.funnelEvent.create({ data: { event, userId, meta: (meta ?? {}) as object } });
+  } catch { /* non-blocking — duplicate on race condition is acceptable */ }
+}
+
+// Tracks return_visit at most once per calendar day to avoid log inflation.
+export async function trackReturnVisit(userId: string): Promise<void> {
+  try {
+    const todayStart = new Date();
+    todayStart.setUTCHours(0, 0, 0, 0);
+    const already = await prisma.funnelEvent.findFirst({
+      where: { event: 'return_visit', userId, createdAt: { gte: todayStart } },
+      select: { id: true },
+    });
+    if (!already) await prisma.funnelEvent.create({ data: { event: 'return_visit', userId, meta: {} as object } });
   } catch { /* non-blocking */ }
 }
 

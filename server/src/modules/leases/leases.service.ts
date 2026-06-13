@@ -537,7 +537,7 @@ export async function bulkAction(input: BulkActionInput, userId: string) {
 export async function createLease(input: CreateLeaseInput, userId?: string) {
   const endDate = parseISO(input.endDate);
   const renewalRisk = computeRenewalRisk(endDate);
-  const leaseNumber = `LSE-${Date.now().toString(36).toUpperCase()}`;
+  const leaseNumber = `LSE-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 7).toUpperCase()}`;
 
   const lease = await prisma.lease.create({
     data: {
