@@ -207,6 +207,127 @@ async function evaluateRule(
     }
   }
 
+  if (trigger === 'OCCUPANCY_BELOW') {
+    const threshold = conditions.occupancyPct ?? 80;
+
+    const properties = await prisma.property.findMany({
+      where: { status: 'ACTIVE' },
+      select: {
+        id: true,
+        name: true,
+        totalUnits: true,
+        ownerId: true,
+        tasks: {
+          where: {
+            status: { in: ['OPEN', 'IN_PROGRESS'] },
+            title: { contains: 'occupancy' },
+            createdAt: { gte: new Date(now.getTime() - 7 * 86400000) },
+          },
+          select: { id: true },
+          take: 1,
+        },
+        _count: { select: { leases: { where: { status: 'ACTIVE' } } } },
+      },
+    });
+
+    let matched = 0;
+    if (action === 'CREATE_TASK') {
+      for (const property of properties) {
+        const occupancyRate = property.totalUnits > 0
+          ? Math.round((property._count.leases / property.totalUnits) * 100)
+          : 0;
+        if (occupancyRate >= threshold) continue;
+        if (property.tasks.length > 0) continue;
+
+        matched++;
+        const title = (actionConfig.taskTitle ?? 'Low occupancy — {property}')
+          .replace('{property}', property.name)
+          .replace('{occupancy}', String(occupancyRate));
+
+        await prisma.task.create({
+          data: {
+            title,
+            description: `${property.name} occupancy is ${occupancyRate}%, below the ${threshold}% threshold`,
+            propertyId: property.id,
+            assigneeUserId: resolveAssignee(actionConfig.assignTo, property.ownerId, undefined),
+            dueAt: actionConfig.daysUntilDue
+              ? new Date(now.getTime() + actionConfig.daysUntilDue * 86400000)
+              : undefined,
+          },
+        });
+        tasksCreated++;
+      }
+    }
+    details.matchedProperties = matched;
+  }
+
+  if (trigger === 'RISK_SCORE_ABOVE') {
+    const threshold = conditions.riskScore ?? 50;
+    const expiryWindow = new Date(now.getTime() + 90 * 86400000);
+
+    const properties = await prisma.property.findMany({
+      where: { status: 'ACTIVE' },
+      select: {
+        id: true,
+        name: true,
+        totalUnits: true,
+        ownerId: true,
+        tasks: {
+          where: {
+            status: { in: ['OPEN', 'IN_PROGRESS'] },
+            title: { contains: 'risk' },
+            createdAt: { gte: new Date(now.getTime() - 7 * 86400000) },
+          },
+          select: { id: true },
+          take: 1,
+        },
+        _count: { select: { leases: { where: { status: 'ACTIVE' } } } },
+        alerts: { where: { status: 'OPEN', severity: 'CRITICAL' }, select: { id: true } },
+        leases: {
+          where: { status: 'ACTIVE', endDate: { lte: expiryWindow } },
+          select: { id: true },
+        },
+      },
+    });
+
+    let matched = 0;
+    if (action === 'CREATE_TASK') {
+      for (const property of properties) {
+        const occupancyRate = property.totalUnits > 0
+          ? (property._count.leases / property.totalUnits) * 100
+          : 0;
+
+        // Risk score 0–100: occupancy shortfall + critical alerts + expiring leases
+        const occupancyRisk = Math.max(0, 80 - occupancyRate) * 0.5;       // 0–40
+        const alertRisk     = Math.min(40, property.alerts.length * 20);    // 0–40
+        const expiryRisk    = Math.min(20, property.leases.length * 7);     // 0–20
+        const riskScore     = Math.round(occupancyRisk + alertRisk + expiryRisk);
+
+        if (riskScore <= threshold) continue;
+        if (property.tasks.length > 0) continue;
+
+        matched++;
+        const title = (actionConfig.taskTitle ?? 'High risk property — {property}')
+          .replace('{property}', property.name)
+          .replace('{risk}', String(riskScore));
+
+        await prisma.task.create({
+          data: {
+            title,
+            description: `${property.name} risk score is ${riskScore}/100 (threshold: ${threshold})`,
+            propertyId: property.id,
+            assigneeUserId: resolveAssignee(actionConfig.assignTo, property.ownerId, undefined),
+            dueAt: actionConfig.daysUntilDue
+              ? new Date(now.getTime() + actionConfig.daysUntilDue * 86400000)
+              : undefined,
+          },
+        });
+        tasksCreated++;
+      }
+    }
+    details.matchedProperties = matched;
+  }
+
   return { tasksCreated, details };
 }
 

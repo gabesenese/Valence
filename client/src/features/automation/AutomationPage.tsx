@@ -56,10 +56,8 @@ const TRIGGER_CONFIG: Record<AutomationTrigger, { label: string; description: st
   },
 };
 
-const ACTION_CONFIG: Record<AutomationAction, { label: string; icon: React.ComponentType<{ className?: string }> }> = {
-  CREATE_TASK:      { label: 'Create Task',       icon: ClipboardList },
-  NOTIFY_ASSIGNEE:  { label: 'Notify Assignee',   icon: AlertTriangle },
-  ESCALATE_ALERT:   { label: 'Escalate Alert',    icon: AlertTriangle },
+const ACTION_CONFIG: Partial<Record<AutomationAction, { label: string; icon: React.ComponentType<{ className?: string }> }>> = {
+  CREATE_TASK: { label: 'Create Task', icon: ClipboardList },
 };
 
 function formatDate(s: string | null) {
@@ -165,6 +163,7 @@ function CreateRuleModal({ onClose }: { onClose: () => void }) {
             <div className="flex gap-2 mb-3">
               {(Object.keys(ACTION_CONFIG) as AutomationAction[]).map((a) => {
                 const cfg = ACTION_CONFIG[a];
+                if (!cfg) return null;
                 const Icon = cfg.icon;
                 return (
                   <button
@@ -255,7 +254,8 @@ function RuleCard({ rule, canEdit }: { rule: AutomationRule; canEdit: boolean })
   const qc = useQueryClient();
   const [showLogs, setShowLogs] = useState(false);
   const trig = TRIGGER_CONFIG[rule.trigger];
-  const ActionIcon = ACTION_CONFIG[rule.action].icon;
+  const actionCfg = ACTION_CONFIG[rule.action];
+  const ActionIcon = actionCfg?.icon ?? ClipboardList;
 
   const toggleMutation = useMutation({
     mutationFn: () => automationService.updateRule(rule.id, { isActive: !rule.isActive }),
@@ -305,7 +305,7 @@ function RuleCard({ rule, canEdit }: { rule: AutomationRule; canEdit: boolean })
             </span>
             <span className="flex items-center gap-1">
               <ActionIcon className="h-3 w-3 text-slate-600" />
-              {ACTION_CONFIG[rule.action].label}
+              {actionCfg?.label ?? rule.action}
             </span>
             <span className="flex items-center gap-1">
               <Calendar className="h-3 w-3 text-slate-600" />
