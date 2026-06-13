@@ -16,6 +16,7 @@ import { PageLoader } from '@/components/ui/Spinner';
 import { formatCurrency, compactCurrency, daysUntil, formatDate } from '@/utils/format';
 import { WelcomeScreen } from '@/features/onboarding/WelcomeScreen';
 import { OnboardingCard } from '@/features/onboarding/OnboardingCard';
+import { usePlan } from '@/hooks/usePlan';
 
 const TREND_OPTIONS = [
   { label: '3M', value: 3 },
@@ -35,6 +36,7 @@ type FeedItem = {
 
 export default function DashboardPage() {
   const navigate = useNavigate();
+  const { canAccess } = usePlan();
   const [trendMonths, setTrendMonths] = useState(12);
 
   const { data: summary, isLoading: summaryLoading } = useQuery({
@@ -327,8 +329,8 @@ export default function DashboardPage() {
 
           {/* ── RIGHT: Context sidebar ──────────────────────────────────────── */}
           <div className="flex flex-col gap-4">
-            <HealthScoreCard />
-            <ExecutiveBriefCard />
+            {canAccess('health_score') && <HealthScoreCard />}
+            {canAccess('executive_brief') && <ExecutiveBriefCard />}
 
             {/* Property Performance */}
             {performance && performance.length > 0 && (
