@@ -89,25 +89,6 @@ app.get('/health', (_req, res) => {
   res.json({ status: 'ok', version: '0.1.0', timestamp: new Date().toISOString() });
 });
 
-// ─── DB Debug (temporary) ────────────────────────────────────────────────────
-import { prisma } from './infrastructure/database';
-app.get('/health/db', async (_req, res) => {
-  try {
-    const raw = await prisma.$queryRaw`SELECT 1 as ok`;
-    const cols = await prisma.$queryRaw`
-      SELECT column_name FROM information_schema.columns
-      WHERE table_name = 'properties' AND column_name = 'deleted_at'
-    `;
-    let modelErr: string | null = null;
-    try {
-      await prisma.property.count({ where: { deletedAt: null } });
-    } catch (e2: unknown) { modelErr = (e2 as Error).message; }
-    res.json({ status: 'ok', raw, deleted_at_col_exists: (cols as unknown[]).length > 0, modelErr });
-  } catch (err: unknown) {
-    const e = err as Error;
-    res.status(500).json({ status: 'error', message: e.message, stack: e.stack?.slice(0, 500) });
-  }
-});
 
 // ─── API Routes ───────────────────────────────────────────────────────────────
 app.use('/api/auth', authRouter);
