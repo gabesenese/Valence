@@ -194,9 +194,9 @@ export default function PropertyFormModal({ open, onClose, property }: Props) {
             <Input label="Address" value={form.address} onChange={set('address')} error={errors.address} placeholder="123 Main St" />
           </div>
           <div className="grid grid-cols-3 gap-4 mb-4">
-            <Input label="City" value={form.city} onChange={set('city')} error={errors.city} placeholder="New York" />
-            <Input label="State" value={form.state} onChange={set('state')} error={errors.state} placeholder="NY" maxLength={2} />
-            <Input label="ZIP Code" value={form.zipCode} onChange={set('zipCode')} error={errors.zipCode} placeholder="10001" />
+            <Input label="City" value={form.city} onChange={set('city')} error={errors.city} placeholder="Toronto" />
+            <Input label="Province" value={form.state} onChange={set('state')} error={errors.state} placeholder="ON" maxLength={2} />
+            <Input label="Postal Code" value={form.zipCode} onChange={set('zipCode')} error={errors.zipCode} placeholder="M5V 3A8" />
           </div>
 
           {/* Building */}
