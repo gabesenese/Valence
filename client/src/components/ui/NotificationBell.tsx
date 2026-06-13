@@ -54,7 +54,15 @@ export function NotificationBell() {
 
   const clearAllMutation = useMutation({
     mutationFn: alertsService.dismissAll,
-    onSuccess: () => {
+    onMutate: () => {
+      qc.setQueryData<{ openTotal: number }>(['alerts', 'summary'], (old) =>
+        old ? { ...old, openTotal: 0 } : old,
+      );
+      qc.setQueryData<{ data: unknown[] }>(['alerts', 'recent-bell', severityFilter], (old) =>
+        old ? { ...old, data: [] } : old,
+      );
+    },
+    onSettled: () => {
       qc.invalidateQueries({ queryKey: ['alerts'] });
     },
   });
