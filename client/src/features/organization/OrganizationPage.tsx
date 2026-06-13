@@ -175,6 +175,7 @@ function OrgProfileSection() {
   };
 
   return (
+    <div className="max-w-2xl">
     <Card>
       <CardHeader>
         <div className="flex items-center gap-2">
@@ -246,6 +247,7 @@ function OrgProfileSection() {
         )}
       </CardBody>
     </Card>
+    </div>
   );
 }
 
@@ -738,6 +740,7 @@ function OwnershipSection({ members }: { members: TeamMember[] }) {
   const owner = members.find((m) => m.role === 'SUPER_ADMIN');
 
   return (
+    <div className="max-w-2xl">
     <Card>
       <CardHeader>
         <div className="flex items-center gap-2">
@@ -800,6 +803,7 @@ function OwnershipSection({ members }: { members: TeamMember[] }) {
         )}
       </CardBody>
     </Card>
+    </div>
   );
 }
 
@@ -815,7 +819,7 @@ export default function OrganizationPage() {
   });
 
   return (
-    <div className="flex flex-col gap-6 p-6 animate-fade-in max-w-4xl">
+    <div className="flex flex-col gap-6 p-6 animate-fade-in">
       <PageHeader
         title="Organization"
         description="Profile, team management, and ownership settings"
