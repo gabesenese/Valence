@@ -144,6 +144,15 @@ export async function dismissAlert(id: string, userId: string, note?: string) {
   return updated;
 }
 
+export async function dismissAllAlerts(userId: string): Promise<number> {
+  const now = new Date();
+  const { count } = await prisma.alert.updateMany({
+    where: { status: 'OPEN', property: { ownerId: userId } },
+    data: { status: 'DISMISSED', dismissedAt: now, dismissedById: userId },
+  });
+  return count;
+}
+
 export async function assignAlert(id: string, assigneeUserId: string, actorUserId: string) {
   const alert = await prisma.alert.findUnique({ where: { id } });
   if (!alert) throw new NotFoundError('Alert');

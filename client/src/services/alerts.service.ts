@@ -77,6 +77,9 @@ export const alertsService = {
   dismiss: (id: string, note?: string): Promise<Alert> =>
     api.post(`/alerts/${id}/dismiss`, { note }).then(extractData<Alert>),
 
+  dismissAll: (): Promise<{ dismissed: number }> =>
+    api.post('/alerts/dismiss-all').then(extractData<{ dismissed: number }>),
+
   reopen: (id: string): Promise<Alert> =>
     api.post(`/alerts/${id}/reopen`).then(extractData<Alert>),
 

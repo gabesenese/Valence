@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { Bell } from 'lucide-react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Bell, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
 import { alertsService } from '@/services/alerts.service';
@@ -24,6 +24,7 @@ export function NotificationBell() {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const severityFilter = useUIStore((s) => s.alertSeverityFilter);
+  const qc = useQueryClient();
 
   const { data: summary } = useQuery({
     queryKey: ['alerts', 'summary'],
@@ -51,6 +52,13 @@ export function NotificationBell() {
     return () => document.removeEventListener('mousedown', onClickOutside);
   }, [open]);
 
+  const clearAllMutation = useMutation({
+    mutationFn: alertsService.dismissAll,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['alerts'] });
+    },
+  });
+
   const count = summary?.openTotal ?? 0;
 
   return (
@@ -75,11 +83,24 @@ export function NotificationBell() {
         <div className="absolute right-0 top-10 z-50 w-80 rounded-xl border border-surface-400/40 bg-surface-100 shadow-card">
           <div className="flex items-center justify-between border-b border-surface-400/20 px-4 py-3">
             <span className="text-sm font-semibold text-slate-200">Notifications</span>
-            {count > 0 && (
-              <span className="rounded-full bg-danger/10 px-2 py-0.5 text-xs font-medium text-danger">
-                {count} open
-              </span>
-            )}
+            <div className="flex items-center gap-2">
+              {count > 0 && (
+                <span className="rounded-full bg-danger/10 px-2 py-0.5 text-xs font-medium text-danger">
+                  {count} open
+                </span>
+              )}
+              {count > 0 && (
+                <button
+                  onClick={() => clearAllMutation.mutate()}
+                  disabled={clearAllMutation.isPending}
+                  title="Dismiss all notifications"
+                  className="flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] text-slate-500 hover:bg-surface-300/60 hover:text-slate-300 transition-colors disabled:opacity-50"
+                >
+                  <X className="h-3 w-3" />
+                  Clear all
+                </button>
+              )}
+            </div>
           </div>
 
           <ul className="max-h-72 overflow-y-auto">
