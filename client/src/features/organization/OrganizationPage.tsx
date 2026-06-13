@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-  Building2, Users, Crown, Shield, BarChart3, Eye,
+  Building2, Globe, Users, Crown, Shield, BarChart3, Eye,
   UserPlus, X, Copy, Check, Clock, Link as LinkIcon, AlertTriangle,
   CheckCircle2, Loader2, MoreVertical, UserX,
 } from 'lucide-react';
@@ -70,10 +70,10 @@ const CURRENCY_OPTIONS = [
 ];
 
 const ROLE_CONFIG: Record<UserRole, { label: string; color: string; icon: React.ComponentType<{ className?: string }> }> = {
-  SUPER_ADMIN: { label: 'Owner',   color: 'text-warning',   icon: Crown    },
-  ADMIN:       { label: 'Admin',   color: 'text-brand-400', icon: Shield   },
+  SUPER_ADMIN: { label: 'Owner',   color: 'text-warning',   icon: Crown     },
+  ADMIN:       { label: 'Admin',   color: 'text-brand-400', icon: Shield    },
   ANALYST:     { label: 'Analyst', color: 'text-teal-400',  icon: BarChart3 },
-  VIEWER:      { label: 'Viewer',  color: 'text-slate-400', icon: Eye      },
+  VIEWER:      { label: 'Viewer',  color: 'text-slate-400', icon: Eye       },
 };
 
 const ROLES: UserRole[] = ['SUPER_ADMIN', 'ADMIN', 'ANALYST', 'VIEWER'];
@@ -89,14 +89,29 @@ function daysUntil(iso: string) {
   return Math.max(0, Math.ceil((new Date(iso).getTime() - Date.now()) / 86400000));
 }
 
+function lastActive(iso: string | null | undefined): string {
+  if (!iso) return 'Never';
+  const diff = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 2)  return 'Just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days === 1) return 'Yesterday';
+  if (days < 30)  return `${days}d ago`;
+  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
 // ─── Shared sub-components ────────────────────────────────────────────────────
 
-function MemberAvatar({ member }: { member: TeamMember }) {
+function MemberAvatar({ member, size = 'md' }: { member: TeamMember; size?: 'sm' | 'md' | 'lg' }) {
   const initials = `${member.firstName[0]}${member.lastName[0]}`.toUpperCase();
   const colors = ['bg-brand-600', 'bg-purple-600', 'bg-teal-600', 'bg-orange-600'];
   const color = colors[member.firstName.charCodeAt(0) % colors.length];
+  const sz = size === 'lg' ? 'h-12 w-12 text-base' : size === 'sm' ? 'h-7 w-7 text-[10px]' : 'h-9 w-9 text-sm';
   return (
-    <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${color} text-sm font-bold text-white`}>
+    <div className={`flex shrink-0 items-center justify-center rounded-full ${color} font-bold text-white ${sz}`}>
       {initials}
     </div>
   );
@@ -106,11 +121,7 @@ function CopyButton({ text, label = 'Copy' }: { text: string; label?: string }) 
   const [copied, setCopied] = useState(false);
   return (
     <button
-      onClick={() => {
-        void navigator.clipboard.writeText(text);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-      }}
+      onClick={() => { void navigator.clipboard.writeText(text); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
       className="inline-flex items-center gap-1 rounded-md border border-surface-400/40 bg-surface-200 hover:bg-surface-300 px-2.5 py-1.5 text-xs font-medium text-slate-300 transition-colors"
     >
       {copied ? <Check className="h-3 w-3 text-success" /> : <Copy className="h-3 w-3" />}
@@ -119,139 +130,49 @@ function CopyButton({ text, label = 'Copy' }: { text: string; label?: string }) 
   );
 }
 
-// ─── Organization Profile ─────────────────────────────────────────────────────
+// ─── Org overview header ──────────────────────────────────────────────────────
 
-function OrgProfileSection() {
-  const qc = useQueryClient();
-  const currentUser = useAuthStore((s) => s.user);
-  const canEdit = currentUser?.role === 'ADMIN' || currentUser?.role === 'SUPER_ADMIN';
-
-  const { data: org, isLoading } = useQuery({
+function OrgOverviewCard({ members }: { members: TeamMember[] }) {
+  const { data: org } = useQuery({
     queryKey: ['organization'],
     queryFn: organizationService.getOrganization,
     staleTime: 60_000,
   });
 
-  const [name, setName] = useState('');
-  const [industry, setIndustry] = useState('');
-  const [timezone, setTimezone] = useState('');
-  const [currency, setCurrency] = useState('');
-  const [initialized, setInitialized] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
-  const [error, setError] = useState('');
-
-  if (org && !initialized) {
-    setName(org.name);
-    setIndustry(org.industry ?? '');
-    setTimezone(org.timezone);
-    setCurrency(org.currency);
-    setInitialized(true);
-  }
-
-  const dirty = org
-    ? name !== org.name || industry !== (org.industry ?? '') || timezone !== org.timezone || currency !== org.currency
-    : false;
-
-  const save = async () => {
-    if (!name.trim()) { setError('Organization name is required.'); return; }
-    setError('');
-    setSaving(true);
-    try {
-      await organizationService.updateOrganization({
-        name: name.trim(),
-        industry: industry || null,
-        timezone,
-        currency,
-      });
-      void qc.invalidateQueries({ queryKey: ['organization'] });
-      setSaved(true);
-      setTimeout(() => setSaved(false), 3000);
-    } catch (err: unknown) {
-      setError((err as Error).message || 'Failed to save.');
-    } finally {
-      setSaving(false);
-    }
-  };
+  const owner = members.find((m) => m.role === 'SUPER_ADMIN');
+  const activeCount = members.filter((m) => m.isActive).length;
 
   return (
-    <div className="max-w-2xl">
     <Card>
-      <CardHeader>
-        <div className="flex items-center gap-2">
-          <Building2 className="h-4 w-4 text-brand-400" />
-          <CardTitle>Organization Profile</CardTitle>
-        </div>
-      </CardHeader>
-      <CardBody className="flex flex-col gap-5">
-        {isLoading ? (
-          <PageLoader />
-        ) : (
-          <>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div className="sm:col-span-2 flex flex-col gap-1.5">
-                <label className="text-xs font-medium uppercase tracking-wider text-slate-400">Organization Name</label>
-                <input
-                  type="text"
-                  value={name}
-                  onChange={(e) => { setName(e.target.value); setSaved(false); }}
-                  disabled={!canEdit}
-                  placeholder="Acme Property Group"
-                  className="h-9 w-full rounded-lg border border-surface-400 bg-surface-200 px-3 text-sm text-slate-100 placeholder:text-slate-600 transition-colors focus:border-brand-500/60 focus:bg-surface-300 focus:outline-none focus:ring-1 focus:ring-brand-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
-                />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium uppercase tracking-wider text-slate-400">Industry</label>
-                <Select
-                  value={industry}
-                  onChange={(v) => { setIndustry(v); setSaved(false); }}
-                  options={INDUSTRY_OPTIONS}
-                  disabled={!canEdit}
-                />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium uppercase tracking-wider text-slate-400">Currency</label>
-                <Select
-                  value={currency}
-                  onChange={(v) => { setCurrency(v); setSaved(false); }}
-                  options={CURRENCY_OPTIONS}
-                  disabled={!canEdit}
-                />
-              </div>
-              <div className="sm:col-span-2 flex flex-col gap-1.5">
-                <label className="text-xs font-medium uppercase tracking-wider text-slate-400">Timezone</label>
-                <Select
-                  value={timezone}
-                  onChange={(v) => { setTimezone(v); setSaved(false); }}
-                  options={TIMEZONE_OPTIONS}
-                  disabled={!canEdit}
-                />
-              </div>
+      <CardBody className="py-5">
+        <div className="flex items-center gap-4">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-brand-600/20 border border-brand-500/20">
+            <Building2 className="h-6 w-6 text-brand-400" />
+          </div>
+          <div>
+            <h2 className="text-lg font-bold text-white">{org?.name ?? '—'}</h2>
+            <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-slate-500">
+              {org?.industry && <span>{org.industry}</span>}
+              <span className="flex items-center gap-1">
+                <Users className="h-3 w-3" />
+                {activeCount} member{activeCount !== 1 ? 's' : ''}
+              </span>
+              {owner && (
+                <span className="flex items-center gap-1">
+                  <Crown className="h-3 w-3 text-warning/70" />
+                  {owner.firstName} {owner.lastName}
+                </span>
+              )}
+              {org?.currency && <span>{org.currency}</span>}
             </div>
-
-            {error && <p className="text-xs text-danger">{error}</p>}
-
-            {canEdit && (
-              <div className="flex items-center gap-3">
-                <Button size="sm" onClick={save} loading={saving} disabled={!dirty}>
-                  Save changes
-                </Button>
-                {saved && (
-                  <span className="flex items-center gap-1 text-xs text-success">
-                    <CheckCircle2 className="h-3.5 w-3.5" /> Saved
-                  </span>
-                )}
-              </div>
-            )}
-          </>
-        )}
+          </div>
+        </div>
       </CardBody>
     </Card>
-    </div>
   );
 }
 
-// ─── Role picker (inline dropdown) ────────────────────────────────────────────
+// ─── Role picker ──────────────────────────────────────────────────────────────
 
 function RolePicker({ member, currentUserRole, onSelect, busy }: {
   member: TeamMember; currentUserRole: UserRole; onSelect: (role: UserRole) => void; busy: boolean;
@@ -263,6 +184,16 @@ function RolePicker({ member, currentUserRole, onSelect, busy }: {
   const canChange = (currentUserRole === 'SUPER_ADMIN' || currentUserRole === 'ADMIN')
     && roleLevel(currentUserRole) < roleLevel(member.role);
 
+  useEffect(() => {
+    if (!open) return;
+    function onClickOutside(e: MouseEvent) {
+      if (triggerRef.current?.contains(e.target as Node) || dropRef.current?.contains(e.target as Node)) return;
+      setOpen(false);
+    }
+    document.addEventListener('mousedown', onClickOutside);
+    return () => document.removeEventListener('mousedown', onClickOutside);
+  }, [open]);
+
   const openDropdown = () => {
     if (triggerRef.current) {
       const rect = triggerRef.current.getBoundingClientRect();
@@ -270,19 +201,6 @@ function RolePicker({ member, currentUserRole, onSelect, busy }: {
     }
     setOpen(true);
   };
-
-  useEffect(() => {
-    if (!open) return;
-    function onClickOutside(e: MouseEvent) {
-      if (
-        triggerRef.current?.contains(e.target as Node) ||
-        dropRef.current?.contains(e.target as Node)
-      ) return;
-      setOpen(false);
-    }
-    document.addEventListener('mousedown', onClickOutside);
-    return () => document.removeEventListener('mousedown', onClickOutside);
-  }, [open]);
 
   const cfg = ROLE_CONFIG[member.role];
   if (!canChange) {
@@ -354,13 +272,9 @@ function MemberRow({ member, currentUserId, currentUserRole }: {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['users'] }),
   });
 
-  const lastLogin = member.lastLoginAt
-    ? new Date(member.lastLoginAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-    : 'Never';
-
   return (
     <div className={`flex items-center gap-4 px-5 py-4 border-b border-surface-400/30 last:border-0 hover:bg-surface-200/30 transition-colors group ${!member.isActive ? 'opacity-50' : ''}`}>
-      {/* Avatar + name */}
+      {/* Avatar + name + email */}
       <div className="flex items-center gap-3 flex-1 min-w-0">
         <MemberAvatar member={member} />
         <div className="min-w-0">
@@ -382,13 +296,17 @@ function MemberRow({ member, currentUserId, currentUserRole }: {
         />
       </div>
 
+      {/* Last active */}
+      <span className="text-xs text-slate-500 shrink-0 w-24 text-right tabular-nums">
+        {lastActive(member.lastLoginAt)}
+      </span>
+
       {/* Status */}
       <div className="shrink-0">
-        <Badge variant={member.isActive ? 'success' : 'neutral'}>{member.isActive ? 'Active' : 'Inactive'}</Badge>
+        <Badge variant={member.isActive ? 'success' : 'neutral'}>
+          {member.isActive ? 'Active' : 'Inactive'}
+        </Badge>
       </div>
-
-      {/* Last login */}
-      <span className="text-xs text-slate-500 shrink-0">{lastLogin}</span>
 
       {/* Remove */}
       <div className="shrink-0 w-6 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -420,10 +338,7 @@ function InviteModal({ onClose }: { onClose: () => void }) {
 
   const createMutation = useMutation({
     mutationFn: () => usersService.createInvite(email.trim(), role),
-    onSuccess: (invite) => {
-      setCreatedToken(invite.token);
-      void qc.invalidateQueries({ queryKey: ['invites'] });
-    },
+    onSuccess: (invite) => { setCreatedToken(invite.token); void qc.invalidateQueries({ queryKey: ['invites'] }); },
     onError: (err: Error) => setError(err.message || 'Failed to create invite'),
   });
 
@@ -500,7 +415,7 @@ function InviteModal({ onClose }: { onClose: () => void }) {
   );
 }
 
-// ─── Team members section ─────────────────────────────────────────────────────
+// ─── Team section ─────────────────────────────────────────────────────────────
 
 function TeamSection() {
   const qc = useQueryClient();
@@ -534,7 +449,7 @@ function TeamSection() {
         <CardHeader>
           <div className="flex items-center gap-2">
             <Users className="h-4 w-4 text-brand-400" />
-            <CardTitle>Members</CardTitle>
+            <CardTitle>Team Members</CardTitle>
             <span className="text-xs text-slate-600">{activeCount} active</span>
           </div>
           {canInvite && (
@@ -544,6 +459,7 @@ function TeamSection() {
             </Button>
           )}
         </CardHeader>
+
         {isLoading ? (
           <CardBody><PageLoader /></CardBody>
         ) : members.length === 0 ? (
@@ -568,53 +484,177 @@ function TeamSection() {
             ))}
           </div>
         )}
-      </Card>
 
-      {/* Pending invites */}
-      {canInvite && invites.length > 0 && (
-        <Card>
-          <div className="px-4 py-3 border-b border-surface-400/30 flex items-center gap-2">
-            <Clock className="h-4 w-4 text-slate-500" />
-            <h3 className="text-sm font-medium text-slate-300">Pending Invites</h3>
-            <span className="text-xs text-slate-600">({invites.length})</span>
-          </div>
-          <div className="divide-y divide-surface-400/20">
-            {invites.map((invite: Invite) => {
-              const days = daysUntil(invite.expiresAt);
-              const link = `${window.location.origin}/auth/invite/${invite.token}`;
-              const cfg = ROLE_CONFIG[invite.role];
-              return (
-                <div key={invite.id} className="flex items-center gap-3 px-4 py-3">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-slate-300 truncate">{invite.email}</p>
-                    <p className="text-xs text-slate-600 mt-0.5">
-                      Invited by {invite.invitedBy.firstName} {invite.invitedBy.lastName}
-                    </p>
+        {/* Pending invites embedded at the bottom of the team card */}
+        {canInvite && invites.length > 0 && (
+          <>
+            <div className="flex items-center gap-2 border-t border-surface-400/30 px-5 py-2.5 bg-surface-100/40">
+              <Clock className="h-3.5 w-3.5 text-slate-500" />
+              <span className="text-xs font-medium text-slate-500">Pending Invites</span>
+              <span className="text-xs text-slate-600">({invites.length})</span>
+            </div>
+            <div className="divide-y divide-surface-400/20">
+              {invites.map((invite: Invite) => {
+                const days = daysUntil(invite.expiresAt);
+                const link = `${window.location.origin}/auth/invite/${invite.token}`;
+                const cfg = ROLE_CONFIG[invite.role];
+                return (
+                  <div key={invite.id} className="flex items-center gap-3 px-5 py-3">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-slate-300 truncate">{invite.email}</p>
+                      <p className="text-xs text-slate-600 mt-0.5">
+                        Invited by {invite.invitedBy.firstName} {invite.invitedBy.lastName}
+                      </p>
+                    </div>
+                    <div className={`flex items-center gap-1.5 text-xs font-medium shrink-0 ${cfg.color}`}>
+                      <cfg.icon className="h-3.5 w-3.5" />
+                      {cfg.label}
+                    </div>
+                    <span className={`text-xs shrink-0 ${days <= 1 ? 'text-danger' : days <= 3 ? 'text-warning' : 'text-slate-500'}`}>
+                      {days === 0 ? 'Expires today' : `${days}d left`}
+                    </span>
+                    <CopyButton text={link} label="Resend" />
+                    <button
+                      onClick={() => revokeMutation.mutate(invite.id)}
+                      disabled={revokeMutation.isPending}
+                      className="text-xs text-slate-600 hover:text-danger transition-colors shrink-0"
+                    >
+                      Revoke
+                    </button>
                   </div>
-                  <div className={`flex items-center gap-1.5 text-xs font-medium shrink-0 ${cfg.color}`}>
-                    <cfg.icon className="h-3.5 w-3.5" />
-                    {cfg.label}
-                  </div>
-                  <span className={`text-xs shrink-0 ${days <= 1 ? 'text-danger' : days <= 3 ? 'text-warning' : 'text-slate-500'}`}>
-                    {days === 0 ? 'Expires today' : `${days}d left`}
-                  </span>
-                  <CopyButton text={link} label="Resend" />
-                  <button
-                    onClick={() => revokeMutation.mutate(invite.id)}
-                    disabled={revokeMutation.isPending}
-                    className="text-xs text-slate-600 hover:text-danger transition-colors shrink-0"
-                  >
-                    Revoke
-                  </button>
-                </div>
-              );
-            })}
-          </div>
-        </Card>
-      )}
+                );
+              })}
+            </div>
+          </>
+        )}
+      </Card>
 
       {showInvite && <InviteModal onClose={() => setShowInvite(false)} />}
     </>
+  );
+}
+
+// ─── Org settings card (compact read + inline edit) ───────────────────────────
+
+function OrgSettingsCard() {
+  const qc = useQueryClient();
+  const currentUser = useAuthStore((s) => s.user);
+  const canEdit = currentUser?.role === 'ADMIN' || currentUser?.role === 'SUPER_ADMIN';
+  const [editing, setEditing] = useState(false);
+
+  const { data: org, isLoading } = useQuery({
+    queryKey: ['organization'],
+    queryFn: organizationService.getOrganization,
+    staleTime: 60_000,
+  });
+
+  const [name, setName] = useState('');
+  const [industry, setIndustry] = useState('');
+  const [timezone, setTimezone] = useState('');
+  const [currency, setCurrency] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (org) {
+      setName(org.name);
+      setIndustry(org.industry ?? '');
+      setTimezone(org.timezone);
+      setCurrency(org.currency);
+    }
+  }, [org]);
+
+  const save = async () => {
+    if (!name.trim()) { setError('Organization name is required.'); return; }
+    setError('');
+    setSaving(true);
+    try {
+      await organizationService.updateOrganization({ name: name.trim(), industry: industry || null, timezone, currency });
+      void qc.invalidateQueries({ queryKey: ['organization'] });
+      setSaved(true);
+      setEditing(false);
+      setTimeout(() => setSaved(false), 3000);
+    } catch (err: unknown) {
+      setError((err as Error).message || 'Failed to save.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (isLoading) return null;
+
+  return (
+    <div className="max-w-2xl">
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Globe className="h-4 w-4 text-slate-500" />
+            <CardTitle>Organization Settings</CardTitle>
+          </div>
+          {canEdit && !editing && (
+            <Button size="sm" variant="ghost" onClick={() => setEditing(true)}>Edit</Button>
+          )}
+        </CardHeader>
+
+        {!editing ? (
+          <CardBody>
+            <div className="grid grid-cols-3 gap-5">
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-1">Name</p>
+                <p className="text-sm text-slate-200">{org?.name || '—'}</p>
+              </div>
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-1">Industry</p>
+                <p className="text-sm text-slate-200">{org?.industry || '—'}</p>
+              </div>
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-1">Currency</p>
+                <p className="text-sm text-slate-200">{org?.currency || '—'}</p>
+              </div>
+            </div>
+            {saved && (
+              <p className="mt-3 flex items-center gap-1 text-xs text-success">
+                <CheckCircle2 className="h-3.5 w-3.5" /> Saved
+              </p>
+            )}
+          </CardBody>
+        ) : (
+          <CardBody className="flex flex-col gap-4">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-medium uppercase tracking-wider text-slate-400">Organization Name</label>
+              <input
+                type="text"
+                autoFocus
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Acme Property Group"
+                className="h-9 w-full rounded-lg border border-surface-400 bg-surface-200 px-3 text-sm text-slate-100 placeholder:text-slate-600 focus:border-brand-500/60 focus:outline-none focus:ring-1 focus:ring-brand-500/30"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-medium uppercase tracking-wider text-slate-400">Industry</label>
+                <Select value={industry} onChange={setIndustry} options={INDUSTRY_OPTIONS} />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-medium uppercase tracking-wider text-slate-400">Currency</label>
+                <Select value={currency} onChange={setCurrency} options={CURRENCY_OPTIONS} />
+              </div>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-medium uppercase tracking-wider text-slate-400">Timezone</label>
+              <Select value={timezone} onChange={setTimezone} options={TIMEZONE_OPTIONS} />
+            </div>
+            {error && <p className="text-xs text-danger">{error}</p>}
+            <div className="flex items-center gap-2">
+              <Button size="sm" onClick={save} loading={saving}>Save changes</Button>
+              <Button size="sm" variant="ghost" onClick={() => { setEditing(false); setError(''); }}>Cancel</Button>
+            </div>
+          </CardBody>
+        )}
+      </Card>
+    </div>
   );
 }
 
@@ -662,11 +702,7 @@ function TransferOwnershipModal({ members, onClose, onSuccess }: {
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-medium text-slate-400 uppercase tracking-wide">Transfer to</label>
-            <Select
-              value={selectedId}
-              onChange={setSelectedId}
-              options={memberOptions}
-            />
+            <Select value={selectedId} onChange={setSelectedId} options={memberOptions} />
           </div>
 
           {selectedMember && (
@@ -714,9 +750,9 @@ function TransferOwnershipModal({ members, onClose, onSuccess }: {
   );
 }
 
-// ─── Ownership section ────────────────────────────────────────────────────────
+// ─── Danger zone ──────────────────────────────────────────────────────────────
 
-function OwnershipSection({ members }: { members: TeamMember[] }) {
+function DangerZone({ members }: { members: TeamMember[] }) {
   const navigate = useNavigate();
   const logout = useAuthStore((s) => s.logout);
   const refreshToken = useAuthStore((s) => s.refreshToken);
@@ -726,56 +762,28 @@ function OwnershipSection({ members }: { members: TeamMember[] }) {
   const handleTransferSuccess = async () => {
     setShowModal(false);
     setTransferred(true);
-    // Sign out after a short delay so user sees the success state
     setTimeout(async () => {
-      try {
-        if (refreshToken) await authService.logout(refreshToken);
-      } finally {
-        logout();
-        navigate('/auth/login');
-      }
+      try { if (refreshToken) await authService.logout(refreshToken); }
+      finally { logout(); navigate('/auth/login'); }
     }, 2500);
   };
 
-  const owner = members.find((m) => m.role === 'SUPER_ADMIN');
-
   return (
     <div className="max-w-2xl">
-    <Card>
-      <CardHeader>
-        <div className="flex items-center gap-2">
-          <Crown className="h-4 w-4 text-warning" />
-          <CardTitle>Ownership</CardTitle>
-        </div>
-      </CardHeader>
-      <CardBody className="flex flex-col gap-4">
-        {owner && (
-          <div className="flex items-center gap-3 rounded-lg border border-surface-400/30 bg-surface-200/30 px-4 py-3">
-            <MemberAvatar member={owner} />
-            <div>
-              <p className="text-sm font-semibold text-white">{owner.firstName} {owner.lastName}</p>
-              <p className="text-xs text-slate-500">{owner.email}</p>
-            </div>
-            <div className="ml-auto flex items-center gap-1.5 text-xs font-semibold text-warning">
-              <Crown className="h-3.5 w-3.5" />
-              Owner
-            </div>
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4 text-danger" />
+            <CardTitle>Danger Zone</CardTitle>
           </div>
-        )}
-
-        <div className="rounded-xl border border-danger/20 bg-danger/5 px-4 py-3">
-          <div className="flex items-start gap-3">
-            <AlertTriangle className="h-4 w-4 text-danger shrink-0 mt-0.5" />
-            <div className="flex-1">
-              <p className="text-sm font-semibold text-white">Transfer Ownership</p>
-              <p className="text-xs text-slate-500 mt-1">
-                Permanently transfers owner access to another team member. You will be downgraded to Admin
-                and signed out immediately after confirmation. This action cannot be undone.
-              </p>
-            </div>
-          </div>
-
-          <div className="mt-3 flex items-center gap-3">
+        </CardHeader>
+        <CardBody>
+          <div className="rounded-xl border border-danger/20 bg-danger/5 px-4 py-4">
+            <p className="text-sm font-semibold text-white">Transfer Ownership</p>
+            <p className="text-xs text-slate-500 mt-1 mb-3">
+              Permanently transfers owner access to another team member. You will be downgraded to Admin
+              and signed out immediately. This action cannot be undone.
+            </p>
             {transferred ? (
               <span className="flex items-center gap-1.5 text-xs text-success">
                 <CheckCircle2 className="h-3.5 w-3.5" />
@@ -792,17 +800,16 @@ function OwnershipSection({ members }: { members: TeamMember[] }) {
               </button>
             )}
           </div>
-        </div>
+        </CardBody>
+      </Card>
 
-        {showModal && (
-          <TransferOwnershipModal
-            members={members}
-            onClose={() => setShowModal(false)}
-            onSuccess={() => void handleTransferSuccess()}
-          />
-        )}
-      </CardBody>
-    </Card>
+      {showModal && (
+        <TransferOwnershipModal
+          members={members}
+          onClose={() => setShowModal(false)}
+          onSuccess={() => void handleTransferSuccess()}
+        />
+      )}
     </div>
   );
 }
@@ -822,12 +829,20 @@ export default function OrganizationPage() {
     <div className="flex flex-col gap-6 p-6 animate-fade-in">
       <PageHeader
         title="Organization"
-        description="Profile, team management, and ownership settings"
+        description="Team management and workspace settings"
       />
 
-      <OrgProfileSection />
+      {/* Overview — full width */}
+      <OrgOverviewCard members={members} />
+
+      {/* Team members — full width, primary content */}
       <TeamSection />
-      {isOwner && <OwnershipSection members={members} />}
+
+      {/* Settings — compact, secondary */}
+      <OrgSettingsCard />
+
+      {/* Danger zone — owner only, at the bottom */}
+      {isOwner && <DangerZone members={members} />}
     </div>
   );
 }
