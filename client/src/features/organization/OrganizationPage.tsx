@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-  Building2, Globe, DollarSign, Users, Crown, Shield, BarChart3, Eye,
+  Building2, Users, Crown, Shield, BarChart3, Eye,
   UserPlus, X, Copy, Check, Clock, Link as LinkIcon, AlertTriangle,
   CheckCircle2, Loader2, MoreVertical, UserX,
 } from 'lucide-react';
@@ -357,37 +357,44 @@ function MemberRow({ member, currentUserId, currentUserRole }: {
     : 'Never';
 
   return (
-    <tr className={`border-b border-surface-400/30 hover:bg-surface-200/30 transition-colors ${!member.isActive ? 'opacity-50' : ''}`}>
-      <td className="px-4 py-3">
-        <div className="flex items-center gap-3">
-          <MemberAvatar member={member} />
-          <div>
-            <p className="text-sm font-medium text-slate-200">
-              {member.firstName} {member.lastName}
-              {isMe && <span className="ml-1.5 text-[10px] text-brand-400 font-normal">(you)</span>}
-            </p>
-            <p className="text-xs text-slate-500">{member.email}</p>
-          </div>
+    <div className={`flex items-center gap-4 px-5 py-4 border-b border-surface-400/30 last:border-0 hover:bg-surface-200/30 transition-colors group ${!member.isActive ? 'opacity-50' : ''}`}>
+      {/* Avatar + name */}
+      <div className="flex items-center gap-3 flex-1 min-w-0">
+        <MemberAvatar member={member} />
+        <div className="min-w-0">
+          <p className="text-sm font-medium text-slate-200">
+            {member.firstName} {member.lastName}
+            {isMe && <span className="ml-1.5 text-[10px] text-brand-400 font-normal">(you)</span>}
+          </p>
+          <p className="text-xs text-slate-500 truncate">{member.email}</p>
         </div>
-      </td>
-      <td className="px-4 py-3">
+      </div>
+
+      {/* Role */}
+      <div className="shrink-0">
         <RolePicker
           member={member}
           currentUserRole={currentUserRole}
           onSelect={(r) => roleMutation.mutate(r)}
           busy={roleMutation.isPending}
         />
-      </td>
-      <td className="px-4 py-3">
+      </div>
+
+      {/* Status */}
+      <div className="shrink-0">
         <Badge variant={member.isActive ? 'success' : 'neutral'}>{member.isActive ? 'Active' : 'Inactive'}</Badge>
-      </td>
-      <td className="px-4 py-3 text-xs text-slate-500">{lastLogin}</td>
-      <td className="px-4 py-3">
+      </div>
+
+      {/* Last login */}
+      <span className="text-xs text-slate-500 shrink-0 w-16 text-right">{lastLogin}</span>
+
+      {/* Remove */}
+      <div className="shrink-0 w-16 flex justify-end opacity-0 group-hover:opacity-100 transition-opacity">
         {canManage && member.isActive && (
           <button
             onClick={() => removeMutation.mutate()}
             disabled={removeMutation.isPending}
-            className="flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium text-slate-500 hover:text-danger hover:bg-danger/10 transition-colors"
+            className="flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-slate-500 hover:text-danger hover:bg-danger/10 transition-colors"
           >
             {removeMutation.isPending
               ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -395,8 +402,8 @@ function MemberRow({ member, currentUserId, currentUserRole }: {
             Remove
           </button>
         )}
-      </td>
-    </tr>
+      </div>
+    </div>
   );
 }
 
@@ -537,38 +544,26 @@ function TeamSection() {
         </CardHeader>
         {isLoading ? (
           <CardBody><PageLoader /></CardBody>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-surface-400/40">
-                  {['Member', 'Role', 'Status', 'Last Login', ''].map((h) => (
-                    <th key={h} className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {members.map((m) => (
-                  <MemberRow
-                    key={m.id}
-                    member={m}
-                    currentUserId={currentUser?.id ?? ''}
-                    currentUserRole={currentUserRole}
-                  />
-                ))}
-              </tbody>
-            </table>
-            {members.length === 0 && (
-              <div className="flex flex-col items-center justify-center px-4 py-16 text-center">
-                <Users className="mx-auto h-8 w-8 text-slate-600 mb-2" />
-                <p className="text-sm text-slate-500">No team members yet</p>
-                {canInvite && (
-                  <button onClick={() => setShowInvite(true)} className="mt-3 text-xs text-brand-400 hover:text-brand-300 transition-colors">
-                    Invite the first team member →
-                  </button>
-                )}
-              </div>
+        ) : members.length === 0 ? (
+          <div className="flex flex-col items-center justify-center px-4 py-16 text-center">
+            <Users className="mx-auto h-8 w-8 text-slate-600 mb-2" />
+            <p className="text-sm text-slate-500">No team members yet</p>
+            {canInvite && (
+              <button onClick={() => setShowInvite(true)} className="mt-3 text-xs text-brand-400 hover:text-brand-300 transition-colors">
+                Invite the first team member →
+              </button>
             )}
+          </div>
+        ) : (
+          <div>
+            {members.map((m) => (
+              <MemberRow
+                key={m.id}
+                member={m}
+                currentUserId={currentUser?.id ?? ''}
+                currentUserRole={currentUserRole}
+              />
+            ))}
           </div>
         )}
       </Card>
@@ -824,12 +819,6 @@ export default function OrganizationPage() {
       <PageHeader
         title="Organization"
         description="Profile, team management, and ownership settings"
-        actions={
-          <div className="flex items-center gap-2">
-            <Globe className="h-3.5 w-3.5 text-slate-500" />
-            <DollarSign className="h-3.5 w-3.5 text-slate-500" />
-          </div>
-        }
       />
 
       <OrgProfileSection />
