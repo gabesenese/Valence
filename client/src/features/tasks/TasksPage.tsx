@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import {
-  ClipboardList, X, Plus, Building2, FileText, AlertTriangle, ChevronDown, Pencil, Calendar, User,
+  ClipboardList, X, Plus, Building2, FileText, AlertTriangle, ChevronDown, Pencil, Calendar, User, Trash2,
 } from 'lucide-react';
 import { tasksService, type Task, type TaskStatus, type CreateTaskInput } from '@/services/tasks.service';
 import { usersService, type TeamMember } from '@/services/users.service';
@@ -372,7 +372,7 @@ function TaskItem({
             className="text-slate-600 hover:text-danger transition-colors"
             title="Delete"
           >
-            <X className="h-3.5 w-3.5" />
+            <Trash2 className="h-3.5 w-3.5" />
           </button>
         )}
       </div>
