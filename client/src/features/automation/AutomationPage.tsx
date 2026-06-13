@@ -13,13 +13,10 @@ import {
   type ActionConfig,
 } from '@/services/automation.service';
 import { useAuthStore } from '@/state/auth.store';
-import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
 import { PageLoader } from '@/components/ui/Spinner';
-import { EmptyState } from '@/components/ui/EmptyState';
-import { PageHeader } from '@/components/ui/PageHeader';
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
@@ -278,8 +275,8 @@ function RuleCard({ rule, canEdit }: { rule: AutomationRule; canEdit: boolean })
   const conditionVal = (rule.conditions as RuleConditions)[trig.conditionKey];
 
   return (
-    <div className={`rounded-xl border ${rule.isActive ? 'border-surface-400/40' : 'border-surface-400/20 opacity-60'} bg-surface-100`}>
-      <div className="flex items-start gap-4 p-4">
+    <div className={!rule.isActive ? 'opacity-50' : undefined}>
+      <div className="flex items-start gap-4 px-4 py-3.5">
         <div className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${rule.isActive ? 'bg-brand-600/20' : 'bg-surface-300/50'}`}>
           <Zap className={`h-4 w-4 ${rule.isActive ? 'text-brand-400' : 'text-slate-500'}`} />
         </div>
@@ -398,39 +395,45 @@ export default function AutomationPage() {
   const activeCount = rules.filter((r) => r.isActive).length;
 
   return (
-    <div className="flex flex-col gap-6 p-6 animate-fade-in">
-      <PageHeader
-        title="Automation"
-        description={`${activeCount} active rule${activeCount !== 1 ? 's' : ''} · ${rules.length} total`}
-        actions={canEdit ? (
+    <div className="flex flex-col gap-4 p-5 animate-fade-in">
+
+      {/* Header row */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Zap className="h-4 w-4 text-brand-400" />
+          <span className="text-sm font-semibold text-white">Automation Rules</span>
+          <span className="text-xs text-slate-500">{activeCount} active · {rules.length} total</span>
+        </div>
+        {canEdit && (
           <Button size="sm" onClick={() => setShowCreate(true)}>
             <Plus className="h-4 w-4" />
             New Rule
           </Button>
-        ) : undefined}
-      />
-
-      {/* Empty state */}
-      {!isLoading && rules.length === 0 && (
-        <Card>
-          <EmptyState
-            icon={Zap}
-            title="No automation rules yet"
-            description="Automation rules run hourly and automatically create tasks when triggers fire — keeping your team ahead of issues without manual scanning."
-            action={canEdit ? (
-              <Button size="sm" onClick={() => setShowCreate(true)}>
-                <Plus className="h-4 w-4" />
-                Create First Rule
-              </Button>
-            ) : undefined}
-          />
-        </Card>
-      )}
+        )}
+      </div>
 
       {isLoading ? (
         <PageLoader />
+      ) : rules.length === 0 ? (
+        <div className="flex flex-col items-center justify-center gap-4 rounded-xl border border-surface-400/30 py-16 text-center">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-surface-300/60">
+            <Zap className="h-5 w-5 text-slate-500" />
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-slate-300">No automation rules yet</p>
+            <p className="mt-1 text-xs text-slate-600 max-w-xs leading-relaxed">
+              Rules run hourly and automatically create tasks when triggers fire — keeping your team ahead of issues.
+            </p>
+          </div>
+          {canEdit && (
+            <Button size="sm" onClick={() => setShowCreate(true)}>
+              <Plus className="h-4 w-4" />
+              Create First Rule
+            </Button>
+          )}
+        </div>
       ) : (
-        <div className="flex flex-col gap-3">
+        <div className="rounded-xl border border-surface-400/30 overflow-hidden divide-y divide-surface-400/20">
           {rules.map((rule) => (
             <RuleCard key={rule.id} rule={rule} canEdit={canEdit} />
           ))}
