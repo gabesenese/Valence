@@ -47,7 +47,11 @@ export default function PropertiesPage() {
     setDeletingId(id);
     try {
       await propertiesService.deleteProperty(id);
-      await qc.invalidateQueries({ queryKey: ['properties'] });
+      qc.setQueriesData<{ data: { id: string }[]; meta: unknown }>(
+        { queryKey: ['properties'] },
+        (old) => old ? { ...old, data: old.data.filter((p) => p.id !== id) } : old,
+      );
+      qc.invalidateQueries({ queryKey: ['properties'] });
     } finally {
       setDeletingId(null);
     }

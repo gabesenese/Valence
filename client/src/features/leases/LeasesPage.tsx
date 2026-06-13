@@ -366,7 +366,11 @@ export default function LeasesPage() {
     setDeletingLeaseId(id);
     try {
       await leasesService.deleteLease(id);
-      await qc.invalidateQueries({ queryKey: ['leases'] });
+      qc.setQueriesData<{ data: { id: string }[]; meta: unknown }>(
+        { queryKey: ['leases'] },
+        (old) => old ? { ...old, data: old.data.filter((l) => l.id !== id) } : old,
+      );
+      qc.invalidateQueries({ queryKey: ['leases'] });
     } finally {
       setDeletingLeaseId(null);
     }
