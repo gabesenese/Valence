@@ -8,7 +8,6 @@ import { aiService, type ScenarioType, type SimulationResult } from '@/services/
 import { formatCurrency, compactCurrency } from '@/utils/format';
 import { Card, CardBody } from '@/components/ui/Card';
 import { Select } from '@/components/ui/Select';
-import { PageHeader } from '@/components/ui/PageHeader';
 
 // ─── Scenario config ──────────────────────────────────────────────────────────
 
@@ -269,11 +268,7 @@ export default function ImpactAnalysisPage() {
   const canSubmit  = selected !== 'tenant_departure' || !!params.tenantId;
 
   return (
-    <div className="flex flex-col gap-6 p-6 animate-fade-in">
-      <PageHeader
-        title="Impact Analysis"
-        description="Model the financial impact of portfolio changes before they happen"
-      />
+    <div className="flex flex-col gap-4 p-5 animate-fade-in">
 
       {/* Scenario tiles */}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
@@ -283,17 +278,17 @@ export default function ImpactAnalysisPage() {
             <button
               key={s.type}
               onClick={() => handleSelect(s.type, s.defaultParams)}
-              className={`flex items-center gap-4 rounded-xl border px-5 py-4 text-left transition-colors ${
+              className={`flex items-center gap-3 rounded-xl border px-4 py-3 text-left transition-colors ${
                 active
                   ? 'border-brand-500/40 bg-brand-600/10 ring-1 ring-brand-500/20'
                   : 'border-surface-400/40 bg-surface-100 hover:bg-surface-200/40'
               }`}
             >
               <div
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg"
                 style={{ backgroundColor: `${s.accentColor}20` }}
               >
-                <span style={{ color: s.accentColor }}><s.icon className="h-5 w-5" /></span>
+                <span style={{ color: s.accentColor }}><s.icon className="h-4 w-4" /></span>
               </div>
               <div>
                 <p className={`text-sm font-semibold ${active ? 'text-brand-300' : 'text-slate-200'}`}>{s.label}</p>
@@ -305,31 +300,27 @@ export default function ImpactAnalysisPage() {
       </div>
 
       {/* Form + Results */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[300px_1fr]">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[280px_1fr]">
         {/* Param form */}
-        <Card>
-          <CardBody>
-            <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-4">Parameters</p>
+        <div className="rounded-xl border border-surface-400/30 overflow-hidden">
+          <div className="px-4 py-3 border-b border-surface-400/40 bg-surface-200/30">
+            <span className="text-xs font-semibold text-white">Parameters</span>
+          </div>
+          <div className="p-4 flex flex-col gap-4">
             <ParamForm value={params} onChange={setParams} />
             <button
               onClick={() => mutation.mutate()}
               disabled={mutation.isPending || !canSubmit}
-              className="mt-5 w-full inline-flex items-center justify-center gap-2 rounded-xl bg-brand-600 hover:bg-brand-500 disabled:opacity-40 disabled:cursor-not-allowed px-4 py-2.5 text-sm font-semibold text-white transition-colors shadow-glow-brand"
+              className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-brand-600 hover:bg-brand-500 disabled:opacity-40 disabled:cursor-not-allowed px-4 py-2.5 text-sm font-semibold text-white transition-colors"
             >
               {mutation.isPending ? (
-                <>
-                  <RefreshCw className="h-4 w-4 animate-spin" />
-                  Analyzing…
-                </>
+                <><RefreshCw className="h-4 w-4 animate-spin" />Analyzing…</>
               ) : (
-                <>
-                  <ArrowRight className="h-4 w-4" />
-                  Run Analysis
-                </>
+                <><ArrowRight className="h-4 w-4" />Run Analysis</>
               )}
             </button>
-          </CardBody>
-        </Card>
+          </div>
+        </div>
 
         {/* Results */}
         <div>
