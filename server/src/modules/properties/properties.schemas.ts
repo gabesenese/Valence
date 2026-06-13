@@ -10,7 +10,7 @@ export const createPropertySchema = z.object({
   city: z.string().min(1).max(100).trim(),
   state: z.string().min(2).max(2).toUpperCase().trim(),
   zipCode: z.string().min(5).max(10).trim(),
-  country: z.string().default('US'),
+  country: z.string().default('CA'),
   totalUnits: z.number().int().positive(),
   totalSqft: z.number().positive(),
   yearBuilt: z.number().int().min(1800).max(new Date().getFullYear()).optional(),
