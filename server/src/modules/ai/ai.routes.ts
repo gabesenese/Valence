@@ -51,12 +51,12 @@ router.get('/health-score', async (_req: Request, res: Response, next: NextFunct
 router.post('/simulate', planGate('EXECUTIVE'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     void trackUsage(req.user!.id, 'IMPACT_SIMULATION');
-    sendSuccess(res, await runSimulation(req.body));
+    sendSuccess(res, await runSimulation(req.body, req.user!.id));
   } catch (e) { next(e); }
 });
 
-router.get('/simulate/tenants', async (_req: Request, res: Response, next: NextFunction) => {
-  try { sendSuccess(res, await getActiveTenantsForSimulator()); } catch (e) { next(e); }
+router.get('/simulate/tenants', async (req: Request, res: Response, next: NextFunction) => {
+  try { sendSuccess(res, await getActiveTenantsForSimulator(req.user!.id)); } catch (e) { next(e); }
 });
 
 // ─── Insights ─────────────────────────────────────────────────────────────────

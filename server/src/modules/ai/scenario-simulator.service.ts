@@ -66,36 +66,43 @@ export interface SimulationResult {
   computedAt: string;
 }
 
-// ─── Portfolio state ──────────────────────────────────────────────────────────
+// ─── Portfolio state (scoped to user) ────────────────────────────────────────
 
-async function getCurrentState(propertyId?: string) {
+async function getCurrentState(userId: string, propertyId?: string) {
   const now        = new Date();
   const monthStart = startOfMonth(now);
 
-  const whereProperty = propertyId ? { propertyId } : {};
+  const propertyFilter    = propertyId ? { id: propertyId, ownerId: userId } : { ownerId: userId };
+  const financialFilter   = propertyId
+    ? { propertyId, property: { ownerId: userId } }
+    : { property: { ownerId: userId } };
 
   const [properties, revAgg, expAgg, leaseAgg] = await Promise.all([
     prisma.property.findMany({
-      where: { status: 'ACTIVE', ...(propertyId ? { id: propertyId } : {}) },
-      select: { totalUnits: true, _count: { select: { leases: { where: { status: 'ACTIVE' } } } } },
+      where: { status: 'ACTIVE', deletedAt: null, ...propertyFilter },
+      select: { totalUnits: true, _count: { select: { leases: { where: { status: 'ACTIVE', deletedAt: null } } } } },
     }),
     prisma.financialRecord.aggregate({
-      where: { ...whereProperty, type: 'REVENUE', periodStart: { gte: monthStart }, status: { not: 'VOID' } },
+      where: { ...financialFilter, type: 'REVENUE', periodStart: { gte: monthStart }, status: { not: 'VOID' } },
       _sum: { amount: true },
     }),
     prisma.financialRecord.aggregate({
-      where: { ...whereProperty, type: 'EXPENSE', periodStart: { gte: monthStart }, status: { not: 'VOID' } },
+      where: { ...financialFilter, type: 'EXPENSE', periodStart: { gte: monthStart }, status: { not: 'VOID' } },
       _sum: { amount: true },
     }),
     prisma.lease.aggregate({
-      where: { status: 'ACTIVE', ...(propertyId ? { propertyId } : {}) },
+      where: {
+        status: 'ACTIVE', deletedAt: null,
+        property: { ownerId: userId, ...(propertyId ? { id: propertyId } : {}) },
+      },
       _sum: { baseRent: true },
       _count: true,
     }),
   ]);
 
-  const totalUnits    = properties.reduce((s, p) => s + p.totalUnits, 0);
-  const occupiedUnits = properties.reduce((s, p) => s + p._count.leases, 0);
+  const totalUnits     = properties.reduce((s, p) => s + p.totalUnits, 0);
+  const occupiedUnits  = properties.reduce((s, p) => s + p._count.leases, 0);
+  // Use actual financial records when available, fall back to summed base rents
   const monthlyRevenue  = Number(revAgg._sum.amount ?? 0) || Number(leaseAgg._sum.baseRent ?? 0);
   const monthlyExpenses = Number(expAgg._sum.amount ?? 0);
 
@@ -112,40 +119,61 @@ async function getCurrentState(propertyId?: string) {
 
 // ─── Deterministic impact calculators ────────────────────────────────────────
 
-async function calcOccupancyDrop(params: OccupancyDropParams, state: Awaited<ReturnType<typeof getCurrentState>>) {
-  const lostUnits   = Math.round(state.totalUnits * (params.percentageDrop / 100));
-  const avgRentPerUnit = state.activeLeases > 0 ? state.monthlyRevenue / state.activeLeases : 0;
-  const revChange   = -(lostUnits * avgRentPerUnit);
-  const newOccupancy = Math.max(0, state.occupancyRate - params.percentageDrop);
+async function calcOccupancyDrop(
+  params: OccupancyDropParams,
+  state: Awaited<ReturnType<typeof getCurrentState>>,
+) {
+  const lostUnits      = Math.round(state.totalUnits * (params.percentageDrop / 100));
+  const avgRentPerLease = state.activeLeases > 0 ? state.monthlyRevenue / state.activeLeases : 0;
+  const revChange      = -(lostUnits * avgRentPerLease);
+  const newOccupancy   = Math.max(0, state.occupancyRate - params.percentageDrop);
   return { revChange, expChange: 0, newOccupancy };
 }
 
-async function calcTenantDeparture(params: TenantDepartureParams) {
+async function calcTenantDeparture(params: TenantDepartureParams, userId: string) {
   const lease = await prisma.lease.findFirst({
-    where: { tenantId: params.tenantId, status: 'ACTIVE' },
-    include: { tenant: { select: { name: true } }, property: { select: { totalUnits: true } } },
+    where: {
+      tenantId: params.tenantId,
+      status: 'ACTIVE',
+      deletedAt: null,
+      property: { ownerId: userId }, // enforce ownership
+    },
+    include: {
+      tenant:   { select: { name: true } },
+      property: { select: { totalUnits: true, name: true } },
+    },
   });
   if (!lease) return { revChange: 0, expChange: 0, newOccupancyDelta: 0, tenantName: 'Unknown' };
-  const revChange = -Number(lease.baseRent);
-  const occupancyDelta = lease.property.totalUnits > 0 ? -(1 / lease.property.totalUnits) * 100 : 0;
+
+  const revChange      = -Number(lease.baseRent);
+  const occupancyDelta = lease.property.totalUnits > 0
+    ? -(1 / lease.property.totalUnits) * 100
+    : 0;
   return { revChange, expChange: 0, newOccupancyDelta: occupancyDelta, tenantName: lease.tenant.name };
 }
 
-function calcExpenseIncrease(params: ExpenseIncreaseParams, state: Awaited<ReturnType<typeof getCurrentState>>) {
-  const expChange = state.monthlyExpenses * (params.percentageIncrease / 100);
+function calcExpenseIncrease(
+  params: ExpenseIncreaseParams,
+  state: Awaited<ReturnType<typeof getCurrentState>>,
+) {
+  const base      = state.monthlyExpenses || state.monthlyRevenue * 0.35; // estimate if no records
+  const expChange = base * (params.percentageIncrease / 100);
   return { revChange: 0, expChange };
 }
 
 function calcAcquisition(params: AcquisitionParams) {
   return {
-    revChange: params.monthlyRevenue,
-    expChange: params.monthlyExpenses,
-    unitsAdded: params.units,
+    revChange:    params.monthlyRevenue,
+    expChange:    params.monthlyExpenses,
+    unitsAdded:   params.units,
     occupancyDelta: 0,
   };
 }
 
-function calcRentIncrease(params: RentIncreaseParams, state: Awaited<ReturnType<typeof getCurrentState>>) {
+function calcRentIncrease(
+  params: RentIncreaseParams,
+  state: Awaited<ReturnType<typeof getCurrentState>>,
+) {
   const revChange = state.monthlyRevenue * (params.percentageIncrease / 100);
   return { revChange, expChange: 0 };
 }
@@ -159,11 +187,11 @@ function getClient() {
 }
 
 const SCENARIO_LABELS: Record<ScenarioType, string> = {
-  occupancy_drop:    'Occupancy Drop',
-  tenant_departure:  'Tenant Departure',
-  expense_increase:  'Expense Increase',
-  acquisition:       'Property Acquisition',
-  rent_increase:     'Rent Increase',
+  occupancy_drop:   'Occupancy Drop',
+  tenant_departure: 'Tenant Departure',
+  expense_increase: 'Expense Increase',
+  acquisition:      'Property Acquisition',
+  rent_increase:    'Rent Increase',
 };
 
 async function generateAnalysis(
@@ -184,6 +212,7 @@ Current Portfolio State:
 - Monthly Expenses: $${current.monthlyExpenses.toLocaleString()}
 - NOI: $${current.noi.toLocaleString()}
 - Occupancy: ${current.occupancyRate.toFixed(1)}%
+- Active Leases: ${current.activeLeases}
 
 Projected State After Scenario:
 - Monthly Revenue: $${projected.monthlyRevenue.toLocaleString()}
@@ -192,11 +221,11 @@ Projected State After Scenario:
 - Occupancy: ${projected.occupancyRate.toFixed(1)}%
 
 Financial Impact:
-- Revenue Change: ${impact.revenueChange >= 0 ? '+' : ''}$${impact.revenueChange.toLocaleString()} (${impact.revenueChangePct >= 0 ? '+' : ''}${impact.revenueChangePct.toFixed(1)}%)
-- NOI Change: ${impact.noiChange >= 0 ? '+' : ''}$${impact.noiChange.toLocaleString()} (${impact.noiChangePct >= 0 ? '+' : ''}${impact.noiChangePct.toFixed(1)}%)
-- Annualized Impact: ${impact.estimatedAnnualImpact >= 0 ? '+' : ''}$${impact.estimatedAnnualImpact.toLocaleString()}
+- Revenue Change: ${impact.revenueChange >= 0 ? '+' : ''}$${Math.abs(impact.revenueChange).toLocaleString()} (${impact.revenueChangePct >= 0 ? '+' : ''}${impact.revenueChangePct.toFixed(1)}%)
+- NOI Change: ${impact.noiChange >= 0 ? '+' : ''}$${Math.abs(impact.noiChange).toLocaleString()} (${impact.noiChangePct >= 0 ? '+' : ''}${impact.noiChangePct.toFixed(1)}%)
+- Annualized Impact: ${impact.estimatedAnnualImpact >= 0 ? '+' : ''}$${Math.abs(impact.estimatedAnnualImpact).toLocaleString()}
 
-Provide a concise, expert analysis of this scenario. Be specific about dollar figures and percentages. Focus on what the operator should actually do.`;
+Provide a concise, expert analysis using the EXACT dollar figures above. Every finding must reference the specific numbers provided. Focus on what the operator should actually do.`;
 
   const response = await getClient().chat.completions.create({
     model: 'llama-3.3-70b-versatile',
@@ -213,26 +242,26 @@ Provide a concise, expert analysis of this scenario. Be specific about dollar fi
             findings: {
               type: 'array',
               items: { type: 'string' },
-              description: '3-4 key findings from this scenario. Be specific with numbers.',
+              description: '3-4 key findings. Must use the exact dollar figures and percentages from the prompt.',
             },
             recommendations: {
               type: 'array',
               items: { type: 'string' },
-              description: '3-4 concrete action recommendations to mitigate or capitalize on this scenario.',
+              description: '3-4 concrete, specific action steps. Reference the actual numbers.',
             },
             riskFactors: {
               type: 'array',
               items: { type: 'string' },
-              description: '2-3 secondary risk factors or downstream effects to watch.',
+              description: '2-3 secondary risks specific to this scenario and these numbers.',
             },
             timeToImpact: {
               type: 'string',
-              description: 'When would this scenario\'s impact be fully realized? E.g. "Immediate", "1-3 months", "6-12 months"',
+              description: 'When the impact fully materialises. E.g. "Immediate", "1-3 months"',
             },
             confidence: {
               type: 'string',
               enum: ['high', 'medium', 'low'],
-              description: 'Confidence level in this projection based on available data.',
+              description: 'Confidence level based on available data completeness.',
             },
           },
         },
@@ -243,28 +272,111 @@ Provide a concise, expert analysis of this scenario. Be specific about dollar fi
 
   const toolCall = response.choices[0]?.message?.tool_calls?.[0];
   if (!toolCall || toolCall.type !== 'function') {
-    return {
-      findings: ['Analysis unavailable'],
-      recommendations: [],
-      riskFactors: [],
-      timeToImpact: 'Unknown',
-      confidence: 'low',
-    };
+    throw new Error('No tool call returned from AI');
   }
 
   return JSON.parse(toolCall.function.arguments) as SimulationResult['analysis'];
 }
 
+// ─── Data-driven fallback (used when AI is unavailable) ──────────────────────
+
+function buildFallbackAnalysis(
+  scenario: ScenarioType,
+  impact: SimulationResult['impact'],
+  current: SimulationResult['current'],
+  projected: SimulationResult['projected'],
+): SimulationResult['analysis'] {
+  const fmt   = (n: number) => `$${Math.abs(n).toLocaleString()}`;
+  const sign  = (n: number) => n >= 0 ? '+' : '-';
+  const pct   = (n: number) => `${n >= 0 ? '+' : ''}${n.toFixed(1)}%`;
+
+  const findings: string[] = [
+    `${SCENARIO_LABELS[scenario]} reduces monthly revenue by ${fmt(impact.revenueChange)} (${pct(impact.revenueChangePct)})`,
+    `NOI moves from ${fmt(current.noi)} to ${fmt(projected.noi)}/mo — a ${fmt(impact.noiChange)} change (${pct(impact.noiChangePct)})`,
+    `Annualised impact: ${sign(impact.estimatedAnnualImpact)}${fmt(impact.estimatedAnnualImpact)}/year`,
+  ];
+
+  if (impact.occupancyChange !== 0) {
+    findings.push(`Occupancy shifts from ${current.occupancyRate.toFixed(1)}% to ${projected.occupancyRate.toFixed(1)}%`);
+  }
+
+  const recommendations: string[] = [];
+  const riskFactors: string[] = [];
+  let timeToImpact = 'Immediate to 3 months';
+
+  switch (scenario) {
+    case 'tenant_departure':
+      recommendations.push(
+        `Begin replacement tenant outreach immediately to close the ${fmt(impact.revenueChange)}/mo gap`,
+        `Review lease terms for early-termination clauses or penalties`,
+        `Assess whether the vacancy can be split or re-configured to improve marketability`,
+      );
+      riskFactors.push(
+        `Extended vacancy could push annualised loss beyond ${fmt(impact.estimatedAnnualImpact)}`,
+        `Neighbouring tenants may cite vacancy as grounds for rent negotiations`,
+      );
+      timeToImpact = 'Immediate';
+      break;
+
+    case 'occupancy_drop':
+      recommendations.push(
+        `Review pricing strategy — a ${fmt(impact.revenueChange)}/mo shortfall suggests rents may need adjusting`,
+        `Identify the ${current.totalUnits - projected.occupancyRate / 100 * current.totalUnits | 0} at-risk units and prioritise lease renewals`,
+        `Ensure operating reserves cover at least 3 months of the ${fmt(impact.revenueChange)} gap`,
+      );
+      riskFactors.push(
+        `Further occupancy erosion could amplify impact beyond ${fmt(impact.estimatedAnnualImpact)}/year`,
+        `Lower occupancy signals may affect property valuation and financing terms`,
+      );
+      timeToImpact = '1–3 months';
+      break;
+
+    case 'expense_increase':
+      recommendations.push(
+        `Audit the largest expense categories to identify where the ${fmt(impact.expenseChange)}/mo increase originates`,
+        `Negotiate multi-year contracts with vendors before increases take effect`,
+        `Review CAM recovery clauses in leases — tenants may absorb a portion`,
+      );
+      riskFactors.push(
+        `If revenue stays flat, the ${fmt(impact.noiChange)}/mo NOI compression compounds annually`,
+        `Expense inflation often precedes insurance and tax reassessments`,
+      );
+      timeToImpact = '1–6 months';
+      break;
+
+    default:
+      recommendations.push(
+        `Validate projected ${fmt(Math.abs(impact.revenueChange))}/mo revenue change against market comparables`,
+        `Stress-test NOI at ${fmt(projected.noi)}/mo against your debt service coverage requirements`,
+        `Update financial models and inform stakeholders of the ${pct(impact.revenueChangePct)} revenue shift`,
+      );
+      riskFactors.push(
+        `Market conditions may accelerate or delay the projected ${fmt(impact.estimatedAnnualImpact)} annual impact`,
+        `Secondary operating cost effects not captured in this model`,
+      );
+  }
+
+  return {
+    findings,
+    recommendations,
+    riskFactors,
+    timeToImpact,
+    confidence: 'medium',
+  };
+}
+
 // ─── Main export ──────────────────────────────────────────────────────────────
 
-export async function runSimulation(req: SimulationRequest): Promise<SimulationResult> {
-  const state = await getCurrentState(
-    'propertyId' in req.params ? (req.params as { propertyId?: string }).propertyId : undefined,
-  );
+export async function runSimulation(req: SimulationRequest, userId: string): Promise<SimulationResult> {
+  const propertyId = 'propertyId' in req.params
+    ? (req.params as { propertyId?: string }).propertyId
+    : undefined;
 
-  let revChange    = 0;
-  let expChange    = 0;
-  let occDelta     = 0;
+  const state = await getCurrentState(userId, propertyId);
+
+  let revChange = 0;
+  let expChange = 0;
+  let occDelta  = 0;
 
   switch (req.scenario) {
     case 'occupancy_drop': {
@@ -275,7 +387,7 @@ export async function runSimulation(req: SimulationRequest): Promise<SimulationR
       break;
     }
     case 'tenant_departure': {
-      const r = await calcTenantDeparture(req.params as TenantDepartureParams);
+      const r = await calcTenantDeparture(req.params as TenantDepartureParams, userId);
       revChange = r.revChange; expChange = r.expChange;
       occDelta  = ('newOccupancyDelta' in r) ? (r.newOccupancyDelta ?? 0) : 0;
       break;
@@ -288,7 +400,6 @@ export async function runSimulation(req: SimulationRequest): Promise<SimulationR
     case 'acquisition': {
       const r = calcAcquisition(req.params as AcquisitionParams);
       revChange = r.revChange; expChange = r.expChange;
-      occDelta  = 0;
       break;
     }
     case 'rent_increase': {
@@ -298,10 +409,10 @@ export async function runSimulation(req: SimulationRequest): Promise<SimulationR
     }
   }
 
-  const projRevenue  = state.monthlyRevenue  + revChange;
-  const projExpenses = state.monthlyExpenses + expChange;
-  const projNOI      = projRevenue - projExpenses;
-  const projOccupancy= Math.max(0, Math.min(100, state.occupancyRate + occDelta));
+  const projRevenue   = state.monthlyRevenue  + revChange;
+  const projExpenses  = state.monthlyExpenses + expChange;
+  const projNOI       = projRevenue - projExpenses;
+  const projOccupancy = Math.max(0, Math.min(100, state.occupancyRate + occDelta));
 
   const current = {
     monthlyRevenue:  state.monthlyRevenue,
@@ -320,12 +431,14 @@ export async function runSimulation(req: SimulationRequest): Promise<SimulationR
   };
 
   const impact = {
-    revenueChange:    Math.round(revChange),
-    revenueChangePct: state.monthlyRevenue > 0 ? Number(((revChange / state.monthlyRevenue) * 100).toFixed(1)) : 0,
-    expenseChange:    Math.round(expChange),
-    noiChange:        Math.round(projNOI - state.noi),
-    noiChangePct:     state.noi !== 0 ? Number((((projNOI - state.noi) / Math.abs(state.noi)) * 100).toFixed(1)) : 0,
-    occupancyChange:  Number(occDelta.toFixed(1)),
+    revenueChange:         Math.round(revChange),
+    revenueChangePct:      state.monthlyRevenue > 0
+      ? Number(((revChange / state.monthlyRevenue) * 100).toFixed(1)) : 0,
+    expenseChange:         Math.round(expChange),
+    noiChange:             Math.round(projNOI - state.noi),
+    noiChangePct:          state.noi !== 0
+      ? Number((((projNOI - state.noi) / Math.abs(state.noi)) * 100).toFixed(1)) : 0,
+    occupancyChange:       Number(occDelta.toFixed(1)),
     estimatedAnnualImpact: Math.round((revChange - expChange) * 12),
   };
 
@@ -333,24 +446,8 @@ export async function runSimulation(req: SimulationRequest): Promise<SimulationR
   try {
     analysis = await generateAnalysis(req.scenario, req.params, current, projected, impact);
   } catch {
-    analysis = {
-      findings: [
-        `${SCENARIO_LABELS[req.scenario]} would change monthly revenue by ${impact.revenueChange >= 0 ? '+' : ''}$${Math.abs(impact.revenueChange).toLocaleString()}`,
-        `NOI impact: ${impact.noiChange >= 0 ? '+' : ''}$${Math.abs(impact.noiChange).toLocaleString()}/mo (${impact.noiChangePct >= 0 ? '+' : ''}${impact.noiChangePct}%)`,
-        `Estimated annual impact: ${impact.estimatedAnnualImpact >= 0 ? '+' : ''}$${Math.abs(impact.estimatedAnnualImpact).toLocaleString()}`,
-      ],
-      recommendations: [
-        'Review current leases and renewal timelines',
-        'Assess reserve funds against projected revenue change',
-        'Consult with your property management team on mitigation strategies',
-      ],
-      riskFactors: [
-        'Market conditions may accelerate or delay impact',
-        'Secondary effects on operating costs not captured in this model',
-      ],
-      timeToImpact: 'Immediate to 3 months',
-      confidence: 'medium',
-    };
+    // AI unavailable — produce fully data-driven fallback with real numbers
+    analysis = buildFallbackAnalysis(req.scenario, impact, current, projected);
   }
 
   return {
@@ -361,19 +458,26 @@ export async function runSimulation(req: SimulationRequest): Promise<SimulationR
     projected,
     impact,
     analysis,
-    computedAt:    new Date().toISOString(),
+    computedAt: new Date().toISOString(),
   };
 }
 
-// ─── Tenant lookup helper (for UI dropdowns) ──────────────────────────────────
+// ─── Tenant lookup (scoped to user) ──────────────────────────────────────────
 
-export async function getActiveTenantsForSimulator() {
+export async function getActiveTenantsForSimulator(userId: string) {
   const leases = await prisma.lease.findMany({
-    where: { status: 'ACTIVE' },
-    include: { tenant: { select: { id: true, name: true } }, property: { select: { name: true } } },
+    where: {
+      status: 'ACTIVE',
+      deletedAt: null,
+      property: { ownerId: userId, deletedAt: null },
+    },
+    include: {
+      tenant:   { select: { id: true, name: true } },
+      property: { select: { name: true } },
+    },
     orderBy: { baseRent: 'desc' },
   });
-  return leases.map(l => ({
+  return leases.map((l) => ({
     tenantId:    l.tenantId,
     tenantName:  l.tenant.name,
     propertyName: l.property.name,
