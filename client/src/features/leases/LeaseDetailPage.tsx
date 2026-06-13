@@ -299,7 +299,7 @@ export default function LeaseDetailPage() {
   if (isLoading) return <PageLoader />;
   if (!lease) return <div className="p-6 text-slate-500">Lease not found</div>;
 
-  const days = daysUntil(lease.endDate);
+  const days = daysUntil(lease.renewalDate ?? lease.endDate);
   const isActive = lease.status === 'ACTIVE';
   const needsRenewal = isActive && !lease.renewalDate;
   const currentStageIdx = STAGE_ORDER.indexOf(lease.renewalStage);
