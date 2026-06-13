@@ -89,6 +89,18 @@ app.get('/health', (_req, res) => {
   res.json({ status: 'ok', version: '0.1.0', timestamp: new Date().toISOString() });
 });
 
+// ─── DB Debug (temporary) ────────────────────────────────────────────────────
+import { prisma } from './infrastructure/database';
+app.get('/health/db', async (_req, res) => {
+  try {
+    const result = await prisma.$queryRaw`SELECT 1 as ok`;
+    res.json({ status: 'ok', result });
+  } catch (err: unknown) {
+    const e = err as Error;
+    res.status(500).json({ status: 'error', message: e.message, stack: e.stack?.slice(0, 500) });
+  }
+});
+
 // ─── API Routes ───────────────────────────────────────────────────────────────
 app.use('/api/auth', authRouter);
 app.use('/api/properties', propertiesRouter);
