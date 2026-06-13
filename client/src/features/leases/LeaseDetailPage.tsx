@@ -226,11 +226,25 @@ export default function LeaseDetailPage() {
 
   const renewalMutation = useMutation({
     mutationFn: (date: string) => leasesService.setRenewalDateAction(id!, date),
+    onMutate: async (date) => {
+      await qc.cancelQueries({ queryKey: ['leases', id] });
+      const prev = qc.getQueryData(['leases', id]);
+      qc.setQueryData(['leases', id], (old: unknown) => old && typeof old === 'object' ? { ...(old as object), renewalDate: date } : old);
+      return { prev };
+    },
+    onError: (_err, _date, ctx) => { if (ctx?.prev) qc.setQueryData(['leases', id], ctx.prev); },
     onSuccess: invalidate,
   });
 
   const clearRenewalMutation = useMutation({
     mutationFn: () => leasesService.clearRenewalDate(id!),
+    onMutate: async () => {
+      await qc.cancelQueries({ queryKey: ['leases', id] });
+      const prev = qc.getQueryData(['leases', id]);
+      qc.setQueryData(['leases', id], (old: unknown) => old && typeof old === 'object' ? { ...(old as object), renewalDate: null } : old);
+      return { prev };
+    },
+    onError: (_err, _vars, ctx) => { if (ctx?.prev) qc.setQueryData(['leases', id], ctx.prev); },
     onSuccess: invalidate,
   });
 
