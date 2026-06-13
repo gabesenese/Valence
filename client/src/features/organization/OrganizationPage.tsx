@@ -386,20 +386,20 @@ function MemberRow({ member, currentUserId, currentUserRole }: {
       </div>
 
       {/* Last login */}
-      <span className="text-xs text-slate-500 shrink-0 w-16 text-right">{lastLogin}</span>
+      <span className="text-xs text-slate-500 shrink-0">{lastLogin}</span>
 
       {/* Remove */}
-      <div className="shrink-0 w-16 flex justify-end opacity-0 group-hover:opacity-100 transition-opacity">
+      <div className="shrink-0 w-6 opacity-0 group-hover:opacity-100 transition-opacity">
         {canManage && member.isActive && (
           <button
             onClick={() => removeMutation.mutate()}
             disabled={removeMutation.isPending}
-            className="flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-slate-500 hover:text-danger hover:bg-danger/10 transition-colors"
+            className="text-slate-600 hover:text-danger transition-colors"
+            title="Remove member"
           >
             {removeMutation.isPending
               ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
               : <UserX className="h-3.5 w-3.5" />}
-            Remove
           </button>
         )}
       </div>
