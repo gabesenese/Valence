@@ -815,7 +815,7 @@ export default function OrganizationPage() {
   });
 
   return (
-    <div className="flex flex-col gap-6 p-6 animate-fade-in">
+    <div className="flex flex-col gap-6 p-6 animate-fade-in max-w-4xl">
       <PageHeader
         title="Organization"
         description="Profile, team management, and ownership settings"
