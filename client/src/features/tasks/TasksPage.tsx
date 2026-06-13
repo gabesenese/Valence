@@ -254,9 +254,9 @@ function EditTaskModal({
   );
 }
 
-// ─── Task row ─────────────────────────────────────────────────────────────────
+// ─── Task item ────────────────────────────────────────────────────────────────
 
-function TaskRow({
+function TaskItem({
   task,
   onStatusChange,
   onDelete,
@@ -276,19 +276,29 @@ function TaskRow({
     new Date(task.dueAt) < new Date();
 
   return (
-    <tr className={`border-b border-surface-400/30 transition-colors group ${isTemp ? 'opacity-60' : 'hover:bg-surface-200/30'}`}>
-      <td className="px-4 py-3">
+    <div className={`flex items-start gap-4 px-5 py-4 border-b border-surface-400/30 last:border-0 transition-colors group ${isTemp ? 'opacity-60' : 'hover:bg-surface-200/30'}`}>
+      {/* Status */}
+      <div className="mt-0.5 shrink-0">
+        {isTemp ? (
+          <span className="text-xs text-slate-600 italic">Saving…</span>
+        ) : (
+          <StatusPicker status={task.status} onChange={(s) => onStatusChange(task.id, s)} />
+        )}
+      </div>
+
+      {/* Title + description + context */}
+      <div className="flex-1 min-w-0">
         <button
           type="button"
           disabled={isTemp}
           onClick={() => !isTemp && onEdit(task)}
-          className={`text-left w-full group/title ${isTemp ? 'cursor-default' : 'cursor-pointer'}`}
+          className={`text-left w-full ${isTemp ? 'cursor-default' : 'cursor-pointer'}`}
         >
           <p
             className={`text-sm font-medium transition-colors ${
               task.status === 'COMPLETED' ? 'line-through text-slate-500' :
               task.status === 'CANCELLED' ? 'text-slate-600' :
-              isTemp ? 'text-slate-200' : 'text-slate-200 group-hover/title:text-white'
+              isTemp ? 'text-slate-200' : 'text-slate-200 hover:text-white'
             }`}
           >
             {task.title}
@@ -297,76 +307,65 @@ function TaskRow({
             <p className="text-xs text-slate-500 mt-0.5 line-clamp-1">{task.description}</p>
           )}
         </button>
-      </td>
 
-      <td className="px-4 py-3">
-        <div className="flex flex-col gap-0.5">
-          {task.lease && (
-            <button
-              onClick={() => navigate(`/leases/${task.lease!.id}`)}
-              className="flex items-center gap-1 text-xs text-slate-400 hover:text-brand-300 transition-colors"
-            >
-              <FileText className="h-3 w-3 text-slate-600 shrink-0" />
-              {task.lease.tenant.name}
-            </button>
-          )}
-          {task.property && (
-            <button
-              onClick={() => navigate(`/properties/${task.property!.id}`)}
-              className="flex items-center gap-1 text-xs text-slate-500 hover:text-slate-300 transition-colors"
-            >
-              <Building2 className="h-3 w-3 text-slate-600 shrink-0" />
-              {task.property.name}
-            </button>
-          )}
-          {task.alert && (
-            <div className="flex items-center gap-1 text-xs text-slate-500">
-              <AlertTriangle className="h-3 w-3 text-slate-600 shrink-0" />
-              {task.alert.title.slice(0, 30)}
-            </div>
-          )}
-          {!task.lease && !task.property && !task.alert && (
-            <span className="text-xs text-slate-600">—</span>
-          )}
-        </div>
-      </td>
+        {/* Context links */}
+        {(task.lease || task.property || task.alert) && (
+          <div className="mt-1.5 flex items-center gap-3 flex-wrap">
+            {task.lease && (
+              <button
+                onClick={() => navigate(`/leases/${task.lease!.id}`)}
+                className="flex items-center gap-1 text-xs text-slate-500 hover:text-brand-300 transition-colors"
+              >
+                <FileText className="h-3 w-3 shrink-0" />
+                {task.lease.tenant.name}
+              </button>
+            )}
+            {task.property && (
+              <button
+                onClick={() => navigate(`/properties/${task.property!.id}`)}
+                className="flex items-center gap-1 text-xs text-slate-500 hover:text-slate-300 transition-colors"
+              >
+                <Building2 className="h-3 w-3 shrink-0" />
+                {task.property.name}
+              </button>
+            )}
+            {task.alert && (
+              <span className="flex items-center gap-1 text-xs text-slate-600">
+                <AlertTriangle className="h-3 w-3 shrink-0" />
+                {task.alert.title.slice(0, 40)}
+              </span>
+            )}
+          </div>
+        )}
+      </div>
 
-      <td className="px-4 py-3">
+      {/* Due date */}
+      <div className="shrink-0 text-right">
+        {task.dueAt ? (
+          <span className={`text-xs font-medium ${isOverdue ? 'text-danger' : 'text-slate-400'}`}>
+            {isOverdue && <span className="mr-0.5">Overdue ·</span>}{fmtDate(task.dueAt)}
+          </span>
+        ) : (
+          <span className="text-xs text-slate-600">—</span>
+        )}
+      </div>
+
+      {/* Assignee */}
+      <div className="shrink-0">
         {task.assignee ? (
           <div className="flex items-center gap-1.5">
             <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-600/20 text-[10px] font-bold text-brand-400">
               {task.assignee.firstName[0]}{task.assignee.lastName[0]}
             </div>
-            <span className="text-xs text-slate-400">{task.assignee.firstName}</span>
+            <span className="text-xs text-slate-400 hidden sm:block">{task.assignee.firstName}</span>
           </div>
-        ) : (
-          <span className="text-xs text-slate-600">Unassigned</span>
-        )}
-      </td>
-
-      <td className="px-4 py-3">
-        {task.dueAt ? (
-          <span className={`text-xs font-medium ${isOverdue ? 'text-danger' : 'text-slate-400'}`}>
-            {isOverdue ? 'Overdue · ' : ''}{fmtDate(task.dueAt)}
-          </span>
         ) : (
           <span className="text-xs text-slate-600">—</span>
         )}
-      </td>
+      </div>
 
-      <td className="px-4 py-3">
-        {isTemp ? (
-          <span className="text-xs text-slate-600 italic">Saving…</span>
-        ) : (
-          <StatusPicker status={task.status} onChange={(s) => onStatusChange(task.id, s)} />
-        )}
-      </td>
-
-      <td className="px-4 py-3 text-xs text-slate-600">
-        {new Date(task.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-      </td>
-
-      <td className="px-4 py-3 opacity-0 group-hover:opacity-100 transition-opacity">
+      {/* Delete */}
+      <div className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
         {!isTemp && (
           <button
             onClick={() => onDelete(task.id)}
@@ -376,8 +375,8 @@ function TaskRow({
             <X className="h-3.5 w-3.5" />
           </button>
         )}
-      </td>
-    </tr>
+      </div>
+    </div>
   );
 }
 
@@ -626,61 +625,58 @@ export default function TasksPage() {
       />
 
       {/* Filters */}
-      <div className="flex flex-wrap gap-3 items-center">
-        <div className="flex rounded-lg border border-surface-400/40 overflow-hidden">
-          {STATUS_FILTER_OPTIONS.map((f) => (
-            <button
-              key={f.value}
-              onClick={() => setStatusFilter(f.value)}
-              className={`px-3 py-1.5 text-xs font-medium transition-colors ${
-                statusFilter === f.value
-                  ? 'bg-brand-600/20 text-brand-300'
-                  : 'text-slate-500 hover:text-slate-300 hover:bg-surface-200/40'
-              }`}
-            >
-              {f.label}
-            </button>
-          ))}
-        </div>
+      <div className="flex flex-wrap gap-2 items-center">
+        {STATUS_FILTER_OPTIONS.map((f) => (
+          <button
+            key={f.value}
+            onClick={() => setStatusFilter(f.value)}
+            className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+              statusFilter === f.value
+                ? 'bg-brand-600/30 text-brand-300 border border-brand-600/40'
+                : 'text-slate-500 border border-transparent hover:border-surface-500 hover:text-slate-300'
+            }`}
+          >
+            {f.label}
+            {f.value === 'OPEN' && openCount > 0 && (
+              <span className="ml-1.5 rounded-full bg-brand-600/20 px-1.5 py-0.5 text-[10px] font-semibold text-brand-400 tabular-nums">
+                {openCount}
+              </span>
+            )}
+            {f.value === 'IN_PROGRESS' && inProgressCount > 0 && (
+              <span className="ml-1.5 rounded-full bg-info/10 px-1.5 py-0.5 text-[10px] font-semibold text-info tabular-nums">
+                {inProgressCount}
+              </span>
+            )}
+          </button>
+        ))}
 
-        <Select
-          value={assigneeFilter}
-          onChange={setAssigneeFilter}
-          options={assigneeFilterOptions}
-          className="w-44"
-        />
+        <div className="ml-auto">
+          <Select
+            value={assigneeFilter}
+            onChange={setAssigneeFilter}
+            options={assigneeFilterOptions}
+            className="w-44"
+          />
+        </div>
       </div>
 
-      {/* Table */}
+      {/* Task list */}
       <Card>
         {isLoading ? (
           <PageLoader />
         ) : filtered.length === 0 ? (
           <EmptyState icon={ClipboardList} title="No tasks match these filters" />
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-surface-400/40">
-                  {['Task', 'Context', 'Assignee', 'Due', 'Status', 'Created', ''].map((h) => (
-                    <th key={h} className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500">
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((t) => (
-                  <TaskRow
-                    key={t.id}
-                    task={t}
-                    onStatusChange={(id, status) => statusMutation.mutate({ id, status })}
-                    onDelete={(id) => deleteMutation.mutate(id)}
-                    onEdit={setEditingTask}
-                  />
-                ))}
-              </tbody>
-            </table>
+          <div>
+            {filtered.map((t) => (
+              <TaskItem
+                key={t.id}
+                task={t}
+                onStatusChange={(id, status) => statusMutation.mutate({ id, status })}
+                onDelete={(id) => deleteMutation.mutate(id)}
+                onEdit={setEditingTask}
+              />
+            ))}
           </div>
         )}
       </Card>
