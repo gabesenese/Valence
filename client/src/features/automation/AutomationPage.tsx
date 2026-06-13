@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Zap, Plus, Play, CheckCircle,
-  Clock, Calendar, AlertTriangle, ClipboardList, X, ChevronDown,
+  Clock, Calendar, AlertTriangle, ClipboardList, Trash2, ChevronDown,
   TrendingDown, Pencil,
 } from 'lucide-react';
 import {
@@ -380,6 +380,13 @@ function RuleCard({ rule, canEdit }: { rule: AutomationRule; canEdit: boolean })
 
   const deleteMutation = useMutation({
     mutationFn: () => automationService.deleteRule(rule.id),
+    onMutate: async () => {
+      await qc.cancelQueries({ queryKey: ['automation-rules'] });
+      const prev = qc.getQueryData<AutomationRule[]>(['automation-rules']);
+      qc.setQueryData<AutomationRule[]>(['automation-rules'], (old) => old?.filter(r => r.id !== rule.id) ?? []);
+      return { prev };
+    },
+    onError: (_err, _vars, ctx) => { if (ctx?.prev) qc.setQueryData(['automation-rules'], ctx.prev); },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['automation-rules'] }),
   });
 
@@ -453,7 +460,7 @@ function RuleCard({ rule, canEdit }: { rule: AutomationRule; canEdit: boolean })
               className="p-1.5 text-slate-600 hover:text-danger transition-colors"
               title="Delete rule"
             >
-              <X className="h-4 w-4" />
+              <Trash2 className="h-3.5 w-3.5" />
             </button>
           </div>
         )}
