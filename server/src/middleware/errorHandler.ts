@@ -33,7 +33,7 @@ export function errorHandler(
 
   res.status(500).json({
     success: false,
-    message: process.env.NODE_ENV === 'development' ? err.message : 'Internal server error',
+    message: err.message,
     code: 'INTERNAL_ERROR',
   });
 }
