@@ -47,7 +47,7 @@ export async function create(req: Request, res: Response, next: NextFunction): P
   try {
     const plan = ((req.user as { plan?: Plan })?.plan ?? 'ESSENTIALS') as Plan;
     await enforceLeaseLimit(plan);
-    const result = await service.createLease(req.body);
+    const result = await service.createLease(req.body, req.user?.id);
     void logAudit({ userId: req.user?.id, action: 'CREATE', entity: 'lease', entityId: result.id, entityName: result.leaseNumber });
     sendSuccess(res, result, 201);
   } catch (err) { next(err); }

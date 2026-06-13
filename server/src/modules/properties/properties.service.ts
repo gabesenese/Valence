@@ -1,6 +1,7 @@
 import { Prisma } from '@prisma/client';
 import { prisma } from '../../infrastructure/database';
 import { NotFoundError, ConflictError } from '../../utils/errors';
+import { trackIfFirstTime } from '../analytics/funnel.service';
 import type { CreatePropertyInput, UpdatePropertyInput, PropertyQuery } from './properties.schemas';
 
 export async function getProperties(query: PropertyQuery, userId: string) {
@@ -58,7 +59,7 @@ export async function createProperty(input: CreatePropertyInput, userId: string)
   const existing = await prisma.property.findFirst({ where: { code: input.code, ownerId: userId, deletedAt: null } });
   if (existing) throw new ConflictError(`Property code "${input.code}" already exists`);
 
-  return prisma.property.create({
+  const property = await prisma.property.create({
     data: {
       ...input,
       ownerId: userId,
@@ -67,6 +68,8 @@ export async function createProperty(input: CreatePropertyInput, userId: string)
       currentValue: input.currentValue,
     },
   });
+  void trackIfFirstTime('data_imported', userId, { source: 'manual', entity: 'property' });
+  return property;
 }
 
 export async function updateProperty(id: string, input: UpdatePropertyInput, userId: string) {

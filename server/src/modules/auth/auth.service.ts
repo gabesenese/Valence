@@ -97,7 +97,7 @@ export async function login(
 ): Promise<{ user: AuthUser; tokens: TokenPair } | { mfaRequired: true; mfaToken: string }> {
   const user = await prisma.user.findUnique({
     where: { email: input.email },
-    select: { ...USER_SELECT, passwordHash: true, isActive: true, mfaSecret: true },
+    select: { ...USER_SELECT, passwordHash: true, isActive: true, mfaSecret: true, lastLoginAt: true },
   });
 
   if (!user || !user.isActive) throw new UnauthorizedError('Invalid credentials');
@@ -118,7 +118,9 @@ export async function login(
     if (!ok) throw new UnauthorizedError('Invalid authenticator code');
   }
 
+  const isReturn = !!user.lastLoginAt;
   await prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } });
+  if (isReturn) void trackEvent('return_visit', user.id);
 
   const { passwordHash: _, isActive: __, mfaSecret: ___, ...authUser } = user;
   const tokens = await createTokenPair(authUser, meta);

@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import type { Request, Response } from 'express';
 import rateLimit from 'express-rate-limit';
-import { trackEvent, type FunnelEventType } from '../analytics/funnel.service';
+import { trackEvent, trackIfFirstTime, type FunnelEventType } from '../analytics/funnel.service';
 import { tryAuthenticate } from '../../middleware/authenticate';
 
 const router = Router();
@@ -13,7 +13,12 @@ const ALLOWED: Set<string> = new Set(['visitor', 'setup_complete']);
 router.post('/', limiter, tryAuthenticate, async (req: Request, res: Response) => {
   const { event, meta } = req.body as { event?: string; meta?: Record<string, unknown> };
   if (!event || !ALLOWED.has(event)) { res.status(204).end(); return; }
-  void trackEvent(event as FunnelEventType, req.user?.id ?? null, meta);
+  // setup_complete is deduplicated per user; visitor fires every session
+  if (event === 'setup_complete' && req.user?.id) {
+    void trackIfFirstTime('setup_complete', req.user.id, meta);
+  } else {
+    void trackEvent(event as FunnelEventType, req.user?.id ?? null, meta);
+  }
   res.status(204).end();
 });
 

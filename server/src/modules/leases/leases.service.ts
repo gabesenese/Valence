@@ -1,6 +1,7 @@
 import { Prisma, RenewalRisk, RenewalStage } from '@prisma/client';
 import { prisma } from '../../infrastructure/database';
 import { NotFoundError } from '../../utils/errors';
+import { trackIfFirstTime } from '../analytics/funnel.service';
 import type { CreateLeaseInput, UpdateLeaseInput, LeaseQuery, BulkActionInput, AddNoteInput } from './leases.schemas';
 import { addDays, differenceInDays, parseISO } from 'date-fns';
 
@@ -533,12 +534,12 @@ export async function bulkAction(input: BulkActionInput, userId: string) {
 
 // ─── Legacy CRUD ──────────────────────────────────────────────────────────────
 
-export async function createLease(input: CreateLeaseInput) {
+export async function createLease(input: CreateLeaseInput, userId?: string) {
   const endDate = parseISO(input.endDate);
   const renewalRisk = computeRenewalRisk(endDate);
   const leaseNumber = `LSE-${Date.now().toString(36).toUpperCase()}`;
 
-  return prisma.lease.create({
+  const lease = await prisma.lease.create({
     data: {
       leaseNumber,
       renewalRisk,
@@ -560,6 +561,8 @@ export async function createLease(input: CreateLeaseInput) {
       tenant: { select: { id: true, name: true, email: true } },
     },
   });
+  if (userId) void trackIfFirstTime('data_imported', userId, { source: 'manual', entity: 'lease' });
+  return lease;
 }
 
 export async function updateLease(id: string, input: UpdateLeaseInput) {
