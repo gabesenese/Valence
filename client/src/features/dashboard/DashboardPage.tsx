@@ -1,14 +1,11 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell,
 } from 'recharts';
 import {
-  Building2, FileText, TrendingUp, AlertTriangle, DollarSign, Users,
-  ArrowUp, ArrowDown, CheckCircle2, ChevronRight, Calendar,
-  Zap,
+  Building2, ArrowUp, ArrowDown, CheckCircle2, ChevronRight, Calendar, Activity,
 } from 'lucide-react';
 import { analyticsService } from '@/services/analytics.service';
 import { leasesService } from '@/services/leases.service';
@@ -17,23 +14,8 @@ import HealthScoreCard from './HealthScoreCard';
 import { Card, CardHeader, CardTitle, CardBody } from '@/components/ui/Card';
 import { PageLoader } from '@/components/ui/Spinner';
 import { formatCurrency, compactCurrency, daysUntil, formatDate } from '@/utils/format';
-import { useAuthStore } from '@/state/auth.store';
 import { WelcomeScreen } from '@/features/onboarding/WelcomeScreen';
 import { OnboardingCard } from '@/features/onboarding/OnboardingCard';
-
-function getGreeting(): string {
-  const h = new Date().getHours();
-  if (h < 12) return 'Good morning';
-  if (h < 17) return 'Good afternoon';
-  return 'Good evening';
-}
-
-const RISK_COLORS: Record<string, string> = {
-  LOW: '#10b981',
-  MEDIUM: '#f59e0b',
-  HIGH: '#f97316',
-  CRITICAL: '#ef4444',
-};
 
 const TREND_OPTIONS = [
   { label: '3M', value: 3 },
@@ -41,9 +23,17 @@ const TREND_OPTIONS = [
   { label: '12M', value: 12 },
 ];
 
+type FeedItem = {
+  id: string;
+  severity: 'critical' | 'warning' | 'info';
+  priority: number;
+  message: string;
+  context: string;
+  href: string;
+  value?: string;
+};
 
 export default function DashboardPage() {
-  const user = useAuthStore((s) => s.user);
   const navigate = useNavigate();
   const [trendMonths, setTrendMonths] = useState(12);
 
@@ -78,506 +68,425 @@ export default function DashboardPage() {
     staleTime: 60_000,
   });
 
-  if (summaryLoading) return <PageLoader />;
-
-  const riskPieData = distribution?.byRisk.map((r) => ({
-    name: r.renewalRisk,
-    value: r._count,
-  })) ?? [];
-
   const latestNOI = trend && trend.length > 0 ? trend[trend.length - 1].net : null;
 
-  const kpis = summary
-    ? [
-        {
-          label: 'Active Properties',
-          value: summary.properties.total,
-          icon: Building2,
-          color: 'text-brand-400',
-          bg: 'bg-brand-600/10',
-          href: '/properties',
-        },
-        {
-          label: 'Active Leases',
-          value: summary.leases.active,
-          icon: FileText,
-          color: 'text-success',
-          bg: 'bg-success/10',
-          href: '/leases',
-        },
-        {
-          label: 'Monthly Revenue',
-          value: compactCurrency(summary.revenue.current),
-          icon: DollarSign,
-          color: 'text-success',
-          bg: 'bg-success/10',
-          trend: summary.revenue.growthPct,
-          href: '/finance',
-        },
-        {
-          label: 'Net Income',
-          value: latestNOI != null ? compactCurrency(latestNOI) : '—',
-          icon: TrendingUp,
-          color: latestNOI != null && latestNOI >= 0 ? 'text-success' : 'text-danger',
-          bg: latestNOI != null && latestNOI >= 0 ? 'bg-success/10' : 'bg-danger/10',
-          sub: 'This month (NOI)',
-          subColor: 'text-slate-500',
-          href: '/finance',
-        },
-        {
-          label: 'Occupancy Rate',
-          value: `${summary.occupancy.rate}%`,
-          icon: Users,
-          color: summary.occupancy.rate >= 90 ? 'text-success' : summary.occupancy.rate >= 75 ? 'text-warning' : 'text-danger',
-          bg: summary.occupancy.rate >= 90 ? 'bg-success/10' : summary.occupancy.rate >= 75 ? 'bg-warning/10' : 'bg-danger/10',
-          sub: `${summary.occupancy.occupied}/${summary.occupancy.total} units`,
-          subColor: 'text-slate-500',
-          href: '/properties',
-        },
-        {
-          label: 'Open Alerts',
-          value: summary.alerts.open,
-          icon: AlertTriangle,
-          color: summary.alerts.critical > 0 ? 'text-danger' : summary.alerts.open > 0 ? 'text-warning' : 'text-success',
-          bg: summary.alerts.critical > 0 ? 'bg-danger/10' : summary.alerts.open > 0 ? 'bg-warning/10' : 'bg-success/10',
-          sub: summary.alerts.critical > 0 ? `${summary.alerts.critical} critical` : summary.alerts.open === 0 ? 'All clear' : 'No critical',
-          subColor: summary.alerts.critical > 0 ? 'text-danger' : summary.alerts.open === 0 ? 'text-success' : 'text-slate-500',
-          href: '/alerts',
-        },
-      ]
-    : [];
+  const kpis = summary ? [
+    {
+      label: 'Active Properties',
+      value: summary.properties.total,
+      color: 'text-brand-400',
+      trend: undefined as number | undefined,
+      sub: undefined as string | undefined,
+      subColor: undefined as string | undefined,
+      href: '/properties',
+    },
+    {
+      label: 'Active Leases',
+      value: summary.leases.active,
+      color: 'text-success',
+      trend: undefined,
+      sub: undefined,
+      subColor: undefined,
+      href: '/leases',
+    },
+    {
+      label: 'Monthly Revenue',
+      value: compactCurrency(summary.revenue.current),
+      color: 'text-success',
+      trend: summary.revenue.growthPct,
+      sub: undefined,
+      subColor: undefined,
+      href: '/finance',
+    },
+    {
+      label: 'Net Income',
+      value: latestNOI != null ? compactCurrency(latestNOI) : '—',
+      color: latestNOI != null && latestNOI >= 0 ? 'text-success' : 'text-danger',
+      trend: undefined,
+      sub: 'NOI this month',
+      subColor: 'text-slate-500',
+      href: '/finance',
+    },
+    {
+      label: 'Occupancy Rate',
+      value: `${summary.occupancy.rate}%`,
+      color: summary.occupancy.rate >= 90 ? 'text-success' : summary.occupancy.rate >= 75 ? 'text-warning' : 'text-danger',
+      trend: undefined,
+      sub: `${summary.occupancy.occupied}/${summary.occupancy.total} units`,
+      subColor: 'text-slate-500',
+      href: '/properties',
+    },
+    {
+      label: 'Open Alerts',
+      value: summary.alerts.open,
+      color: summary.alerts.critical > 0 ? 'text-danger' : summary.alerts.open > 0 ? 'text-warning' : 'text-success',
+      trend: undefined,
+      sub: summary.alerts.critical > 0 ? `${summary.alerts.critical} critical` : summary.alerts.open === 0 ? 'All clear' : 'No critical',
+      subColor: summary.alerts.critical > 0 ? 'text-danger' : summary.alerts.open === 0 ? 'text-success' : 'text-slate-500',
+      href: '/alerts',
+    },
+  ] : [];
+
+  const feedItems = useMemo<FeedItem[]>(() => {
+    const items: FeedItem[] = [];
+
+    if ((summary?.alerts.critical ?? 0) > 0) {
+      items.push({
+        id: 'crit-alerts',
+        severity: 'critical',
+        priority: 0,
+        message: `${summary!.alerts.critical} critical alert${summary!.alerts.critical > 1 ? 's' : ''} need immediate attention`,
+        context: 'Open Alerts',
+        href: '/alerts',
+      });
+    }
+
+    expiringLeases?.data
+      .filter(l => daysUntil(l.endDate) <= 30)
+      .forEach(l => {
+        const d = daysUntil(l.endDate);
+        items.push({
+          id: `lease-${l.id}`,
+          severity: d <= 7 ? 'critical' : 'warning',
+          priority: d,
+          message: `${l.tenant.name} lease expires in ${d} day${d !== 1 ? 's' : ''}`,
+          context: l.property.name,
+          href: `/leases/${l.id}`,
+          value: compactCurrency(Number(l.baseRent)) + '/mo',
+        });
+      });
+
+    insights
+      ?.filter(i => i.severity === 'critical' || i.severity === 'warning')
+      .forEach(i => items.push({
+        id: i.id,
+        severity: i.severity as 'critical' | 'warning',
+        priority: i.severity === 'critical' ? 1 : 50,
+        message: i.message,
+        context: i.context,
+        href: i.href,
+        value: i.value,
+      }));
+
+    return items.sort((a, b) => a.priority - b.priority);
+  }, [summary, expiringLeases, insights]);
+
+  const renewals31to90 = useMemo(
+    () => expiringLeases?.data.filter(l => {
+      const d = daysUntil(l.endDate);
+      return d > 30 && d <= 90;
+    }) ?? [],
+    [expiringLeases],
+  );
+
+  const totalRiskLeases = distribution?.byRisk.reduce((s, r) => s + r._count, 0) ?? 0;
+
+  if (summaryLoading) return <PageLoader />;
 
   const isEmpty = summary && summary.properties.total === 0 && summary.leases.active === 0;
 
   return (
-    <div className="flex flex-col gap-6 p-6 animate-fade-in">
-      {/* Header */}
-      <div>
-        <h1 className="text-xl font-bold text-white tracking-tight">
-          {getGreeting()}, {user?.firstName}
-        </h1>
-        <p className="mt-0.5 text-sm text-slate-500">Portfolio intelligence overview</p>
-      </div>
-
-      {/* Onboarding checklist — top of page, shown to all users until dismissed or complete */}
+    <div className="flex flex-col gap-4 p-5 animate-fade-in">
       <OnboardingCard />
 
       {isEmpty && <WelcomeScreen />}
 
-      {/* Attention Required — only shown when there's something urgent */}
-      {!isEmpty && summary && (summary.alerts.critical > 0 || (expiringLeases?.data.filter(l => daysUntil(l.endDate) <= 30).length ?? 0) > 0) && (
-        <div className="flex flex-col gap-2">
-          {summary.alerts.critical > 0 && (
-            <button
-              onClick={() => navigate('/alerts')}
-              className="flex items-center gap-3 rounded-xl border border-danger/30 bg-danger/5 px-4 py-3 text-left transition-colors hover:bg-danger/10"
-            >
-              <AlertTriangle className="h-4 w-4 shrink-0 text-danger" />
-              <span className="flex-1 text-sm font-medium text-danger">
-                {summary.alerts.critical} critical alert{summary.alerts.critical !== 1 ? 's' : ''} need immediate attention
-              </span>
-              <ChevronRight className="h-4 w-4 text-danger/60" />
-            </button>
-          )}
-          {expiringLeases?.data.filter(l => daysUntil(l.endDate) <= 30).slice(0, 3).map((l) => {
-            const days = daysUntil(l.endDate);
-            return (
-              <button
-                key={l.id}
-                onClick={() => navigate(`/leases/${l.id}`)}
-                className="flex items-center gap-3 rounded-xl border border-warning/30 bg-warning/5 px-4 py-3 text-left transition-colors hover:bg-warning/10"
-              >
-                <Calendar className="h-4 w-4 shrink-0 text-warning" />
-                <span className="flex-1 text-sm font-medium text-warning">
-                  {l.tenant.name} — expires in {days} day{days !== 1 ? 's' : ''}
-                </span>
-                <span className="text-xs text-slate-500">{l.property.name}</span>
-                <ChevronRight className="h-4 w-4 text-warning/60" />
-              </button>
-            );
-          })}
-        </div>
-      )}
+      {!isEmpty && (
+        <div className="grid grid-cols-1 xl:grid-cols-[1fr_360px] gap-5">
 
-      {/* Portfolio Health Score */}
-      {!isEmpty && <HealthScoreCard />}
+          {/* ── LEFT: Action column ─────────────────────────────────────────── */}
+          <div className="flex flex-col gap-4 min-w-0">
 
-      {/* Executive Intelligence Brief */}
-      {!isEmpty && <ExecutiveBriefCard />}
-
-      {/* KPI Grid */}
-      {!isEmpty && <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-6">
-        {kpis.map((kpi) => (
-          <Card
-            key={kpi.label}
-            hover
-            onClick={() => navigate(kpi.href)}
-            className="relative overflow-hidden group"
-          >
-            <CardBody className="p-4">
-              <div className="flex items-start justify-between">
-                <div className={`rounded-lg p-2 ${kpi.bg}`}>
-                  <kpi.icon className={`h-4 w-4 ${kpi.color}`} />
-                </div>
-                {kpi.trend !== undefined && (
-                  <span className={`flex items-center gap-0.5 text-xs font-medium ${kpi.trend >= 0 ? 'text-success' : 'text-danger'}`}>
-                    {kpi.trend >= 0 ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
-                    {Math.abs(kpi.trend).toFixed(1)}%
-                  </span>
-                )}
-              </div>
-              <div className="mt-3">
-                <p className="text-2xl font-bold text-white tabular-nums">{kpi.value}</p>
-                <p className="mt-0.5 text-xs text-slate-500">{kpi.label}</p>
-                {kpi.sub && (
-                  <p className={`mt-1 text-xs font-medium ${kpi.subColor}`}>{kpi.sub}</p>
-                )}
-              </div>
-              <ChevronRight className="absolute right-3 bottom-3 h-3.5 w-3.5 text-slate-700 opacity-0 group-hover:opacity-100 transition-opacity" />
-            </CardBody>
-          </Card>
-        ))}
-      </div>}
-
-      {/* Operational Insights */}
-      {insights && insights.length > 0 && (
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <Zap className="h-4 w-4 text-brand-400" />
-              <CardTitle>Operational Insights</CardTitle>
-            </div>
-            <span className="text-xs text-slate-500">{insights.length} active insight{insights.length !== 1 ? 's' : ''}</span>
-          </CardHeader>
-          <div className="divide-y divide-surface-400/30">
-            {insights.map((insight) => {
-              const severityLeft = insight.severity === 'critical'
-                ? 'border-l-danger bg-danger/5'
-                : insight.severity === 'warning'
-                ? 'border-l-warning bg-warning/5'
-                : 'border-l-info bg-info/5';
-              const valueColor = insight.severity === 'critical' ? 'text-danger' : insight.severity === 'warning' ? 'text-warning' : 'text-info';
-              return (
+            {/* KPI Strip */}
+            <div className="flex items-stretch divide-x divide-surface-400/40 rounded-xl border border-surface-400/50 bg-surface-100 overflow-hidden">
+              {kpis.map(kpi => (
                 <button
-                  key={insight.id}
-                  onClick={() => navigate(insight.href)}
-                  className={`flex w-full items-start gap-4 border-l-2 px-5 py-3.5 hover:brightness-110 transition-[filter] text-left ${severityLeft}`}
+                  key={kpi.label}
+                  onClick={() => navigate(kpi.href)}
+                  className="flex flex-1 flex-col gap-0.5 px-4 py-3 hover:bg-surface-200/60 transition-colors min-w-0 text-left"
                 >
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium text-slate-100">{insight.message}</p>
-                    <p className="mt-0.5 text-xs text-slate-500">{insight.context}</p>
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <span className={`text-lg font-bold tabular-nums leading-none truncate ${kpi.color}`}>
+                      {kpi.value}
+                    </span>
+                    {kpi.trend !== undefined && (
+                      <span className={`shrink-0 flex items-center gap-0.5 text-[10px] font-semibold ${kpi.trend >= 0 ? 'text-success' : 'text-danger'}`}>
+                        {kpi.trend >= 0
+                          ? <ArrowUp className="h-2.5 w-2.5" />
+                          : <ArrowDown className="h-2.5 w-2.5" />}
+                        {Math.abs(kpi.trend).toFixed(1)}%
+                      </span>
+                    )}
                   </div>
-                  {insight.value && (
-                    <span className={`shrink-0 text-sm font-bold tabular-nums ${valueColor}`}>{insight.value}</span>
-                  )}
-                  <ChevronRight className="h-4 w-4 shrink-0 text-slate-600 mt-0.5" />
-                </button>
-              );
-            })}
-          </div>
-        </Card>
-      )}
-
-      {/* Bottom row — most actionable content */}
-      {!isEmpty && <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        {/* Upcoming Renewals */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <Calendar className="h-4 w-4 text-brand-400" />
-              <CardTitle>Upcoming Renewals</CardTitle>
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => navigate('/leases')}
-                className="text-xs text-slate-500 hover:text-brand-400 transition-colors"
-              >
-                View all →
-              </button>
-            </div>
-          </CardHeader>
-
-          <div className="divide-y divide-surface-400/30">
-            {expiringLeases?.data.length === 0 ? (
-              <div className="flex flex-col items-center gap-2 px-5 py-8">
-                <CheckCircle2 className="h-7 w-7 text-success/50" />
-                <p className="text-sm font-medium text-slate-400">No upcoming expirations</p>
-                <p className="text-xs text-slate-600">All leases stable beyond 90 days</p>
-              </div>
-            ) : (
-              expiringLeases?.data.map((lease) => {
-                const days = daysUntil(lease.endDate);
-                const urgencyColor = days <= 30 ? 'text-danger' : days <= 60 ? 'text-warning' : 'text-slate-400';
-                const urgencyBg = days <= 30 ? 'bg-danger/10 border-danger/20' : days <= 60 ? 'bg-warning/10 border-warning/20' : 'bg-surface-300/50 border-surface-400/40';
-                return (
-                  <button
-                    key={lease.id}
-                    onClick={() => navigate(`/leases/${lease.id}`)}
-                    className="flex w-full items-center gap-3 px-4 py-3 hover:bg-surface-200/40 transition-colors group text-left"
-                  >
-                    <div className={`shrink-0 rounded-lg border px-2 py-1 text-center min-w-[44px] ${urgencyBg}`}>
-                      <p className={`text-sm font-bold tabular-nums leading-none ${urgencyColor}`}>{days}</p>
-                      <p className={`text-[10px] ${urgencyColor} opacity-80`}>days</p>
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium text-slate-200 group-hover:text-brand-300 transition-colors">
-                        {lease.tenant.name}
-                      </p>
-                      <p className="text-xs text-slate-500 truncate">{lease.property.name}</p>
-                    </div>
-                    <div className="shrink-0 text-right">
-                      <p className="text-xs font-medium text-slate-300 tabular-nums">{compactCurrency(Number(lease.baseRent))}/mo</p>
-                      <p className="text-xs text-slate-500">{formatDate(lease.endDate)}</p>
-                    </div>
-                  </button>
-                );
-              })
-            )}
-          </div>
-        </Card>
-
-        {/* Property performance */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <Building2 className="h-4 w-4 text-brand-400" />
-              <CardTitle>Property Performance</CardTitle>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-slate-500">This month</span>
-              <button
-                onClick={() => navigate('/properties')}
-                className="text-xs text-slate-500 hover:text-brand-400 transition-colors"
-              >
-                View all →
-              </button>
-            </div>
-          </CardHeader>
-          <div className="divide-y divide-surface-400/30">
-            {performance?.slice(0, 5).map((p) => (
-              <button
-                key={p.id}
-                onClick={() => navigate(`/properties/${p.id}`)}
-                className="flex w-full items-center gap-3 px-4 py-3 hover:bg-surface-200/40 transition-colors group"
-              >
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-300 text-xs font-bold text-slate-400">
-                  {p.code.slice(0, 3)}
-                </div>
-                <div className="min-w-0 flex-1 text-left">
-                  <p className="truncate text-sm font-medium text-slate-200 group-hover:text-brand-300 transition-colors">{p.name}</p>
-                  <div className="mt-1 flex items-center gap-2">
-                    <div className="relative h-1 flex-1 overflow-hidden rounded-full bg-surface-400/40">
-                      <div
-                        className="absolute inset-y-0 left-0 rounded-full bg-brand-500/70"
-                        style={{ width: `${p.occupancyRate}%` }}
-                      />
-                    </div>
-                    <span className="shrink-0 text-xs text-slate-500 tabular-nums">{p.occupancyRate}%</span>
-                  </div>
-                </div>
-                <div className="text-right shrink-0">
-                  <p className="text-sm font-semibold text-white tabular-nums">{compactCurrency(p.monthlyRevenue)}</p>
-                  <p className={`text-xs tabular-nums ${
-                    p.revenueDeltaPct == null ? 'text-slate-500' :
-                    p.revenueDeltaPct >= 0 ? 'text-success' : 'text-danger'
-                  }`}>
-                    {p.revenueDeltaPct == null ? `${p.activeLeases} leases` :
-                      `${p.revenueDeltaPct >= 0 ? '+' : ''}${p.revenueDeltaPct}% vs last mo`}
-                  </p>
-                </div>
-                <ChevronRight className="h-3.5 w-3.5 text-slate-700 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
-              </button>
-            ))}
-          </div>
-        </Card>
-      </div>}
-
-      {/* Charts row — historical trends */}
-      {!isEmpty && <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        {/* Revenue trend */}
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <div className="flex flex-col gap-1">
-              <CardTitle>Revenue & Expenses</CardTitle>
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-1.5">
-                  <div className="h-2.5 w-2.5 rounded-full bg-[#6366f1]" />
-                  <span className="text-xs text-slate-400">Revenue</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <div className="h-0 w-4 border-t-2 border-dashed border-[#ef4444]" />
-                  <span className="text-xs text-slate-400">Expenses</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <div className="h-2.5 w-2.5 rounded-full bg-[#10b981]/70" />
-                  <span className="text-xs text-slate-400">Net Income</span>
-                </div>
-              </div>
-            </div>
-            <div className="flex items-center gap-1.5">
-              {TREND_OPTIONS.map((opt) => (
-                <button
-                  key={opt.value}
-                  onClick={() => setTrendMonths(opt.value)}
-                  className={`rounded px-2.5 py-1 text-xs font-medium transition-colors ${
-                    trendMonths === opt.value
-                      ? 'bg-brand-600/30 text-brand-300 border border-brand-600/40'
-                      : 'text-slate-500 hover:text-slate-300 border border-transparent'
-                  }`}
-                >
-                  {opt.label}
+                  <span className="text-[10px] text-slate-500 truncate">{kpi.label}</span>
+                  {kpi.sub && <span className={`text-[10px] font-medium truncate ${kpi.subColor}`}>{kpi.sub}</span>}
                 </button>
               ))}
             </div>
-          </CardHeader>
-          <CardBody className="pt-3">
-            <ResponsiveContainer width="100%" height={260}>
-              <AreaChart data={trend ?? []} margin={{ top: 10, right: 8, left: -15, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#6366f1" stopOpacity={0.45} />
-                    <stop offset="60%" stopColor="#6366f1" stopOpacity={0.12} />
-                    <stop offset="100%" stopColor="#6366f1" stopOpacity={0} />
-                  </linearGradient>
-                  <linearGradient id="expGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#ef4444" stopOpacity={0.3} />
-                    <stop offset="100%" stopColor="#ef4444" stopOpacity={0} />
-                  </linearGradient>
-                  <linearGradient id="netGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#10b981" stopOpacity={0.35} />
-                    <stop offset="100%" stopColor="#10b981" stopOpacity={0.02} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#1e1e3a" vertical={false} strokeOpacity={0.7} />
-                <XAxis
-                  dataKey="month"
-                  tick={{ fill: '#475569', fontSize: 11 }}
-                  tickLine={false}
-                  axisLine={false}
-                  dy={6}
-                />
-                <YAxis
-                  tick={{ fill: '#475569', fontSize: 11 }}
-                  tickLine={false}
-                  axisLine={false}
-                  tickFormatter={(v) => compactCurrency(v)}
-                  width={52}
-                />
-                <Tooltip
-                  contentStyle={{ background: '#0f0f1a', border: '1px solid #2d2d50', borderRadius: 10, fontSize: 12, color: '#e2e8f0', padding: '10px 14px' }}
-                  labelStyle={{ color: '#94a3b8', marginBottom: 6, fontWeight: 600 }}
-                  itemStyle={{ color: '#e2e8f0', padding: '2px 0' }}
-                  formatter={(v: number, name: string) => [formatCurrency(v), name]}
-                  cursor={{ stroke: '#6366f1', strokeWidth: 1, strokeDasharray: '4 2' }}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="revenue"
-                  stroke="#6366f1"
-                  strokeWidth={2.5}
-                  fill="url(#revGrad)"
-                  name="Revenue"
-                  dot={false}
-                  activeDot={{ r: 5, fill: '#6366f1', stroke: '#1e1e32', strokeWidth: 2 }}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="net"
-                  stroke="#10b981"
-                  strokeWidth={1.5}
-                  fill="url(#netGrad)"
-                  name="Net Income"
-                  dot={false}
-                  activeDot={{ r: 4, fill: '#10b981', stroke: '#1e1e32', strokeWidth: 2 }}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="expenses"
-                  stroke="#ef4444"
-                  strokeWidth={1.5}
-                  fill="url(#expGrad)"
-                  name="Expenses"
-                  strokeDasharray="5 3"
-                  dot={false}
-                  activeDot={{ r: 4, fill: '#ef4444', stroke: '#1e1e32', strokeWidth: 2 }}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          </CardBody>
-        </Card>
 
-        {/* Renewal risk distribution */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Renewal Risk</CardTitle>
-            <span className="text-xs text-slate-500">Active leases</span>
-          </CardHeader>
-          <CardBody className="flex flex-col items-center gap-4 pb-5">
-            <div className="relative w-full">
-              <ResponsiveContainer width="100%" height={220}>
-                <PieChart>
-                  <Pie
-                    data={riskPieData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={68}
-                    outerRadius={98}
-                    paddingAngle={4}
-                    dataKey="value"
-                    stroke="none"
-                  >
-                    {riskPieData.map((entry) => (
-                      <Cell
-                        key={entry.name}
-                        fill={RISK_COLORS[entry.name] ?? '#6b7280'}
-                        opacity={0.92}
-                      />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    contentStyle={{ background: '#0f0f1a', border: '1px solid #2d2d50', borderRadius: 10, fontSize: 12, color: '#e2e8f0', padding: '10px 14px' }}
-                    itemStyle={{ color: '#e2e8f0' }}
-                    formatter={(value: number, name: string) => {
-                      const total = riskPieData.reduce((s, d) => s + d.value, 0);
-                      const pct = total > 0 ? Math.round((value / total) * 100) : 0;
-                      return [`${value} leases (${pct}%)`, name];
-                    }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-              <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-                <p className="text-3xl font-bold text-white tabular-nums leading-none">
-                  {riskPieData.reduce((s, d) => s + d.value, 0)}
-                </p>
-                <p className="mt-1 text-xs text-slate-400 tracking-wide uppercase">leases</p>
+            {/* Action Feed */}
+            <div className="rounded-xl border border-surface-400/50 bg-surface-100 overflow-hidden divide-y divide-surface-400/30">
+              <div className="flex items-center justify-between px-4 py-2.5 bg-surface-200/40">
+                <div className="flex items-center gap-2">
+                  <Activity className="h-3.5 w-3.5 text-brand-400" />
+                  <span className="text-xs font-semibold text-slate-300">Action Feed</span>
+                  {feedItems.length > 0 && (
+                    <span className="text-[10px] text-slate-500">
+                      {feedItems.length} item{feedItems.length !== 1 ? 's' : ''}
+                    </span>
+                  )}
+                </div>
+                <button
+                  onClick={() => navigate('/queue')}
+                  className="text-[10px] text-brand-400 hover:text-brand-300 transition-colors"
+                >
+                  Full queue →
+                </button>
               </div>
+
+              {feedItems.length === 0 ? (
+                <div className="flex flex-col items-center gap-2 py-10">
+                  <CheckCircle2 className="h-7 w-7 text-success/40" />
+                  <p className="text-sm font-medium text-slate-400">All clear</p>
+                  <p className="text-xs text-slate-600">No items requiring attention right now</p>
+                </div>
+              ) : (
+                feedItems.map(item => {
+                  const dot = item.severity === 'critical' ? 'bg-danger' : item.severity === 'warning' ? 'bg-warning' : 'bg-brand-400';
+                  const border = item.severity === 'critical' ? 'border-l-danger' : item.severity === 'warning' ? 'border-l-warning' : 'border-l-brand-400';
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => navigate(item.href)}
+                      className={`flex w-full items-start gap-3 px-4 py-3.5 border-l-2 text-left hover:bg-surface-200/40 transition-colors ${border}`}
+                    >
+                      <div className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${dot}`} />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-slate-100 leading-snug">{item.message}</p>
+                        <p className="mt-0.5 text-xs text-slate-500">{item.context}</p>
+                      </div>
+                      <div className="shrink-0 flex flex-col items-end gap-1">
+                        {item.value && (
+                          <span className="text-xs font-bold tabular-nums text-slate-300">{item.value}</span>
+                        )}
+                        <ChevronRight className="h-3.5 w-3.5 text-slate-600" />
+                      </div>
+                    </button>
+                  );
+                })
+              )}
             </div>
 
-            <div className="w-full grid grid-cols-2 gap-x-6 gap-y-2.5 px-1">
-              {riskPieData.map((entry) => {
-                const total = riskPieData.reduce((s, d) => s + d.value, 0);
-                const pct = total > 0 ? Math.round((entry.value / total) * 100) : 0;
-                return (
+            {/* Upcoming Renewals — 31–90 day leases (≤30d are already in the feed) */}
+            {renewals31to90.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4 text-brand-400" />
+                    <CardTitle>Upcoming Renewals</CardTitle>
+                  </div>
                   <button
-                    key={entry.name}
-                    onClick={() => navigate(`/leases?risk=${entry.name}`)}
-                    className="flex items-center gap-2 hover:opacity-75 transition-opacity"
+                    onClick={() => navigate('/leases')}
+                    className="text-xs text-slate-500 hover:text-brand-400 transition-colors"
                   >
-                    <div
-                      className="h-2.5 w-2.5 shrink-0 rounded-full"
-                      style={{ background: RISK_COLORS[entry.name] ?? '#6b7280' }}
-                    />
-                    <span className="flex-1 text-left text-xs text-slate-400">{entry.name}</span>
-                    <span className="tabular-nums text-xs font-semibold text-white">{entry.value}</span>
-                    <span className="w-8 text-right tabular-nums text-xs text-slate-500">{pct}%</span>
+                    View all →
                   </button>
-                );
-              })}
-            </div>
-          </CardBody>
-        </Card>
-      </div>}
+                </CardHeader>
+                <div className="divide-y divide-surface-400/30">
+                  {renewals31to90.slice(0, 5).map(lease => {
+                    const days = daysUntil(lease.endDate);
+                    const urgencyColor = days <= 60 ? 'text-warning' : 'text-slate-400';
+                    const urgencyBg = days <= 60 ? 'bg-warning/10 border-warning/20' : 'bg-surface-300/50 border-surface-400/40';
+                    return (
+                      <button
+                        key={lease.id}
+                        onClick={() => navigate(`/leases/${lease.id}`)}
+                        className="flex w-full items-center gap-3 px-4 py-3 hover:bg-surface-200/40 transition-colors group text-left"
+                      >
+                        <div className={`shrink-0 rounded-lg border px-2 py-1 text-center min-w-[44px] ${urgencyBg}`}>
+                          <p className={`text-sm font-bold tabular-nums leading-none ${urgencyColor}`}>{days}</p>
+                          <p className={`text-[10px] opacity-80 ${urgencyColor}`}>days</p>
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-medium text-slate-200 group-hover:text-brand-300 transition-colors">
+                            {lease.tenant.name}
+                          </p>
+                          <p className="text-xs text-slate-500 truncate">{lease.property.name}</p>
+                        </div>
+                        <div className="shrink-0 text-right">
+                          <p className="text-xs font-medium text-slate-300 tabular-nums">{compactCurrency(Number(lease.baseRent))}/mo</p>
+                          <p className="text-xs text-slate-500">{formatDate(lease.endDate)}</p>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </Card>
+            )}
+          </div>
 
+          {/* ── RIGHT: Context sidebar ──────────────────────────────────────── */}
+          <div className="flex flex-col gap-4">
+            <HealthScoreCard />
+            <ExecutiveBriefCard />
+
+            {/* Property Performance */}
+            {performance && performance.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center gap-2">
+                    <Building2 className="h-4 w-4 text-brand-400" />
+                    <CardTitle>Property Performance</CardTitle>
+                  </div>
+                  <button
+                    onClick={() => navigate('/properties')}
+                    className="text-xs text-slate-500 hover:text-brand-400 transition-colors"
+                  >
+                    View all →
+                  </button>
+                </CardHeader>
+                <div className="divide-y divide-surface-400/30">
+                  {performance.slice(0, 4).map(p => (
+                    <button
+                      key={p.id}
+                      onClick={() => navigate(`/properties/${p.id}`)}
+                      className="flex w-full items-center gap-3 px-4 py-3 hover:bg-surface-200/40 transition-colors group"
+                    >
+                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-surface-300 text-[10px] font-bold text-slate-400">
+                        {p.code.slice(0, 3)}
+                      </div>
+                      <div className="min-w-0 flex-1 text-left">
+                        <p className="truncate text-xs font-medium text-slate-200 group-hover:text-brand-300 transition-colors">{p.name}</p>
+                        <div className="mt-1 flex items-center gap-2">
+                          <div className="relative h-1 flex-1 overflow-hidden rounded-full bg-surface-400/40">
+                            <div className="absolute inset-y-0 left-0 rounded-full bg-brand-500/70" style={{ width: `${p.occupancyRate}%` }} />
+                          </div>
+                          <span className="shrink-0 text-[10px] text-slate-500 tabular-nums">{p.occupancyRate}%</span>
+                        </div>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className="text-xs font-semibold text-white tabular-nums">{compactCurrency(p.monthlyRevenue)}</p>
+                        <p className={`text-[10px] tabular-nums ${
+                          p.revenueDeltaPct == null ? 'text-slate-500' : p.revenueDeltaPct >= 0 ? 'text-success' : 'text-danger'
+                        }`}>
+                          {p.revenueDeltaPct == null
+                            ? `${p.activeLeases} leases`
+                            : `${p.revenueDeltaPct >= 0 ? '+' : ''}${p.revenueDeltaPct}%`}
+                        </p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </Card>
+            )}
+
+            {/* Revenue Trend */}
+            <Card>
+              <CardHeader>
+                <div className="flex flex-col gap-0.5">
+                  <CardTitle>Revenue Trend</CardTitle>
+                  <div className="flex items-center gap-3">
+                    <span className="flex items-center gap-1 text-[10px] text-slate-500">
+                      <span className="inline-block h-1.5 w-1.5 rounded-full bg-[#6366f1]" />Revenue
+                    </span>
+                    <span className="flex items-center gap-1 text-[10px] text-slate-500">
+                      <span className="inline-block h-1.5 w-1.5 rounded-full bg-[#10b981]" />Net
+                    </span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1">
+                  {TREND_OPTIONS.map(opt => (
+                    <button
+                      key={opt.value}
+                      onClick={() => setTrendMonths(opt.value)}
+                      className={`rounded px-2 py-0.5 text-[10px] font-medium transition-colors ${
+                        trendMonths === opt.value
+                          ? 'bg-brand-600/30 text-brand-300 border border-brand-600/40'
+                          : 'text-slate-500 border border-transparent hover:text-slate-300'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </CardHeader>
+              <CardBody className="pt-2 pb-3 px-3">
+                <ResponsiveContainer width="100%" height={180}>
+                  <AreaChart data={trend ?? []} margin={{ top: 8, right: 4, left: -20, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#6366f1" stopOpacity={0.45} />
+                        <stop offset="100%" stopColor="#6366f1" stopOpacity={0} />
+                      </linearGradient>
+                      <linearGradient id="netGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#10b981" stopOpacity={0.35} />
+                        <stop offset="100%" stopColor="#10b981" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#1e1e3a" vertical={false} strokeOpacity={0.7} />
+                    <XAxis
+                      dataKey="month"
+                      tick={{ fill: '#475569', fontSize: 10 }}
+                      tickLine={false}
+                      axisLine={false}
+                      dy={4}
+                    />
+                    <YAxis
+                      tick={{ fill: '#475569', fontSize: 10 }}
+                      tickLine={false}
+                      axisLine={false}
+                      tickFormatter={v => compactCurrency(v)}
+                      width={44}
+                    />
+                    <Tooltip
+                      contentStyle={{ background: '#0f0f1a', border: '1px solid #2d2d50', borderRadius: 10, fontSize: 11, color: '#e2e8f0', padding: '8px 12px' }}
+                      labelStyle={{ color: '#94a3b8', marginBottom: 4, fontWeight: 600 }}
+                      formatter={(v: number, name: string) => [formatCurrency(v), name]}
+                      cursor={{ stroke: '#6366f1', strokeWidth: 1, strokeDasharray: '4 2' }}
+                    />
+                    <Area type="monotone" dataKey="revenue" stroke="#6366f1" strokeWidth={2} fill="url(#revGrad)" name="Revenue" dot={false} activeDot={{ r: 4, fill: '#6366f1', stroke: '#1e1e32', strokeWidth: 2 }} />
+                    <Area type="monotone" dataKey="net" stroke="#10b981" strokeWidth={1.5} fill="url(#netGrad)" name="Net Income" dot={false} activeDot={{ r: 3, fill: '#10b981', stroke: '#1e1e32', strokeWidth: 2 }} />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </CardBody>
+            </Card>
+
+            {/* Lease Risk Breakdown */}
+            {distribution && totalRiskLeases > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Lease Risk</CardTitle>
+                  <span className="text-xs text-slate-500">{totalRiskLeases} active</span>
+                </CardHeader>
+                <CardBody className="flex flex-col gap-2.5">
+                  {(['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'] as const).map(risk => {
+                    const colorClass = risk === 'CRITICAL' ? 'text-danger' : risk === 'HIGH' ? 'text-warning' : risk === 'MEDIUM' ? 'text-yellow-400' : 'text-success';
+                    const dotClass = risk === 'CRITICAL' ? 'bg-danger' : risk === 'HIGH' ? 'bg-warning' : risk === 'MEDIUM' ? 'bg-yellow-400' : 'bg-success';
+                    const count = distribution.byRisk.find(r => r.renewalRisk === risk)?._count ?? 0;
+                    const pct = totalRiskLeases > 0 ? Math.round((count / totalRiskLeases) * 100) : 0;
+                    return (
+                      <button
+                        key={risk}
+                        onClick={() => navigate(`/leases?risk=${risk}`)}
+                        className="flex items-center justify-between rounded-lg px-1 py-0.5 hover:bg-surface-200/40 transition-colors"
+                      >
+                        <span className={`flex items-center gap-1.5 text-xs ${colorClass}`}>
+                          <span className={`h-1.5 w-1.5 rounded-full ${dotClass}`} />
+                          {risk}
+                        </span>
+                        <span className="text-xs tabular-nums text-slate-400">
+                          {count} <span className="text-slate-600">({pct}%)</span>
+                        </span>
+                      </button>
+                    );
+                  })}
+                </CardBody>
+              </Card>
+            )}
+          </div>
+
+        </div>
+      )}
     </div>
   );
 }
