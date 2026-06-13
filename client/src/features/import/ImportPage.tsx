@@ -120,7 +120,7 @@ function SplashScreen({ onStart }: { onStart: () => void }) {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 flex-1">
             {[
               { q: 'My columns have different names', a: 'No problem — the mapper auto-detects common aliases. You can manually adjust anything it misses.' },
-              { q: 'Some fields are missing in my CSV', a: "Set a fixed default value for the whole import — e.g. set Country to 'US' if your CSV doesn't have that column." },
+              { q: 'Some fields are missing in my CSV', a: "Set a fixed default value for the whole import — e.g. set Country to 'CA' if your CSV doesn't have that column." },
               { q: 'What if I re-import the same data?', a: "Safe — existing records are updated by code/ID, not duplicated. Only new rows create new records." },
             ].map((item) => (
               <div key={item.q}>
@@ -166,15 +166,15 @@ const FIELD_DEFS: Record<'properties' | 'leases', FieldDef[]> = {
       hint: 'RESIDENTIAL · COMMERCIAL · MIXED_USE · INDUSTRIAL · RETAIL · OFFICE' },
     { value: 'address',       label: 'Street Address',    required: true,  placeholder: 'e.g. 123 Main St',               docFormat: 'Street address',      docExample: '123 Main St' },
     { value: 'city',          label: 'City',              required: true,  placeholder: 'e.g. Toronto',                   docFormat: 'City name',           docExample: 'Toronto' },
-    { value: 'state',         label: 'State / Province',  required: true,  placeholder: 'e.g. ON or TX',                  docFormat: '2-letter code',       docExample: 'ON', hint: '2-letter code (TX, ON, BC)' },
-    { value: 'zipCode',       label: 'ZIP / Postal Code', required: true,  placeholder: 'e.g. M5V 3A8 or 90210',          docFormat: 'ZIP or postal',       docExample: 'M5V 3A8' },
+    { value: 'state',         label: 'State / Province',  required: true,  placeholder: 'e.g. ON or BC',                  docFormat: '2-letter code',       docExample: 'ON', hint: '2-letter code (ON, BC, AB)' },
+    { value: 'zipCode',       label: 'ZIP / Postal Code', required: true,  placeholder: 'e.g. M5V 3A8',                   docFormat: 'ZIP or postal',       docExample: 'M5V 3A8' },
     { value: 'totalUnits',    label: 'Total Units',       required: true,  placeholder: 'e.g. 24',                        docFormat: 'Integer',             docExample: '24' },
     { value: 'totalSqft',     label: 'Total Sq Ft',       required: false, placeholder: 'e.g. 18500',                     docFormat: 'Number',              docExample: '18500' },
     { value: 'yearBuilt',     label: 'Year Built',        required: false, placeholder: 'e.g. 1998',                      docFormat: '4-digit year',        docExample: '1998' },
     { value: 'purchasePrice', label: 'Purchase Price',    required: false, placeholder: 'e.g. 4500000',                   docFormat: 'Number (no commas)',  docExample: '4500000' },
     { value: 'currentValue',  label: 'Current Value',     required: false, placeholder: 'e.g. 5200000',                   docFormat: 'Number (no commas)',  docExample: '5200000' },
     { value: 'purchaseDate',  label: 'Purchase Date',     required: false, placeholder: 'e.g. 2019-03-15',                docFormat: 'YYYY-MM-DD',          docExample: '2019-03-15' },
-    { value: 'country',       label: 'Country',           required: false, placeholder: 'e.g. US or CA',                  docFormat: '2-letter ISO code',   docExample: 'US' },
+    { value: 'country',       label: 'Country',           required: false, placeholder: 'e.g. CA',                        docFormat: '2-letter ISO code',   docExample: 'CA' },
   ],
   leases: [
     { value: 'propertyCode',    label: 'Property Code',    required: true,  placeholder: 'e.g. APN-1234',                  docFormat: 'Must match existing property', docExample: 'APN-1234',  hint: 'Must match an existing property code' },

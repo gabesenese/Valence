@@ -70,8 +70,8 @@ export const TEMPLATES = {
     filename: 'properties_template.csv',
     content: [
       'name,code,type,address,city,state,zipCode,totalUnits,totalSqft,yearBuilt,purchasePrice,currentValue',
-      'Sunset Apartments,SUNSET01,RESIDENTIAL,123 Main St,Austin,TX,78701,24,18000,2005,4500000,5200000',
-      'Downtown Office,DOWNTOWN1,COMMERCIAL,456 Commerce Ave,Austin,TX,78702,1,12500,1998,3200000,3800000',
+      'Sunset Apartments,SUNSET01,RESIDENTIAL,123 Main St,Toronto,ON,M5V 3A8,24,18000,2005,4500000,5200000',
+      'Downtown Office,DOWNTOWN1,COMMERCIAL,456 Commerce Ave,Vancouver,BC,V6B 1A1,1,12500,1998,3200000,3800000',
     ].join('\n'),
     hint: 'type: RESIDENTIAL · COMMERCIAL · MIXED_USE · INDUSTRIAL · RETAIL · OFFICE',
   },
