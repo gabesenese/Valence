@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Zap, Plus, Play, ToggleLeft, ToggleRight, CheckCircle,
   Clock, Calendar, AlertTriangle, ClipboardList, X, ChevronDown,
+  TrendingDown,
 } from 'lucide-react';
 import {
   automationService,
@@ -20,13 +21,14 @@ import { PageLoader } from '@/components/ui/Spinner';
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
-const TRIGGER_CONFIG: Record<AutomationTrigger, { label: string; description: string; conditionKey: keyof RuleConditions; conditionLabel: string; defaultValue: number }> = {
+const TRIGGER_CONFIG: Record<AutomationTrigger, { label: string; description: string; conditionKey: keyof RuleConditions; conditionLabel: string; defaultValue: number; icon: React.ComponentType<{ className?: string }> }> = {
   LEASE_DAYS_REMAINING: {
-    label: 'Lease days remaining',
+    label: 'Lease expiring',
     description: 'Triggers when a lease is X days from expiration',
     conditionKey: 'daysRemaining',
     conditionLabel: 'Days before expiry',
     defaultValue: 90,
+    icon: Calendar,
   },
   PAYMENT_OVERDUE_DAYS: {
     label: 'Payment overdue',
@@ -34,20 +36,23 @@ const TRIGGER_CONFIG: Record<AutomationTrigger, { label: string; description: st
     conditionKey: 'overdueDays',
     conditionLabel: 'Days overdue',
     defaultValue: 14,
+    icon: Clock,
   },
   OCCUPANCY_BELOW: {
-    label: 'Occupancy below threshold',
+    label: 'Occupancy drops',
     description: 'Triggers when property occupancy falls below X%',
     conditionKey: 'occupancyPct',
     conditionLabel: 'Occupancy % threshold',
     defaultValue: 80,
+    icon: TrendingDown,
   },
   RISK_SCORE_ABOVE: {
-    label: 'Risk score above threshold',
+    label: 'Risk too high',
     description: 'Triggers when property risk score exceeds X',
     conditionKey: 'riskScore',
     conditionLabel: 'Risk score threshold',
     defaultValue: 50,
+    icon: AlertTriangle,
   },
 };
 
@@ -121,21 +126,26 @@ function CreateRuleModal({ onClose }: { onClose: () => void }) {
 
           {/* Trigger */}
           <div className="rounded-xl border border-surface-400/40 bg-surface-200/30 p-4">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-3">When (Trigger)</p>
+            <p className="text-xs font-medium text-slate-400 mb-3">When this happens</p>
             <div className="grid grid-cols-2 gap-2 mb-3">
-              {(Object.keys(TRIGGER_CONFIG) as AutomationTrigger[]).map((t) => (
-                <button
-                  key={t}
-                  onClick={() => { setTrigger(t); setConditionValue(TRIGGER_CONFIG[t].defaultValue); }}
-                  className={`rounded-lg border px-3 py-2 text-left text-xs transition-colors ${
-                    trigger === t
-                      ? 'border-brand-500/40 bg-brand-600/10 text-brand-300'
-                      : 'border-surface-400/40 text-slate-500 hover:text-slate-300'
-                  }`}
-                >
-                  <p className="font-medium">{TRIGGER_CONFIG[t].label}</p>
-                </button>
-              ))}
+              {(Object.keys(TRIGGER_CONFIG) as AutomationTrigger[]).map((t) => {
+                const cfg = TRIGGER_CONFIG[t];
+                const Icon = cfg.icon;
+                return (
+                  <button
+                    key={t}
+                    onClick={() => { setTrigger(t); setConditionValue(cfg.defaultValue); }}
+                    className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-left text-xs transition-colors ${
+                      trigger === t
+                        ? 'border-brand-500/40 bg-brand-600/10 text-brand-300'
+                        : 'border-surface-400/40 text-slate-500 hover:text-slate-300'
+                    }`}
+                  >
+                    <Icon className="h-3.5 w-3.5 shrink-0" />
+                    <span className="font-medium">{cfg.label}</span>
+                  </button>
+                );
+              })}
             </div>
             <p className="text-[11px] text-slate-500 mb-2">{trig.description}</p>
             <div>
@@ -151,7 +161,7 @@ function CreateRuleModal({ onClose }: { onClose: () => void }) {
 
           {/* Action */}
           <div className="rounded-xl border border-surface-400/40 bg-surface-200/30 p-4">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-3">Then (Action)</p>
+            <p className="text-xs font-medium text-slate-400 mb-3">Then do this</p>
             <div className="flex gap-2 mb-3">
               {(Object.keys(ACTION_CONFIG) as AutomationAction[]).map((a) => {
                 const cfg = ACTION_CONFIG[a];
