@@ -307,12 +307,12 @@ export default function WorkQueuePage() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
 
-  const { data, isLoading, refetch } = useQuery({
+  const { data, isLoading, isFetching } = useQuery({
     queryKey: ['work-queue', false],
     queryFn: () => workQueueService.getQueue(false),
   });
 
-  const { data: myData } = useQuery({
+  const { data: myData, isFetching: myIsFetching } = useQuery({
     queryKey: ['work-queue', true],
     queryFn: () => workQueueService.getQueue(true),
   });
@@ -383,7 +383,7 @@ export default function WorkQueuePage() {
         title="My Work"
         description={`${today}${data?.summary.total ? ` · ${data.summary.total} item${data.summary.total === 1 ? '' : 's'} need attention` : ''}`}
         actions={
-          <Button variant="outline" size="sm" onClick={() => refetch()}>
+          <Button variant="outline" size="sm" onClick={() => qc.invalidateQueries({ queryKey: ['work-queue'] })} loading={isFetching || myIsFetching}>
             <RefreshCw className="h-3.5 w-3.5" />
             Refresh
           </Button>
