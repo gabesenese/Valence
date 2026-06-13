@@ -9,7 +9,6 @@ import {
 import RenewalKanban from './RenewalKanban';
 import { leasesService, type RenewalStage, type PriorityLease, type Lease, type LeaseAlert } from '@/services/leases.service';
 import { authService } from '@/services/auth.service';
-import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { PageLoader } from '@/components/ui/Spinner';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -154,103 +153,74 @@ function PriorityQueueView({
 
   if (!data || data.length === 0) {
     return (
-      <Card>
+      <div className="rounded-xl border border-surface-400/30">
         <EmptyState icon={Zap} title="No leases need immediate attention" />
-      </Card>
+      </div>
     );
   }
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="rounded-xl border border-surface-400/30 divide-y divide-surface-400/20 overflow-hidden">
       {data.map((lease: PriorityLease, idx: number) => {
         const days = daysUntil(lease.endDate);
         const isActionBusy = startRenewal.isPending || markContacted.isPending || snooze.isPending;
         return (
-          <Card key={lease.id} className="p-0 overflow-hidden">
-            <div className="flex items-start gap-4 p-4">
-              {/* Rank */}
-              <div className="shrink-0 w-7 h-7 rounded-full bg-surface-300 border border-surface-400/60 flex items-center justify-center">
-                <span className="text-xs font-bold text-slate-400">#{idx + 1}</span>
+          <div key={lease.id} className="flex items-start gap-4 px-5 py-4 hover:bg-surface-200/40 transition-colors">
+            {/* Rank */}
+            <div className="shrink-0 w-6 h-6 rounded-full bg-surface-300 flex items-center justify-center mt-0.5">
+              <span className="text-[10px] font-bold text-slate-400">#{idx + 1}</span>
+            </div>
+
+            {/* Main info */}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-sm font-semibold text-white">{lease.tenant.name}</span>
+                <span className="text-xs text-slate-600 font-mono">{lease.leaseNumber}</span>
+                <StatusBadge status={lease.renewalRisk} config={RISK_CONFIG} />
+                <StatusBadge status={lease.renewalStage} config={STAGE_CONFIG} />
               </div>
+              <p className="mt-0.5 text-xs text-slate-500">
+                {lease.property.name}
+                {lease.unitNumber ? ` · Unit ${lease.unitNumber}` : ''}
+                {' · '}
+                {formatCurrency(Number(lease.baseRent))}/mo
+              </p>
+              <p className="mt-0.5 text-[11px] text-slate-600 italic">{lease.whyThisIsHere}</p>
 
-              {/* Main info */}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-start justify-between gap-3 flex-wrap">
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-sm font-semibold text-white">{lease.tenant.name}</span>
-                      <span className="text-xs text-slate-500 font-mono">{lease.leaseNumber}</span>
-                      <StatusBadge status={lease.renewalRisk} config={RISK_CONFIG} />
-                      <StatusBadge status={lease.renewalStage} config={STAGE_CONFIG} />
-                    </div>
-                    <p className="mt-0.5 text-xs text-slate-500">
-                      {lease.property.name}
-                      {lease.unitNumber ? ` · Unit ${lease.unitNumber}` : ''}
-                      {' · '}
-                      {formatCurrency(Number(lease.baseRent))}/mo
-                    </p>
-                    <p className="mt-1 text-xs text-slate-600 italic">{lease.whyThisIsHere}</p>
-                  </div>
-
-                  {/* Days + priority */}
-                  <div className="shrink-0 text-right">
-                    <p className={`text-2xl font-bold tabular-nums ${
-                      days <= 30 ? 'text-danger' : days <= 60 ? 'text-warning' : 'text-white'
-                    }`}>
-                      {Math.max(0, days)}
-                    </p>
-                    <p className="text-xs text-slate-500">days left</p>
-                    <div className="mt-1 flex justify-end">
-                      <PriorityBar score={lease.priorityScore} />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Actions */}
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {lease.renewalStage === 'NOT_STARTED' && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => startRenewal.mutate(lease.id)}
-                      loading={startRenewal.isPending}
-                    >
-                      <RefreshCw className="h-3.5 w-3.5" />
-                      Start Renewal
-                    </Button>
-                  )}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => markContacted.mutate(lease.id)}
-                    loading={markContacted.isPending}
-                    disabled={isActionBusy}
-                  >
-                    <Phone className="h-3.5 w-3.5" />
-                    Mark Contacted
+              {/* Actions */}
+              <div className="mt-2.5 flex flex-wrap gap-1.5">
+                {lease.renewalStage === 'NOT_STARTED' && (
+                  <Button variant="outline" size="sm" onClick={() => startRenewal.mutate(lease.id)} loading={startRenewal.isPending}>
+                    <RefreshCw className="h-3 w-3" />
+                    Start Renewal
                   </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => snooze.mutate(lease.id)}
-                    loading={snooze.isPending}
-                    disabled={isActionBusy}
-                  >
-                    <BellOff className="h-3.5 w-3.5" />
-                    Snooze 7d
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => onOpenDrawer(lease.id)}
-                  >
-                    <ChevronRight className="h-3.5 w-3.5" />
-                    Preview
-                  </Button>
-                </div>
+                )}
+                <Button variant="ghost" size="sm" onClick={() => markContacted.mutate(lease.id)} loading={markContacted.isPending} disabled={isActionBusy}>
+                  <Phone className="h-3 w-3" />
+                  Mark Contacted
+                </Button>
+                <Button variant="ghost" size="sm" onClick={() => snooze.mutate(lease.id)} loading={snooze.isPending} disabled={isActionBusy}>
+                  <BellOff className="h-3 w-3" />
+                  Snooze 7d
+                </Button>
+                <Button variant="ghost" size="sm" onClick={() => onOpenDrawer(lease.id)}>
+                  <ChevronRight className="h-3 w-3" />
+                  Preview
+                </Button>
               </div>
             </div>
-          </Card>
+
+            {/* Days + priority */}
+            <div className="shrink-0 text-right">
+              <p className={`text-2xl font-bold tabular-nums ${days <= 30 ? 'text-danger' : days <= 60 ? 'text-warning' : 'text-white'}`}>
+                {Math.max(0, days)}
+              </p>
+              <p className="text-xs text-slate-500">days left</p>
+              <div className="mt-1 flex justify-end">
+                <PriorityBar score={lease.priorityScore} />
+              </div>
+            </div>
+          </div>
         );
       })}
     </div>
@@ -496,17 +466,17 @@ export default function LeasesPage() {
 
       {/* Stats strip */}
       {stats && (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="flex items-stretch divide-x divide-surface-400/30 rounded-xl border border-surface-400/30 overflow-hidden">
           {[
             { label: 'Active', value: stats.totalActive, color: 'text-success', onClick: () => { setStatusFilter('ACTIVE'); setExpiryFilter(''); setRiskFilter(''); setStageFilter(''); setSearch(''); setPage(1); setViewMode('table'); } },
             { label: 'Expiring 30d', value: stats.expiringIn30, color: 'text-danger', onClick: () => { setStatusFilter('ACTIVE'); setExpiryFilter('30'); setRiskFilter(''); setStageFilter(''); setSearch(''); setPage(1); setViewMode('table'); } },
             { label: 'Expiring 90d', value: stats.expiringIn90, color: 'text-warning', onClick: () => { setStatusFilter('ACTIVE'); setExpiryFilter('90'); setRiskFilter(''); setStageFilter(''); setSearch(''); setPage(1); setViewMode('table'); } },
             { label: 'Critical Risk', value: stats.byRisk.find((r) => r.renewalRisk === 'CRITICAL')?._count ?? 0, color: 'text-danger', onClick: () => { setStatusFilter('ACTIVE'); setRiskFilter('CRITICAL'); setExpiryFilter(''); setStageFilter(''); setSearch(''); setPage(1); setViewMode('table'); } },
           ].map((s) => (
-            <Card key={s.label} className="text-center p-4 cursor-pointer" hover onClick={s.onClick}>
-              <p className={`text-2xl font-bold tabular-nums ${s.color}`}>{s.value}</p>
-              <p className="mt-0.5 text-xs text-slate-500">{s.label}</p>
-            </Card>
+            <button key={s.label} onClick={s.onClick} className="flex-1 flex flex-col items-center gap-0.5 px-6 py-3.5 hover:bg-surface-300/40 transition-colors">
+              <p className={`text-xl font-bold tabular-nums ${s.color}`}>{s.value}</p>
+              <p className="text-xs text-slate-500">{s.label}</p>
+            </button>
           ))}
         </div>
       )}
@@ -621,7 +591,7 @@ export default function LeasesPage() {
           </div>
 
           {/* Table */}
-          <Card>
+          <div className="rounded-xl border border-surface-400/30 overflow-hidden">
             {isLoading ? (
               <PageLoader />
             ) : (
@@ -733,7 +703,7 @@ export default function LeasesPage() {
                 )}
               </div>
             )}
-          </Card>
+          </div>
         </>
       )}
 
