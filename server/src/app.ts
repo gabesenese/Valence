@@ -39,6 +39,7 @@ import { announcementsRouter } from './modules/announcements/announcements.route
 import { eventsRouter } from './modules/events/events.routes';
 import { supportRouter } from './modules/support/support.routes';
 import { trashRouter } from './modules/trash/trash.routes';
+import { backupRouter } from './modules/backup/backup.routes';
 
 export const app = express();
 
@@ -115,6 +116,7 @@ app.use('/api/announcements', announcementsRouter);
 app.use('/api/events', eventsRouter);
 app.use('/api/support', supportRouter);
 app.use('/api/trash', trashRouter);
+app.use('/api/backups', backupRouter);
 
 // ─── Error Handling ───────────────────────────────────────────────────────────
 Sentry.setupExpressErrorHandler(app);

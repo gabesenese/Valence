@@ -44,6 +44,7 @@ const PrivacyTermsPage = lazy(() => import('@/features/about/PrivacyTermsPage'))
 const DataControlsPage = lazy(() => import('@/features/about/DataControlsPage'));
 const SecurityPage = lazy(() => import('@/features/about/SecurityPage'));
 const TrashPage = lazy(() => import('@/features/trash/TrashPage'));
+const BackupPage = lazy(() => import('@/features/backup/BackupPage'));
 
 export default function App() {
   return (
@@ -99,6 +100,7 @@ export default function App() {
             <Route path="support" element={<SupportPage />} />
             <Route path="export" element={<ExportPage />} />
             <Route path="trash" element={<TrashPage />} />
+            <Route path="backups" element={<BackupPage />} />
           </Route>
         </Route>
 

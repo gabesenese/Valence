@@ -5,6 +5,7 @@ import { runAnomalyScan } from './modules/alerts/anomaly.service';
 import { runAllRules } from './modules/automation/automation.service';
 import { cleanupDemoAccounts } from './modules/auth/auth.service';
 import { purgeStaleTrashed } from './modules/trash/trash.service';
+import { runScheduledBackups } from './modules/backup/backup.service';
 import { env } from './config/env';
 import cron from 'node-cron';
 import { mkdirSync } from 'fs';
@@ -52,6 +53,13 @@ async function start() {
     purgeStaleTrashed()
       .then(() => logger.info('Trash purge: stale items permanently deleted'))
       .catch((err) => logger.warn('Trash purge failed', { error: err }));
+  });
+
+  // Automated backup for all active users — runs daily at 3am
+  cron.schedule('0 3 * * *', () => {
+    runScheduledBackups()
+      .then(() => logger.info('Scheduled backups completed'))
+      .catch((err) => logger.warn('Scheduled backup run failed', { error: err }));
   });
 
   const shutdown = async (signal: string) => {

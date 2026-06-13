@@ -216,6 +216,7 @@ model User {
   ownedProperties    Property[]      @relation("PropertyOwner")
   ownedTenants       Tenant[]        @relation("TenantOwner")
   sentInvites        Invite[]        @relation("InvitedBy")
+  backups            Backup[]
 
   @@index([email])
   @@index([role])
@@ -799,4 +800,19 @@ model FunnelEvent {
   @@index([event, createdAt])
   @@index([userId])
   @@map("funnel_events")
+}
+
+model Backup {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  label     String
+  trigger   String   @default("manual") // "manual" | "automated"
+  sizeBytes Int      @default(0) @map("size_bytes")
+  snapshot  Json
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("backups")
 }
