@@ -342,7 +342,7 @@ export default function WorkQueuePage() {
   const cardProps = { busyId, onProgress: handleProgress, onResolve: handleResolve, onDismiss: handleDismiss };
 
   return (
-    <div className="flex flex-col gap-6 p-6 animate-fade-in">
+    <div className="flex flex-col gap-4 p-4 animate-fade-in sm:gap-6 sm:p-6">
       <MorningBrief />
       <OnboardingCard />
       <PageHeader

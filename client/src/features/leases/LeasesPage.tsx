@@ -165,13 +165,11 @@ function PriorityQueueView({
         const days = daysUntil(lease.endDate);
         const isActionBusy = startRenewal.isPending || markContacted.isPending || snooze.isPending;
         return (
-          <div key={lease.id} className="flex items-start gap-4 px-5 py-4 hover:bg-surface-200/40 transition-colors">
-            {/* Rank */}
+          <div key={lease.id} className="flex items-start gap-3 px-4 py-3 hover:bg-surface-200/40 transition-colors sm:gap-4 sm:px-5 sm:py-4">
             <div className="shrink-0 w-6 h-6 rounded-full bg-surface-300 flex items-center justify-center mt-0.5">
               <span className="text-[10px] font-bold text-slate-400">#{idx + 1}</span>
             </div>
 
-            {/* Main info */}
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-sm font-semibold text-white">{lease.tenant.name}</span>
@@ -184,10 +182,12 @@ function PriorityQueueView({
                 {lease.unitNumber ? ` · Unit ${lease.unitNumber}` : ''}
                 {' · '}
                 {formatCurrency(Number(lease.baseRent))}/mo
+                <span className={`ml-2 font-semibold sm:hidden ${days <= 30 ? 'text-danger' : days <= 60 ? 'text-warning' : 'text-slate-300'}`}>
+                  · {Math.max(0, days)}d left
+                </span>
               </p>
               <p className="mt-0.5 text-[11px] text-slate-600 italic">{lease.whyThisIsHere}</p>
 
-              {/* Actions */}
               <div className="mt-2.5 flex flex-wrap gap-1.5">
                 {lease.renewalStage === 'NOT_STARTED' && (
                   <Button variant="outline" size="sm" onClick={() => startRenewal.mutate(lease.id)} loading={startRenewal.isPending}>
@@ -210,8 +210,7 @@ function PriorityQueueView({
               </div>
             </div>
 
-            {/* Days + priority */}
-            <div className="shrink-0 text-right">
+            <div className="hidden shrink-0 text-right sm:block">
               <p className={`text-2xl font-bold tabular-nums ${days <= 30 ? 'text-danger' : days <= 60 ? 'text-warning' : 'text-white'}`}>
                 {Math.max(0, days)}
               </p>
@@ -422,9 +421,9 @@ export default function LeasesPage() {
   const allSelected = leaseIds.length > 0 && leaseIds.every((id) => selectedIds.has(id));
 
   return (
-    <div className="flex flex-col gap-6 p-6 animate-fade-in pb-24">
+    <div className="flex flex-col gap-4 p-4 animate-fade-in pb-24 sm:gap-6 sm:p-6">
       {/* Header + view toggle */}
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-xl font-bold text-white tracking-tight">Lease Intelligence</h1>
           <p className="mt-0.5 text-sm text-slate-500">Contract visibility & renewal operating console</p>
@@ -466,7 +465,7 @@ export default function LeasesPage() {
 
       {/* Stats strip */}
       {stats && (
-        <div className="flex items-stretch divide-x divide-surface-400/30 rounded-xl border border-surface-400/30 overflow-hidden">
+        <div className="grid grid-cols-2 overflow-hidden rounded-xl border border-surface-400/30 sm:flex sm:items-stretch sm:divide-x sm:divide-surface-400/30 [&>*]:border-b [&>*]:border-surface-400/30 sm:[&>*]:border-0">
           {[
             { label: 'Active', value: stats.totalActive, color: 'text-success', onClick: () => { setStatusFilter('ACTIVE'); setExpiryFilter(''); setRiskFilter(''); setStageFilter(''); setSearch(''); setPage(1); setViewMode('table'); } },
             { label: 'Expiring 30d', value: stats.expiringIn30, color: 'text-danger', onClick: () => { setStatusFilter('ACTIVE'); setExpiryFilter('30'); setRiskFilter(''); setStageFilter(''); setSearch(''); setPage(1); setViewMode('table'); } },

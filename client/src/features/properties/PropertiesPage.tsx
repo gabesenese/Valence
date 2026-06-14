@@ -71,7 +71,7 @@ export default function PropertiesPage() {
   if (isLoading) return <PageLoader />;
 
   return (
-    <div className="flex flex-col gap-6 p-6 animate-fade-in">
+    <div className="flex flex-col gap-4 p-4 animate-fade-in sm:gap-6 sm:p-6">
       <PageHeader
         title="Properties"
         description={`${data?.meta.total ?? 0} properties in portfolio`}
@@ -92,7 +92,7 @@ export default function PropertiesPage() {
             placeholder="Search properties..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="h-9 w-56 rounded-lg border border-surface-400 bg-surface-200 pl-9 pr-3 text-sm text-slate-100 placeholder:text-slate-600 focus:border-brand-500/60 focus:outline-none focus:ring-1 focus:ring-brand-500/30"
+            className="h-9 w-full rounded-lg border border-surface-400 bg-surface-200 pl-9 pr-3 text-sm text-slate-100 placeholder:text-slate-600 focus:border-brand-500/60 focus:outline-none focus:ring-1 focus:ring-brand-500/30 sm:w-56"
           />
         </div>
         <Select value={type} onChange={(v) => setType(v as PropertyType | '')} options={TYPE_OPTIONS} className="w-40" />

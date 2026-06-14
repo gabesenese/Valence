@@ -94,7 +94,7 @@ export default function TenantsPage() {
   });
 
   return (
-    <div className="flex flex-col gap-6 p-6 animate-fade-in">
+    <div className="flex flex-col gap-4 p-4 animate-fade-in sm:gap-6 sm:p-6">
       <PageHeader
         title="Tenants"
         description={`${data?.meta.total ?? 0} tenants in portfolio`}

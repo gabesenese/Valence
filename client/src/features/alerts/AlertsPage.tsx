@@ -210,7 +210,7 @@ function WorkflowActions({
   }
 
   return (
-    <div className="flex items-center gap-2 flex-wrap justify-end">
+    <div className="flex items-center gap-2 flex-wrap">
       {/* Context navigation */}
       {contextLinks}
 
@@ -342,7 +342,7 @@ export default function AlertsPage() {
   const acknowledgedCount  = summary?.acknowledgedTotal ?? 0;
 
   return (
-    <div className="flex flex-col gap-6 p-6 animate-fade-in">
+    <div className="flex flex-col gap-4 p-4 animate-fade-in sm:gap-6 sm:p-6">
       <PageHeader
         title="Alert Center"
         description="Operational risk tracking with full accountability"
@@ -428,14 +428,13 @@ export default function AlertsPage() {
 
               return (
                 <div key={alert.id}>
-                  <div className={`flex items-start gap-4 px-5 py-4 hover:bg-surface-200/30 transition-colors border-l-2 ${borderClass}`}>
+                  <div className={`flex items-start gap-3 px-4 py-3 hover:bg-surface-200/30 transition-colors border-l-2 sm:gap-4 sm:px-5 sm:py-4 ${borderClass}`}>
                     <AlertTriangle className={`mt-0.5 h-4 w-4 shrink-0 ${
                       alert.severity === 'CRITICAL' ? 'text-danger' :
                       alert.severity === 'WARNING'  ? 'text-warning' : 'text-info'
                     }`} />
 
                     <div className="min-w-0 flex-1">
-                      {/* Title + badges */}
                       <div className="flex items-center gap-2 flex-wrap">
                         <p className="text-sm font-medium text-slate-200">{alert.title}</p>
                         <StatusBadge status={alert.severity} config={SEVERITY_CONFIG} />
@@ -445,10 +444,8 @@ export default function AlertsPage() {
                         )}
                       </div>
 
-                      {/* Description */}
                       <p className="mt-1 text-xs text-slate-500">{alert.description}</p>
 
-                      {/* Meta row */}
                       <div className="mt-1.5 flex items-center gap-3 text-xs text-slate-500 flex-wrap">
                         {alert.property && <span>{alert.property.name}</span>}
                         {alert.lease    && <span>Lease {alert.lease.leaseNumber}</span>}
@@ -461,29 +458,27 @@ export default function AlertsPage() {
                         <span>{formatRelative(alert.createdAt)}</span>
                       </div>
 
-                      {/* Accountability */}
                       <AccountabilityLine alert={alert} />
-                    </div>
 
-                    {/* Actions */}
-                    <div className="flex items-center gap-2 shrink-0">
-                      <WorkflowActions
-                        alert={alert}
-                        onAcknowledge={(id) => acknowledgeMutation.mutate(id)}
-                        onProgress={(id) => progressMutation.mutate(id)}
-                        onResolve={(id) => setPendingAction({ id, action: 'resolve' })}
-                        onDismiss={(id) => setPendingAction({ id, action: 'dismiss' })}
-                        onReopen={(id) => reopenMutation.mutate(id)}
-                        busy={isBusy}
-                      />
-                      <button
-                        onClick={() => toggleActivity(alert.id)}
-                        className="flex items-center gap-1 rounded px-2 py-1 text-xs text-slate-500 hover:text-slate-300 hover:bg-surface-300/40 transition-colors"
-                        title="Show activity"
-                      >
-                        <Zap className="h-3 w-3" />
-                        {isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-                      </button>
+                      <div className="mt-2.5 flex items-center gap-2 flex-wrap">
+                        <WorkflowActions
+                          alert={alert}
+                          onAcknowledge={(id) => acknowledgeMutation.mutate(id)}
+                          onProgress={(id) => progressMutation.mutate(id)}
+                          onResolve={(id) => setPendingAction({ id, action: 'resolve' })}
+                          onDismiss={(id) => setPendingAction({ id, action: 'dismiss' })}
+                          onReopen={(id) => reopenMutation.mutate(id)}
+                          busy={isBusy}
+                        />
+                        <button
+                          onClick={() => toggleActivity(alert.id)}
+                          className="flex items-center gap-1 rounded px-2 py-1 text-xs text-slate-500 hover:text-slate-300 hover:bg-surface-300/40 transition-colors"
+                          title="Show activity"
+                        >
+                          <Zap className="h-3 w-3" />
+                          {isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                        </button>
+                      </div>
                     </div>
                   </div>
 
