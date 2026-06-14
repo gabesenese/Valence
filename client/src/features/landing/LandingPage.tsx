@@ -12,8 +12,6 @@ import { cn } from '@/utils/cn';
 import { PublicHeader } from '@/components/public/PublicHeader';
 import { PublicFooter } from '@/components/public/PublicFooter';
 
-// ─── Work Queue Mock ──────────────────────────────────────────────────────────
-
 const QUEUE_ITEMS = [
   {
     id: 1,
@@ -121,8 +119,6 @@ function QueueMock() {
   );
 }
 
-// ─── Step card ────────────────────────────────────────────────────────────────
-
 function Step({ n, icon: Icon, title, body }: { n: number; icon: React.ComponentType<{ className?: string }>; title: string; body: string }) {
   return (
     <div className="flex flex-col items-center text-center">
@@ -137,8 +133,6 @@ function Step({ n, icon: Icon, title, body }: { n: number; icon: React.Component
     </div>
   );
 }
-
-// ─── Persona card ─────────────────────────────────────────────────────────────
 
 function Persona({
   icon: Icon, title, tagline, points,
@@ -166,8 +160,6 @@ function Persona({
     </div>
   );
 }
-
-// ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function LandingPage() {
   const user    = useAuthStore((s) => s.user);

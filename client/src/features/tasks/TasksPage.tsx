@@ -16,8 +16,6 @@ import { PageLoader } from '@/components/ui/Spinner';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { PageHeader } from '@/components/ui/PageHeader';
 
-// ─── Status config ─────────────────────────────────────────────────────────────
-
 const STATUS_CONFIG: Record<
   TaskStatus,
   { label: string; dot: string; badge: string }
@@ -41,9 +39,6 @@ function fmtDate(s: string | null) {
   if (!s) return null;
   return new Date(s).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
-
-// ─── Inline status picker ──────────────────────────────────────────────────────
-// Portaled to document.body so it escapes overflow-x-auto / overflow-hidden parents.
 
 function StatusPicker({ status, onChange }: { status: TaskStatus; onChange: (s: TaskStatus) => void }) {
   const [open, setOpen] = useState(false);
@@ -109,8 +104,6 @@ function StatusPicker({ status, onChange }: { status: TaskStatus; onChange: (s: 
     </>
   );
 }
-
-// ─── Edit task modal ──────────────────────────────────────────────────────────
 
 function EditTaskModal({
   task,
@@ -254,8 +247,6 @@ function EditTaskModal({
   );
 }
 
-// ─── Task item ────────────────────────────────────────────────────────────────
-
 function TaskItem({
   task,
   onStatusChange,
@@ -398,9 +389,6 @@ function TaskItem({
   );
 }
 
-// ─── Create task modal ─────────────────────────────────────────────────────────
-// Pure form — no mutation here. Parent handles the optimistic create.
-
 function CreateTaskModal({
   onClose,
   onSubmit,
@@ -477,8 +465,6 @@ function CreateTaskModal({
   );
 }
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
-
 export default function TasksPage() {
   const me = useAuthStore((s) => s.user);
   const qc = useQueryClient();
@@ -531,11 +517,10 @@ export default function TasksPage() {
     [tasks],
   );
 
-  // ── Optimistic create: close modal instantly, insert temp task ────────────
   const createMutation = useMutation({
     mutationFn: tasksService.create,
     onMutate: async (input) => {
-      setShowCreate(false); // close immediately — no waiting for the server
+      setShowCreate(false);
 
       await qc.cancelQueries({ queryKey: ['tasks'] });
       const prev = qc.getQueryData<Task[]>(['tasks']);
@@ -562,7 +547,6 @@ export default function TasksPage() {
       return { prev, tempId };
     },
     onSuccess: (realTask, _input, ctx) => {
-      // Swap temp placeholder with the real task from the server
       qc.setQueryData<Task[]>(['tasks'], (old) =>
         old?.map((t) => (t.id === ctx?.tempId ? realTask : t)) ?? [],
       );
@@ -573,7 +557,6 @@ export default function TasksPage() {
     onSettled: () => qc.invalidateQueries({ queryKey: ['tasks'] }),
   });
 
-  // ── Optimistic status change ──────────────────────────────────────────────
   const statusMutation = useMutation({
     mutationFn: ({ id, status }: { id: string; status: TaskStatus }) =>
       tasksService.updateStatus(id, status),
@@ -589,7 +572,6 @@ export default function TasksPage() {
     onSettled: () => qc.invalidateQueries({ queryKey: ['tasks'] }),
   });
 
-  // ── Optimistic update ─────────────────────────────────────────────────────
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: Parameters<typeof tasksService.update>[1] }) =>
       tasksService.update(id, data),
@@ -616,7 +598,6 @@ export default function TasksPage() {
     onSettled: () => qc.invalidateQueries({ queryKey: ['tasks'] }),
   });
 
-  // ── Optimistic delete ─────────────────────────────────────────────────────
   const deleteMutation = useMutation({
     mutationFn: tasksService.delete,
     onMutate: async (id) => {

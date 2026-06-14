@@ -18,9 +18,6 @@ import { TrialBanner } from '@/components/ui/TrialBanner';
 import { NotificationBell } from '@/components/ui/NotificationBell';
 import { EmailVerificationBanner } from '@/components/ui/EmailVerificationBanner';
 
-// ─── Navigation IA ────────────────────────────────────────────────────────────
-// Organized around jobs, not features.
-
 type NavItem = {
   to: string;
   icon: React.ComponentType<{ className?: string }>;
@@ -93,7 +90,6 @@ export function AppLayout() {
   const navigate = useNavigate();
   const { canAccess, requiredPlan, label: planLabel } = usePlan();
 
-  // On mobile the drawer is always full-width, so treat sidebar as expanded.
   const isCollapsed = sidebarCollapsed && !mobileNavOpen;
 
   const closeMobileNav = useCallback((restoreFocus = false) => {
@@ -118,14 +114,10 @@ export function AppLayout() {
     if (org?.currency) setOrgCurrency(org.currency);
   }, [org?.currency]);
 
-  // Close drawer on route change. mobileNavOpen intentionally excluded from
-  // deps — including it would cause the effect to fire on open and immediately
-  // close the drawer before the user sees it.
   useEffect(() => {
     setMobileNavOpen(false);
   }, [location.pathname]);
 
-  // Escape key dismissal.
   useEffect(() => {
     if (!mobileNavOpen) return;
     const onKeyDown = (e: KeyboardEvent) => {
@@ -135,7 +127,6 @@ export function AppLayout() {
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [closeMobileNav, mobileNavOpen]);
 
-  // Prevent background scroll while drawer is open.
   useEffect(() => {
     document.body.classList.toggle('overflow-hidden', mobileNavOpen);
     return () => document.body.classList.remove('overflow-hidden');
