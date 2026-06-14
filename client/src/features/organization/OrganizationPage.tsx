@@ -215,13 +215,6 @@ function OrgHeroCard({ members }: {
                     <span className="font-semibold text-slate-200">{openTaskCount}</span> open tasks
                   </span>
                 )}
-                {owner && (
-                  <span className="flex items-center gap-1.5 text-slate-500">
-                    <Crown className="h-3.5 w-3.5 text-warning/60" />
-                    <span className="text-slate-400">Owner:</span>
-                    <span className="font-medium text-slate-300">{owner.firstName} {owner.lastName}</span>
-                  </span>
-                )}
               </div>
             </div>
           </div>
