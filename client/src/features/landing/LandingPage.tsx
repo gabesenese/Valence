@@ -196,8 +196,8 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen bg-surface-0 text-white">
-      {/* Ambient glow */}
-      <div className="pointer-events-none fixed inset-0 overflow-hidden">
+      {/* Ambient glow — hidden on mobile, too expensive to rasterize on phone GPUs */}
+      <div className="pointer-events-none fixed inset-0 hidden overflow-hidden md:block">
         <div className="absolute -top-48 left-1/2 h-[600px] w-[600px] -translate-x-1/2 rounded-full bg-brand-600/8 blur-[120px]" />
         <div className="absolute top-1/3 -right-48 h-96 w-96 rounded-full bg-brand-800/6 blur-[100px]" />
       </div>
