@@ -33,13 +33,23 @@ export interface TrashedTenant {
   purgesAt: string;
 }
 
+export interface TrashedTask {
+  id: string;
+  title: string;
+  status: string;
+  deletedAt: string;
+  daysLeft: number;
+  purgesAt: string;
+}
+
 export interface TrashData {
   properties: TrashedProperty[];
   leases: TrashedLease[];
   tenants: TrashedTenant[];
+  tasks: TrashedTask[];
 }
 
-export type TrashItemType = 'property' | 'lease' | 'tenant';
+export type TrashItemType = 'property' | 'lease' | 'tenant' | 'task';
 
 export const trashService = {
   list: async (): Promise<TrashData> => {

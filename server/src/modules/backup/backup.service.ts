@@ -1,5 +1,6 @@
 import { prisma } from '../../infrastructure/database';
 import { logger } from '../../utils/logger';
+import { logAudit } from '../audit/audit.service';
 
 const MAX_AUTOMATED_BACKUPS = 30;
 export const MAX_MANUAL_BACKUPS = 10;
@@ -76,7 +77,7 @@ async function buildSnapshot(userId: string): Promise<BackupSnapshot> {
 
 // ─── CRUD ─────────────────────────────────────────────────────────────────────
 
-export async function createBackup(userId: string, label: string, trigger: 'manual' | 'automated' = 'manual') {
+export async function createBackup(userId: string, label: string, trigger: 'manual' | 'automated' | 'import' = 'manual') {
   const snapshot = await buildSnapshot(userId);
   const sizeBytes = Buffer.byteLength(JSON.stringify(snapshot), 'utf8');
 
@@ -242,6 +243,7 @@ export async function restoreBackup(id: string, userId: string) {
     }));
   });
 
+  void logAudit({ userId, action: 'RESTORE', entity: 'backup', entityId: id, meta: { ...restored } });
   return restored;
 }
 

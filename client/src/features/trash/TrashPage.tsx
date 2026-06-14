@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Trash2, RotateCcw, Building2, FileText, Users, AlertTriangle, Clock } from 'lucide-react';
-import { trashService, type TrashedProperty, type TrashedLease, type TrashedTenant, type TrashItemType } from '@/services/trash.service';
+import { Trash2, RotateCcw, Building2, FileText, Users, AlertTriangle, Clock, ClipboardList } from 'lucide-react';
+import { trashService, type TrashedProperty, type TrashedLease, type TrashedTenant, type TrashedTask, type TrashItemType } from '@/services/trash.service';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Card, CardBody } from '@/components/ui/Card';
 import { cn } from '@/utils/cn';
@@ -120,7 +120,7 @@ export default function TrashPage() {
   const onPurge   = (type: TrashItemType, id: string) => purgeMutation.mutate({ type, id });
   const isMutating = restoreMutation.isPending || purgeMutation.isPending || emptyMutation.isPending;
 
-  const total = (data?.properties.length ?? 0) + (data?.leases.length ?? 0) + (data?.tenants.length ?? 0);
+  const total = (data?.properties.length ?? 0) + (data?.leases.length ?? 0) + (data?.tenants.length ?? 0) + (data?.tasks.length ?? 0);
   const isEmpty = !isLoading && total === 0;
 
   return (
@@ -215,6 +215,17 @@ export default function TrashPage() {
                 <div>
                   <p className="text-sm font-medium text-white truncate">{t.name}</p>
                   <p className="text-xs text-slate-500">{[t.company, t.email].filter(Boolean).join(' · ') || 'No contact info'}</p>
+                </div>
+              )}
+            />
+
+            <Section<TrashedTask>
+              title="Tasks" icon={ClipboardList} items={data?.tasks ?? []} type="task"
+              onRestore={onRestore} onPurge={onPurge} loading={isMutating}
+              renderRow={(t) => (
+                <div>
+                  <p className="text-sm font-medium text-white truncate">{t.title}</p>
+                  <p className="text-xs text-slate-500">{t.status.replace(/_/g, ' ')}</p>
                 </div>
               )}
             />

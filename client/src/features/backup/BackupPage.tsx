@@ -54,12 +54,12 @@ function BackupRow({ backup, onRestore, onDelete, apiBase, busy }: {
       <div className="flex items-center gap-2 shrink-0">
         <span className={cn(
           'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold',
-          backup.trigger === 'automated'
-            ? 'bg-brand-600/20 text-brand-300'
-            : 'bg-surface-300/60 text-slate-400',
+          backup.trigger === 'automated' ? 'bg-brand-600/20 text-brand-300' :
+          backup.trigger === 'import'    ? 'bg-warning/15 text-warning' :
+                                           'bg-surface-300/60 text-slate-400',
         )}>
           {backup.trigger === 'automated' ? <Clock className="h-3 w-3" /> : <Shield className="h-3 w-3" />}
-          {backup.trigger === 'automated' ? 'Auto' : 'Manual'}
+          {backup.trigger === 'automated' ? 'Auto' : backup.trigger === 'import' ? 'Pre-Import' : 'Manual'}
         </span>
       </div>
 
