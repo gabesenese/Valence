@@ -3,7 +3,7 @@ import { api } from './api';
 export interface BackupMeta {
   id: string;
   label: string;
-  trigger: 'manual' | 'automated';
+  trigger: 'manual' | 'automated' | 'import';
   sizeBytes: number;
   createdAt: string;
 }
