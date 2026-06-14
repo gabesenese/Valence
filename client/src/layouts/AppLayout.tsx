@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Outlet, NavLink, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -88,9 +88,17 @@ export function AppLayout() {
   const originalSession   = useAuthStore((s) => s.originalSession);
   const { sidebarCollapsed, toggleSidebar } = useUIStore();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const mobileMenuButtonRef = useRef<HTMLButtonElement>(null);
   const location = useLocation();
   const navigate = useNavigate();
   const { canAccess, requiredPlan, label: planLabel } = usePlan();
+
+  const closeMobileNav = useCallback((restoreFocus = false) => {
+    setMobileNavOpen(false);
+    if (restoreFocus) {
+      requestAnimationFrame(() => mobileMenuButtonRef.current?.focus());
+    }
+  }, []);
 
   function handleExitImpersonation() {
     stopImpersonation();
@@ -106,16 +114,17 @@ export function AppLayout() {
     if (org?.currency) setOrgCurrency(org.currency);
   }, [org?.currency]);
   useEffect(() => {
-    setMobileNavOpen(false);
-  }, [location.pathname]);
+    if (!mobileNavOpen) return;
+    closeMobileNav(true);
+  }, [closeMobileNav, location.pathname, mobileNavOpen]);
   useEffect(() => {
     if (!mobileNavOpen) return;
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setMobileNavOpen(false);
+      if (event.key === 'Escape') closeMobileNav(true);
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [mobileNavOpen]);
+  }, [closeMobileNav, mobileNavOpen]);
 
   const handleLogout = async () => {
     try {
@@ -129,11 +138,10 @@ export function AppLayout() {
   return (
     <div className="flex h-screen overflow-hidden bg-surface-0">
       {mobileNavOpen && (
-        <button
-          type="button"
+        <div
           className="fixed inset-0 z-30 bg-black/50 lg:hidden"
-          onClick={() => setMobileNavOpen(false)}
-          aria-label="Close navigation menu"
+          onClick={() => closeMobileNav(true)}
+          role="presentation"
         />
       )}
       {/* Sidebar */}
@@ -154,7 +162,7 @@ export function AppLayout() {
           </div>
           <button
             type="button"
-            onClick={() => setMobileNavOpen(false)}
+            onClick={() => closeMobileNav(true)}
             className="text-slate-500 transition-colors hover:text-slate-300 lg:hidden"
             aria-label="Close sidebar"
           >
@@ -192,7 +200,7 @@ export function AppLayout() {
                         <li key={to}>
                           <button
                             onClick={() => {
-                              setMobileNavOpen(false);
+                              closeMobileNav();
                               navigate('/pricing');
                             }}
                             className={cn(
@@ -227,7 +235,7 @@ export function AppLayout() {
                               sidebarCollapsed && 'justify-center px-0 py-2.5',
                             )
                           }
-                          onClick={() => setMobileNavOpen(false)}
+                          onClick={() => closeMobileNav()}
                           title={sidebarCollapsed ? label : undefined}
                         >
                           <Icon className="h-4 w-4 shrink-0" />
@@ -252,7 +260,7 @@ export function AppLayout() {
                 <span className="text-slate-700">·</span>
                 <button
                   onClick={() => {
-                    setMobileNavOpen(false);
+                    closeMobileNav();
                     navigate('/pricing');
                   }}
                   className="text-[10px] font-semibold text-brand-400/80 hover:text-brand-300 transition-colors"
@@ -290,6 +298,7 @@ export function AppLayout() {
           <div className="flex items-center gap-2">
             <button
               type="button"
+              ref={mobileMenuButtonRef}
               onClick={() => setMobileNavOpen(true)}
               className="text-slate-500 transition-colors hover:text-slate-300 lg:hidden"
               aria-label="Open navigation menu"
