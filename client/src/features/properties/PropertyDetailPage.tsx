@@ -73,7 +73,7 @@ export default function PropertyDetailPage() {
     : null;
 
   return (
-    <div className="flex flex-col gap-6 p-6 animate-fade-in">
+    <div className="flex flex-col gap-4 p-4 animate-fade-in sm:gap-6 sm:p-6">
 
       {/* Breadcrumb */}
       <div className="flex items-center gap-3">
@@ -86,19 +86,19 @@ export default function PropertyDetailPage() {
       </div>
 
       {/* Header */}
-      <div className="flex items-start justify-between">
-        <div className="flex items-start gap-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-brand-600/20 border border-brand-600/30">
-            <Building2 className="h-6 w-6 text-brand-400" />
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="flex items-start gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-600/20 border border-brand-600/30 sm:h-12 sm:w-12">
+            <Building2 className="h-5 w-5 text-brand-400 sm:h-6 sm:w-6" />
           </div>
           <div>
-            <div className="flex items-center gap-3">
-              <h1 className="text-xl font-bold text-white tracking-tight">{property.name}</h1>
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="text-lg font-bold text-white tracking-tight sm:text-xl">{property.name}</h1>
               <Badge variant={property.status === 'ACTIVE' ? 'success' : 'neutral'}>{property.status}</Badge>
               <Badge variant="neutral">{property.type.replace('_', ' ')}</Badge>
             </div>
             <div className="mt-1 flex items-center gap-1 text-sm text-slate-500">
-              <MapPin className="h-3.5 w-3.5" />
+              <MapPin className="h-3.5 w-3.5 shrink-0" />
               {property.address}, {property.city}, {property.state} {property.zipCode}
             </div>
           </div>
@@ -132,8 +132,8 @@ export default function PropertyDetailPage() {
         ))}
       </div>
 
-      {/* Body: main content + sidebar */}
-      <div className="flex gap-5 items-start">
+      {/* Body: main content + sidebar — stack on mobile, side by side on lg+ */}
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:gap-5">
 
         {/* Main: Active Leases */}
         <div className="flex-1 min-w-0">
@@ -204,7 +204,7 @@ export default function PropertyDetailPage() {
         </div>
 
         {/* Sidebar */}
-        <div className="w-72 shrink-0 flex flex-col gap-4">
+        <div className="flex flex-col gap-4 lg:w-72 lg:shrink-0">
 
           {/* Open alerts */}
           {property._count.alerts > 0 && (

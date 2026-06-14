@@ -319,7 +319,7 @@ export default function LeaseDetailPage() {
   const currentStageIdx = STAGE_ORDER.indexOf(lease.renewalStage);
 
   return (
-    <div className="flex flex-col gap-6 p-6 animate-fade-in">
+    <div className="flex flex-col gap-4 p-4 animate-fade-in sm:gap-6 sm:p-6">
       {/* Breadcrumb */}
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="sm" onClick={() => navigate('/leases')}>
@@ -331,10 +331,10 @@ export default function LeaseDetailPage() {
       </div>
 
       {/* Header */}
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="text-xl font-bold text-white font-mono">{lease.leaseNumber}</h1>
+          <div className="flex flex-wrap items-center gap-2">
+            <h1 className="text-lg font-bold text-white font-mono sm:text-xl">{lease.leaseNumber}</h1>
             <Badge variant={RISK_VARIANT[lease.renewalRisk] ?? 'neutral'} dot>{lease.renewalRisk} RISK</Badge>
             <Badge variant={lease.status === 'ACTIVE' ? 'success' : 'neutral'}>{lease.status}</Badge>
           </div>
@@ -342,14 +342,14 @@ export default function LeaseDetailPage() {
             {lease.property.name}{lease.unitNumber ? ` · Unit ${lease.unitNumber}` : ''} · {lease.tenant.name}
           </p>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex flex-wrap items-center gap-2">
           <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
             <Pencil className="h-3.5 w-3.5" />
             Edit Lease
           </Button>
           {confirmDelete ? (
             <div className="flex items-center gap-1.5">
-              <span className="text-xs text-slate-400">Delete this lease?</span>
+              <span className="text-xs text-slate-400">Delete?</span>
               <button
                 onClick={() => deleteLeaseMutation.mutate()}
                 disabled={deleteLeaseMutation.isPending}
@@ -378,38 +378,35 @@ export default function LeaseDetailPage() {
             const urgent = !signed && days <= 30;
             const warn   = !signed && !urgent && days <= 60;
             return (
-              <>
-                <div className="h-8 w-px bg-surface-400/30" />
-                <div className={`text-right px-3 py-1.5 rounded-xl border ${
-                  signed ? 'border-success/25 bg-success/10' :
-                  urgent ? 'border-danger/30 bg-danger/10' :
-                  warn   ? 'border-warning/30 bg-warning/10' :
-                           'border-surface-400/40 bg-surface-200'
+              <div className={`text-right px-3 py-1.5 rounded-xl border ${
+                signed ? 'border-success/25 bg-success/10' :
+                urgent ? 'border-danger/30 bg-danger/10' :
+                warn   ? 'border-warning/30 bg-warning/10' :
+                         'border-surface-400/40 bg-surface-200'
+              }`}>
+                <p className={`text-2xl font-bold tabular-nums leading-tight ${
+                  signed ? 'text-success' :
+                  urgent ? 'text-danger' :
+                  warn   ? 'text-warning' : 'text-white'
                 }`}>
-                  <p className={`text-2xl font-bold tabular-nums leading-tight ${
-                    signed ? 'text-success' :
-                    urgent ? 'text-danger' :
-                    warn   ? 'text-warning' : 'text-white'
-                  }`}>
-                    {days >= 365 ? +(days / 365).toFixed(1) : Math.max(0, days)}
-                  </p>
-                  <p className="text-xs text-slate-400 leading-tight">
-                    {signed ? (days >= 365 ? 'yrs · renewed' : 'days · renewed') : days >= 365 ? 'years remaining' : 'days remaining'}
-                  </p>
-                </div>
-              </>
+                  {days >= 365 ? +(days / 365).toFixed(1) : Math.max(0, days)}
+                </p>
+                <p className="text-xs text-slate-400 leading-tight">
+                  {signed ? (days >= 365 ? 'yrs · renewed' : 'days · renewed') : days >= 365 ? 'years remaining' : 'days remaining'}
+                </p>
+              </div>
             );
           })()}
         </div>
       </div>
 
-      {/* Main + Sidebar layout */}
-      <div className="flex gap-6 items-start">
+      {/* Main + Sidebar layout — stack on mobile, side by side on lg+ */}
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:gap-6">
         {/* Main column */}
         <div className="flex-1 min-w-0 flex flex-col gap-4">
 
           {/* Lease Term + Renewal Date — compact side-by-side panel */}
-          <div className="rounded-xl border border-surface-400/30 flex divide-x divide-surface-400/20">
+          <div className="rounded-xl border border-surface-400/30 flex flex-col divide-y divide-surface-400/20 sm:flex-row sm:divide-x sm:divide-y-0">
             <div className="flex-1 p-4">
               <p className="mb-3 text-[10px] font-semibold uppercase tracking-wider text-slate-500">Lease Term</p>
               <div className="flex flex-col gap-2.5">
@@ -523,7 +520,7 @@ export default function LeaseDetailPage() {
             {lease.alerts.map((alert) => (
               <div
                 key={alert.id}
-                className={`flex items-start gap-3 px-5 py-3.5 border-l-2 ${
+                className={`flex items-start gap-3 px-4 py-3 border-l-2 sm:px-5 sm:py-3.5 ${
                   alert.severity === 'CRITICAL' ? 'border-l-danger/60' :
                   alert.severity === 'WARNING' ? 'border-l-warning/40' : 'border-l-transparent'
                 }`}
@@ -532,49 +529,35 @@ export default function LeaseDetailPage() {
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium text-slate-200">{alert.title}</p>
                   <p className="mt-0.5 text-xs text-slate-500">{alert.description}</p>
-                </div>
-                <div className="flex items-center gap-1.5 shrink-0">
-                  {alert.status === 'OPEN' && (
-                    <button
-                      onClick={() => progressMutation.mutate(alert.id)}
-                      disabled={progressMutation.isPending}
-                      title="Mark as in review"
-                      className="flex items-center gap-1.5 rounded-full border border-slate-600/50 bg-surface-300/40 px-2.5 py-1 text-xs text-slate-500 transition-all hover:border-brand-500/50 hover:bg-brand-600/10 hover:text-brand-300 disabled:opacity-40"
-                    >
-                      <Eye className="h-3 w-3" />
-                      Mark in review
-                    </button>
-                  )}
-                  {alert.status === 'IN_PROGRESS' && (
-                    <button
-                      onClick={() => reopenMutation.mutate(alert.id)}
-                      disabled={reopenMutation.isPending}
-                      title="Currently in review — click to revert to open"
-                      className="flex items-center gap-1.5 rounded-full border border-brand-500/40 bg-brand-600/15 px-2.5 py-1 text-xs text-brand-300 transition-all hover:border-warning/40 hover:bg-warning/10 hover:text-warning disabled:opacity-40"
-                    >
-                      <Eye className="h-3 w-3" />
-                      <span>in review</span>
-                      <RotateCcw className="h-2.5 w-2.5 opacity-60" />
-                    </button>
-                  )}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => resolveMutation.mutate(alert.id)}
-                    loading={resolveMutation.isPending}
-                    title="Resolve"
-                  >
-                    <CheckCircle2 className="h-3.5 w-3.5 text-success" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => dismissMutation.mutate(alert.id)}
-                    loading={dismissMutation.isPending}
-                    title="Dismiss"
-                  >
-                    ✕
-                  </Button>
+                  <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                    {alert.status === 'OPEN' && (
+                      <button
+                        onClick={() => progressMutation.mutate(alert.id)}
+                        disabled={progressMutation.isPending}
+                        className="flex items-center gap-1.5 rounded-full border border-slate-600/50 bg-surface-300/40 px-2.5 py-1 text-xs text-slate-500 transition-all hover:border-brand-500/50 hover:bg-brand-600/10 hover:text-brand-300 disabled:opacity-40"
+                      >
+                        <Eye className="h-3 w-3" />
+                        Mark in review
+                      </button>
+                    )}
+                    {alert.status === 'IN_PROGRESS' && (
+                      <button
+                        onClick={() => reopenMutation.mutate(alert.id)}
+                        disabled={reopenMutation.isPending}
+                        className="flex items-center gap-1.5 rounded-full border border-brand-500/40 bg-brand-600/15 px-2.5 py-1 text-xs text-brand-300 transition-all hover:border-warning/40 hover:bg-warning/10 hover:text-warning disabled:opacity-40"
+                      >
+                        <Eye className="h-3 w-3" />
+                        <span>in review</span>
+                        <RotateCcw className="h-2.5 w-2.5 opacity-60" />
+                      </button>
+                    )}
+                    <Button variant="ghost" size="sm" onClick={() => resolveMutation.mutate(alert.id)} loading={resolveMutation.isPending} title="Resolve">
+                      <CheckCircle2 className="h-3.5 w-3.5 text-success" />
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => dismissMutation.mutate(alert.id)} loading={dismissMutation.isPending} title="Dismiss">
+                      ✕
+                    </Button>
+                  </div>
                 </div>
               </div>
             ))}
@@ -838,7 +821,7 @@ export default function LeaseDetailPage() {
         </div>{/* end main column */}
 
         {/* Sidebar — Property, Tenant, Financials */}
-        <div className="w-64 shrink-0 rounded-xl border border-surface-400/30 divide-y divide-surface-400/20 overflow-hidden">
+        <div className="rounded-xl border border-surface-400/30 divide-y divide-surface-400/20 overflow-hidden lg:w-64 lg:shrink-0">
           {/* Property */}
           <div className="p-4">
             <p className="mb-2.5 text-[10px] font-semibold uppercase tracking-wider text-slate-500">Property</p>
