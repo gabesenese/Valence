@@ -130,6 +130,7 @@ export function AppLayout() {
     <div className="flex h-screen overflow-hidden bg-surface-0">
       {mobileNavOpen && (
         <button
+          type="button"
           className="fixed inset-0 z-30 bg-black/50 lg:hidden"
           onClick={() => setMobileNavOpen(false)}
           aria-label="Close navigation menu"
@@ -152,6 +153,7 @@ export function AppLayout() {
             )}
           </div>
           <button
+            type="button"
             onClick={() => setMobileNavOpen(false)}
             className="text-slate-500 transition-colors hover:text-slate-300 lg:hidden"
             aria-label="Close sidebar"
@@ -287,6 +289,7 @@ export function AppLayout() {
         <header className="flex h-14 items-center justify-between border-b border-surface-400/40 bg-surface-50 px-4 lg:px-6">
           <div className="flex items-center gap-2">
             <button
+              type="button"
               onClick={() => setMobileNavOpen(true)}
               className="text-slate-500 transition-colors hover:text-slate-300 lg:hidden"
               aria-label="Open navigation menu"
