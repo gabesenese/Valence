@@ -136,7 +136,7 @@ function ImpactMetric({ label, current, projected, format }: {
   return (
     <div className="flex flex-col gap-1.5 rounded-xl bg-surface-200/40 px-4 py-3">
       <p className="text-[11px] text-slate-500 uppercase tracking-wider">{label}</p>
-      <div className="flex items-end justify-between gap-2">
+      <div className="flex flex-wrap items-end justify-between gap-x-2 gap-y-1">
         <div>
           <p className="text-xs text-slate-600">Current</p>
           <p className="text-sm font-semibold text-slate-300 tabular-nums">{format(current)}</p>
@@ -209,7 +209,7 @@ function ResultsPanel({ result }: { result: SimulationResult }) {
       </div>
 
       {/* Metric grid */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <ImpactMetric label="Monthly Revenue"  current={current.monthlyRevenue}  projected={projected.monthlyRevenue}  format={formatCurrency} />
         <ImpactMetric label="Monthly NOI"      current={current.noi}             projected={projected.noi}             format={formatCurrency} />
         <ImpactMetric label="Monthly Expenses" current={current.monthlyExpenses} projected={projected.monthlyExpenses} format={formatCurrency} />
@@ -268,7 +268,7 @@ export default function ImpactAnalysisPage() {
   const canSubmit  = selected !== 'tenant_departure' || !!params.tenantId;
 
   return (
-    <div className="flex flex-col gap-4 p-5 animate-fade-in">
+    <div className="flex flex-col gap-4 p-4 animate-fade-in sm:p-5">
 
       {/* Scenario tiles */}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
