@@ -33,7 +33,7 @@ const FEATURE_MIN_PLAN: Record<string, Plan> = {
   team:                  'PROFESSIONAL',
   automation:            'PROFESSIONAL',
   performance:           'PROFESSIONAL',
-  executive_brief:       'PROFESSIONAL',
+  executive_brief:       'EXECUTIVE',
   health_score:          'PROFESSIONAL',
   impact_analysis:       'EXECUTIVE',
   contract_intelligence: 'EXECUTIVE',

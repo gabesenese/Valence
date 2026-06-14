@@ -61,11 +61,11 @@ function Skeleton() {
         <div className="h-3 w-full rounded bg-surface-400/30" />
         <div className="h-3 w-5/6 rounded bg-surface-400/30" />
       </div>
-      <div className="grid grid-cols-2 divide-x divide-surface-400/30 border-t border-surface-400/30">
-        <div className="px-6 py-5 space-y-3">
+      <div className="grid grid-cols-1 divide-y md:grid-cols-2 md:divide-x md:divide-y-0 divide-surface-400/30 border-t border-surface-400/30">
+        <div className="px-4 py-4 space-y-3 sm:px-6 sm:py-5">
           {[1,2,3].map(i => <div key={i} className="h-14 rounded-lg bg-surface-400/20" />)}
         </div>
-        <div className="px-6 py-5 space-y-3">
+        <div className="px-4 py-4 space-y-3 sm:px-6 sm:py-5">
           {[1,2,3].map(i => <div key={i} className="h-14 rounded-lg bg-surface-400/20" />)}
         </div>
       </div>
@@ -141,7 +141,7 @@ export default function ExecutiveBriefCard() {
     <div className="rounded-2xl border border-surface-400/40 bg-surface-100 overflow-hidden">
 
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-3.5 border-b border-surface-400/30 bg-surface-200/30">
+      <div className="flex items-center justify-between px-4 py-3.5 border-b border-surface-400/30 bg-surface-200/30 sm:px-6">
         <div className="flex items-center gap-2">
           <Sparkles className="h-4 w-4 text-brand-400" />
           <span className="text-sm font-semibold text-white">Executive Brief</span>
@@ -166,7 +166,7 @@ export default function ExecutiveBriefCard() {
       </div>
 
       {/* Headline + summary */}
-      <div className="px-6 py-5 border-b border-surface-400/30">
+      <div className="px-4 py-4 border-b border-surface-400/30 sm:px-6 sm:py-5">
         <p className="text-base font-semibold text-white leading-snug">{brief.headline}</p>
         <p className="mt-2 text-sm text-slate-400 leading-relaxed">{brief.summary}</p>
       </div>
@@ -175,7 +175,7 @@ export default function ExecutiveBriefCard() {
       <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-surface-400/30">
 
         {/* Revenue Risk */}
-        <div className="px-6 py-5">
+        <div className="px-4 py-4 sm:px-6 sm:py-5">
           <div className="flex items-center gap-2 mb-4">
             <TrendingDown className="h-3.5 w-3.5 text-danger/70" />
             <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Revenue Risk</span>
@@ -205,7 +205,7 @@ export default function ExecutiveBriefCard() {
         </div>
 
         {/* Recommended Actions */}
-        <div className="px-6 py-5">
+        <div className="px-4 py-4 sm:px-6 sm:py-5">
           <div className="flex items-center gap-2 mb-4">
             <CheckCircle2 className="h-3.5 w-3.5 text-brand-400/70" />
             <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Recommended Actions</span>

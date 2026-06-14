@@ -107,7 +107,6 @@ export function MorningBrief() {
           )}
           {stats.totalMonthlyRisk > 0 && (
             <div className="flex items-center gap-1.5 rounded-full border border-surface-400/40 bg-surface-200/60 px-3 py-1">
-              <DollarSign className="h-3 w-3 text-slate-500" />
               <span className="text-[11px] font-semibold text-slate-400">{fmtRisk(stats.totalMonthlyRisk)} at risk</span>
             </div>
           )}
