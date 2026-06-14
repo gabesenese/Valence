@@ -6,11 +6,9 @@ import {
   CheckCircle,
   ClipboardList,
   RefreshCw,
-  AlertTriangle,
   DollarSign,
   Clock,
   XCircle,
-  User,
   ChevronDown,
   ChevronRight,
   Phone,
@@ -44,86 +42,63 @@ function formatDollars(n: number) {
   return `$${n}`;
 }
 
-function SeverityIcon({ severity }: { severity: string }) {
-  const cls =
-    severity === 'CRITICAL'
-      ? 'text-danger'
-      : severity === 'WARNING'
-      ? 'text-warning'
-      : 'text-info';
-  return <AlertTriangle className={`h-4 w-4 shrink-0 mt-0.5 ${cls}`} />;
-}
-
-function ItemActions({
-  item,
-  busy,
-  onProgress,
-  onResolve,
-  onDismiss,
-}: {
-  item: WorkItem;
-  busy: boolean;
-  onProgress: (id: string) => void;
-  onResolve: (id: string) => void;
-  onDismiss: (id: string) => void;
-}) {
-  const navigate = useNavigate();
-
-  if (!item.alertId) {
-    return (
-      <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
-        {item.source === 'finance' && item.property && (
-          <Button variant="outline" size="sm" onClick={() => navigate('/finance')}>
-            <DollarSign className="h-3.5 w-3.5" />
-            Escalate to Collections
-          </Button>
-        )}
-        {item.source === 'lease' && item.leaseId && (
-          <Button variant="outline" size="sm" onClick={() => navigate(`/leases/${item.leaseId}`)}>
-            <RefreshCw className="h-3.5 w-3.5" />
-            Send Renewal Offer
-          </Button>
-        )}
-      </div>
-    );
-  }
-
+function itemActions(
+  item: WorkItem,
+  busy: boolean,
+  onProgress: (id: string) => void,
+  onResolve: (id: string) => void,
+  onDismiss: (id: string) => void,
+  navigate: ReturnType<typeof useNavigate>,
+): React.ReactNode[] {
   const alertId = item.alertId;
   const actions: React.ReactNode[] = [];
+
+  if (!alertId) {
+    if (item.source === 'finance' && item.property) {
+      actions.push(
+        <Button key="collections" variant="outline" size="sm" onClick={() => navigate('/finance')}>
+          <DollarSign className="h-3.5 w-3.5" /> Escalate to Collections
+        </Button>,
+      );
+    }
+    if (item.source === 'lease' && item.leaseId) {
+      actions.push(
+        <Button key="renew" variant="outline" size="sm" onClick={() => navigate(`/leases/${item.leaseId}`)}>
+          <RefreshCw className="h-3.5 w-3.5" /> Send Renewal Offer
+        </Button>,
+      );
+    }
+    return actions;
+  }
 
   if (item.type === 'LEASE_EXPIRATION' && item.leaseId) {
     actions.push(
       <Button key="renew" variant="outline" size="sm" onClick={() => navigate(`/leases/${item.leaseId}`)}>
-        <RefreshCw className="h-3.5 w-3.5" />
-        Send Renewal Offer
+        <RefreshCw className="h-3.5 w-3.5" /> Send Renewal Offer
       </Button>,
     );
   } else if (item.type === 'RENEWAL_RISK' && item.leaseId) {
     actions.push(
       <Button key="call" variant="outline" size="sm" onClick={() => navigate(`/leases/${item.leaseId}`)}>
-        <Phone className="h-3.5 w-3.5" />
-        Schedule Call
+        <Phone className="h-3.5 w-3.5" /> Schedule Call
       </Button>,
     );
   } else if (item.type === 'PAYMENT_ANOMALY' || item.type === 'OVERDUE_INVOICE') {
     actions.push(
       <Button key="collections" variant="outline" size="sm" onClick={() => navigate('/finance')}>
-        <DollarSign className="h-3.5 w-3.5" />
-        Escalate to Collections
+        <DollarSign className="h-3.5 w-3.5" /> Escalate to Collections
       </Button>,
     );
   } else if (item.type === 'FINANCIAL_DISCREPANCY') {
     actions.push(
       <Button key="finance" variant="outline" size="sm" onClick={() => navigate('/finance')}>
-        <ClipboardList className="h-3.5 w-3.5" />
-        Review Finance
+        <ClipboardList className="h-3.5 w-3.5" /> Review Finance
       </Button>,
     );
   } else if (item.type === 'OCCUPANCY_CHANGE' && item.property) {
     actions.push(
       <Button key="pricing" variant="outline" size="sm" onClick={() => navigate(`/properties/${item.property!.id}`)}>
-        <TrendingUp className="h-3.5 w-3.5" />
-        Review Pricing Strategy
+        <TrendingUp className="h-3.5 w-3.5" /> Review Pricing
       </Button>,
     );
   } else {
@@ -136,11 +111,9 @@ function ItemActions({
 
   actions.push(
     <Button key="dismiss" variant="ghost" size="sm" onClick={() => onDismiss(alertId)} loading={busy}>
-      <XCircle className="h-3.5 w-3.5" />
-      Dismiss
+      <XCircle className="h-3.5 w-3.5" /> Dismiss
     </Button>,
   );
-
   actions.push(
     <Button
       key="resolve"
@@ -149,12 +122,11 @@ function ItemActions({
       onClick={() => onResolve(alertId)}
       loading={busy}
     >
-      <CheckCircle className="h-3.5 w-3.5" />
-      Resolve
+      <CheckCircle className="h-3.5 w-3.5" /> Resolve
     </Button>,
   );
 
-  return <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">{actions}</div>;
+  return actions;
 }
 
 function WorkItemCard({
@@ -170,77 +142,71 @@ function WorkItemCard({
   onResolve: (id: string) => void;
   onDismiss: (id: string) => void;
 }) {
-  const borderColor =
-    item.severity === 'CRITICAL'
-      ? 'border-l-danger/60'
-      : item.severity === 'WARNING'
-      ? 'border-l-warning/40'
-      : 'border-l-info/30';
-
+  const navigate = useNavigate();
   const busy = busyId === item.alertId;
 
+  const borderColor =
+    item.severity === 'CRITICAL' ? 'border-l-danger' :
+    item.severity === 'WARNING'  ? 'border-l-warning/70' :
+                                    'border-l-info/50';
+
+  const severityColor =
+    item.severity === 'CRITICAL' ? 'text-danger' :
+    item.severity === 'WARNING'  ? 'text-warning' :
+                                    'text-info';
+
+  const actions = itemActions(item, busy, onProgress, onResolve, onDismiss, navigate);
+
   return (
-    <div className={`hover:bg-surface-200/30 transition-colors border-l-2 ${borderColor}`}>
-    <div className="flex items-start gap-4 px-5 py-4">
-      <SeverityIcon severity={item.severity} />
+    <div className={`border-l-4 ${borderColor} hover:bg-surface-200/30 transition-colors`}>
+      <div className="px-5 py-4 flex flex-col gap-1.5">
+        {/* Severity + type label — first thing the eye lands on */}
+        <p className={`text-[11px] font-bold uppercase tracking-wider ${severityColor}`}>
+          {TYPE_LABEL[item.type] ?? item.type.replace(/_/g, ' ')}
+          {item.status === 'IN_PROGRESS' && <span className="ml-2 text-brand-400/80">· In Progress</span>}
+        </p>
 
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2 flex-wrap">
-          <p className="text-sm font-medium text-slate-200">{item.title}</p>
-          <Badge variant={item.severity === 'CRITICAL' ? 'danger' : item.severity === 'WARNING' ? 'warning' : 'info'}>
-            {item.severity}
-          </Badge>
-          <Badge variant="neutral">{TYPE_LABEL[item.type] ?? item.type.replace(/_/g, ' ')}</Badge>
-          {item.status === 'IN_PROGRESS' && <Badge variant="info">IN PROGRESS</Badge>}
-        </div>
+        {/* Title */}
+        <p className="text-sm font-medium text-slate-200 leading-snug">{item.title}</p>
 
-        <p className="mt-1 text-xs text-slate-500">{item.description}</p>
-
+        {/* Suggested action */}
         {item.suggestedAction && (
-          <div className="mt-1.5 flex items-start gap-1.5">
-            <ChevronRight className="h-3 w-3 text-brand-400/70 shrink-0 mt-0.5" />
-            <p className="text-xs text-brand-300/80">{item.suggestedAction}</p>
-          </div>
+          <p className="flex items-center gap-1 text-xs text-brand-300/80">
+            <ChevronRight className="h-3 w-3 shrink-0" />
+            {item.suggestedAction}
+          </p>
         )}
 
-        <div className="mt-2 flex items-center gap-4 flex-wrap">
+        {/* Metadata — property · revenue · expiry only */}
+        <div className="flex items-center gap-3 flex-wrap text-xs text-slate-500 mt-0.5">
+          {item.property && <span>{item.property.name}</span>}
           {item.monthlyRisk > 0 && (
-            <span className="flex items-center gap-1 text-xs font-medium text-warning/80">
+            <span className="flex items-center gap-0.5 font-medium text-warning/80">
               <DollarSign className="h-3 w-3" />
               {formatDollars(item.monthlyRisk)}/mo at risk
             </span>
           )}
           {item.daysUntilExpiry !== null && (
-            <span className={`flex items-center gap-1 text-xs font-medium ${
+            <span className={`flex items-center gap-0.5 font-medium ${
               item.daysUntilExpiry <= 30 ? 'text-danger' : item.daysUntilExpiry <= 60 ? 'text-warning' : 'text-slate-400'
             }`}>
               <Clock className="h-3 w-3" />
-              {item.daysUntilExpiry}d until expiry
-            </span>
-          )}
-          {item.property && <span className="text-xs text-slate-500">{item.property.name}</span>}
-          {item.lease && <span className="text-xs text-slate-600">{item.lease.leaseNumber}</span>}
-          {item.assignee && (
-            <span className="flex items-center gap-1 text-xs text-slate-500">
-              <User className="h-3 w-3" />
-              {item.assignee.firstName} {item.assignee.lastName}
+              {item.daysUntilExpiry}d left
             </span>
           )}
         </div>
+
+        {/* Actions — left-aligned, directly under content */}
+        {actions.length > 0 && (
+          <div className="flex items-center gap-2 flex-wrap pt-1">
+            {actions}
+          </div>
+        )}
       </div>
 
-      <ItemActions
-        item={item}
-        busy={busy}
-        onProgress={onProgress}
-        onResolve={onResolve}
-        onDismiss={onDismiss}
-      />
-    </div>
-
-    <div className="px-5 pb-3">
-      <TaskPanel alertId={item.alertId} leaseId={item.leaseId} />
-    </div>
+      <div className="px-5 pb-3">
+        <TaskPanel alertId={item.alertId} leaseId={item.leaseId} />
+      </div>
     </div>
   );
 }
