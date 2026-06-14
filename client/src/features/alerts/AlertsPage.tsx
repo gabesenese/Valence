@@ -307,11 +307,14 @@ export default function AlertsPage() {
   const { data: summary } = useQuery({
     queryKey: ['alerts', 'summary'],
     queryFn: alertsService.getSummary,
+    staleTime: 30_000,
   });
 
   const { data, isLoading } = useQuery({
     queryKey: ['alerts', statusFilter],
     queryFn: () => alertsService.getAlerts({ status: statusFilter || undefined, limit: 50 }),
+    staleTime: 30_000,
+    placeholderData: (prev) => prev,
   });
 
   const invalidate = () => qc.invalidateQueries({ queryKey: ['alerts'] });
@@ -353,29 +356,27 @@ export default function AlertsPage() {
         }
       />
 
-      {/* Summary strip */}
-      {summary && (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <Card className="p-4 text-center cursor-pointer" hover onClick={() => setStatusFilter('OPEN')}>
-            <p className="text-2xl font-bold text-danger tabular-nums">
-              {summary.bySeverity.find((s) => s.severity === 'CRITICAL')?._count ?? 0}
-            </p>
-            <p className="mt-0.5 text-xs text-slate-500">Critical Open</p>
-          </Card>
-          <Card className="p-4 text-center cursor-pointer" hover onClick={() => setStatusFilter('ACKNOWLEDGED')}>
-            <p className="text-2xl font-bold text-amber-400 tabular-nums">{acknowledgedCount}</p>
-            <p className="mt-0.5 text-xs text-slate-500">Acknowledged</p>
-          </Card>
-          <Card className="p-4 text-center cursor-pointer" hover onClick={() => setStatusFilter('IN_PROGRESS')}>
-            <p className="text-2xl font-bold text-brand-400 tabular-nums">{inProgressCount}</p>
-            <p className="mt-0.5 text-xs text-slate-500">In Progress</p>
-          </Card>
-          <Card className="p-4 text-center cursor-pointer" hover onClick={() => setStatusFilter('OPEN')}>
-            <p className="text-2xl font-bold text-white tabular-nums">{summary.openTotal}</p>
-            <p className="mt-0.5 text-xs text-slate-500">Total Open</p>
-          </Card>
-        </div>
-      )}
+      {/* Summary strip — always rendered to avoid layout shift when data loads */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <Card className="p-4 text-center" hover={!!summary} onClick={summary ? () => setStatusFilter('OPEN') : undefined}>
+          <p className="text-2xl font-bold text-danger tabular-nums">
+            {summary ? (summary.bySeverity.find((s) => s.severity === 'CRITICAL')?._count ?? 0) : '—'}
+          </p>
+          <p className="mt-0.5 text-xs text-slate-500">Critical Open</p>
+        </Card>
+        <Card className="p-4 text-center" hover={!!summary} onClick={summary ? () => setStatusFilter('ACKNOWLEDGED') : undefined}>
+          <p className="text-2xl font-bold text-amber-400 tabular-nums">{summary ? acknowledgedCount : '—'}</p>
+          <p className="mt-0.5 text-xs text-slate-500">Acknowledged</p>
+        </Card>
+        <Card className="p-4 text-center" hover={!!summary} onClick={summary ? () => setStatusFilter('IN_PROGRESS') : undefined}>
+          <p className="text-2xl font-bold text-brand-400 tabular-nums">{summary ? inProgressCount : '—'}</p>
+          <p className="mt-0.5 text-xs text-slate-500">In Progress</p>
+        </Card>
+        <Card className="p-4 text-center" hover={!!summary} onClick={summary ? () => setStatusFilter('OPEN') : undefined}>
+          <p className="text-2xl font-bold text-white tabular-nums">{summary ? summary.openTotal : '—'}</p>
+          <p className="mt-0.5 text-xs text-slate-500">Total Open</p>
+        </Card>
+      </div>
 
       {/* Filter tabs */}
       <div className="flex gap-2 flex-wrap">
