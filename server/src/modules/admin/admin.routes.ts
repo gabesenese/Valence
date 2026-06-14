@@ -428,6 +428,16 @@ router.delete('/announcements/:id', async (req: Request, res: Response, next: Ne
   } catch (err) { next(err); }
 });
 
+// ─── One-time migration: add deleted_at to tasks ──────────────────────────────
+
+router.post('/run-task-migration', async (_req: Request, res: Response, next: NextFunction) => {
+  try {
+    await prisma.$executeRawUnsafe(`ALTER TABLE tasks ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP(3)`);
+    await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS tasks_deleted_at_idx ON tasks(deleted_at)`);
+    sendSuccess(res, { message: 'Migration applied: deleted_at added to tasks' });
+  } catch (err) { next(err); }
+});
+
 // ─── Maintenance mode ─────────────────────────────────────────────────────────
 
 router.get('/maintenance', async (_req, res, next) => {
