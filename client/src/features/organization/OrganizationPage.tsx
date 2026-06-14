@@ -173,7 +173,6 @@ function OrgHeroCard({ members }: {
   });
   const { label: planLabel } = usePlan();
 
-  const owner = members.find((m) => m.role === 'SUPER_ADMIN');
   const activeCount = members.filter((m) => m.isActive).length;
   const propertyCount = propertiesPage?.meta.total ?? 0;
   const leaseCount = leasesPage?.meta.total ?? 0;
