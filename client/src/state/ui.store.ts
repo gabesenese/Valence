@@ -9,6 +9,8 @@ interface UIState {
   setSidebarCollapsed: (v: boolean) => void;
   alertSeverityFilter: AlertSeverityFilter;
   setAlertSeverityFilter: (v: AlertSeverityFilter) => void;
+  notificationsClearedAt: number | null;
+  clearNotifications: () => void;
 }
 
 export const useUIStore = create<UIState>()(
@@ -19,10 +21,15 @@ export const useUIStore = create<UIState>()(
       setSidebarCollapsed: (v: boolean) => set({ sidebarCollapsed: v }),
       alertSeverityFilter: 'all' as AlertSeverityFilter,
       setAlertSeverityFilter: (v: AlertSeverityFilter) => set({ alertSeverityFilter: v }),
+      notificationsClearedAt: null,
+      clearNotifications: () => set({ notificationsClearedAt: Date.now() }),
     }),
     {
       name: 'valence-ui',
-      partialize: (s: UIState) => ({ alertSeverityFilter: s.alertSeverityFilter }),
+      partialize: (s: UIState) => ({
+        alertSeverityFilter: s.alertSeverityFilter,
+        notificationsClearedAt: s.notificationsClearedAt,
+      }),
     },
   ),
 );

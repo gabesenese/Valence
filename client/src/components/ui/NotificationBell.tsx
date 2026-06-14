@@ -19,16 +19,18 @@ const SEVERITY_STATUSES: Record<string, string[]> = {
   critical: ['OPEN'],
 };
 
-
 export function NotificationBell() {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-  const severityFilter = useUIStore((s) => s.alertSeverityFilter);
+  const severityFilter        = useUIStore((s) => s.alertSeverityFilter);
+  const notificationsClearedAt = useUIStore((s) => s.notificationsClearedAt);
+  const clearNotifications    = useUIStore((s) => s.clearNotifications);
 
   const { data: summary } = useQuery({
     queryKey: ['alerts', 'summary'],
     queryFn: alertsService.getSummary,
     refetchInterval: 60_000,
+    staleTime: 30_000,
   });
 
   const safeStatuses = SEVERITY_STATUSES[severityFilter] ?? SEVERITY_STATUSES['all'];
@@ -38,11 +40,20 @@ export function NotificationBell() {
     queryFn: () => alertsService.getAlerts({
       statuses: safeStatuses,
       ...(severityFilter !== 'all' && { severity: severityFilter.toUpperCase() }),
-      limit: 5,
+      limit: 10,
     }),
-    enabled: open,
-    staleTime: 30_000,
+    staleTime: 60_000,
+    refetchInterval: 60_000,
   });
+
+  const allAlerts = recent?.data ?? [];
+  const visibleAlerts = notificationsClearedAt
+    ? allAlerts.filter((a) => new Date(a.createdAt).getTime() > notificationsClearedAt)
+    : allAlerts;
+
+  const badgeCount = notificationsClearedAt
+    ? visibleAlerts.length
+    : (summary?.openTotal ?? 0);
 
   useEffect(() => {
     if (!open) return;
@@ -53,8 +64,6 @@ export function NotificationBell() {
     return () => document.removeEventListener('mousedown', onClickOutside);
   }, [open]);
 
-  const count = summary?.openTotal ?? 0;
-
   return (
     <div ref={ref} className="relative">
       <button
@@ -63,12 +72,12 @@ export function NotificationBell() {
           'relative flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-surface-200 hover:text-slate-200',
           open && 'bg-surface-200 text-slate-200',
         )}
-        aria-label={`Notifications${count > 0 ? ` — ${count} open` : ''}`}
+        aria-label={`Notifications${badgeCount > 0 ? ` — ${badgeCount} open` : ''}`}
       >
         <Bell className="h-4 w-4" />
-        {count > 0 && (
+        {badgeCount > 0 && (
           <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-danger px-0.5 text-[10px] font-bold leading-none text-white">
-            {count > 99 ? '99+' : count}
+            {badgeCount > 99 ? '99+' : badgeCount}
           </span>
         )}
       </button>
@@ -78,15 +87,15 @@ export function NotificationBell() {
           <div className="flex items-center justify-between border-b border-surface-400/20 px-4 py-3">
             <span className="text-sm font-semibold text-slate-200">Notifications</span>
             <div className="flex items-center gap-2">
-              {count > 0 && (
+              {badgeCount > 0 && (
                 <span className="rounded-full bg-danger/10 px-2 py-0.5 text-xs font-medium text-danger">
-                  {count} open
+                  {badgeCount} open
                 </span>
               )}
-              {count > 0 && (
+              {(visibleAlerts.length > 0 || !notificationsClearedAt) && (
                 <button
-                  onClick={() => setOpen(false)}
-                  title="Close notifications"
+                  onClick={() => { clearNotifications(); setOpen(false); }}
+                  title="Clear notifications"
                   className="flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] text-slate-500 hover:bg-surface-300/60 hover:text-slate-300 transition-colors"
                 >
                   <X className="h-3 w-3" />
@@ -97,12 +106,12 @@ export function NotificationBell() {
           </div>
 
           <ul className="max-h-72 overflow-y-auto">
-            {!recent?.data?.length ? (
+            {visibleAlerts.length === 0 ? (
               <li className="px-4 py-8 text-center text-xs text-slate-600">
-                {recent ? 'No open alerts' : 'Loading…'}
+                {recent ? 'No new notifications' : 'Loading…'}
               </li>
             ) : (
-              recent.data.map((alert) => (
+              visibleAlerts.map((alert) => (
                 <li key={alert.id} className="border-b border-surface-400/10 last:border-0">
                   <Link
                     to="/alerts"
