@@ -10,8 +10,6 @@ import App from './App';
 import { useAuthStore } from '@/state/auth.store';
 import './index.css';
 
-// If the user chose not to be remembered, clear auth when a new browser session starts.
-// sessionStorage is cleared on tab/browser close, so absence of the marker = new session.
 if (localStorage.getItem('valence-remember-me') === '0' && !sessionStorage.getItem('valence-session-active')) {
   useAuthStore.getState().logout();
 }
@@ -43,7 +41,7 @@ createRoot(root).render(
         <BrowserRouter>
           <App />
         </BrowserRouter>
-        <ReactQueryDevtools initialIsOpen={false} />
+        {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
       </QueryClientProvider>
     </Sentry.ErrorBoundary>
   </StrictMode>
