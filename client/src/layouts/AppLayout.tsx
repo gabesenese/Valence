@@ -1,11 +1,11 @@
-import { useEffect } from 'react';
-import { Outlet, NavLink, Link, useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Outlet, NavLink, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
   LayoutDashboard, FileText, Building2, BarChart3, Bell, DollarSign,
   LogOut, ChevronLeft, Cpu, Users, Settings, Inbox, Layers,
   Wand2, ClipboardList, Heart, FolderOpen, Zap, Lock, Upload, ScrollText, Download,
-  UserX, Sparkles, HelpCircle, Trash2, Database,
+  UserX, Sparkles, HelpCircle, Trash2, Database, Menu, X,
 } from 'lucide-react';
 import { cn } from '@/utils/cn';
 import { setOrgCurrency } from '@/utils/format';
@@ -87,6 +87,8 @@ export function AppLayout() {
   const stopImpersonation = useAuthStore((s) => s.stopImpersonation);
   const originalSession   = useAuthStore((s) => s.originalSession);
   const { sidebarCollapsed, toggleSidebar } = useUIStore();
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const location = useLocation();
   const navigate = useNavigate();
   const { canAccess, requiredPlan, label: planLabel } = usePlan();
 
@@ -103,6 +105,9 @@ export function AppLayout() {
   useEffect(() => {
     if (org?.currency) setOrgCurrency(org.currency);
   }, [org?.currency]);
+  useEffect(() => {
+    setMobileNavOpen(false);
+  }, [location.pathname]);
 
   const handleLogout = async () => {
     try {
@@ -115,21 +120,36 @@ export function AppLayout() {
 
   return (
     <div className="flex h-screen overflow-hidden bg-surface-0">
+      {mobileNavOpen && (
+        <button
+          className="fixed inset-0 z-30 bg-black/50 lg:hidden"
+          onClick={() => setMobileNavOpen(false)}
+          aria-label="Close navigation menu"
+        />
+      )}
       {/* Sidebar */}
       <aside
         className={cn(
-          'relative flex flex-col border-r border-surface-400/40 bg-surface-50 transition-all duration-200',
-          sidebarCollapsed ? 'w-[60px]' : 'w-[220px]',
+          'fixed inset-y-0 left-0 z-40 flex w-[220px] flex-col border-r border-surface-400/40 bg-surface-50 transition-all duration-200 lg:static lg:z-auto',
+          mobileNavOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0',
+          sidebarCollapsed ? 'lg:w-[60px]' : 'lg:w-[220px]',
         )}
       >
         {/* Logo */}
         <div className={cn('flex h-14 items-center border-b border-surface-400/40 px-4', sidebarCollapsed && 'justify-center px-0')}>
-          <div className="flex items-center gap-2.5">
+          <div className="flex flex-1 items-center gap-2.5">
             <img src="/logo.svg" alt="Valence" className="h-8 w-5 shrink-0" />
             {!sidebarCollapsed && (
               <span className="text-sm font-bold tracking-tight text-white">Valence</span>
             )}
           </div>
+          <button
+            onClick={() => setMobileNavOpen(false)}
+            className="text-slate-500 transition-colors hover:text-slate-300 lg:hidden"
+            aria-label="Close sidebar"
+          >
+            <X className="h-4 w-4" />
+          </button>
         </div>
 
         {/* Nav */}
@@ -162,6 +182,7 @@ export function AppLayout() {
                         <li key={to}>
                           <button
                             onClick={() => navigate('/pricing')}
+                            onClickCapture={() => setMobileNavOpen(false)}
                             className={cn(
                               'flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors duration-100 text-slate-600 hover:bg-surface-200/50 hover:text-slate-500',
                               sidebarCollapsed && 'justify-center px-0 py-2.5',
@@ -194,6 +215,7 @@ export function AppLayout() {
                               sidebarCollapsed && 'justify-center px-0 py-2.5',
                             )
                           }
+                          onClick={() => setMobileNavOpen(false)}
                           title={sidebarCollapsed ? label : undefined}
                         >
                           <Icon className="h-4 w-4 shrink-0" />
@@ -218,6 +240,7 @@ export function AppLayout() {
                 <span className="text-slate-700">·</span>
                 <button
                   onClick={() => navigate('/pricing')}
+                  onClickCapture={() => setMobileNavOpen(false)}
                   className="text-[10px] font-semibold text-brand-400/80 hover:text-brand-300 transition-colors"
                 >
                   {planLabel}
@@ -241,7 +264,7 @@ export function AppLayout() {
         {/* Collapse toggle */}
         <button
           onClick={toggleSidebar}
-          className="absolute -right-3 top-[70px] z-10 flex h-6 w-6 items-center justify-center rounded-full border border-surface-400/60 bg-surface-100 text-slate-500 shadow-card transition-colors hover:border-brand-500/40 hover:text-brand-400"
+          className="absolute -right-3 top-[70px] z-10 hidden h-6 w-6 items-center justify-center rounded-full border border-surface-400/60 bg-surface-100 text-slate-500 shadow-card transition-colors hover:border-brand-500/40 hover:text-brand-400 lg:flex"
         >
           <ChevronLeft className={cn('h-3 w-3 transition-transform duration-200', sidebarCollapsed && 'rotate-180')} />
         </button>
@@ -249,14 +272,21 @@ export function AppLayout() {
 
       {/* Main content */}
       <main className="flex flex-1 flex-col overflow-hidden">
-        <header className="flex h-14 items-center justify-between border-b border-surface-400/40 bg-surface-50 px-6">
+        <header className="flex h-14 items-center justify-between border-b border-surface-400/40 bg-surface-50 px-4 lg:px-6">
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => setMobileNavOpen(true)}
+              className="text-slate-500 transition-colors hover:text-slate-300 lg:hidden"
+              aria-label="Open navigation menu"
+            >
+              <Menu className="h-5 w-5" />
+            </button>
             <Cpu className="h-4 w-4 text-brand-400" />
-            <span className="text-xs text-slate-600">Operational Intelligence Platform</span>
+            <span className="hidden text-xs text-slate-600 sm:inline">Operational Intelligence Platform</span>
           </div>
           <div className="flex items-center gap-3">
             <NotificationBell />
-            <div className="flex items-center gap-2">
+            <div className="hidden items-center gap-2 sm:flex">
               <div className="h-2 w-2 animate-pulse-slow rounded-full bg-success" />
               <span className="text-xs text-slate-600">Live</span>
             </div>
@@ -264,14 +294,14 @@ export function AppLayout() {
         </header>
 
         {isImpersonating && (
-          <div className="flex items-center justify-between bg-amber-500/15 border-b border-amber-500/30 px-6 py-2">
-            <div className="flex items-center gap-2.5">
+          <div className="flex flex-col gap-2 border-b border-amber-500/30 bg-amber-500/15 px-4 py-2 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+            <div className="flex min-w-0 items-center gap-2.5">
               <UserX className="h-4 w-4 text-amber-400 shrink-0" />
-              <span className="text-xs font-medium text-amber-300">
+              <span className="min-w-0 text-xs font-medium text-amber-300">
                 Impersonating <span className="font-bold">{user?.firstName} {user?.lastName}</span> ({user?.email})
               </span>
               {originalSession && (
-                <span className="text-[11px] text-amber-500/70">— logged in as {originalSession.user.email}</span>
+                <span className="hidden text-[11px] text-amber-500/70 sm:inline">— logged in as {originalSession.user.email}</span>
               )}
             </div>
             <button
@@ -283,7 +313,7 @@ export function AppLayout() {
           </div>
         )}
         {user?.isDemo && (
-          <div className="flex items-center justify-between border-b border-brand-500/30 bg-brand-600/10 px-6 py-2">
+          <div className="flex flex-col gap-2 border-b border-brand-500/30 bg-brand-600/10 px-4 py-2 sm:flex-row sm:items-center sm:justify-between sm:px-6">
             <div className="flex items-center gap-2.5">
               <Sparkles className="h-4 w-4 text-brand-400 shrink-0" />
               <span className="text-xs font-medium text-brand-300">
