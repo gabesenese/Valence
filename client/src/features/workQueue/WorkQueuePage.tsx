@@ -365,8 +365,7 @@ export default function WorkQueuePage() {
           <StatChip value={data.summary.inProgress} label="in progress" color="brand" />
           {totalRisk > 0 && (
             <div className="flex items-center gap-1.5 rounded-lg border border-surface-400/40 bg-surface-50 px-3 py-1.5">
-              <DollarSign className="h-3.5 w-3.5 text-warning/60" />
-              <span className="text-sm font-bold text-white tabular-nums">{formatDollars(totalRisk)}</span>
+              <span className="text-sm font-bold text-warning/80 tabular-nums">{formatDollars(totalRisk)}</span>
               <span className="text-xs text-slate-500">/mo at risk</span>
             </div>
           )}
