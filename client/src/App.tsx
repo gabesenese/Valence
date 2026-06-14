@@ -30,7 +30,10 @@ const TasksPage = lazy(() => import('@/features/tasks/TasksPage'));
 const CRMPage = lazy(() => import('@/features/crm/CRMPage'));
 const DocumentsPage = lazy(() => import('@/features/documents/DocumentsPage'));
 const AutomationPage = lazy(() => import('@/features/automation/AutomationPage'));
-const LandingPage = lazy(() => import('@/features/landing/LandingPage'));
+// LandingPage is the entry point for all visitors — eager import avoids
+// showing a Suspense spinner before any content on first load.
+import LandingPageComponent from '@/features/landing/LandingPage';
+const LandingPage = () => <LandingPageComponent />;
 const AdminPage = lazy(() => import('@/features/admin/AdminPage'));
 const PricingPage = lazy(() => import('@/features/pricing/PricingPage'));
 const ImportPage = lazy(() => import('@/features/import/ImportPage'));

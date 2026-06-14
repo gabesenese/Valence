@@ -276,7 +276,7 @@ function TaskItem({
     new Date(task.dueAt) < new Date();
 
   return (
-    <div className={`flex items-start gap-4 px-5 py-4 border-b border-surface-400/30 last:border-0 transition-colors group ${isTemp ? 'opacity-60' : 'hover:bg-surface-200/30'}`}>
+    <div className={`flex items-start gap-3 px-4 py-3 border-b border-surface-400/30 last:border-0 transition-colors group sm:gap-4 sm:px-5 sm:py-4 ${isTemp ? 'opacity-60' : 'hover:bg-surface-200/30'}`}>
       {/* Status */}
       <div className="mt-0.5 shrink-0">
         {isTemp ? (
@@ -286,7 +286,7 @@ function TaskItem({
         )}
       </div>
 
-      {/* Title + description + context */}
+      {/* Title + description + context + mobile meta */}
       <div className="flex-1 min-w-0">
         <button
           type="button"
@@ -337,10 +337,27 @@ function TaskItem({
             )}
           </div>
         )}
+
+        {/* Mobile-only due date + assignee line */}
+        {(task.dueAt || task.assignee) && (
+          <div className="mt-1.5 flex items-center gap-2 sm:hidden">
+            {task.dueAt && (
+              <span className={`text-[11px] font-medium ${isOverdue ? 'text-danger' : 'text-slate-500'}`}>
+                {isOverdue ? 'Overdue · ' : ''}{fmtDate(task.dueAt)}
+              </span>
+            )}
+            {task.dueAt && task.assignee && <span className="text-slate-700">·</span>}
+            {task.assignee && (
+              <span className="text-[11px] text-slate-500">
+                {task.assignee.firstName} {task.assignee.lastName}
+              </span>
+            )}
+          </div>
+        )}
       </div>
 
-      {/* Due date */}
-      <div className="shrink-0 text-right">
+      {/* Due date — desktop only */}
+      <div className="hidden shrink-0 text-right sm:block">
         {task.dueAt ? (
           <span className={`text-xs font-medium ${isOverdue ? 'text-danger' : 'text-slate-400'}`}>
             {isOverdue && <span className="mr-0.5">Overdue ·</span>}{fmtDate(task.dueAt)}
@@ -350,24 +367,25 @@ function TaskItem({
         )}
       </div>
 
-      {/* Assignee */}
-      <div className="shrink-0">
+      {/* Assignee — desktop only */}
+      <div className="hidden shrink-0 sm:flex sm:items-center sm:gap-1.5">
         {task.assignee ? (
-          <div className="flex items-center gap-1.5">
+          <>
             <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-600/20 text-[10px] font-bold text-brand-400">
               {task.assignee.firstName[0]}{task.assignee.lastName[0]}
             </div>
-            <span className="text-xs text-slate-400 hidden sm:block">{task.assignee.firstName}</span>
-          </div>
+            <span className="hidden text-xs text-slate-400 sm:block">{task.assignee.firstName}</span>
+          </>
         ) : (
           <span className="text-xs text-slate-600">—</span>
         )}
       </div>
 
-      {/* Delete */}
-      <div className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+      {/* Delete — always tappable on mobile, hover-only on desktop */}
+      <div className="shrink-0 sm:opacity-0 sm:group-hover:opacity-100 sm:transition-opacity">
         {!isTemp && (
           <button
+            type="button"
             onClick={() => onDelete(task.id)}
             className="text-slate-600 hover:text-danger transition-colors"
             title="Delete"
@@ -612,7 +630,7 @@ export default function TasksPage() {
   });
 
   return (
-    <div className="flex flex-col gap-6 p-6 animate-fade-in">
+    <div className="flex flex-col gap-4 p-4 animate-fade-in sm:gap-6 sm:p-6">
       <PageHeader
         title="Tasks"
         description={`${openCount} open · ${inProgressCount} in progress${overdueCount > 0 ? ` · ${overdueCount} overdue` : ''}`}
@@ -625,7 +643,8 @@ export default function TasksPage() {
       />
 
       {/* Filters */}
-      <div className="flex flex-wrap gap-2 items-center">
+      <div className="flex flex-wrap gap-2 items-center justify-between">
+        <div className="flex flex-wrap gap-2">
         {STATUS_FILTER_OPTIONS.map((f) => (
           <button
             key={f.value}
@@ -649,15 +668,14 @@ export default function TasksPage() {
             )}
           </button>
         ))}
-
-        <div className="ml-auto">
-          <Select
-            value={assigneeFilter}
-            onChange={setAssigneeFilter}
-            options={assigneeFilterOptions}
-            className="w-44"
-          />
         </div>
+
+        <Select
+          value={assigneeFilter}
+          onChange={setAssigneeFilter}
+          options={assigneeFilterOptions}
+          className="w-40"
+        />
       </div>
 
       {/* Task list */}
