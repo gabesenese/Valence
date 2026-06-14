@@ -108,6 +108,14 @@ export function AppLayout() {
   useEffect(() => {
     setMobileNavOpen(false);
   }, [location.pathname]);
+  useEffect(() => {
+    if (!mobileNavOpen) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setMobileNavOpen(false);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [mobileNavOpen]);
 
   const handleLogout = async () => {
     try {
@@ -181,8 +189,10 @@ export function AppLayout() {
                       return (
                         <li key={to}>
                           <button
-                            onClick={() => navigate('/pricing')}
-                            onClickCapture={() => setMobileNavOpen(false)}
+                            onClick={() => {
+                              setMobileNavOpen(false);
+                              navigate('/pricing');
+                            }}
                             className={cn(
                               'flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors duration-100 text-slate-600 hover:bg-surface-200/50 hover:text-slate-500',
                               sidebarCollapsed && 'justify-center px-0 py-2.5',
@@ -239,8 +249,10 @@ export function AppLayout() {
                 <span className="text-[10px] text-slate-600">{user.role}</span>
                 <span className="text-slate-700">·</span>
                 <button
-                  onClick={() => navigate('/pricing')}
-                  onClickCapture={() => setMobileNavOpen(false)}
+                  onClick={() => {
+                    setMobileNavOpen(false);
+                    navigate('/pricing');
+                  }}
                   className="text-[10px] font-semibold text-brand-400/80 hover:text-brand-300 transition-colors"
                 >
                   {planLabel}
