@@ -15,7 +15,7 @@ import { tasksService } from '@/services/tasks.service';
 import { auditService, type AuditLogEntry } from '@/services/audit.service';
 import { useAuthStore } from '@/state/auth.store';
 import { authService } from '@/services/auth.service';
-import { usePlan, PLAN_LABELS } from '@/hooks/usePlan';
+import { usePlan } from '@/hooks/usePlan';
 import { Card, CardHeader, CardTitle, CardBody } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
