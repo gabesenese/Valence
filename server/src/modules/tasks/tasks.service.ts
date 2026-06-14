@@ -28,7 +28,7 @@ export async function getTasksForItem(filter: {
   propertyId?: string;
 }) {
   return prisma.task.findMany({
-    where: filter,
+    where: { ...filter, deletedAt: null },
     select: taskSelect,
     orderBy: { createdAt: 'asc' },
   });
@@ -43,7 +43,7 @@ export async function listAllTasks(filter: {
 }) {
   const { status, assigneeUserId, propertyId, leaseId, unassigned } = filter;
 
-  const where: Record<string, unknown> = {};
+  const where: Record<string, unknown> = { deletedAt: null };
   if (status) {
     where.status = Array.isArray(status) ? { in: status } : status;
   }
@@ -123,5 +123,5 @@ export async function updateTaskStatus(
 }
 
 export async function deleteTask(id: string) {
-  return prisma.task.delete({ where: { id } });
+  return prisma.task.update({ where: { id }, data: { deletedAt: new Date() } });
 }

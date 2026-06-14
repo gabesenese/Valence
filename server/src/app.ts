@@ -34,7 +34,7 @@ import { onboardingRouter } from './modules/onboarding/onboarding.routes';
 import { teamRouter } from './modules/team/team.routes';
 import { organizationRouter } from './modules/organization/organization.routes';
 import { exportRouter } from './modules/export/export.routes';
-import { adminRouter, migrationRouter } from './modules/admin/admin.routes';
+import { adminRouter } from './modules/admin/admin.routes';
 import { announcementsRouter } from './modules/announcements/announcements.routes';
 import { eventsRouter } from './modules/events/events.routes';
 import { supportRouter } from './modules/support/support.routes';
@@ -91,7 +91,6 @@ app.get('/health', (_req, res) => {
 
 
 // ─── API Routes ───────────────────────────────────────────────────────────────
-app.use('/api/admin', migrationRouter);
 app.use('/api/auth', authRouter);
 app.use('/api/properties', propertiesRouter);
 app.use('/api/leases', leasesRouter);

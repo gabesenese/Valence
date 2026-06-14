@@ -21,18 +21,6 @@ function requireAdminSecret(req: Request, _res: Response, next: NextFunction) {
   next();
 }
 
-// ─── One-time migration: add deleted_at to tasks (secret-only, no JWT needed) ──
-
-const migrationRouter = Router();
-migrationRouter.post('/run-task-migration', requireAdminSecret, async (_req: Request, res: Response, next: NextFunction) => {
-  try {
-    await prisma.$executeRawUnsafe(`ALTER TABLE tasks ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP(3)`);
-    await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS tasks_deleted_at_idx ON tasks(deleted_at)`);
-    sendSuccess(res, { message: 'Migration applied: deleted_at added to tasks' });
-  } catch (err) { next(err); }
-});
-export { migrationRouter };
-
 router.use(authenticate, authorize('SUPER_ADMIN'), requireAdminSecret);
 
 // ─── Funnel ───────────────────────────────────────────────────────────────────
