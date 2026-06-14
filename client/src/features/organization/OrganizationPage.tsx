@@ -344,11 +344,11 @@ function MemberRow({ member, currentUserId, currentUserRole }: {
         />
       </div>
 
-      <span className="text-xs text-slate-500 shrink-0 w-24 text-right tabular-nums">
+      <span className="hidden text-xs text-slate-500 shrink-0 w-24 text-right tabular-nums sm:block">
         {timeAgo(member.lastLoginAt)}
       </span>
 
-      <div className="shrink-0">
+      <div className="hidden shrink-0 sm:block">
         <Badge variant={member.isActive ? 'success' : 'neutral'}>
           {member.isActive ? 'Active' : 'Inactive'}
         </Badge>
@@ -687,7 +687,7 @@ function OrgSettingsCard() {
 
         {!editing ? (
           <CardBody>
-            <div className="grid grid-cols-3 gap-5">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 sm:gap-5">
               <div>
                 <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-1">Name</p>
                 <p className="text-sm text-slate-200">{org?.name || '—'}</p>

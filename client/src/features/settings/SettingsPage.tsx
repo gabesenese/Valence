@@ -202,7 +202,7 @@ export default function SettingsPage() {
     <div className="flex flex-col h-full animate-fade-in">
 
       {/* ── Header ── */}
-      <div className="flex items-center gap-4 px-6 pt-6 pb-5 border-b border-surface-400/30">
+      <div className="flex items-center gap-4 px-4 pt-4 pb-4 border-b border-surface-400/30 sm:px-6 sm:pt-6 sm:pb-5">
         <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-brand-600/20 border border-brand-600/30 select-none">
           <span className="text-lg font-bold text-brand-400">{user?.firstName?.[0]}{user?.lastName?.[0]}</span>
         </div>
@@ -221,7 +221,7 @@ export default function SettingsPage() {
       </div>
 
       {/* ── Tabs ── */}
-      <div className="flex border-b border-surface-400/30 px-6 overflow-x-auto">
+      <div className="flex border-b border-surface-400/30 px-4 overflow-x-auto sm:px-6">
         {TABS.map(({ id, label }) => (
           <button key={id} onClick={() => setActiveTab(id)}
             className={cn(
@@ -236,7 +236,7 @@ export default function SettingsPage() {
       </div>
 
       {/* ── Content ── */}
-      <div className="flex-1 overflow-y-auto p-6">
+      <div className="flex-1 overflow-y-auto p-4 sm:p-6">
 
         {/* ACCOUNT */}
         {activeTab === 'account' && (
@@ -244,7 +244,7 @@ export default function SettingsPage() {
             <Card>
               <CardHeader><CardTitle>Profile</CardTitle></CardHeader>
               <CardBody className="flex flex-col gap-4">
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <div className="flex flex-col gap-1.5">
                     <label className="text-xs font-medium uppercase tracking-wider text-slate-400">First Name</label>
                     <input type="text" value={firstName} onChange={(e) => { setFirstName(e.target.value); setProfileSaved(false); }} className={inputCls} />
@@ -288,7 +288,7 @@ export default function SettingsPage() {
                 <div className="flex items-center gap-2"><Mail className="h-4 w-4 text-brand-400" /><CardTitle>Change Email</CardTitle></div>
               </CardHeader>
               <CardBody className="flex flex-col gap-3">
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <div className="flex flex-col gap-1.5">
                     <label className="text-xs font-medium uppercase tracking-wider text-slate-400">New email</label>
                     <input type="email" value={newEmail} placeholder={user?.email} onChange={(e) => { setNewEmail(e.target.value); setEmailSaved(false); }} className={inputCls} />
@@ -562,7 +562,7 @@ export default function SettingsPage() {
 
                 <div className="h-px bg-surface-400/30" />
 
-                <div className="flex items-center justify-between gap-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
                   <div className="flex items-center gap-3">
                     <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-300"><Bell className="h-4 w-4 text-slate-400" /></div>
                     <div><p className="text-sm font-medium text-slate-300">Alert bell</p><p className="text-xs text-slate-500">Minimum severity shown</p></div>
@@ -634,7 +634,7 @@ export default function SettingsPage() {
                         <Trash2 className="h-3.5 w-3.5" /> Reset data
                       </button>
                     ) : (
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
                         <span className="text-xs text-slate-400">Are you sure?</span>
                         <button onClick={resetPortfolio} disabled={resetLoading}
                           className="inline-flex items-center gap-1 rounded-lg bg-danger hover:bg-danger/80 px-3 py-1.5 text-xs font-semibold text-white transition-colors disabled:opacity-60">

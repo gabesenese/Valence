@@ -87,7 +87,7 @@ export default function PortfolioPerformancePage() {
   });
 
   return (
-    <div className="flex flex-col gap-4 p-5 animate-fade-in">
+    <div className="flex flex-col gap-4 p-4 animate-fade-in sm:p-5">
 
       <div className="flex items-center justify-between">
         <p className="text-xs text-slate-500">{properties.length} propert{properties.length !== 1 ? 'ies' : 'y'}</p>

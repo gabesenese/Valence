@@ -125,7 +125,7 @@ function CreateRuleModal({ onClose }: { onClose: () => void }) {
           {/* Trigger */}
           <div className="rounded-xl border border-surface-400/40 bg-surface-200/30 p-4">
             <p className="text-xs font-medium text-slate-400 mb-3">When this happens</p>
-            <div className="grid grid-cols-2 gap-2 mb-3">
+            <div className="grid grid-cols-1 gap-2 mb-3 sm:grid-cols-2">
               {(Object.keys(TRIGGER_CONFIG) as AutomationTrigger[]).map((t) => {
                 const cfg = TRIGGER_CONFIG[t];
                 const Icon = cfg.icon;
@@ -522,7 +522,7 @@ export default function AutomationPage() {
   const activeCount = rules.filter((r) => r.isActive).length;
 
   return (
-    <div className="flex flex-col gap-4 p-5 animate-fade-in">
+    <div className="flex flex-col gap-4 p-4 animate-fade-in sm:p-5">
 
       {/* Header row */}
       <div className="flex items-center justify-between">
