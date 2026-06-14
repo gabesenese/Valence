@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { Bell, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
@@ -24,7 +24,6 @@ export function NotificationBell() {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const severityFilter = useUIStore((s) => s.alertSeverityFilter);
-  const qc = useQueryClient();
 
   const { data: summary } = useQuery({
     queryKey: ['alerts', 'summary'],
@@ -53,21 +52,6 @@ export function NotificationBell() {
     document.addEventListener('mousedown', onClickOutside);
     return () => document.removeEventListener('mousedown', onClickOutside);
   }, [open]);
-
-  const clearAllMutation = useMutation({
-    mutationFn: alertsService.dismissAll,
-    onMutate: () => {
-      qc.setQueryData<{ openTotal: number }>(['alerts', 'summary'], (old) =>
-        old ? { ...old, openTotal: 0 } : old,
-      );
-      qc.setQueryData<{ data: unknown[] }>(['alerts', 'recent-bell', severityFilter], (old) =>
-        old ? { ...old, data: [] } : old,
-      );
-    },
-    onSettled: () => {
-      qc.invalidateQueries({ queryKey: ['alerts'] });
-    },
-  });
 
   const count = summary?.openTotal ?? 0;
 
@@ -101,10 +85,9 @@ export function NotificationBell() {
               )}
               {count > 0 && (
                 <button
-                  onClick={() => clearAllMutation.mutate()}
-                  disabled={clearAllMutation.isPending}
-                  title="Dismiss all notifications"
-                  className="flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] text-slate-500 hover:bg-surface-300/60 hover:text-slate-300 transition-colors disabled:opacity-50"
+                  onClick={() => setOpen(false)}
+                  title="Close notifications"
+                  className="flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] text-slate-500 hover:bg-surface-300/60 hover:text-slate-300 transition-colors"
                 >
                   <X className="h-3 w-3" />
                   Clear all
