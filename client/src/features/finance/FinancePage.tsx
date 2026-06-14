@@ -46,25 +46,39 @@ export default function FinancePage() {
   return (
     <div className="flex flex-col gap-4 p-4 animate-fade-in sm:p-5">
 
-      {/* KPI Strip */}
-      {summary && (
-        <div className="overflow-x-auto">
-          <div className="flex min-w-[420px] items-stretch divide-x divide-surface-400/40 rounded-xl border border-surface-400/50 bg-surface-100 overflow-hidden">
-            {[
-              { label: 'Total Revenue',   value: compactCurrency(summary.totalRevenue),  color: 'text-success' },
-              { label: 'Total Expenses',  value: compactCurrency(summary.totalExpenses), color: 'text-danger'  },
-              { label: 'Net Income',      value: compactCurrency(summary.netIncome),     color: netIncomeColor },
-              { label: 'Flagged Records', value: summary.flaggedRecords,                 color: 'text-warning' },
-              { label: 'Pending Review',  value: summary.pendingRecords,                 color: 'text-info'    },
-            ].map(kpi => (
-              <div key={kpi.label} className="flex flex-1 flex-col gap-0.5 px-4 py-3 min-w-[80px]">
-                <span className={`text-lg font-bold tabular-nums leading-none ${kpi.color}`}>{kpi.value}</span>
-                <span className="text-[10px] text-slate-500 whitespace-nowrap">{kpi.label}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      {/* KPI Strip — grid on mobile, horizontal strip on sm+ */}
+      {summary && (() => {
+        const kpis = [
+          { label: 'Total Revenue',   value: compactCurrency(summary.totalRevenue),  color: 'text-success' },
+          { label: 'Total Expenses',  value: compactCurrency(summary.totalExpenses), color: 'text-danger'  },
+          { label: 'Net Income',      value: compactCurrency(summary.netIncome),     color: netIncomeColor },
+          { label: 'Flagged Records', value: summary.flaggedRecords,                 color: 'text-warning' },
+          { label: 'Pending Review',  value: summary.pendingRecords,                 color: 'text-info'    },
+        ];
+        return (
+          <>
+            <div className="grid grid-cols-2 gap-2 sm:hidden">
+              {kpis.map((kpi, i) => (
+                <div
+                  key={kpi.label}
+                  className={`rounded-xl border border-surface-400/50 bg-surface-100 px-4 py-3${i === kpis.length - 1 && kpis.length % 2 !== 0 ? ' col-span-2 max-w-[50%]' : ''}`}
+                >
+                  <p className={`text-xl font-bold tabular-nums leading-none ${kpi.color}`}>{kpi.value}</p>
+                  <p className="mt-0.5 text-[10px] text-slate-500">{kpi.label}</p>
+                </div>
+              ))}
+            </div>
+            <div className="hidden sm:flex items-stretch divide-x divide-surface-400/40 rounded-xl border border-surface-400/50 bg-surface-100 overflow-hidden">
+              {kpis.map(kpi => (
+                <div key={kpi.label} className="flex flex-1 flex-col gap-0.5 px-5 py-3 min-w-0">
+                  <span className={`text-lg font-bold tabular-nums leading-none ${kpi.color}`}>{kpi.value}</span>
+                  <span className="text-[10px] text-slate-500 truncate">{kpi.label}</span>
+                </div>
+              ))}
+            </div>
+          </>
+        );
+      })()}
 
       {/* Two-column body */}
       <div className="grid grid-cols-1 xl:grid-cols-[1fr_320px] gap-4 items-start">

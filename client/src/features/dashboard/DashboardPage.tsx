@@ -199,24 +199,33 @@ export default function DashboardPage() {
           {/* ── LEFT: Action column ─────────────────────────────────────────── */}
           <div className="flex flex-col gap-4 min-w-0">
 
-            {/* KPI Strip */}
-            <div className="overflow-x-auto">
-            <div className="flex min-w-[360px] items-stretch divide-x divide-surface-400/40 rounded-xl border border-surface-400/50 bg-surface-100 overflow-hidden">
+            {/* KPI Strip — 2-col card grid on mobile, horizontal strip on sm+ */}
+            <div className="grid grid-cols-2 gap-2 sm:hidden">
               {kpis.map(kpi => (
-                <button
-                  key={kpi.label}
-                  onClick={() => navigate(kpi.href)}
-                  className="flex flex-1 flex-col gap-0.5 px-4 py-3 hover:bg-surface-200/60 transition-colors min-w-0 text-left"
-                >
+                <button key={kpi.label} onClick={() => navigate(kpi.href)}
+                  className="rounded-xl border border-surface-400/50 bg-surface-100 px-4 py-3 text-left hover:bg-surface-200/60 transition-colors">
+                  <div className="flex items-center gap-1.5">
+                    <span className={`text-xl font-bold tabular-nums leading-none ${kpi.color}`}>{kpi.value}</span>
+                    {kpi.trend !== undefined && (
+                      <span className={`flex items-center gap-0.5 text-[10px] font-semibold ${kpi.trend >= 0 ? 'text-success' : 'text-danger'}`}>
+                        {kpi.trend >= 0 ? <ArrowUp className="h-2.5 w-2.5" /> : <ArrowDown className="h-2.5 w-2.5" />}
+                        {Math.abs(kpi.trend).toFixed(1)}%
+                      </span>
+                    )}
+                  </div>
+                  <p className="mt-0.5 text-[10px] text-slate-500">{kpi.label}</p>
+                </button>
+              ))}
+            </div>
+            <div className="hidden sm:flex items-stretch divide-x divide-surface-400/40 rounded-xl border border-surface-400/50 bg-surface-100 overflow-hidden">
+              {kpis.map(kpi => (
+                <button key={kpi.label} onClick={() => navigate(kpi.href)}
+                  className="flex flex-1 flex-col gap-0.5 px-4 py-3 hover:bg-surface-200/60 transition-colors min-w-0 text-left">
                   <div className="flex items-center gap-1.5 min-w-0">
-                    <span className={`text-lg font-bold tabular-nums leading-none truncate ${kpi.color}`}>
-                      {kpi.value}
-                    </span>
+                    <span className={`text-lg font-bold tabular-nums leading-none truncate ${kpi.color}`}>{kpi.value}</span>
                     {kpi.trend !== undefined && (
                       <span className={`shrink-0 flex items-center gap-0.5 text-[10px] font-semibold ${kpi.trend >= 0 ? 'text-success' : 'text-danger'}`}>
-                        {kpi.trend >= 0
-                          ? <ArrowUp className="h-2.5 w-2.5" />
-                          : <ArrowDown className="h-2.5 w-2.5" />}
+                        {kpi.trend >= 0 ? <ArrowUp className="h-2.5 w-2.5" /> : <ArrowDown className="h-2.5 w-2.5" />}
                         {Math.abs(kpi.trend).toFixed(1)}%
                       </span>
                     )}
@@ -225,7 +234,6 @@ export default function DashboardPage() {
                   {kpi.sub && <span className={`text-[10px] font-medium truncate ${kpi.subColor}`}>{kpi.sub}</span>}
                 </button>
               ))}
-            </div>
             </div>
 
             {/* Action Feed */}
