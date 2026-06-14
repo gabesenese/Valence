@@ -5,18 +5,22 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Building2, Globe, Users, Crown, Shield, BarChart3, Eye,
   UserPlus, X, Copy, Check, Clock, Link as LinkIcon, AlertTriangle,
-  CheckCircle2, Loader2, MoreVertical, UserX,
+  CheckCircle2, Loader2, MoreVertical, UserX, FileText, Activity, Cpu,
 } from 'lucide-react';
 import { organizationService } from '@/services/organization.service';
 import { usersService, type TeamMember, type UserRole, type Invite } from '@/services/users.service';
+import { propertiesService } from '@/services/properties.service';
+import { leasesService } from '@/services/leases.service';
+import { tasksService } from '@/services/tasks.service';
+import { auditService, type AuditLogEntry } from '@/services/audit.service';
 import { useAuthStore } from '@/state/auth.store';
 import { authService } from '@/services/auth.service';
+import { usePlan, PLAN_LABELS } from '@/hooks/usePlan';
 import { Card, CardHeader, CardTitle, CardBody } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Select } from '@/components/ui/Select';
-import { PageLoader } from '@/components/ui/Spinner';
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
@@ -89,12 +93,12 @@ function daysUntil(iso: string) {
   return Math.max(0, Math.ceil((new Date(iso).getTime() - Date.now()) / 86400000));
 }
 
-function lastActive(iso: string | null | undefined): string {
+function timeAgo(iso: string | null | undefined): string {
   if (!iso) return 'Never';
   const diff = Date.now() - new Date(iso).getTime();
   const mins = Math.floor(diff / 60000);
-  if (mins < 2)  return 'Just now';
-  if (mins < 60) return `${mins}m ago`;
+  if (mins < 2)   return 'Just now';
+  if (mins < 60)  return `${mins}m ago`;
   const hours = Math.floor(mins / 60);
   if (hours < 24) return `${hours}h ago`;
   const days = Math.floor(hours / 24);
@@ -103,15 +107,27 @@ function lastActive(iso: string | null | undefined): string {
   return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
+function describeActivity(entry: AuditLogEntry): string {
+  const name = entry.entityName ? ` "${entry.entityName}"` : ` ${entry.entity}`;
+  switch (entry.action) {
+    case 'CREATE':      return `created${name}`;
+    case 'UPDATE':      return `updated${name}`;
+    case 'DELETE':      return `deleted${name}`;
+    case 'IMPORT':      return `imported ${entry.entity}s`;
+    case 'ROLE_CHANGE': return `changed a team member's role`;
+    case 'PLAN_CHANGE': return `changed the organization plan`;
+    default:            return `${entry.action.toLowerCase().replace(/_/g, ' ')}${name}`;
+  }
+}
+
 // ─── Shared sub-components ────────────────────────────────────────────────────
 
-function MemberAvatar({ member, size = 'md' }: { member: TeamMember; size?: 'sm' | 'md' | 'lg' }) {
+function MemberAvatar({ member }: { member: TeamMember }) {
   const initials = `${member.firstName[0]}${member.lastName[0]}`.toUpperCase();
   const colors = ['bg-brand-600', 'bg-purple-600', 'bg-teal-600', 'bg-orange-600'];
   const color = colors[member.firstName.charCodeAt(0) % colors.length];
-  const sz = size === 'lg' ? 'h-12 w-12 text-base' : size === 'sm' ? 'h-7 w-7 text-[10px]' : 'h-9 w-9 text-sm';
   return (
-    <div className={`flex shrink-0 items-center justify-center rounded-full ${color} font-bold text-white ${sz}`}>
+    <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${color} text-sm font-bold text-white`}>
       {initials}
     </div>
   );
@@ -130,42 +146,94 @@ function CopyButton({ text, label = 'Copy' }: { text: string; label?: string }) 
   );
 }
 
-// ─── Org overview header ──────────────────────────────────────────────────────
+// ─── Org hero ─────────────────────────────────────────────────────────────────
 
-function OrgOverviewCard({ members }: { members: TeamMember[] }) {
+function OrgHeroCard({ members, canInvite, onInvite }: {
+  members: TeamMember[];
+  canInvite: boolean;
+  onInvite: () => void;
+}) {
   const { data: org } = useQuery({
     queryKey: ['organization'],
     queryFn: organizationService.getOrganization,
     staleTime: 60_000,
   });
+  const { data: propertiesPage } = useQuery({
+    queryKey: ['org-stats', 'properties'],
+    queryFn: () => propertiesService.getProperties({ limit: 1 }),
+    staleTime: 5 * 60_000,
+  });
+  const { data: leasesPage } = useQuery({
+    queryKey: ['org-stats', 'leases'],
+    queryFn: () => leasesService.getLeases({ limit: 1 }),
+    staleTime: 5 * 60_000,
+  });
+  const { data: tasks = [] } = useQuery({
+    queryKey: ['tasks'],
+    queryFn: () => tasksService.getAll(),
+    staleTime: 5 * 60_000,
+  });
+  const { label: planLabel } = usePlan();
 
   const owner = members.find((m) => m.role === 'SUPER_ADMIN');
   const activeCount = members.filter((m) => m.isActive).length;
+  const propertyCount = propertiesPage?.meta.total ?? 0;
+  const leaseCount = leasesPage?.meta.total ?? 0;
+  const openTaskCount = tasks.filter((t) => t.status === 'OPEN' || t.status === 'IN_PROGRESS').length;
 
   return (
     <Card>
       <CardBody className="py-5">
-        <div className="flex items-center gap-4">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-brand-600/20 border border-brand-500/20">
-            <Building2 className="h-6 w-6 text-brand-400" />
-          </div>
-          <div>
-            <h2 className="text-lg font-bold text-white">{org?.name ?? '—'}</h2>
-            <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-slate-500">
-              {org?.industry && <span>{org.industry}</span>}
-              <span className="flex items-center gap-1">
-                <Users className="h-3 w-3" />
-                {activeCount} member{activeCount !== 1 ? 's' : ''}
-              </span>
-              {owner && (
-                <span className="flex items-center gap-1">
-                  <Crown className="h-3 w-3 text-warning/70" />
-                  {owner.firstName} {owner.lastName}
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-brand-600/20 border border-brand-500/20">
+              <Building2 className="h-6 w-6 text-brand-400" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2.5">
+                <h2 className="text-xl font-bold text-white">{org?.name ?? '—'}</h2>
+                <span className="rounded-full border border-brand-500/30 bg-brand-600/10 px-2 py-0.5 text-[10px] font-semibold text-brand-400 uppercase tracking-wide">
+                  {planLabel}
                 </span>
-              )}
-              {org?.currency && <span>{org.currency}</span>}
+              </div>
+              {org?.industry && <p className="text-xs text-slate-500 mt-0.5">{org.industry}</p>}
+
+              <div className="mt-2.5 flex flex-wrap items-center gap-4 text-xs text-slate-500">
+                <span className="flex items-center gap-1.5">
+                  <Users className="h-3.5 w-3.5" />
+                  <span className="font-semibold text-slate-200">{activeCount}</span> members
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <Building2 className="h-3.5 w-3.5" />
+                  <span className="font-semibold text-slate-200">{propertyCount}</span> properties
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <FileText className="h-3.5 w-3.5" />
+                  <span className="font-semibold text-slate-200">{leaseCount}</span> leases
+                </span>
+                {openTaskCount > 0 && (
+                  <span className="flex items-center gap-1.5">
+                    <Activity className="h-3.5 w-3.5" />
+                    <span className="font-semibold text-slate-200">{openTaskCount}</span> open tasks
+                  </span>
+                )}
+                {owner && (
+                  <span className="flex items-center gap-1.5 text-slate-500">
+                    <Crown className="h-3.5 w-3.5 text-warning/60" />
+                    <span className="text-slate-400">Owner:</span>
+                    <span className="font-medium text-slate-300">{owner.firstName} {owner.lastName}</span>
+                  </span>
+                )}
+              </div>
             </div>
           </div>
+
+          {canInvite && (
+            <Button size="sm" onClick={onInvite} className="shrink-0">
+              <UserPlus className="h-3.5 w-3.5" />
+              Invite member
+            </Button>
+          )}
         </div>
       </CardBody>
     </Card>
@@ -224,7 +292,6 @@ function RolePicker({ member, currentUserRole, onSelect, busy }: {
         <span className={cfg.color}>{cfg.label}</span>
         <MoreVertical className="h-3 w-3 text-slate-600" />
       </button>
-
       {open && createPortal(
         <div
           ref={dropRef}
@@ -274,19 +341,16 @@ function MemberRow({ member, currentUserId, currentUserRole }: {
 
   return (
     <div className={`flex items-center gap-4 px-5 py-4 border-b border-surface-400/30 last:border-0 hover:bg-surface-200/30 transition-colors group ${!member.isActive ? 'opacity-50' : ''}`}>
-      {/* Avatar + name + email */}
-      <div className="flex items-center gap-3 flex-1 min-w-0">
-        <MemberAvatar member={member} />
-        <div className="min-w-0">
-          <p className="text-sm font-medium text-slate-200">
-            {member.firstName} {member.lastName}
-            {isMe && <span className="ml-1.5 text-[10px] text-brand-400 font-normal">(you)</span>}
-          </p>
-          <p className="text-xs text-slate-500 truncate">{member.email}</p>
-        </div>
+      <MemberAvatar member={member} />
+
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium text-slate-200">
+          {member.firstName} {member.lastName}
+          {isMe && <span className="ml-1.5 text-[10px] text-brand-400 font-normal">(you)</span>}
+        </p>
+        <p className="text-xs text-slate-500 truncate">{member.email}</p>
       </div>
 
-      {/* Role */}
       <div className="shrink-0">
         <RolePicker
           member={member}
@@ -296,19 +360,16 @@ function MemberRow({ member, currentUserId, currentUserRole }: {
         />
       </div>
 
-      {/* Last active */}
       <span className="text-xs text-slate-500 shrink-0 w-24 text-right tabular-nums">
-        {lastActive(member.lastLoginAt)}
+        {timeAgo(member.lastLoginAt)}
       </span>
 
-      {/* Status */}
       <div className="shrink-0">
         <Badge variant={member.isActive ? 'success' : 'neutral'}>
           {member.isActive ? 'Active' : 'Inactive'}
         </Badge>
       </div>
 
-      {/* Remove */}
       <div className="shrink-0 w-6 opacity-0 group-hover:opacity-100 transition-opacity">
         {canManage && member.isActive && (
           <button
@@ -355,7 +416,6 @@ function InviteModal({ onClose }: { onClose: () => void }) {
             <X className="h-4 w-4" />
           </button>
         </div>
-
         {!createdToken ? (
           <div className="flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">
@@ -417,12 +477,10 @@ function InviteModal({ onClose }: { onClose: () => void }) {
 
 // ─── Team section ─────────────────────────────────────────────────────────────
 
-function TeamSection() {
+function TeamSection({ onInvite, canInvite }: { onInvite: () => void; canInvite: boolean }) {
   const qc = useQueryClient();
   const currentUser = useAuthStore((s) => s.user);
   const currentUserRole = (currentUser?.role as UserRole) ?? 'VIEWER';
-  const canInvite = currentUserRole === 'ADMIN' || currentUserRole === 'SUPER_ADMIN';
-  const [showInvite, setShowInvite] = useState(false);
 
   const { data: members = [], isLoading } = useQuery({
     queryKey: ['users'],
@@ -444,97 +502,149 @@ function TeamSection() {
   const activeCount = members.filter((m) => m.isActive).length;
 
   return (
-    <>
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <Users className="h-4 w-4 text-brand-400" />
-            <CardTitle>Team Members</CardTitle>
-            <span className="text-xs text-slate-600">{activeCount} active</span>
-          </div>
+    <Card>
+      <CardHeader>
+        <div className="flex items-center gap-2">
+          <Users className="h-4 w-4 text-brand-400" />
+          <CardTitle>Team Members</CardTitle>
+          <span className="text-xs text-slate-600">{activeCount} active</span>
+        </div>
+        {canInvite && (
+          <Button size="sm" variant="outline" onClick={onInvite}>
+            <UserPlus className="h-3.5 w-3.5" />
+            Invite
+          </Button>
+        )}
+      </CardHeader>
+
+      {isLoading ? (
+        <div className="flex items-center justify-center py-16">
+          <div className="h-5 w-5 animate-spin rounded-full border-2 border-surface-400 border-t-brand-400" />
+        </div>
+      ) : members.length === 0 ? (
+        <div className="flex flex-col items-center justify-center px-4 py-16 text-center">
+          <Users className="mx-auto h-8 w-8 text-slate-600 mb-2" />
+          <p className="text-sm text-slate-500">No team members yet</p>
           {canInvite && (
-            <Button size="sm" onClick={() => setShowInvite(true)}>
-              <UserPlus className="h-3.5 w-3.5" />
-              Invite member
-            </Button>
+            <button onClick={onInvite} className="mt-3 text-xs text-brand-400 hover:text-brand-300 transition-colors">
+              Invite the first team member →
+            </button>
           )}
-        </CardHeader>
+        </div>
+      ) : (
+        <div>
+          {members.map((m) => (
+            <MemberRow
+              key={m.id}
+              member={m}
+              currentUserId={currentUser?.id ?? ''}
+              currentUserRole={currentUserRole}
+            />
+          ))}
+        </div>
+      )}
 
-        {isLoading ? (
-          <CardBody><PageLoader /></CardBody>
-        ) : members.length === 0 ? (
-          <div className="flex flex-col items-center justify-center px-4 py-16 text-center">
-            <Users className="mx-auto h-8 w-8 text-slate-600 mb-2" />
-            <p className="text-sm text-slate-500">No team members yet</p>
-            {canInvite && (
-              <button onClick={() => setShowInvite(true)} className="mt-3 text-xs text-brand-400 hover:text-brand-300 transition-colors">
-                Invite the first team member →
-              </button>
-            )}
+      {/* Pending invites — embedded at the bottom */}
+      {canInvite && invites.length > 0 && (
+        <>
+          <div className="flex items-center gap-2 border-t border-surface-400/30 px-5 py-2.5 bg-surface-100/40">
+            <Clock className="h-3.5 w-3.5 text-slate-500" />
+            <span className="text-xs font-medium text-slate-500">Pending Invitations</span>
+            <span className="text-xs text-slate-600">({invites.length})</span>
           </div>
-        ) : (
-          <div>
-            {members.map((m) => (
-              <MemberRow
-                key={m.id}
-                member={m}
-                currentUserId={currentUser?.id ?? ''}
-                currentUserRole={currentUserRole}
-              />
-            ))}
-          </div>
-        )}
-
-        {/* Pending invites embedded at the bottom of the team card */}
-        {canInvite && invites.length > 0 && (
-          <>
-            <div className="flex items-center gap-2 border-t border-surface-400/30 px-5 py-2.5 bg-surface-100/40">
-              <Clock className="h-3.5 w-3.5 text-slate-500" />
-              <span className="text-xs font-medium text-slate-500">Pending Invites</span>
-              <span className="text-xs text-slate-600">({invites.length})</span>
-            </div>
-            <div className="divide-y divide-surface-400/20">
-              {invites.map((invite: Invite) => {
-                const days = daysUntil(invite.expiresAt);
-                const link = `${window.location.origin}/auth/invite/${invite.token}`;
-                const cfg = ROLE_CONFIG[invite.role];
-                return (
-                  <div key={invite.id} className="flex items-center gap-3 px-5 py-3">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm text-slate-300 truncate">{invite.email}</p>
-                      <p className="text-xs text-slate-600 mt-0.5">
-                        Invited by {invite.invitedBy.firstName} {invite.invitedBy.lastName}
-                      </p>
-                    </div>
-                    <div className={`flex items-center gap-1.5 text-xs font-medium shrink-0 ${cfg.color}`}>
-                      <cfg.icon className="h-3.5 w-3.5" />
-                      {cfg.label}
-                    </div>
-                    <span className={`text-xs shrink-0 ${days <= 1 ? 'text-danger' : days <= 3 ? 'text-warning' : 'text-slate-500'}`}>
-                      {days === 0 ? 'Expires today' : `${days}d left`}
-                    </span>
-                    <CopyButton text={link} label="Resend" />
-                    <button
-                      onClick={() => revokeMutation.mutate(invite.id)}
-                      disabled={revokeMutation.isPending}
-                      className="text-xs text-slate-600 hover:text-danger transition-colors shrink-0"
-                    >
-                      Revoke
-                    </button>
+          <div className="divide-y divide-surface-400/20">
+            {invites.map((invite: Invite) => {
+              const days = daysUntil(invite.expiresAt);
+              const link = `${window.location.origin}/auth/invite/${invite.token}`;
+              const cfg = ROLE_CONFIG[invite.role];
+              return (
+                <div key={invite.id} className="flex items-center gap-3 px-5 py-3">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-slate-300 truncate">{invite.email}</p>
+                    <p className="text-xs text-slate-600 mt-0.5">
+                      Invited by {invite.invitedBy.firstName} {invite.invitedBy.lastName}
+                    </p>
                   </div>
-                );
-              })}
-            </div>
-          </>
-        )}
-      </Card>
-
-      {showInvite && <InviteModal onClose={() => setShowInvite(false)} />}
-    </>
+                  <div className={`flex items-center gap-1.5 text-xs font-medium shrink-0 ${cfg.color}`}>
+                    <cfg.icon className="h-3.5 w-3.5" />
+                    {cfg.label}
+                  </div>
+                  <span className={`text-xs shrink-0 ${days <= 1 ? 'text-danger' : days <= 3 ? 'text-warning' : 'text-slate-500'}`}>
+                    {days === 0 ? 'Expires today' : `${days}d left`}
+                  </span>
+                  <CopyButton text={link} label="Resend" />
+                  <button
+                    onClick={() => revokeMutation.mutate(invite.id)}
+                    disabled={revokeMutation.isPending}
+                    className="text-xs text-slate-600 hover:text-danger transition-colors shrink-0"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </>
+      )}
+    </Card>
   );
 }
 
-// ─── Org settings card (compact read + inline edit) ───────────────────────────
+// ─── Team activity ────────────────────────────────────────────────────────────
+
+function TeamActivityCard() {
+  const { data, isLoading } = useQuery({
+    queryKey: ['audit', 'recent'],
+    queryFn: () => auditService.list({ limit: 10 }),
+    staleTime: 60_000,
+  });
+
+  if (isLoading || !data?.data.length) return null;
+
+  const colors = ['bg-brand-600', 'bg-purple-600', 'bg-teal-600', 'bg-orange-600'];
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center gap-2">
+          <Activity className="h-4 w-4 text-slate-500" />
+          <CardTitle>Recent Activity</CardTitle>
+        </div>
+      </CardHeader>
+      <div>
+        {data.data.map((entry) => {
+          const actor = entry.user;
+          const avatarColor = actor ? colors[actor.firstName.charCodeAt(0) % colors.length] : 'bg-surface-400';
+          return (
+            <div
+              key={entry.id}
+              className="flex items-center gap-3 px-5 py-3 border-b border-surface-400/20 last:border-0 hover:bg-surface-200/20 transition-colors"
+            >
+              {actor ? (
+                <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${avatarColor} text-[10px] font-bold text-white`}>
+                  {actor.firstName[0]}{actor.lastName[0]}
+                </div>
+              ) : (
+                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-surface-300">
+                  <Cpu className="h-3.5 w-3.5 text-slate-500" />
+                </div>
+              )}
+              <p className="flex-1 min-w-0 text-xs text-slate-400 truncate">
+                <span className="font-medium text-slate-200">
+                  {actor ? `${actor.firstName} ${actor.lastName}` : 'System'}
+                </span>
+                {' '}{describeActivity(entry)}
+              </p>
+              <span className="text-xs text-slate-600 shrink-0 tabular-nums">{timeAgo(entry.createdAt)}</span>
+            </div>
+          );
+        })}
+      </div>
+    </Card>
+  );
+}
+
+// ─── Org settings (compact read + inline edit) ────────────────────────────────
 
 function OrgSettingsCard() {
   const qc = useQueryClient();
@@ -609,8 +719,8 @@ function OrgSettingsCard() {
                 <p className="text-sm text-slate-200">{org?.industry || '—'}</p>
               </div>
               <div>
-                <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-1">Currency</p>
-                <p className="text-sm text-slate-200">{org?.currency || '—'}</p>
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-1">Currency · Timezone</p>
+                <p className="text-sm text-slate-200">{org?.currency || '—'} · {org?.timezone?.split('/')[1]?.replace(/_/g, ' ') ?? org?.timezone ?? '—'}</p>
               </div>
             </div>
             {saved && (
@@ -677,7 +787,6 @@ function TransferOwnershipModal({ members, onClose, onSuccess }: {
 
   const eligible = members.filter((m) => m.isActive && m.role !== 'SUPER_ADMIN');
   const selectedMember = eligible.find((m) => m.id === selectedId);
-
   const memberOptions = [
     { value: '', label: 'Select a member...' },
     ...eligible.map((m) => ({ value: m.id, label: `${m.firstName} ${m.lastName} (${ROLE_CONFIG[m.role].label})` })),
@@ -698,13 +807,11 @@ function TransferOwnershipModal({ members, onClose, onSuccess }: {
             <X className="h-4 w-4" />
           </button>
         </div>
-
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-medium text-slate-400 uppercase tracking-wide">Transfer to</label>
             <Select value={selectedId} onChange={setSelectedId} options={memberOptions} />
           </div>
-
           {selectedMember && (
             <div className="rounded-xl border border-surface-400/40 bg-surface-200/50 px-4 py-3 flex items-center gap-3">
               <MemberAvatar member={selectedMember} />
@@ -714,7 +821,6 @@ function TransferOwnershipModal({ members, onClose, onSuccess }: {
               </div>
             </div>
           )}
-
           {selectedId && (
             <label className="flex items-start gap-3 cursor-pointer">
               <input
@@ -725,13 +831,11 @@ function TransferOwnershipModal({ members, onClose, onSuccess }: {
               />
               <span className="text-xs text-slate-400">
                 I understand that <strong className="text-slate-200">{selectedMember?.firstName} {selectedMember?.lastName}</strong> will
-                become the new Owner and I will be downgraded to Admin. I will need to sign out for the change to take effect.
+                become the new Owner and I will be downgraded to Admin.
               </span>
             </label>
           )}
-
           {error && <p className="text-xs text-danger bg-danger/10 border border-danger/20 rounded-lg px-3 py-2">{error}</p>}
-
           <div className="flex justify-end gap-2 mt-1">
             <Button variant="ghost" size="sm" onClick={onClose}>Cancel</Button>
             <Button
@@ -802,7 +906,6 @@ function DangerZone({ members }: { members: TeamMember[] }) {
           </div>
         </CardBody>
       </Card>
-
       {showModal && (
         <TransferOwnershipModal
           members={members}
@@ -819,6 +922,8 @@ function DangerZone({ members }: { members: TeamMember[] }) {
 export default function OrganizationPage() {
   const currentUser = useAuthStore((s) => s.user);
   const isOwner = currentUser?.role === 'SUPER_ADMIN';
+  const canInvite = currentUser?.role === 'ADMIN' || currentUser?.role === 'SUPER_ADMIN';
+  const [showInvite, setShowInvite] = useState(false);
 
   const { data: members = [] } = useQuery({
     queryKey: ['users'],
@@ -830,19 +935,32 @@ export default function OrganizationPage() {
       <PageHeader
         title="Organization"
         description="Team management and workspace settings"
+        actions={
+          canInvite ? (
+            <Button size="sm" onClick={() => setShowInvite(true)}>
+              <UserPlus className="h-3.5 w-3.5" />
+              Invite member
+            </Button>
+          ) : undefined
+        }
       />
 
-      {/* Overview — full width */}
-      <OrgOverviewCard members={members} />
+      {/* Hero — org name, real stats, owner */}
+      <OrgHeroCard members={members} canInvite={canInvite} onInvite={() => setShowInvite(true)} />
 
-      {/* Team members — full width, primary content */}
-      <TeamSection />
+      {/* Team members + pending invites — primary content, full width */}
+      <TeamSection onInvite={() => setShowInvite(true)} canInvite={canInvite} />
+
+      {/* Recent team activity — full width */}
+      <TeamActivityCard />
 
       {/* Settings — compact, secondary */}
       <OrgSettingsCard />
 
-      {/* Danger zone — owner only, at the bottom */}
+      {/* Danger zone — owner only */}
       {isOwner && <DangerZone members={members} />}
+
+      {showInvite && <InviteModal onClose={() => setShowInvite(false)} />}
     </div>
   );
 }
