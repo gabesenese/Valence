@@ -156,29 +156,26 @@ function QueueHero({
             <h1 className="mt-1 text-xl font-bold text-white">{greeting}, {user?.firstName}.</h1>
 
             {allClear ? (
-              <div className="mt-3 flex items-center gap-2 rounded-xl border border-success/20 bg-success/8 px-4 py-2.5">
-                <div className="h-2 w-2 rounded-full bg-success" />
-                <p className="text-sm font-medium text-success">All clear — no items requiring attention.</p>
-              </div>
+              <p className="mt-3 text-sm text-success">All clear — no items requiring attention.</p>
             ) : (
-              <div className="mt-3 flex flex-wrap gap-x-6 gap-y-2">
+              <div className="mt-3 flex flex-col gap-1">
                 {(summary?.critical ?? 0) > 0 && (
-                  <div className="flex items-baseline gap-1.5">
-                    <span className="text-3xl font-bold tabular-nums text-danger">{summary!.critical}</span>
-                    <span className="text-sm text-slate-500">critical</span>
-                  </div>
+                  <p className="text-sm text-slate-300 leading-relaxed">
+                    <span className="font-semibold text-danger">{summary!.critical} critical item{summary!.critical !== 1 ? 's' : ''}</span>
+                    {' '}require{summary!.critical === 1 ? 's' : ''} attention.
+                  </p>
                 )}
-                {(summary?.warning ?? 0) > 0 && (
-                  <div className="flex items-baseline gap-1.5">
-                    <span className="text-3xl font-bold tabular-nums text-warning">{summary!.warning}</span>
-                    <span className="text-sm text-slate-500">warning</span>
-                  </div>
+                {(summary?.warning ?? 0) > 0 && (summary?.critical ?? 0) === 0 && (
+                  <p className="text-sm text-slate-300 leading-relaxed">
+                    <span className="font-semibold text-warning">{summary!.warning} warning{summary!.warning !== 1 ? 's' : ''}</span>
+                    {' '}require{summary!.warning === 1 ? 's' : ''} attention.
+                  </p>
                 )}
                 {totalRisk > 0 && (
-                  <div className="flex items-baseline gap-1.5">
-                    <span className="text-3xl font-bold tabular-nums text-white">{formatDollars(totalRisk)}</span>
-                    <span className="text-sm text-slate-500">/mo at risk</span>
-                  </div>
+                  <p className="text-sm text-slate-300 leading-relaxed">
+                    <span className="font-semibold text-white">{formatDollars(totalRisk)}/month</span>
+                    {' '}revenue is currently at risk.
+                  </p>
                 )}
               </div>
             )}
@@ -196,12 +193,12 @@ function QueueHero({
         </div>
 
         {topItem && !allClear && (
-          <div className="mt-4 rounded-xl border border-danger/20 bg-danger/5 px-4 py-3">
-            <p className="mb-1.5 text-[10px] font-bold uppercase tracking-wider text-danger">Top Priority</p>
+          <div className="mt-4 inline-flex flex-col gap-1.5 rounded-xl border border-danger/20 bg-danger/5 px-4 py-3 max-w-xs">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-danger">Most Urgent</p>
             {topItem.monthlyRisk > 0 && (
-              <p className="text-xl font-bold tabular-nums text-white">
+              <p className="text-base font-bold tabular-nums text-white">
                 {formatDollars(topItem.monthlyRisk)}
-                <span className="ml-1.5 text-sm font-normal text-slate-400">/mo at risk</span>
+                <span className="ml-1 text-xs font-normal text-slate-400">/mo at risk</span>
               </p>
             )}
             <p className="mt-0.5 text-sm font-medium text-slate-200 leading-snug">{topItem.title}</p>
