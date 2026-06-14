@@ -23,6 +23,7 @@ const ACTION_META: Record<string, { label: string; color: string }> = {
   IMPORT:      { label: 'Imported',    color: 'text-amber-300 bg-amber-500/10 border-amber-500/20' },
   PLAN_CHANGE: { label: 'Plan change', color: 'text-purple-300 bg-purple-500/10 border-purple-500/20' },
   ROLE_CHANGE: { label: 'Role change', color: 'text-sky-300 bg-sky-500/10 border-sky-500/20'    },
+  RESTORE:     { label: 'Restored',   color: 'text-teal-300 bg-teal-500/10 border-teal-500/20'   },
 };
 
 const ENTITY_ICON: Record<string, React.ComponentType<{ className?: string }>> = {

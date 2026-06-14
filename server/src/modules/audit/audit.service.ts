@@ -1,6 +1,6 @@
 import { prisma } from '../../infrastructure/database';
 
-export type AuditAction = 'CREATE' | 'UPDATE' | 'DELETE' | 'IMPORT' | 'PLAN_CHANGE' | 'ROLE_CHANGE';
+export type AuditAction = 'CREATE' | 'UPDATE' | 'DELETE' | 'IMPORT' | 'PLAN_CHANGE' | 'ROLE_CHANGE' | 'RESTORE';
 
 export interface LogAuditInput {
   userId?: string;
