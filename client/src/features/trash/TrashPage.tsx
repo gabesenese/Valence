@@ -128,7 +128,7 @@ export default function TrashPage() {
       <PageHeader
         title="Trash"
         description="Items deleted in the last 30 days. After 30 days they are permanently removed."
-        actions={total > 0 ? (
+        actions={
           confirmEmpty ? (
             <div className="flex items-center gap-2">
               <span className="text-xs text-slate-400">Permanently delete all {total} items?</span>
@@ -146,12 +146,13 @@ export default function TrashPage() {
           ) : (
             <button
               onClick={() => setConfirmEmpty(true)}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-danger/20 bg-danger/10 hover:bg-danger/20 px-3 py-1.5 text-xs font-semibold text-danger transition-colors"
+              disabled={total === 0 || isLoading}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-danger/20 bg-danger/10 hover:bg-danger/20 px-3 py-1.5 text-xs font-semibold text-danger transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
             >
               <Trash2 className="h-3.5 w-3.5" /> Empty Trash
             </button>
           )
-        ) : undefined}
+        }
       />
 
 
