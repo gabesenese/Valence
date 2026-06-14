@@ -188,7 +188,7 @@ export default function DashboardPage() {
   const isEmpty = summary && summary.properties.total === 0 && summary.leases.active === 0;
 
   return (
-    <div className="flex flex-col gap-4 p-5 animate-fade-in">
+    <div className="flex flex-col gap-4 p-4 animate-fade-in sm:p-5">
       <OnboardingCard />
 
       {isEmpty && <WelcomeScreen />}
@@ -200,7 +200,8 @@ export default function DashboardPage() {
           <div className="flex flex-col gap-4 min-w-0">
 
             {/* KPI Strip */}
-            <div className="flex items-stretch divide-x divide-surface-400/40 rounded-xl border border-surface-400/50 bg-surface-100 overflow-hidden">
+            <div className="overflow-x-auto">
+            <div className="flex min-w-[360px] items-stretch divide-x divide-surface-400/40 rounded-xl border border-surface-400/50 bg-surface-100 overflow-hidden">
               {kpis.map(kpi => (
                 <button
                   key={kpi.label}
@@ -224,6 +225,7 @@ export default function DashboardPage() {
                   {kpi.sub && <span className={`text-[10px] font-medium truncate ${kpi.subColor}`}>{kpi.sub}</span>}
                 </button>
               ))}
+            </div>
             </div>
 
             {/* Action Feed */}

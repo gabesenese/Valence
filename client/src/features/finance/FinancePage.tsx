@@ -44,23 +44,25 @@ export default function FinancePage() {
   const netIncomeColor = summary && summary.netIncome >= 0 ? 'text-success' : 'text-danger';
 
   return (
-    <div className="flex flex-col gap-4 p-5 animate-fade-in">
+    <div className="flex flex-col gap-4 p-4 animate-fade-in sm:p-5">
 
       {/* KPI Strip */}
       {summary && (
-        <div className="flex items-stretch divide-x divide-surface-400/40 rounded-xl border border-surface-400/50 bg-surface-100 overflow-hidden">
-          {[
-            { label: 'Total Revenue',   value: compactCurrency(summary.totalRevenue),  color: 'text-success' },
-            { label: 'Total Expenses',  value: compactCurrency(summary.totalExpenses), color: 'text-danger'  },
-            { label: 'Net Income',      value: compactCurrency(summary.netIncome),     color: netIncomeColor },
-            { label: 'Flagged Records', value: summary.flaggedRecords,                 color: 'text-warning' },
-            { label: 'Pending Review',  value: summary.pendingRecords,                 color: 'text-info'    },
-          ].map(kpi => (
-            <div key={kpi.label} className="flex flex-1 flex-col gap-0.5 px-5 py-3 min-w-0">
-              <span className={`text-lg font-bold tabular-nums leading-none ${kpi.color}`}>{kpi.value}</span>
-              <span className="text-[10px] text-slate-500 truncate">{kpi.label}</span>
-            </div>
-          ))}
+        <div className="overflow-x-auto">
+          <div className="flex min-w-[420px] items-stretch divide-x divide-surface-400/40 rounded-xl border border-surface-400/50 bg-surface-100 overflow-hidden">
+            {[
+              { label: 'Total Revenue',   value: compactCurrency(summary.totalRevenue),  color: 'text-success' },
+              { label: 'Total Expenses',  value: compactCurrency(summary.totalExpenses), color: 'text-danger'  },
+              { label: 'Net Income',      value: compactCurrency(summary.netIncome),     color: netIncomeColor },
+              { label: 'Flagged Records', value: summary.flaggedRecords,                 color: 'text-warning' },
+              { label: 'Pending Review',  value: summary.pendingRecords,                 color: 'text-info'    },
+            ].map(kpi => (
+              <div key={kpi.label} className="flex flex-1 flex-col gap-0.5 px-4 py-3 min-w-[80px]">
+                <span className={`text-lg font-bold tabular-nums leading-none ${kpi.color}`}>{kpi.value}</span>
+                <span className="text-[10px] text-slate-500 whitespace-nowrap">{kpi.label}</span>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 

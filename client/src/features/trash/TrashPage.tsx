@@ -124,7 +124,7 @@ export default function TrashPage() {
   const isEmpty = !isLoading && total === 0;
 
   return (
-    <div className="flex flex-col gap-6 p-6 animate-fade-in">
+    <div className="flex flex-col gap-4 p-4 animate-fade-in sm:gap-6 sm:p-6">
       <PageHeader
         title="Trash"
         description="Items deleted in the last 30 days. After 30 days they are permanently removed."

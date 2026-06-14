@@ -50,7 +50,7 @@ function BackupRow({ backup, onRestore, onDelete, apiBase, busy }: {
   const [confirmRestore, setConfirmRestore] = useState(false);
 
   return (
-    <div className="flex items-center gap-4 px-4 py-3 bg-surface-100/40 hover:bg-surface-100/70 transition-colors">
+    <div className="flex flex-wrap items-center gap-3 px-4 py-3 bg-surface-100/40 hover:bg-surface-100/70 transition-colors">
       <div className="flex items-center gap-2 shrink-0">
         <span className={cn(
           'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold',
@@ -79,7 +79,7 @@ function BackupRow({ backup, onRestore, onDelete, apiBase, busy }: {
         </a>
 
         {confirmRestore ? (
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <span className="text-xs text-slate-400">Overwrite current data?</span>
             <button
               onClick={() => { setConfirmRestore(false); onRestore(backup.id); }}
@@ -102,7 +102,7 @@ function BackupRow({ backup, onRestore, onDelete, apiBase, busy }: {
         )}
 
         {confirmDelete ? (
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={() => { setConfirmDelete(false); onDelete(backup.id); }}
               disabled={busy}
@@ -158,7 +158,7 @@ export default function BackupPage() {
   const atLimit = manualCount >= 10;
 
   return (
-    <div className="flex flex-col gap-6 p-6 animate-fade-in">
+    <div className="flex flex-col gap-4 p-4 animate-fade-in sm:gap-6 sm:p-6">
       <PageHeader
         title="Backups"
         description="Automated daily snapshots of your data. Restore to any point in the last 30 days."

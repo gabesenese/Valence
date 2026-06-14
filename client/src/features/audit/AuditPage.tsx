@@ -75,8 +75,8 @@ function AuditRow({ entry }: { entry: AuditLogEntry }) {
           {entry.entityName ? <> · <span className="font-mono text-xs text-slate-400">{entry.entityName}</span></> : null}
         </span>
 
-        {/* Time */}
-        <span className="shrink-0 text-xs text-slate-600">{timeStr}</span>
+        {/* Time — hidden on small screens to give description room */}
+        <span className="hidden shrink-0 text-xs text-slate-600 sm:inline">{timeStr}</span>
       </button>
 
       {/* Expanded detail */}
@@ -118,7 +118,7 @@ export default function AuditPage() {
   const handleEntityChange = (key: string) => { setEntity(key); setPage(1); };
 
   return (
-    <div className="flex flex-col gap-6 p-6 animate-fade-in">
+    <div className="flex flex-col gap-4 p-4 animate-fade-in sm:gap-6 sm:p-6">
       <PageHeader
         title="Audit Log"
         description={meta ? `${meta.total.toLocaleString()} events` : 'Loading…'}
@@ -135,7 +135,7 @@ export default function AuditPage() {
 
       <Card>
         {/* Filter bar */}
-        <div className="flex items-center gap-1 border-b border-surface-400/30 px-4 py-2">
+        <div className="flex flex-wrap items-center gap-1 border-b border-surface-400/30 px-4 py-2">
           {ENTITY_FILTERS.map(({ key, label }) => (
             <button
               key={key}

@@ -32,7 +32,7 @@ export default function AnalyticsPage() {
   const maxRevenue = Math.max(...(performance?.map(p => p.monthlyRevenue) ?? [1]));
 
   return (
-    <div className="flex flex-col gap-4 p-5 animate-fade-in">
+    <div className="flex flex-col gap-4 p-4 animate-fade-in sm:p-5">
 
       <div className="grid grid-cols-1 xl:grid-cols-[1fr_320px] gap-4 items-start">
 
@@ -75,11 +75,11 @@ export default function AnalyticsPage() {
               </div>
               <div className="divide-y divide-surface-400/30">
                 {performance.map((p) => (
-                  <div key={p.id} className="flex items-center gap-4 px-5 py-3">
-                    <span className="w-20 shrink-0 text-xs font-medium text-slate-500 font-mono truncate">{p.code}</span>
+                  <div key={p.id} className="flex items-center gap-3 px-4 py-3 sm:gap-4 sm:px-5">
+                    <span className="hidden w-20 shrink-0 text-xs font-medium text-slate-500 font-mono truncate sm:block">{p.code}</span>
                     <span className="flex-1 truncate text-sm text-slate-300">{p.name}</span>
-                    <div className="flex items-center gap-3 shrink-0">
-                      <div className="w-28 h-1.5 rounded-full bg-surface-400">
+                    <div className="flex items-center gap-2 shrink-0">
+                      <div className="hidden w-24 h-1.5 rounded-full bg-surface-400 sm:block">
                         <div
                           className="h-full rounded-full bg-brand-500 transition-[width]"
                           style={{ width: `${Math.min(100, p.occupancyRate)}%` }}
@@ -87,7 +87,7 @@ export default function AnalyticsPage() {
                       </div>
                       <span className="text-sm font-semibold text-white w-10 text-right tabular-nums">{p.occupancyRate}%</span>
                     </div>
-                    <span className="text-sm font-semibold text-white tabular-nums w-16 text-right shrink-0">{compactCurrency(p.monthlyRevenue)}</span>
+                    <span className="text-sm font-semibold text-white tabular-nums w-14 text-right shrink-0">{compactCurrency(p.monthlyRevenue)}</span>
                   </div>
                 ))}
               </div>
