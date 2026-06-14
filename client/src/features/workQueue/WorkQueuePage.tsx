@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { MorningBrief } from './MorningBrief';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -22,7 +21,6 @@ import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { PageLoader } from '@/components/ui/Spinner';
-import { PageHeader } from '@/components/ui/PageHeader';
 import { OnboardingCard } from '@/features/onboarding/OnboardingCard';
 
 const TYPE_LABEL: Record<string, string> = {
@@ -129,6 +127,94 @@ function itemActions(
   return actions;
 }
 
+function QueueHero({
+  user,
+  summary,
+  topItem,
+  totalRisk,
+  isFetching,
+  onRefresh,
+}: {
+  user: { firstName?: string | null } | null;
+  summary: { total: number; critical: number; warning: number; inProgress: number } | undefined;
+  topItem: WorkItem | undefined;
+  totalRisk: number;
+  isFetching: boolean;
+  onRefresh: () => void;
+}) {
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+  const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+  const allClear = !summary || summary.total === 0;
+
+  return (
+    <div className="rounded-2xl border border-surface-400/30 bg-surface-100 overflow-hidden">
+      <div className="px-5 py-5">
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0 flex-1">
+            <p className="text-[11px] font-medium uppercase tracking-wider text-slate-600">{today}</p>
+            <h1 className="mt-1 text-xl font-bold text-white">{greeting}, {user?.firstName}.</h1>
+
+            {allClear ? (
+              <div className="mt-3 flex items-center gap-2 rounded-xl border border-success/20 bg-success/8 px-4 py-2.5">
+                <div className="h-2 w-2 rounded-full bg-success" />
+                <p className="text-sm font-medium text-success">All clear — no items requiring attention.</p>
+              </div>
+            ) : (
+              <div className="mt-3 flex flex-wrap gap-x-6 gap-y-2">
+                {(summary?.critical ?? 0) > 0 && (
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="text-3xl font-bold tabular-nums text-danger">{summary!.critical}</span>
+                    <span className="text-sm text-slate-500">critical</span>
+                  </div>
+                )}
+                {(summary?.warning ?? 0) > 0 && (
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="text-3xl font-bold tabular-nums text-warning">{summary!.warning}</span>
+                    <span className="text-sm text-slate-500">warning</span>
+                  </div>
+                )}
+                {totalRisk > 0 && (
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="text-3xl font-bold tabular-nums text-white">{formatDollars(totalRisk)}</span>
+                    <span className="text-sm text-slate-500">/mo at risk</span>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          <button
+            type="button"
+            onClick={onRefresh}
+            disabled={isFetching}
+            className="shrink-0 flex items-center gap-1.5 rounded-lg border border-surface-400/30 bg-surface-200/50 px-3 py-1.5 text-xs text-slate-500 hover:text-slate-300 transition-colors disabled:opacity-40"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${isFetching ? 'animate-spin' : ''}`} />
+            Refresh
+          </button>
+        </div>
+
+        {topItem && !allClear && (
+          <div className="mt-4 rounded-xl border border-danger/20 bg-danger/5 px-4 py-3">
+            <p className="mb-1.5 text-[10px] font-bold uppercase tracking-wider text-danger">Top Priority</p>
+            {topItem.monthlyRisk > 0 && (
+              <p className="text-xl font-bold tabular-nums text-white">
+                {formatDollars(topItem.monthlyRisk)}
+                <span className="ml-1.5 text-sm font-normal text-slate-400">/mo at risk</span>
+              </p>
+            )}
+            <p className="mt-0.5 text-sm font-medium text-slate-200 leading-snug">{topItem.title}</p>
+            {topItem.property && (
+              <p className="mt-0.5 text-xs text-slate-500">{topItem.property.name}</p>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function WorkItemCard({
   item,
   busyId,
@@ -159,8 +245,16 @@ function WorkItemCard({
 
   return (
     <div className={`border-l-4 ${borderColor} hover:bg-surface-200/30 transition-colors`}>
-      <div className="px-5 py-4 flex flex-col gap-1.5">
-        {/* Severity + type label — first thing the eye lands on */}
+      <div className="px-4 py-4 flex flex-col gap-1.5 sm:px-5">
+        {/* Revenue impact — lead with money, not category */}
+        {item.monthlyRisk > 0 && (
+          <div className="flex items-baseline gap-1">
+            <span className="text-lg font-bold tabular-nums text-warning">{formatDollars(item.monthlyRisk)}</span>
+            <span className="text-xs text-slate-500">/mo at risk</span>
+          </div>
+        )}
+
+        {/* Type label (secondary context) */}
         <p className={`text-[11px] font-bold uppercase tracking-wider ${severityColor}`}>
           {TYPE_LABEL[item.type] ?? item.type.replace(/_/g, ' ')}
           {item.status === 'IN_PROGRESS' && <span className="ml-2 text-brand-400/80">· In Progress</span>}
@@ -177,15 +271,9 @@ function WorkItemCard({
           </p>
         )}
 
-        {/* Metadata — property · revenue · expiry only */}
+        {/* Metadata — property · expiry (revenue already shown above) */}
         <div className="flex items-center gap-3 flex-wrap text-xs text-slate-500 mt-0.5">
           {item.property && <span>{item.property.name}</span>}
-          {item.monthlyRisk > 0 && (
-            <span className="flex items-center gap-0.5 font-medium text-warning/80">
-              <DollarSign className="h-3 w-3" />
-              {formatDollars(item.monthlyRisk)}/mo at risk
-            </span>
-          )}
           {item.daysUntilExpiry !== null && (
             <span className={`flex items-center gap-0.5 font-medium ${
               item.daysUntilExpiry <= 30 ? 'text-danger' : item.daysUntilExpiry <= 60 ? 'text-warning' : 'text-slate-400'
@@ -334,43 +422,21 @@ export default function WorkQueuePage() {
   ) ?? [];
 
   const totalRisk = data?.items.reduce((s, i) => s + i.monthlyRisk, 0) ?? 0;
-  // "open" = items with OPEN status (excludes in-progress so the two counts don't overlap)
-  const openCount = (data?.summary.total ?? 0) - (data?.summary.inProgress ?? 0);
-
-  const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+  const topItem = critical[0];
 
   const cardProps = { busyId, onProgress: handleProgress, onResolve: handleResolve, onDismiss: handleDismiss };
 
   return (
     <div className="flex flex-col gap-4 p-4 animate-fade-in sm:gap-6 sm:p-6">
-      <MorningBrief />
       <OnboardingCard />
-      <PageHeader
-        title="My Work"
-        description={`${today}${data?.summary.total ? ` · ${data.summary.total} item${data.summary.total === 1 ? '' : 's'} need attention` : ''}`}
-        actions={
-          <Button variant="outline" size="sm" onClick={() => qc.invalidateQueries({ queryKey: ['work-queue'] })} loading={isFetching || myIsFetching}>
-            <RefreshCw className="h-3.5 w-3.5" />
-            Refresh
-          </Button>
-        }
+      <QueueHero
+        user={user}
+        summary={data?.summary}
+        topItem={topItem}
+        totalRisk={totalRisk}
+        isFetching={isFetching || myIsFetching}
+        onRefresh={() => qc.invalidateQueries({ queryKey: ['work-queue'] })}
       />
-
-      {/* Stats bar */}
-      {data?.summary && (
-        <div className="flex flex-wrap gap-2">
-          <StatChip value={openCount} label="open" />
-          <StatChip value={data.summary.critical} label="critical" color="danger" />
-          <StatChip value={data.summary.warning} label="warning" color="warning" />
-          <StatChip value={data.summary.inProgress} label="in progress" color="brand" />
-          {totalRisk > 0 && (
-            <div className="flex items-center gap-1.5 rounded-lg border border-surface-400/40 bg-surface-50 px-3 py-1.5">
-              <span className="text-sm font-bold text-warning/80 tabular-nums">{formatDollars(totalRisk)}</span>
-              <span className="text-xs text-slate-500">/mo at risk</span>
-            </div>
-          )}
-        </div>
-      )}
 
       {isLoading ? (
         <PageLoader />
@@ -496,36 +562,3 @@ export default function WorkQueuePage() {
   );
 }
 
-function StatChip({
-  value,
-  label,
-  color,
-}: {
-  value: number;
-  label: string;
-  color?: 'danger' | 'warning' | 'brand';
-}) {
-  const valueColor =
-    color === 'danger'
-      ? 'text-danger'
-      : color === 'warning'
-      ? 'text-warning'
-      : color === 'brand'
-      ? 'text-brand-400'
-      : 'text-white';
-  const borderColor =
-    color === 'danger'
-      ? 'border-danger/20 bg-danger/5'
-      : color === 'warning'
-      ? 'border-warning/20 bg-warning/5'
-      : color === 'brand'
-      ? 'border-brand-500/20 bg-brand-500/5'
-      : 'border-surface-400/40 bg-surface-50';
-
-  return (
-    <div className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 ${borderColor}`}>
-      <span className={`text-sm font-bold tabular-nums ${valueColor}`}>{value}</span>
-      <span className="text-xs text-slate-500">{label}</span>
-    </div>
-  );
-}
