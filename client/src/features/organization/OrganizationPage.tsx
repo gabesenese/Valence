@@ -148,10 +148,8 @@ function CopyButton({ text, label = 'Copy' }: { text: string; label?: string }) 
 
 // ─── Org hero ─────────────────────────────────────────────────────────────────
 
-function OrgHeroCard({ members, canInvite, onInvite }: {
+function OrgHeroCard({ members }: {
   members: TeamMember[];
-  canInvite: boolean;
-  onInvite: () => void;
 }) {
   const { data: org } = useQuery({
     queryKey: ['organization'],
@@ -228,12 +226,6 @@ function OrgHeroCard({ members, canInvite, onInvite }: {
             </div>
           </div>
 
-          {canInvite && (
-            <Button size="sm" onClick={onInvite} className="shrink-0">
-              <UserPlus className="h-3.5 w-3.5" />
-              Invite member
-            </Button>
-          )}
         </div>
       </CardBody>
     </Card>
@@ -509,12 +501,6 @@ function TeamSection({ onInvite, canInvite }: { onInvite: () => void; canInvite:
           <CardTitle>Team Members</CardTitle>
           <span className="text-xs text-slate-600">{activeCount} active</span>
         </div>
-        {canInvite && (
-          <Button size="sm" variant="outline" onClick={onInvite}>
-            <UserPlus className="h-3.5 w-3.5" />
-            Invite
-          </Button>
-        )}
       </CardHeader>
 
       {isLoading ? (
@@ -946,7 +932,7 @@ export default function OrganizationPage() {
       />
 
       {/* Hero — org name, real stats, owner */}
-      <OrgHeroCard members={members} canInvite={canInvite} onInvite={() => setShowInvite(true)} />
+      <OrgHeroCard members={members} />
 
       {/* Team members + pending invites — primary content, full width */}
       <TeamSection onInvite={() => setShowInvite(true)} canInvite={canInvite} />
