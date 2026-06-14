@@ -26,7 +26,6 @@ const SetupPage = lazy(() => import('@/features/setup/SetupPage'));
 const WorkQueuePage = lazy(() => import('@/features/workQueue/WorkQueuePage'));
 const BenchmarksPage = lazy(() => import('@/features/benchmarks/BenchmarksPage'));
 const SimulatorPage = lazy(() => import('@/features/simulator/SimulatorPage'));
-const TeamPage = lazy(() => import('@/features/team/TeamPage'));
 const TasksPage = lazy(() => import('@/features/tasks/TasksPage'));
 const CRMPage = lazy(() => import('@/features/crm/CRMPage'));
 const DocumentsPage = lazy(() => import('@/features/documents/DocumentsPage'));
@@ -91,7 +90,6 @@ export default function App() {
             <Route path="crm" element={<UpgradeGate feature="crm"><CRMPage /></UpgradeGate>} />
             <Route path="tasks" element={<UpgradeGate feature="tasks"><TasksPage /></UpgradeGate>} />
             <Route path="documents" element={<UpgradeGate feature="documents"><DocumentsPage /></UpgradeGate>} />
-            <Route path="team" element={<UpgradeGate feature="team"><TeamPage /></UpgradeGate>} />
             <Route path="automation" element={<UpgradeGate feature="automation"><AutomationPage /></UpgradeGate>} />
             <Route path="import" element={<ImportPage />} />
             <Route path="audit" element={<AuditPage />} />

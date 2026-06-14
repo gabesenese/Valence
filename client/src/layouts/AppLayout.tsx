@@ -70,7 +70,6 @@ const NAV_SECTIONS: NavSection[] = [
       { to: '/import',    icon: Upload,      label: 'Import Data'                      },
       { to: '/audit',     icon: ScrollText,  label: 'Audit Log'                        },
       { to: '/organization', icon: Building2,   label: 'Organization'                   },
-      { to: '/team',         icon: Users,      label: 'Team',    feature: 'team'       },
       { to: '/export',       icon: Download,   label: 'Export'                         },
       { to: '/trash',        icon: Trash2,     label: 'Trash'                          },
       { to: '/backups',      icon: Database,   label: 'Backups'                        },
