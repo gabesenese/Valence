@@ -93,6 +93,9 @@ export function AppLayout() {
   const navigate = useNavigate();
   const { canAccess, requiredPlan, label: planLabel } = usePlan();
 
+  // On mobile the drawer is always full-width, so treat sidebar as expanded.
+  const isCollapsed = sidebarCollapsed && !mobileNavOpen;
+
   const closeMobileNav = useCallback((restoreFocus = false) => {
     setMobileNavOpen(false);
     if (restoreFocus) {
@@ -110,21 +113,33 @@ export function AppLayout() {
     queryFn: organizationService.getOrganization,
     staleTime: 5 * 60_000,
   });
+
   useEffect(() => {
     if (org?.currency) setOrgCurrency(org.currency);
   }, [org?.currency]);
+
+  // Close drawer on route change. mobileNavOpen intentionally excluded from
+  // deps — including it would cause the effect to fire on open and immediately
+  // close the drawer before the user sees it.
+  useEffect(() => {
+    setMobileNavOpen(false);
+  }, [location.pathname]);
+
+  // Escape key dismissal.
   useEffect(() => {
     if (!mobileNavOpen) return;
-    closeMobileNav(true);
-  }, [closeMobileNav, location.pathname, mobileNavOpen]);
-  useEffect(() => {
-    if (!mobileNavOpen) return;
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') closeMobileNav(true);
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') closeMobileNav(true);
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [closeMobileNav, mobileNavOpen]);
+
+  // Prevent background scroll while drawer is open.
+  useEffect(() => {
+    document.body.classList.toggle('overflow-hidden', mobileNavOpen);
+    return () => document.body.classList.remove('overflow-hidden');
+  }, [mobileNavOpen]);
 
   const handleLogout = async () => {
     try {
@@ -147,16 +162,16 @@ export function AppLayout() {
       {/* Sidebar */}
       <aside
         className={cn(
-          'fixed inset-y-0 left-0 z-40 flex w-[220px] flex-col border-r border-surface-400/40 bg-surface-50 transition-all duration-200 lg:static lg:z-auto',
+          'fixed inset-y-0 left-0 z-40 flex w-[220px] flex-col border-r border-surface-400/40 bg-surface-50 transition-transform duration-200 lg:static lg:z-auto',
           mobileNavOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0',
           sidebarCollapsed ? 'lg:w-[60px]' : 'lg:w-[220px]',
         )}
       >
         {/* Logo */}
-        <div className={cn('flex h-14 items-center border-b border-surface-400/40 px-4', sidebarCollapsed && 'justify-center px-0')}>
+        <div className={cn('flex h-14 items-center border-b border-surface-400/40 px-4', isCollapsed && 'justify-center px-0')}>
           <div className="flex flex-1 items-center gap-2.5">
             <img src="/logo.svg" alt="Valence" className="h-8 w-5 shrink-0" />
-            {!sidebarCollapsed && (
+            {!isCollapsed && (
               <span className="text-sm font-bold tracking-tight text-white">Valence</span>
             )}
           </div>
@@ -176,7 +191,7 @@ export function AppLayout() {
             {NAV_SECTIONS.map((section, si) => (
               <li key={section.label}>
                 {/* Section header — hidden when collapsed */}
-                {!sidebarCollapsed && (
+                {!isCollapsed && (
                   <p className={cn(
                     'px-3 text-[10px] font-semibold uppercase tracking-widest text-slate-600',
                     si === 0 ? 'pb-1 pt-1' : 'pb-1 pt-4',
@@ -186,7 +201,7 @@ export function AppLayout() {
                 )}
 
                 {/* Collapsed spacer between sections */}
-                {sidebarCollapsed && si > 0 && (
+                {isCollapsed && si > 0 && (
                   <div className="my-2 mx-3 border-t border-surface-400/20" />
                 )}
 
@@ -199,18 +214,19 @@ export function AppLayout() {
                       return (
                         <li key={to}>
                           <button
+                            type="button"
                             onClick={() => {
                               closeMobileNav();
                               navigate('/pricing');
                             }}
                             className={cn(
                               'flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors duration-100 text-slate-600 hover:bg-surface-200/50 hover:text-slate-500',
-                              sidebarCollapsed && 'justify-center px-0 py-2.5',
+                              isCollapsed && 'justify-center px-0 py-2.5',
                             )}
-                            title={sidebarCollapsed ? `${label} — ${needed ? PLAN_LABELS[needed] : ''} plan` : undefined}
+                            title={isCollapsed ? `${label} — ${needed ? PLAN_LABELS[needed] : ''} plan` : undefined}
                           >
                             <Icon className="h-4 w-4 shrink-0" />
-                            {!sidebarCollapsed && (
+                            {!isCollapsed && (
                               <>
                                 <span className="flex-1 text-left">{label}</span>
                                 <Lock className="h-3 w-3 shrink-0 text-slate-700" />
@@ -232,14 +248,14 @@ export function AppLayout() {
                               isActive
                                 ? 'bg-brand-600/20 text-brand-300 shadow-inner'
                                 : 'text-slate-500 hover:bg-surface-200 hover:text-slate-200',
-                              sidebarCollapsed && 'justify-center px-0 py-2.5',
+                              isCollapsed && 'justify-center px-0 py-2.5',
                             )
                           }
                           onClick={() => closeMobileNav()}
-                          title={sidebarCollapsed ? label : undefined}
+                          title={isCollapsed ? label : undefined}
                         >
                           <Icon className="h-4 w-4 shrink-0" />
-                          {!sidebarCollapsed && label}
+                          {!isCollapsed && label}
                         </NavLink>
                       </li>
                     );
@@ -252,13 +268,14 @@ export function AppLayout() {
 
         {/* User footer */}
         <div className="border-t border-surface-400/40 p-2">
-          {!sidebarCollapsed && user && (
+          {!isCollapsed && user && (
             <div className="mb-2 rounded-lg px-3 py-2">
               <p className="truncate text-xs font-medium text-slate-300">{user.firstName} {user.lastName}</p>
               <div className="mt-1 flex items-center gap-1.5">
                 <span className="text-[10px] text-slate-600">{user.role}</span>
                 <span className="text-slate-700">·</span>
                 <button
+                  type="button"
                   onClick={() => {
                     closeMobileNav();
                     navigate('/pricing');
@@ -271,20 +288,22 @@ export function AppLayout() {
             </div>
           )}
           <button
+            type="button"
             onClick={handleLogout}
             className={cn(
               'flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-slate-500 transition-colors hover:bg-danger/10 hover:text-danger',
-              sidebarCollapsed && 'justify-center px-0 py-2.5',
+              isCollapsed && 'justify-center px-0 py-2.5',
             )}
             title="Sign out"
           >
             <LogOut className="h-4 w-4 shrink-0" />
-            {!sidebarCollapsed && 'Sign out'}
+            {!isCollapsed && 'Sign out'}
           </button>
         </div>
 
-        {/* Collapse toggle */}
+        {/* Collapse toggle — desktop only */}
         <button
+          type="button"
           onClick={toggleSidebar}
           className="absolute -right-3 top-[70px] z-10 hidden h-6 w-6 items-center justify-center rounded-full border border-surface-400/60 bg-surface-100 text-slate-500 shadow-card transition-colors hover:border-brand-500/40 hover:text-brand-400 lg:flex"
         >
@@ -302,6 +321,7 @@ export function AppLayout() {
               onClick={() => setMobileNavOpen(true)}
               className="text-slate-500 transition-colors hover:text-slate-300 lg:hidden"
               aria-label="Open navigation menu"
+              aria-expanded={mobileNavOpen}
             >
               <Menu className="h-5 w-5" />
             </button>
@@ -329,6 +349,7 @@ export function AppLayout() {
               )}
             </div>
             <button
+              type="button"
               onClick={handleExitImpersonation}
               className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-1 text-xs font-semibold text-amber-300 hover:bg-amber-500/20 transition-colors"
             >
