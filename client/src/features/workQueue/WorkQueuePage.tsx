@@ -359,7 +359,12 @@ export default function WorkQueuePage() {
   const user = useAuthStore((s) => s.user);
   const qc = useQueryClient();
   const [busyId, setBusyId] = useState<string | null>(null);
-  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({
+    critical: true,
+    assigned: true,
+    week:     true,
+    other:    true,
+  });
 
   const { data, isLoading, isFetching } = useQuery({
     queryKey: ['work-queue', false],
