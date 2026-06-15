@@ -23,16 +23,6 @@ import { Button } from '@/components/ui/Button';
 import { PageLoader } from '@/components/ui/Spinner';
 import { OnboardingCard } from '@/features/onboarding/OnboardingCard';
 
-const TYPE_LABEL: Record<string, string> = {
-  LEASE_EXPIRATION: 'Lease Expiration',
-  RENEWAL_RISK: 'Renewal Risk',
-  PAYMENT_ANOMALY: 'Payment Anomaly',
-  FINANCIAL_DISCREPANCY: 'Financial Discrepancy',
-  OCCUPANCY_CHANGE: 'Occupancy Change',
-  DATA_MISSING: 'Data Missing',
-  COMPLIANCE_FLAG: 'Compliance',
-  OVERDUE_INVOICE: 'Overdue Invoice',
-};
 
 function formatDollars(n: number) {
   if (n >= 1000000) return `$${(n / 1000000).toFixed(1)}M`;
@@ -134,6 +124,7 @@ function QueueHero({
   totalRisk,
   isFetching,
   onRefresh,
+  onReviewCritical,
 }: {
   user: { firstName?: string | null } | null;
   summary: { total: number; critical: number; warning: number; inProgress: number } | undefined;
@@ -141,6 +132,7 @@ function QueueHero({
   totalRisk: number;
   isFetching: boolean;
   onRefresh: () => void;
+  onReviewCritical: () => void;
 }) {
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
@@ -158,7 +150,7 @@ function QueueHero({
             {allClear ? (
               <p className="mt-3 text-sm text-success">All clear — no items requiring attention.</p>
             ) : (
-              <div className="mt-3 flex flex-col gap-1">
+              <div className="mt-3 flex flex-col gap-1.5">
                 {(summary?.critical ?? 0) > 0 && (
                   <p className="text-sm text-slate-300 leading-relaxed">
                     <span className="font-semibold text-danger">{summary!.critical} critical item{summary!.critical !== 1 ? 's' : ''}</span>
@@ -177,6 +169,17 @@ function QueueHero({
                     {' '}revenue is currently at risk.
                   </p>
                 )}
+                {topItem && (
+                  <p className="text-sm text-slate-400 leading-relaxed">
+                    Most urgent: <span className="font-medium text-slate-200">{topItem.title}.</span>
+                    {topItem.monthlyRisk > 0 && (
+                      <span className="text-warning"> {formatDollars(topItem.monthlyRisk)}/month exposure.</span>
+                    )}
+                  </p>
+                )}
+                {(summary?.total ?? 0) > 0 && (
+                  <p className="text-xs text-slate-600">{summary!.total} total item{summary!.total !== 1 ? 's' : ''} in queue.</p>
+                )}
               </div>
             )}
           </div>
@@ -192,20 +195,15 @@ function QueueHero({
           </button>
         </div>
 
-        {topItem && !allClear && (
-          <div className="mt-4 inline-flex flex-col gap-1.5 rounded-xl border border-danger/20 bg-danger/5 px-4 py-3 max-w-xs">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-danger">Most Urgent</p>
-            {topItem.monthlyRisk > 0 && (
-              <p className="text-base font-bold tabular-nums text-white">
-                {formatDollars(topItem.monthlyRisk)}
-                <span className="ml-1 text-xs font-normal text-slate-400">/mo at risk</span>
-              </p>
-            )}
-            <p className="mt-0.5 text-sm font-medium text-slate-200 leading-snug">{topItem.title}</p>
-            {topItem.property && (
-              <p className="mt-0.5 text-xs text-slate-500">{topItem.property.name}</p>
-            )}
-          </div>
+        {!allClear && (summary?.critical ?? 0) > 0 && (
+          <button
+            type="button"
+            onClick={onReviewCritical}
+            className="mt-4 inline-flex items-center gap-2 rounded-xl border border-danger/30 bg-danger/10 hover:bg-danger/15 px-4 py-2 text-sm font-semibold text-danger transition-colors"
+          >
+            Review Critical Items
+            <ChevronRight className="h-4 w-4" />
+          </button>
         )}
       </div>
     </div>
@@ -233,11 +231,6 @@ function WorkItemCard({
     item.severity === 'WARNING'  ? 'border-l-warning/70' :
                                     'border-l-info/50';
 
-  const severityColor =
-    item.severity === 'CRITICAL' ? 'text-danger' :
-    item.severity === 'WARNING'  ? 'text-warning' :
-                                    'text-info';
-
   const actions = itemActions(item, busy, onProgress, onResolve, onDismiss, navigate);
 
   return (
@@ -251,14 +244,13 @@ function WorkItemCard({
           </div>
         )}
 
-        {/* Type label (secondary context) */}
-        <p className={`text-[11px] font-bold uppercase tracking-wider ${severityColor}`}>
-          {TYPE_LABEL[item.type] ?? item.type.replace(/_/g, ' ')}
-          {item.status === 'IN_PROGRESS' && <span className="ml-2 text-brand-400/80">· In Progress</span>}
-        </p>
-
         {/* Title */}
-        <p className="text-sm font-medium text-slate-200 leading-snug">{item.title}</p>
+        <p className="text-sm font-medium text-slate-200 leading-snug">
+          {item.title}
+          {item.status === 'IN_PROGRESS' && (
+            <span className="ml-2 inline-flex items-center rounded-full border border-brand-500/20 bg-brand-600/10 px-1.5 py-0.5 text-[10px] font-medium text-brand-400">In Progress</span>
+          )}
+        </p>
 
         {/* Suggested action */}
         {item.suggestedAction && (
@@ -438,6 +430,7 @@ export default function WorkQueuePage() {
         totalRisk={totalRisk}
         isFetching={isFetching || myIsFetching}
         onRefresh={() => qc.invalidateQueries({ queryKey: ['work-queue'] })}
+        onReviewCritical={() => setCollapsed((p) => ({ ...p, critical: false }))}
       />
 
       {isLoading ? (
