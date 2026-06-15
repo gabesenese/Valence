@@ -201,6 +201,49 @@ export default function PropertyDetailPage() {
               </div>
             )}
           </Card>
+
+          {/* Activity history — inside main column so it fills below the leases table */}
+          {activityData && activityData.length > 0 && (
+            <Card>
+              <CardHeader>
+                <div className="flex items-center gap-2">
+                  <History className="h-4 w-4 text-brand-400" />
+                  <CardTitle>Activity History</CardTitle>
+                </div>
+              </CardHeader>
+              <CardBody>
+                <ol className="relative border-l border-surface-400/40 ml-2 flex flex-col gap-0">
+                  {activityData.map((entry: PropertyActivityEntry) => {
+                    const Icon = entry.action === 'CREATE' ? PlusCircle : entry.action === 'DELETE' ? Trash2 : Edit3;
+                    const dotColor = entry.action === 'CREATE' ? 'bg-success' : entry.action === 'DELETE' ? 'bg-danger' : 'bg-brand-400';
+                    const actionLabel = entry.action === 'CREATE' ? 'Created' : entry.action === 'DELETE' ? 'Deleted' : 'Updated';
+                    const changedKeys = entry.changes ? Object.keys(entry.changes).filter((k) => k !== 'updatedAt') : [];
+                    return (
+                      <li key={entry.id} className="mb-5 ml-5">
+                        <span className={`absolute -left-[7px] mt-1 flex h-3.5 w-3.5 items-center justify-center rounded-full ${dotColor}`}>
+                          <Icon className="h-2 w-2 text-white" />
+                        </span>
+                        <div className="flex items-baseline gap-2 flex-wrap">
+                          <p className="text-sm font-medium text-slate-200">{actionLabel}</p>
+                          {entry.user && (
+                            <span className="text-xs text-slate-500">
+                              by {entry.user.firstName} {entry.user.lastName}
+                            </span>
+                          )}
+                          <span className="text-xs text-slate-600 ml-auto">{formatRelative(entry.createdAt)}</span>
+                        </div>
+                        {changedKeys.length > 0 && (
+                          <p className="mt-0.5 text-xs text-slate-600">
+                            Changed: {changedKeys.join(', ')}
+                          </p>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ol>
+              </CardBody>
+            </Card>
+          )}
         </div>
 
         {/* Sidebar */}
@@ -291,49 +334,6 @@ export default function PropertyDetailPage() {
 
         </div>
       </div>
-
-      {/* Activity history */}
-      {activityData && activityData.length > 0 && (
-        <Card>
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <History className="h-4 w-4 text-brand-400" />
-              <CardTitle>Activity History</CardTitle>
-            </div>
-          </CardHeader>
-          <CardBody>
-            <ol className="relative border-l border-surface-400/40 ml-2 flex flex-col gap-0">
-              {activityData.map((entry: PropertyActivityEntry) => {
-                const Icon = entry.action === 'CREATE' ? PlusCircle : entry.action === 'DELETE' ? Trash2 : Edit3;
-                const dotColor = entry.action === 'CREATE' ? 'bg-success' : entry.action === 'DELETE' ? 'bg-danger' : 'bg-brand-400';
-                const actionLabel = entry.action === 'CREATE' ? 'Created' : entry.action === 'DELETE' ? 'Deleted' : 'Updated';
-                const changedKeys = entry.changes ? Object.keys(entry.changes).filter((k) => k !== 'updatedAt') : [];
-                return (
-                  <li key={entry.id} className="mb-5 ml-5">
-                    <span className={`absolute -left-[7px] mt-1 flex h-3.5 w-3.5 items-center justify-center rounded-full ${dotColor}`}>
-                      <Icon className="h-2 w-2 text-white" />
-                    </span>
-                    <div className="flex items-baseline gap-2 flex-wrap">
-                      <p className="text-sm font-medium text-slate-200">{actionLabel}</p>
-                      {entry.user && (
-                        <span className="text-xs text-slate-500">
-                          by {entry.user.firstName} {entry.user.lastName}
-                        </span>
-                      )}
-                      <span className="text-xs text-slate-600 ml-auto">{formatRelative(entry.createdAt)}</span>
-                    </div>
-                    {changedKeys.length > 0 && (
-                      <p className="mt-0.5 text-xs text-slate-600">
-                        Changed: {changedKeys.join(', ')}
-                      </p>
-                    )}
-                  </li>
-                );
-              })}
-            </ol>
-          </CardBody>
-        </Card>
-      )}
 
       <PropertyFormModal
         open={editOpen}
