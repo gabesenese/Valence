@@ -178,7 +178,7 @@ function QueueHero({
                   </p>
                 )}
                 {(summary?.total ?? 0) > 0 && (
-                  <p className="text-xs text-slate-600">{summary!.total} total item{summary!.total !== 1 ? 's' : ''} in queue.</p>
+                  <p className="text-xs text-slate-600">{summary!.total} item{summary!.total !== 1 ? 's' : ''} need attention.</p>
                 )}
               </div>
             )}
@@ -201,7 +201,7 @@ function QueueHero({
             onClick={onReviewCritical}
             className="mt-4 inline-flex items-center gap-2 rounded-xl border border-danger/30 bg-danger/10 hover:bg-danger/15 px-4 py-2 text-sm font-semibold text-danger transition-colors"
           >
-            Review Critical Items
+            Expand Critical Today
             <ChevronRight className="h-4 w-4" />
           </button>
         )}
