@@ -438,7 +438,7 @@ export default function WorkQueuePage() {
       ) : (
         <div className="flex flex-col gap-4">
           {/* ─── Critical Today ─── */}
-          <Card>
+          <Card className="overflow-hidden">
             <SectionHeader
               label="Critical Today"
               count={critical.length}
@@ -460,7 +460,7 @@ export default function WorkQueuePage() {
           </Card>
 
           {/* ─── Assigned To Me ─── */}
-          <Card>
+          <Card className="overflow-hidden">
             <SectionHeader
               label="Assigned To Me"
               count={myItems.length}
@@ -498,7 +498,7 @@ export default function WorkQueuePage() {
           </Card>
 
           {/* ─── Due This Week ─── */}
-          <Card>
+          <Card className="overflow-hidden">
             <SectionHeader
               label="Due This Week"
               count={dueThisWeek.length}
@@ -534,7 +534,7 @@ export default function WorkQueuePage() {
 
           {/* ─── Other Items (Warning / Info) ─── */}
           {other.length > 0 && (
-            <Card>
+            <Card className="overflow-hidden">
               <SectionHeader
                 label="Other Items"
                 count={other.length}
