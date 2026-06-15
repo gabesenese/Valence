@@ -551,8 +551,8 @@ export default function LeaseDetailPage() {
                         <RotateCcw className="h-2.5 w-2.5 opacity-60" />
                       </button>
                     )}
-                    <Button variant="ghost" size="sm" onClick={() => resolveMutation.mutate(alert.id)} loading={resolveMutation.isPending} title="Resolve">
-                      <CheckCircle2 className="h-3.5 w-3.5 text-success" />
+                    <Button variant="success" size="sm" onClick={() => resolveMutation.mutate(alert.id)} loading={resolveMutation.isPending} title="Resolve">
+                      <CheckCircle2 className="h-3.5 w-3.5" />
                     </Button>
                     <Button variant="ghost" size="sm" onClick={() => dismissMutation.mutate(alert.id)} loading={dismissMutation.isPending} title="Dismiss">
                       ✕

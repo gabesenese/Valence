@@ -115,7 +115,7 @@ function itemActions(
   actions.push(
     <Button
       key="resolve"
-      variant={item.severity === 'CRITICAL' ? 'danger' : 'outline'}
+      variant="success"
       size="sm"
       onClick={() => onResolve(alertId)}
       loading={busy}

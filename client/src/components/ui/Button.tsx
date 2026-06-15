@@ -1,14 +1,15 @@
 import { forwardRef } from 'react';
 import { cn } from '@/utils/cn';
 
-type Variant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'outline';
+type Variant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'outline' | 'success';
 type Size = 'sm' | 'md' | 'lg';
 
 const variantStyles: Record<Variant, string> = {
   primary: 'bg-brand-600 hover:bg-brand-500 text-white shadow-glow-brand hover:shadow-glow-brand',
   secondary: 'bg-surface-400 hover:bg-surface-500 text-slate-100',
   ghost: 'hover:bg-surface-200 text-slate-300 hover:text-white',
-  danger: 'bg-danger/10 hover:bg-danger/20 text-danger border border-danger/30',
+  danger:   'bg-danger/10 hover:bg-danger/20 text-danger border border-danger/30',
+  success:  'bg-success/10 hover:bg-success/20 text-success border border-success/30',
   outline: 'border border-surface-500 hover:border-brand-500/50 hover:bg-surface-200 text-slate-300',
 };
 

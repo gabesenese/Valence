@@ -240,7 +240,7 @@ function WorkflowActions({
             <XCircle className="h-3.5 w-3.5" /> Dismiss
           </Button>
           <Button
-            variant={alert.severity === 'CRITICAL' ? 'danger' : 'outline'}
+            variant="success"
             size="sm"
             onClick={() => onResolve(alert.id)}
             loading={busy}
