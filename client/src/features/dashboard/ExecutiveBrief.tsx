@@ -141,8 +141,8 @@ export default function ExecutiveBriefCard() {
     <div className="rounded-2xl border border-surface-400/40 bg-surface-100 overflow-hidden">
 
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3.5 border-b border-surface-400/30 bg-surface-200/30 sm:px-6">
-        <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3.5 border-b border-surface-400/30 bg-surface-200/30 sm:px-6">
+        <div className="flex min-w-0 items-center gap-2">
           <Sparkles className="h-4 w-4 text-brand-400" />
           <span className="text-sm font-semibold text-white">Executive Brief</span>
           {health && (
@@ -151,7 +151,7 @@ export default function ExecutiveBriefCard() {
             </span>
           )}
         </div>
-        <div className="flex items-center gap-3 text-xs text-slate-600">
+        <div className="ml-auto flex shrink-0 items-center gap-3 text-xs text-slate-600">
           <span>{timeAgo(brief.generatedAt)}</span>
           <button
             onClick={() => refetch()}
@@ -171,8 +171,8 @@ export default function ExecutiveBriefCard() {
         <p className="mt-2 text-sm text-slate-400 leading-relaxed">{brief.summary}</p>
       </div>
 
-      {/* Two-column: Revenue Risk + Recommended Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-surface-400/30">
+      {/* Revenue Risk + Recommended Actions */}
+      <div className="grid grid-cols-1 divide-y divide-surface-400/30">
 
         {/* Revenue Risk */}
         <div className="px-4 py-4 sm:px-6 sm:py-5">
@@ -188,10 +188,10 @@ export default function ExecutiveBriefCard() {
                   <span className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${cfg.dot}`} />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5">
-                      <p className="text-xs font-semibold text-slate-200 truncate">{item.title}</p>
+                      <p className="text-sm font-semibold text-slate-200 leading-snug break-words">{item.title}</p>
                       <span className={`shrink-0 text-[10px] font-bold ${cfg.text}`}>{cfg.label}</span>
                     </div>
-                    <p className="mt-0.5 text-[11px] text-slate-500 leading-snug">{item.description}</p>
+                    <p className="mt-0.5 text-xs text-slate-500 leading-relaxed">{item.description}</p>
                     {item.monthlyRevenue && (
                       <p className={`mt-1 text-xs font-semibold tabular-nums ${cfg.text}`}>
                         {formatCurrency(item.monthlyRevenue)}/mo at risk
@@ -221,12 +221,12 @@ export default function ExecutiveBriefCard() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-1.5">
-                      <p className="text-xs font-semibold text-slate-200 leading-snug">{item.action}</p>
+                      <p className="text-sm font-semibold text-slate-200 leading-snug break-words">{item.action}</p>
                       <span className={`shrink-0 inline-flex rounded-full border px-1.5 py-0.5 text-[9px] font-bold whitespace-nowrap ${urgency.color}`}>
                         {urgency.label}
                       </span>
                     </div>
-                    <p className="mt-0.5 text-[11px] text-slate-500 leading-snug">{item.context}</p>
+                    <p className="mt-0.5 text-xs text-slate-500 leading-relaxed">{item.context}</p>
                   </div>
                 </div>
               );
