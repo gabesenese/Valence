@@ -188,7 +188,7 @@ export default function ExecutiveBriefCard() {
                   <span className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${cfg.dot}`} />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5">
-                      <p className="text-sm font-semibold text-slate-200 leading-snug [overflow-wrap:anywhere]">{item.title}</p>
+                      <p className="text-sm font-semibold text-slate-200 leading-snug break-words">{item.title}</p>
                       <span className={`shrink-0 text-[10px] font-bold ${cfg.text}`}>{cfg.label}</span>
                     </div>
                     <p className="mt-0.5 text-xs text-slate-500 leading-relaxed">{item.description}</p>
@@ -221,7 +221,7 @@ export default function ExecutiveBriefCard() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-1.5">
-                      <p className="text-sm font-semibold text-slate-200 leading-snug [overflow-wrap:anywhere]">{item.action}</p>
+                      <p className="text-sm font-semibold text-slate-200 leading-snug break-words">{item.action}</p>
                       <span className={`shrink-0 inline-flex rounded-full border px-1.5 py-0.5 text-[9px] font-bold whitespace-nowrap ${urgency.color}`}>
                         {urgency.label}
                       </span>
