@@ -6,7 +6,6 @@ import { cn } from '@/utils/cn';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { PageHeader } from '@/components/ui/PageHeader';
 
-// ─── Config ───────────────────────────────────────────────────────────────────
 
 const ENTITY_FILTERS = [
   { key: '',          label: 'All'        },
@@ -33,7 +32,6 @@ const ENTITY_ICON: Record<string, React.ComponentType<{ className?: string }>> =
   user:     UserCog,
 };
 
-// ─── Row ──────────────────────────────────────────────────────────────────────
 
 function AuditRow({ entry }: { entry: AuditLogEntry }) {
   const [expanded, setExpanded] = useState(false);
@@ -57,17 +55,14 @@ function AuditRow({ entry }: { entry: AuditLogEntry }) {
           (hasDetail || hasMeta) ? 'hover:bg-surface-200/30 cursor-pointer' : 'cursor-default',
         )}
       >
-        {/* Entity icon */}
         <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-surface-300/60">
           <Icon className="h-3.5 w-3.5 text-slate-400" />
         </div>
 
-        {/* Action badge */}
         <span className={cn('shrink-0 rounded border px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider', action.color)}>
           {action.label}
         </span>
 
-        {/* Description */}
         <span className="flex-1 truncate text-sm text-slate-300">
           <span className="font-medium text-fg">{actor}</span>
           {' '}
@@ -75,11 +70,9 @@ function AuditRow({ entry }: { entry: AuditLogEntry }) {
           {entry.entityName ? <> · <span className="font-mono text-xs text-slate-400">{entry.entityName}</span></> : null}
         </span>
 
-        {/* Time — hidden on small screens to give description room */}
         <span className="hidden shrink-0 text-xs text-slate-600 sm:inline">{timeStr}</span>
       </button>
 
-      {/* Expanded detail */}
       {expanded && (hasDetail || hasMeta) && (
         <div className="px-4 pb-3">
           <div className="rounded-lg bg-surface-100/50 border border-surface-400/20 px-3 py-2.5 font-mono text-xs text-slate-400 overflow-x-auto">
@@ -91,7 +84,6 @@ function AuditRow({ entry }: { entry: AuditLogEntry }) {
   );
 }
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function AuditPage() {
   const [entity, setEntity] = useState('');
@@ -107,7 +99,6 @@ export default function AuditPage() {
       setLogs(res.data);
       setMeta({ total: res.meta.total, pages: res.meta.pages });
     } catch {
-      // silently fail
     } finally {
       setLoading(false);
     }
@@ -134,7 +125,6 @@ export default function AuditPage() {
       />
 
       <Card>
-        {/* Filter bar */}
         <div className="flex flex-wrap items-center gap-1 border-b border-surface-400/30 px-4 py-2">
           {ENTITY_FILTERS.map(({ key, label }) => (
             <button
@@ -175,7 +165,6 @@ export default function AuditPage() {
           )}
         </CardBody>
 
-        {/* Pagination */}
         {meta && meta.pages > 1 && (
           <div className="flex items-center justify-between border-t border-surface-400/30 px-4 py-3">
             <button

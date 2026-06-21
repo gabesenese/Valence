@@ -140,7 +140,6 @@ export default function TenantFormModal({ open, onClose, tenant }: Props) {
       <form onSubmit={handleSubmit}>
         <div className="max-h-[68vh] overflow-y-auto px-5 py-4">
 
-          {/* Identity */}
           <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Identity</p>
           <div className="grid grid-cols-2 gap-4 mb-4">
             <div className="col-span-2">
@@ -150,14 +149,12 @@ export default function TenantFormModal({ open, onClose, tenant }: Props) {
             <Input label="Tax ID / EIN" value={form.taxId} onChange={set('taxId')} placeholder="12-3456789" />
           </div>
 
-          {/* Contact */}
           <p className={SECTION_CLASS}>Contact</p>
           <div className="grid grid-cols-2 gap-4 mb-4">
             <Input label="Email" type="email" value={form.email} onChange={set('email')} placeholder="contact@acme.com" />
             <Input label="Phone" type="tel" value={form.phone} onChange={set('phone')} placeholder="+1 (555) 000-0000" />
           </div>
 
-          {/* Financial */}
           <p className={SECTION_CLASS}>Financial</p>
           <div className="mb-4">
             <div className="grid grid-cols-2 gap-4">

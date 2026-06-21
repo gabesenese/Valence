@@ -1,7 +1,6 @@
 import { prisma } from '../../infrastructure/database';
 import { startOfMonth, endOfMonth, subMonths, addDays } from 'date-fns';
 
-// ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface HealthScoreComponent {
   name:        string;
@@ -31,7 +30,6 @@ export interface PortfolioHealthScore {
   computedAt: string;
 }
 
-// ─── Band classifier ──────────────────────────────────────────────────────────
 
 function band(score: number): PortfolioHealthScore['band'] {
   if (score >= 75) return 'healthy';
@@ -40,7 +38,6 @@ function band(score: number): PortfolioHealthScore['band'] {
   return 'critical';
 }
 
-// ─── Revenue helper ───────────────────────────────────────────────────────────
 
 async function getMonthRevenue(propertyIds: string[], monthDate: Date): Promise<number> {
   const start = startOfMonth(monthDate);
@@ -57,10 +54,7 @@ async function getMonthRevenue(propertyIds: string[], monthDate: Date): Promise<
   return Number(agg._sum.amount ?? 0);
 }
 
-// ─── Component scorers ────────────────────────────────────────────────────────
 
-// Revenue Stability (0–20)
-// Always compares the last COMPLETE month vs the 3 months before it.
 async function scoreRevenueStability(propertyIds: string[]): Promise<{ score: number; description: string }> {
   const now = new Date();
   const [lastMonth, m2, m3, m4] = await Promise.all([
@@ -80,7 +74,6 @@ async function scoreRevenueStability(propertyIds: string[]): Promise<{ score: nu
   return                        { score: 0,  description: `Severe variance — ${variancePct.toFixed(1)}% vs 3-month avg` };
 }
 
-// Revenue Stability shifted 1 month back (for delta)
 async function scoreRevenueStabilityLastMonth(propertyIds: string[]): Promise<number> {
   const now = new Date();
   const [m2, m3, m4, m5] = await Promise.all([
@@ -100,7 +93,6 @@ async function scoreRevenueStabilityLastMonth(propertyIds: string[]): Promise<nu
   return 0;
 }
 
-// Occupancy Performance (0–20)
 function scoreOccupancy(occupancyRate: number): { score: number; description: string } {
   const r = Math.round(occupancyRate * 10) / 10;
   if (r >= 95) return { score: 20, description: `${r}% — excellent occupancy` };
@@ -110,8 +102,6 @@ function scoreOccupancy(occupancyRate: number): { score: number; description: st
   return              { score: 0,  description: `${r}% — critical vacancy risk` };
 }
 
-// Lease Risk (0–20)
-// At risk = expiring in 90 days with renewalStage NOT_STARTED or CONTACTED.
 async function scoreLeaseRisk(totalRevenue: number, refDate?: Date): Promise<{ score: number; description: string }> {
   const base    = refDate ?? new Date();
   const horizon = addDays(base, 90);
@@ -132,7 +122,6 @@ async function scoreLeaseRisk(totalRevenue: number, refDate?: Date): Promise<{ s
   return                { score: 0,  description: `${pct.toFixed(1)}% of revenue at critical expiry risk` };
 }
 
-// Payment Reliability (0–15)
 async function scorePaymentReliability(): Promise<{ score: number; description: string }> {
   const count = await prisma.financialRecord.count({
     where: { status: { in: ['FLAGGED', 'DISPUTED'] } },
@@ -143,8 +132,6 @@ async function scorePaymentReliability(): Promise<{ score: number; description: 
   return                  { score: 0,  description: `${count} flagged/disputed records — requires immediate review` };
 }
 
-// Alert Severity & Volume (0–15)
-// AlertSeverity enum: INFO | WARNING | CRITICAL
 async function scoreAlerts(): Promise<{ score: number; description: string }> {
   const [critical, warning] = await Promise.all([
     prisma.alert.count({ where: { severity: 'CRITICAL', status: { in: ['OPEN', 'ACKNOWLEDGED', 'IN_PROGRESS'] } } }),
@@ -157,8 +144,6 @@ async function scoreAlerts(): Promise<{ score: number; description: string }> {
   return               { score, description: `${warning} open warning alert${warning > 1 ? 's' : ''}` };
 }
 
-// Vacancy Exposure (0–5)
-// Counts properties with < 80% occupancy — concentration risk, not portfolio rate.
 async function scoreVacancyExposure(properties: { totalUnits: number; _count: { leases: number } }[]): Promise<{ score: number; description: string }> {
   if (properties.length === 0) return { score: 3, description: 'No properties to evaluate' };
   const under = properties.filter(p => (p.totalUnits > 0 ? p._count.leases / p.totalUnits : 0) < 0.80);
@@ -169,8 +154,6 @@ async function scoreVacancyExposure(properties: { totalUnits: number; _count: { 
   return               { score: 0, description: `${under.length} of ${properties.length} properties below 80% occupancy — critical` };
 }
 
-// Tenant Retention Risk (0–5)
-// RenewalRisk enum: LOW | MEDIUM | HIGH | CRITICAL
 async function scoreRetentionRisk(): Promise<{ score: number; description: string }> {
   const [total, highRisk] = await Promise.all([
     prisma.lease.count({ where: { status: 'ACTIVE' } }),
@@ -185,13 +168,6 @@ async function scoreRetentionRisk(): Promise<{ score: number; description: strin
   return                 { score: 0, description: `${pct.toFixed(0)}% of leases at critical renewal risk — major retention problem` };
 }
 
-// ─── Last-month component scores (for per-component delta) ────────────────────
-//
-// Returns a score for each component as it stood one month ago.
-// Components backed by real historical data (revenue stability, lease risk)
-// are re-computed against shifted windows. Components with no historical
-// snapshot (occupancy, payments, alerts, vacancy, retention) carry the current
-// score unchanged — their delta is correctly reported as 0.
 
 async function computeLastMonthComponents(
   propertyIds:    string[],
@@ -216,7 +192,6 @@ async function computeLastMonthComponents(
   };
 }
 
-// ─── Main export ──────────────────────────────────────────────────────────────
 
 export async function computeHealthScore(): Promise<PortfolioHealthScore> {
   const now = new Date();
@@ -239,7 +214,6 @@ export async function computeHealthScore(): Promise<PortfolioHealthScore> {
   const occupancyRate = totalUnits > 0 ? (occupiedUnits / totalUnits) * 100 : 0;
   const totalRevenue  = Number(activeLeaseAgg._sum.baseRent ?? 0);
 
-  // Compute current component scores
   const [revStab, leaseRisk, payments, alerts, vacancy, retention] = await Promise.all([
     scoreRevenueStability(propertyIds),
     scoreLeaseRisk(totalRevenue),
@@ -260,7 +234,6 @@ export async function computeHealthScore(): Promise<PortfolioHealthScore> {
     tenantRetentionRisk:  retention.score,
   };
 
-  // Compute last-month component scores for per-component delta
   const lastScores = await computeLastMonthComponents(propertyIds, totalRevenue, currentScores);
 
   const componentDefs = [
@@ -286,7 +259,6 @@ export async function computeHealthScore(): Promise<PortfolioHealthScore> {
   const lastMonthTotal= Object.values(lastScores).reduce((s, v) => s + v, 0);
   const delta         = score - lastMonthTotal;
 
-  // Drivers: components with non-zero delta, sorted by magnitude
   const movers = components
     .filter(c => c.delta !== 0)
     .sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta));

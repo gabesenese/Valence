@@ -52,7 +52,6 @@ export default function App() {
   return (
     <Suspense fallback={<div className="flex h-screen items-center justify-center bg-surface-0"><PageLoader /></div>}>
       <Routes>
-        {/* Public */}
         <Route path="/" element={<LandingPage />} />
         <Route path="/admin" element={<AdminPage />} />
         <Route path="/pricing" element={<PricingPage />} />
@@ -62,7 +61,6 @@ export default function App() {
         <Route path="/security" element={<SecurityPage />} />
         <Route path="/billing/success" element={<BillingSuccessPage />} />
 
-        {/* Auth */}
         <Route path="/auth/login" element={<LoginPage />} />
         <Route path="/auth/register" element={<RegisterPage />} />
         <Route path="/auth/invite/:token" element={<AcceptInvitePage />} />
@@ -70,12 +68,10 @@ export default function App() {
         <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
         <Route path="/auth/verify-email" element={<VerifyEmailPage />} />
 
-        {/* Protected — setup outside AppLayout so it has its own full-page look */}
         <Route element={<ProtectedRoute />}>
           <Route path="setup" element={<SetupPage />} />
         </Route>
 
-        {/* Protected */}
         <Route element={<ProtectedRoute />}>
           <Route element={<AppLayout />}>
             <Route path="queue" element={<UpgradeGate feature="work_queue"><WorkQueuePage /></UpgradeGate>} />

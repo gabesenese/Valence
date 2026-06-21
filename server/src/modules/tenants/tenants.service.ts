@@ -54,7 +54,6 @@ export interface CreateTenantInput {
   isActive?: boolean;
 }
 
-/** Coerce an incoming ISO/date string into a Date so Prisma accepts it. */
 function normalizeDates<T extends Partial<CreateTenantInput>>(input: T): T {
   if (input.creditScoreDate && typeof input.creditScoreDate === 'string') {
     return { ...input, creditScoreDate: new Date(input.creditScoreDate) };

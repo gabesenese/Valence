@@ -10,13 +10,11 @@ interface AboutLayoutProps {
   children: React.ReactNode;
 }
 
-/** Shared chrome + hero for the About / legal content pages. */
 export function AboutLayout({ eyebrow, title, intro, updated, children }: AboutLayoutProps) {
   useEffect(() => { window.scrollTo(0, 0); }, []);
 
   return (
     <div className="min-h-screen bg-surface-0 text-fg">
-      {/* Ambient glow */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
         <div className="absolute -top-48 left-1/2 h-[600px] w-[600px] -translate-x-1/2 rounded-full bg-brand-600/8 blur-[120px]" />
       </div>
@@ -39,7 +37,6 @@ export function AboutLayout({ eyebrow, title, intro, updated, children }: AboutL
   );
 }
 
-/** A titled content block used within the About pages. */
 export function Section({ heading, children }: { heading: string; children: React.ReactNode }) {
   return (
     <div>

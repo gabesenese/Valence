@@ -11,7 +11,6 @@ import { Select } from '@/components/ui/Select';
 import { DataTable, type Column } from '@/components/ui/DataTable';
 import { PageHeader } from '@/components/ui/PageHeader';
 
-// ─── Config ───────────────────────────────────────────────────────────────────
 
 const DOC_TYPE_CONFIG: Record<DocumentType, { label: string; icon: React.ComponentType<{ className?: string }>; color: string }> = {
   LEASE:       { label: 'Lease',       icon: FileText,       color: 'text-brand-400'  },
@@ -114,7 +113,6 @@ function buildColumns(onDelete: (id: string) => void): Column<Document>[] {
   ];
 }
 
-// ─── Upload modal ─────────────────────────────────────────────────────────────
 
 function UploadModal({ onClose }: { onClose: () => void }) {
   const qc = useQueryClient();
@@ -191,7 +189,6 @@ function UploadModal({ onClose }: { onClose: () => void }) {
   );
 }
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function DocumentsPage() {
   const qc = useQueryClient();

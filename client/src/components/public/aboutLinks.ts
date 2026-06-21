@@ -7,7 +7,6 @@ export interface AboutLink {
   icon: React.ComponentType<{ className?: string }>;
 }
 
-/** Shared source of truth for the "About" dropdown and footer links. */
 export const ABOUT_LINKS: AboutLink[] = [
   {
     to: '/mission',

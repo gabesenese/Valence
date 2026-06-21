@@ -236,7 +236,6 @@ function WorkItemCard({
   return (
     <div className={`border-l-4 ${borderColor} hover:bg-surface-200/30 transition-colors`}>
       <div className="px-4 py-4 flex flex-col gap-1.5 sm:px-5">
-        {/* Revenue impact — lead with money, not category */}
         {item.monthlyRisk > 0 && (
           <div className="flex items-baseline gap-1">
             <span className="text-lg font-bold tabular-nums text-warning">{formatDollars(item.monthlyRisk)}</span>
@@ -244,7 +243,6 @@ function WorkItemCard({
           </div>
         )}
 
-        {/* Title */}
         <p className="text-sm font-medium text-slate-200 leading-snug">
           {item.title}
           {item.status === 'IN_PROGRESS' && (
@@ -252,7 +250,6 @@ function WorkItemCard({
           )}
         </p>
 
-        {/* Suggested action */}
         {item.suggestedAction && (
           <p className="flex items-center gap-1 text-xs text-brand-300/80">
             <ChevronRight className="h-3 w-3 shrink-0" />
@@ -260,7 +257,6 @@ function WorkItemCard({
           </p>
         )}
 
-        {/* Metadata — property · expiry (revenue already shown above) */}
         <div className="flex items-center gap-3 flex-wrap text-xs text-slate-500 mt-0.5">
           {item.property && <span>{item.property.name}</span>}
           {item.daysUntilExpiry !== null && (
@@ -273,7 +269,6 @@ function WorkItemCard({
           )}
         </div>
 
-        {/* Actions — left-aligned, directly under content */}
         {actions.length > 0 && (
           <div className="flex items-center gap-2 flex-wrap pt-1">
             {actions}
@@ -389,15 +384,12 @@ export default function WorkQueuePage() {
 
   const toggle = (key: string) => setCollapsed((p) => ({ ...p, [key]: !p[key] }));
 
-  // Section: Critical Today
   const critical = data?.items.filter((i) => i.severity === 'CRITICAL') ?? [];
 
-  // Section: Assigned To Me
   const myItems = myData?.items ?? [];
   const myLeases = myItems.filter((i) => i.leaseId !== null);
   const myAlerts = myItems.filter((i) => i.alertId !== null && i.leaseId === null);
 
-  // Section: Due This Week
   const dueThisWeek = data?.items.filter(
     (i) => i.daysUntilExpiry !== null && i.daysUntilExpiry >= 0 && i.daysUntilExpiry <= 7,
   ) ?? [];
@@ -408,7 +400,6 @@ export default function WorkQueuePage() {
     (i) => !['LEASE_EXPIRATION', 'RENEWAL_RISK'].includes(i.type),
   );
 
-  // Section: Other Items — WARNING/INFO items not shown in any other section
   const other = data?.items.filter(
     (i) =>
       i.severity !== 'CRITICAL' &&
@@ -437,7 +428,6 @@ export default function WorkQueuePage() {
         <PageLoader />
       ) : (
         <div className="flex flex-col gap-4">
-          {/* ─── Critical Today ─── */}
           <Card className="overflow-hidden">
             <SectionHeader
               label="Critical Today"
@@ -459,7 +449,6 @@ export default function WorkQueuePage() {
             )}
           </Card>
 
-          {/* ─── Assigned To Me ─── */}
           <Card className="overflow-hidden">
             <SectionHeader
               label="Assigned To Me"
@@ -497,7 +486,6 @@ export default function WorkQueuePage() {
             )}
           </Card>
 
-          {/* ─── Due This Week ─── */}
           <Card className="overflow-hidden">
             <SectionHeader
               label="Due This Week"
@@ -532,7 +520,6 @@ export default function WorkQueuePage() {
             )}
           </Card>
 
-          {/* ─── Other Items (Warning / Info) ─── */}
           {other.length > 0 && (
             <Card className="overflow-hidden">
               <SectionHeader

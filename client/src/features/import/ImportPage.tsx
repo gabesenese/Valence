@@ -13,7 +13,6 @@ import { Card, CardBody } from '@/components/ui/Card';
 import { cn } from '@/utils/cn';
 import { PageHeader } from '@/components/ui/PageHeader';
 
-// ─── Step config ──────────────────────────────────────────────────────────────
 
 const STEPS = [
   { id: 'properties' as const,   label: 'Properties',   icon: Building2  },
@@ -23,7 +22,6 @@ const STEPS = [
 ];
 type StepId = typeof STEPS[number]['id'];
 
-// ─── Splash screen ────────────────────────────────────────────────────────────
 
 const SPLASH_KEY = 'valence-import-seen-v1';
 
@@ -47,7 +45,6 @@ function SplashScreen({ onStart }: { onStart: () => void }) {
 
   return (
     <div className="flex flex-col gap-8 p-6 animate-fade-in max-w-3xl mx-auto">
-      {/* Hero */}
       <div className="flex flex-col items-center gap-4 py-8 text-center">
         <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-brand-600/15 border border-brand-500/20">
           <Upload className="h-8 w-8 text-brand-400" />
@@ -62,7 +59,6 @@ function SplashScreen({ onStart }: { onStart: () => void }) {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-        {/* Checklist */}
         <Card>
           <CardBody className="flex flex-col gap-4">
             <div className="flex items-center gap-2">
@@ -91,7 +87,6 @@ function SplashScreen({ onStart }: { onStart: () => void }) {
           </CardBody>
         </Card>
 
-        {/* Recommended order */}
         <Card>
           <CardBody className="flex flex-col gap-4">
             <div className="flex items-center gap-2">
@@ -113,7 +108,6 @@ function SplashScreen({ onStart }: { onStart: () => void }) {
         </Card>
       </div>
 
-      {/* FAQ strip */}
       <div className="rounded-xl border border-surface-400/30 bg-surface-100/40 px-5 py-4">
         <div className="flex items-start gap-3">
           <Info className="h-4 w-4 text-brand-400 shrink-0 mt-0.5" />
@@ -144,7 +138,6 @@ function SplashScreen({ onStart }: { onStart: () => void }) {
   );
 }
 
-// ─── Field definitions ────────────────────────────────────────────────────────
 
 interface FieldDef {
   value: string;
@@ -195,7 +188,6 @@ const FIELD_DEFS: Record<'properties' | 'leases', FieldDef[]> = {
   ],
 };
 
-// ─── Aliases ──────────────────────────────────────────────────────────────────
 
 function norm(s: string) { return s.toLowerCase().replace(/[\s_\-.]+/g, ''); }
 
@@ -251,7 +243,6 @@ function autoSuggest(headers: string[], tab: 'properties' | 'leases'): Record<st
   return mapping;
 }
 
-// ─── Docs panel ───────────────────────────────────────────────────────────────
 
 function DocsPanel({ tab }: { tab: 'properties' | 'leases' }) {
   const [open, setOpen] = useState(false);
@@ -302,7 +293,6 @@ function DocsPanel({ tab }: { tab: 'properties' | 'leases' }) {
   );
 }
 
-// ─── Stepper ─────────────────────────────────────────────────────────────────
 
 function Stepper({ current }: { current: number }) {
   return (
@@ -334,7 +324,6 @@ function Stepper({ current }: { current: number }) {
   );
 }
 
-// ─── Smart field input ────────────────────────────────────────────────────────
 
 function SmartDefaultInput({ field, value, onChange }: {
   field: FieldDef;
@@ -364,7 +353,6 @@ function SmartDefaultInput({ field, value, onChange }: {
   );
 }
 
-// ─── Missing field prompt ─────────────────────────────────────────────────────
 
 function MissingFieldPrompt({ field, defaults, onDefaultsChange }: {
   field: FieldDef;
@@ -394,7 +382,6 @@ function MissingFieldPrompt({ field, defaults, onDefaultsChange }: {
   );
 }
 
-// ─── Mapping view ─────────────────────────────────────────────────────────────
 
 function MappingView({
   tab, preview, mapping, defaults, autoMatched, onChange, onDefaultsChange, onBack, onImport, loading, error,
@@ -419,7 +406,6 @@ function MappingView({
   const manualCount      = Object.keys(mapping).filter((k) => !autoMatched.has(k) && mapping[k]).length;
   const canImport        = unmappedRequired.length === 0;
 
-  // Track which CSV columns are already used (to show duplicate warnings)
   const usedColumns      = new Set(Object.values(mapping).filter(Boolean));
 
   const row = (field: FieldDef) => {
@@ -489,7 +475,6 @@ function MappingView({
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Banner */}
       <div className="flex items-center justify-between gap-4 rounded-xl border border-brand-500/20 bg-brand-600/10 px-4 py-3">
         <div className="flex items-center gap-2">
           <Sparkles className="h-4 w-4 text-brand-400 shrink-0" />
@@ -506,7 +491,6 @@ function MappingView({
         </button>
       </div>
 
-      {/* Smart prompts for unmapped required fields — surface these ABOVE the table */}
       {unmappedRequired.length > 0 && (
         <div className="flex flex-col gap-2">
           <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 px-1">
@@ -523,7 +507,6 @@ function MappingView({
         </div>
       )}
 
-      {/* Mapping table */}
       <div className="rounded-xl border border-surface-400/30 overflow-hidden">
         <div className="grid grid-cols-2 gap-4 border-b border-surface-400/20 bg-surface-200/60 px-4 py-2">
           <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Valence field</p>
@@ -564,7 +547,6 @@ function MappingView({
   );
 }
 
-// ─── CsvStep ──────────────────────────────────────────────────────────────────
 
 type Phase = 'upload' | 'mapping' | 'done';
 
@@ -627,7 +609,6 @@ function CsvStep({
 
   const tpl = TEMPLATES[tab];
 
-  // ── Done ──
   if (phase === 'done' && result) {
     const planLimitErrors = result.errors.filter((e) => e.message.includes('upgrade your plan'));
     const dataErrors      = result.errors.filter((e) => !e.message.includes('upgrade your plan'));
@@ -693,7 +674,6 @@ function CsvStep({
     );
   }
 
-  // ── Mapping ──
   if (phase === 'mapping' && preview) {
     return (
       <MappingView
@@ -712,7 +692,6 @@ function CsvStep({
     );
   }
 
-  // ── Upload ──
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-start justify-between gap-4 rounded-xl border border-surface-400/30 bg-surface-100/50 p-4">
@@ -762,7 +741,6 @@ function CsvStep({
   );
 }
 
-// ─── Documents step ───────────────────────────────────────────────────────────
 
 function DocumentsStep({ count, onCount }: { count: number; onCount: (n: number) => void }) {
   const [files,     setFiles]     = useState<File[]>([]);
@@ -875,7 +853,6 @@ function DocumentsStep({ count, onCount }: { count: number; onCount: (n: number)
   );
 }
 
-// ─── Intelligence step ────────────────────────────────────────────────────────
 
 const COMPUTE_ITEMS = [
   'Calculating portfolio health score',
@@ -973,7 +950,6 @@ function IntelligenceStep() {
   );
 }
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
 
 interface WizardState {
   properties: ImportResult | null;

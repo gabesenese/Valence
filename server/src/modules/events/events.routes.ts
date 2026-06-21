@@ -13,7 +13,6 @@ const ALLOWED: Set<string> = new Set(['visitor', 'setup_complete']);
 router.post('/', limiter, tryAuthenticate, async (req: Request, res: Response) => {
   const { event, meta } = req.body as { event?: string; meta?: Record<string, unknown> };
   if (!event || !ALLOWED.has(event)) { res.status(204).end(); return; }
-  // setup_complete is deduplicated per user; visitor fires every session
   if (event === 'setup_complete' && req.user?.id) {
     void trackIfFirstTime('setup_complete', req.user.id, meta);
   } else {

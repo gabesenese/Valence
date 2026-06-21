@@ -2,7 +2,6 @@ import { prisma } from '../../infrastructure/database';
 import { addDays, addMinutes, startOfMonth, endOfMonth, subMonths } from 'date-fns';
 import { generateLeaseExpirationAlerts, logAlertActivity } from './alerts.service';
 
-// ─── Median helper (more robust than plain average against outlier months) ─────
 function median(values: number[]): number {
   if (values.length === 0) return 0;
   const sorted = [...values].sort((a, b) => a - b);
@@ -10,19 +9,16 @@ function median(values: number[]): number {
   return sorted.length % 2 !== 0 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
 }
 
-// ─── Job lock — prevents concurrent scans across instances ────────────────────
 async function tryAcquireLock(): Promise<boolean> {
   const now = new Date();
   const until = addMinutes(now, 30);
 
-  // Attempt to claim an expired lock
   const updated = await prisma.jobLock.updateMany({
     where: { id: 'anomaly_scan', lockedUntil: { lt: now } },
     data: { lockedAt: now, lockedUntil: until },
   });
   if (updated.count > 0) return true;
 
-  // Try to create if no lock exists
   try {
     await prisma.jobLock.create({ data: { id: 'anomaly_scan', lockedAt: now, lockedUntil: until } });
     return true;
@@ -35,7 +31,6 @@ async function releaseLock(): Promise<void> {
   await prisma.jobLock.deleteMany({ where: { id: 'anomaly_scan' } });
 }
 
-// ─── Detector: Leases expiring with no renewal action ─────────────────────────
 async function detectUnactionedExpirations(): Promise<number> {
   const now = new Date();
   let created = 0;
@@ -80,7 +75,6 @@ async function detectUnactionedExpirations(): Promise<number> {
   return created;
 }
 
-// ─── Detector: Revenue deviates from 3-month median baseline ─────────────────
 async function detectPaymentAnomalies(): Promise<number> {
   const now = new Date();
   const thisMonthStart = startOfMonth(now);
@@ -169,7 +163,6 @@ async function detectPaymentAnomalies(): Promise<number> {
   return created;
 }
 
-// ─── Detector: Occupancy below operational threshold ─────────────────────────
 async function detectOccupancyDrops(): Promise<number> {
   const now = new Date();
   let created = 0;
@@ -230,7 +223,6 @@ async function detectOccupancyDrops(): Promise<number> {
   return created;
 }
 
-// ─── Detector: Flagged financial records without an open alert ────────────────
 async function detectFinancialDiscrepancies(): Promise<number> {
   let created = 0;
 
@@ -273,7 +265,6 @@ async function detectFinancialDiscrepancies(): Promise<number> {
   return created;
 }
 
-// ─── Orchestrator ─────────────────────────────────────────────────────────────
 export async function runAnomalyScan(): Promise<{ total: number; breakdown: Record<string, number> }> {
   const acquired = await tryAcquireLock();
   if (!acquired) {

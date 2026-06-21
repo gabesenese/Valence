@@ -24,7 +24,6 @@ export const updateLeaseSchema = createLeaseSchema.partial().extend({
   terminationReason: z.string().optional(),
   renewalDate: z.string().optional(),
   ownerUserId: z.string().uuid().nullable().optional(),
-  // Allow null to clear optional financial/text fields
   securityDeposit: z.number().positive().nullable().optional(),
   sqft: z.number().positive().nullable().optional(),
   notes: z.string().nullable().optional(),

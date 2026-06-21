@@ -3,7 +3,6 @@ import { TrendingUp, TrendingDown, Minus, Activity, ShieldAlert, CheckCircle2 } 
 import { aiService, type PortfolioHealthScore } from '@/services/ai.service';
 import { useChartColors } from '@/hooks/useChartColors';
 
-// ─── Config ───────────────────────────────────────────────────────────────────
 
 const BAND_CONFIG = {
   critical: { label: 'CRITICAL',  ring: '#ef4444', text: 'text-danger',    bg: 'bg-danger/10'    },
@@ -12,7 +11,6 @@ const BAND_CONFIG = {
   healthy:  { label: 'HEALTHY',   ring: '#10b981', text: 'text-success',   bg: 'bg-success/10'   },
 };
 
-// ─── Gauge arc ────────────────────────────────────────────────────────────────
 
 function ScoreGauge({ score, band }: { score: number; band: PortfolioHealthScore['band'] }) {
   const c     = useChartColors();
@@ -42,7 +40,6 @@ function ScoreGauge({ score, band }: { score: number; band: PortfolioHealthScore
   );
 }
 
-// ─── Skeleton ─────────────────────────────────────────────────────────────────
 
 function Skeleton() {
   return (
@@ -60,7 +57,6 @@ function Skeleton() {
   );
 }
 
-// ─── Main component ───────────────────────────────────────────────────────────
 
 export default function HealthScoreCard() {
   const { data, isLoading } = useQuery({
@@ -76,14 +72,12 @@ export default function HealthScoreCard() {
   const TrendIcon  = data.trend === 'up' ? TrendingUp : data.trend === 'down' ? TrendingDown : Minus;
   const trendColor = data.trend === 'up' ? 'text-success' : data.trend === 'down' ? 'text-danger' : 'text-slate-500';
 
-  // Derive risks (lowest score ratio) and strengths (highest score ratio)
   const sorted    = [...data.components].sort((a, b) => (a.score / a.maxScore) - (b.score / b.maxScore));
   const risks     = sorted.slice(0, 2);
   const strengths = sorted.slice(-2).reverse();
 
   return (
     <div className="rounded-2xl border border-surface-400/40 bg-surface-100 overflow-hidden">
-      {/* Header */}
       <div className="flex items-center justify-between px-5 py-3 border-b border-surface-400/30 bg-surface-200/30">
         <div className="flex items-center gap-2">
           <Activity className="h-4 w-4 text-brand-400" />
@@ -98,11 +92,9 @@ export default function HealthScoreCard() {
         </div>
       </div>
 
-      {/* Gauge + Risks/Strengths */}
       <div className="flex items-center gap-6 px-5 py-5">
         <ScoreGauge score={data.score} band={data.band} />
         <div className="flex-1 grid grid-cols-2 gap-x-6 gap-y-1">
-          {/* Risks */}
           <div>
             <div className="flex items-center gap-1.5 mb-2.5">
               <ShieldAlert className="h-3.5 w-3.5 text-danger/70" />
@@ -117,7 +109,6 @@ export default function HealthScoreCard() {
               ))}
             </ul>
           </div>
-          {/* Strengths */}
           <div>
             <div className="flex items-center gap-1.5 mb-2.5">
               <CheckCircle2 className="h-3.5 w-3.5 text-success/70" />

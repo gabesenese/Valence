@@ -21,7 +21,6 @@ export function applyTheme(theme: Theme): void {
   try {
     localStorage.setItem(THEME_STORAGE_KEY, theme);
   } catch {
-    /* empty */
   }
 }
 

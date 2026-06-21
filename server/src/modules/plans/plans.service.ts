@@ -2,7 +2,6 @@ import type { Plan, UsageType } from '@prisma/client';
 import { prisma } from '../../infrastructure/database';
 import { ForbiddenError } from '../../utils/errors';
 
-// ─── Limits ───────────────────────────────────────────────────────────────────
 
 export const PLAN_LIMITS: Record<Plan, {
   properties: number;
@@ -26,7 +25,6 @@ export function meetsMinPlan(userPlan: Plan, required: Plan): boolean {
   return PLAN_ORDER[userPlan] >= PLAN_ORDER[required];
 }
 
-// ─── Resource limit checks ────────────────────────────────────────────────────
 
 export async function enforcePropertyLimit(plan: Plan, userId: string): Promise<void> {
   const limit = PLAN_LIMITS[plan].properties;
@@ -52,7 +50,6 @@ export async function enforceLeaseLimit(plan: Plan, userId?: string): Promise<vo
   }
 }
 
-// ─── Usage tracking ───────────────────────────────────────────────────────────
 
 function currentPeriodStart(): Date {
   const now = new Date();
@@ -87,7 +84,6 @@ export async function getUsageSummary(userId: string): Promise<{
   };
 }
 
-// ─── Plan management ──────────────────────────────────────────────────────────
 
 export async function setPlan(userId: string, plan: Plan): Promise<void> {
   await prisma.user.update({ where: { id: userId }, data: { plan } });

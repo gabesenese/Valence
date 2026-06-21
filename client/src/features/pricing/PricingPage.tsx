@@ -6,7 +6,6 @@ import { authService } from '@/services/auth.service';
 import { useAuthStore } from '@/state/auth.store';
 import type { Plan } from '@/state/auth.store';
 
-// ─── Types ────────────────────────────────────────────────────────────────────
 
 interface Tier {
   name: string;
@@ -27,7 +26,6 @@ interface UsageLine {
   executive: string;
 }
 
-// ─── Data ─────────────────────────────────────────────────────────────────────
 
 const TIERS: Tier[] = [
   {
@@ -110,7 +108,6 @@ const VALUE_PROPS = [
   },
 ];
 
-// ─── Tier card ────────────────────────────────────────────────────────────────
 
 function TierCard({ tier, onSelect, loading }: { tier: Tier; onSelect: () => void; loading: boolean }) {
   return (
@@ -170,7 +167,6 @@ function TierCard({ tier, onSelect, loading }: { tier: Tier; onSelect: () => voi
   );
 }
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function PricingPage() {
   const navigate = useNavigate();
@@ -219,7 +215,6 @@ export default function PricingPage() {
 
   return (
     <div className="min-h-screen bg-surface-0 text-fg">
-      {/* Nav */}
       <header className="flex items-center justify-between border-b border-surface-400/30 px-8 py-4">
         <button
           onClick={() => navigate('/queue')}
@@ -248,7 +243,6 @@ export default function PricingPage() {
       </header>
 
       <div className="mx-auto max-w-6xl px-6 py-16">
-        {/* Hero */}
         <div className="text-center mb-16">
           <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-brand-400">Operational Intelligence Platform</p>
           <h1 className="text-4xl font-bold text-fg tracking-tight">
@@ -260,7 +254,6 @@ export default function PricingPage() {
           </p>
         </div>
 
-        {/* Value props */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 mb-16">
           {VALUE_PROPS.map(({ icon: Icon, color, bg, title, description }) => (
             <div key={title} className="flex items-start gap-4 rounded-xl border border-surface-400/30 bg-surface-100 p-5">
@@ -275,7 +268,6 @@ export default function PricingPage() {
           ))}
         </div>
 
-        {/* Tiers */}
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 mb-16">
           {TIERS.map(tier => (
             <TierCard
@@ -287,7 +279,6 @@ export default function PricingPage() {
           ))}
         </div>
 
-        {/* Usage */}
         <div className="rounded-2xl border border-surface-400/40 bg-surface-100 overflow-hidden mb-16">
           <div className="px-6 py-5 border-b border-surface-400/30">
             <h2 className="text-sm font-semibold text-fg">What's included in every plan</h2>

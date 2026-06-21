@@ -172,7 +172,6 @@ export default function PropertyFormModal({ open, onClose, property, initialValu
       <form onSubmit={handleSubmit}>
         <div className="max-h-[68vh] overflow-y-auto px-5 py-4">
 
-          {/* Basic Info */}
           <p className={SECTION_CLASS} style={{ borderTop: 'none', paddingTop: 0, marginBottom: 12 }}>Basic Info</p>
           <div className="grid grid-cols-2 gap-4 mb-4">
             <Input label="Property Name" value={form.name} onChange={set('name')} error={errors.name} placeholder="Oakwood Plaza" />
@@ -189,7 +188,6 @@ export default function PropertyFormModal({ open, onClose, property, initialValu
             </div>
           </div>
 
-          {/* Location */}
           <p className={SECTION_CLASS}>Location</p>
           <div className="mb-4">
             <Input label="Address" value={form.address} onChange={set('address')} error={errors.address} placeholder="123 Main St" />
@@ -200,7 +198,6 @@ export default function PropertyFormModal({ open, onClose, property, initialValu
             <Input label="Postal Code" value={form.zipCode} onChange={set('zipCode')} error={errors.zipCode} placeholder="M5V 3A8" />
           </div>
 
-          {/* Building */}
           <p className={SECTION_CLASS}>Building</p>
           <div className="grid grid-cols-3 gap-4 mb-4">
             <Input label="Total Units" type="number" value={form.totalUnits} onChange={set('totalUnits')} error={errors.totalUnits} placeholder="24" min={1} />
@@ -208,7 +205,6 @@ export default function PropertyFormModal({ open, onClose, property, initialValu
             <Input label="Year Built" type="number" value={form.yearBuilt} onChange={set('yearBuilt')} placeholder="1995" min={1800} max={new Date().getFullYear()} />
           </div>
 
-          {/* Financials */}
           <p className={SECTION_CLASS}>Financials <span className="normal-case font-normal text-slate-600">(optional)</span></p>
           <div className="grid grid-cols-2 gap-4">
             <Input

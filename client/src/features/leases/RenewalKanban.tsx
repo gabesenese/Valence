@@ -20,7 +20,6 @@ import { Badge } from '@/components/ui/Badge';
 import { PageLoader } from '@/components/ui/Spinner';
 import { formatCurrency, daysUntil } from '@/utils/format';
 
-// ─── Stage config ─────────────────────────────────────────────────────────────
 
 const STAGES: Array<{
   key: RenewalStage;
@@ -41,7 +40,6 @@ const RISK_VARIANT: Record<string, 'success' | 'info' | 'warning' | 'danger'> = 
   LOW: 'success', MEDIUM: 'info', HIGH: 'warning', CRITICAL: 'danger',
 };
 
-// ─── Card content (shared between draggable card and overlay) ─────────────────
 
 function CardContent({ lease }: { lease: KanbanLease }) {
   const days = daysUntil(lease.endDate);
@@ -90,7 +88,6 @@ function CardContent({ lease }: { lease: KanbanLease }) {
   );
 }
 
-// ─── Draggable card ───────────────────────────────────────────────────────────
 
 function KanbanCard({ lease }: { lease: KanbanLease }) {
   const navigate = useNavigate();
@@ -117,7 +114,6 @@ function KanbanCard({ lease }: { lease: KanbanLease }) {
   );
 }
 
-// ─── Drag overlay card ────────────────────────────────────────────────────────
 
 function CardOverlay({ lease }: { lease: KanbanLease }) {
   return (
@@ -127,7 +123,6 @@ function CardOverlay({ lease }: { lease: KanbanLease }) {
   );
 }
 
-// ─── Droppable column ─────────────────────────────────────────────────────────
 
 function KanbanCol({
   config,
@@ -144,7 +139,6 @@ function KanbanCol({
 
   return (
     <div className="flex w-[248px] shrink-0 flex-col">
-      {/* Header */}
       <div
         className={`rounded-t-lg border border-b-0 border-t-2 ${config.borderTop} px-3 py-2.5 transition-colors ${
           isOver
@@ -163,7 +157,6 @@ function KanbanCol({
         )}
       </div>
 
-      {/* Cards drop zone */}
       <div
         ref={setNodeRef}
         className={`flex-1 space-y-2 rounded-b-lg border border-t-0 p-2 transition-colors ${
@@ -185,7 +178,6 @@ function KanbanCol({
           ))
         )}
 
-        {/* Drop target indicator when column has cards */}
         {isOver && leases.length > 0 && (
           <div className="rounded-md border-2 border-dashed border-brand-500/30 py-3 text-center text-[11px] text-brand-400">
             Drop here
@@ -196,7 +188,6 @@ function KanbanCol({
   );
 }
 
-// ─── Filter pill ──────────────────────────────────────────────────────────────
 
 function FilterPill({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
   return (
@@ -213,14 +204,12 @@ function FilterPill({ active, onClick, children }: { active: boolean; onClick: (
   );
 }
 
-// ─── Board ────────────────────────────────────────────────────────────────────
 
 export default function RenewalKanban() {
   const qc = useQueryClient();
   const [activeCard, setActiveCard] = useState<KanbanLease | null>(null);
   const [expiryDays, setExpiryDays] = useState<number | null>(null);
 
-  // Require 8px movement to start drag — lets clicks pass through naturally
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
   );
@@ -307,7 +296,6 @@ export default function RenewalKanban() {
 
   return (
     <div className="flex flex-col gap-3">
-      {/* Filter + summary row */}
       <div className="flex items-center gap-3 flex-wrap">
         <div className="flex items-center gap-1">
           <span className="text-xs text-slate-500 mr-1">Expiring:</span>
@@ -324,7 +312,6 @@ export default function RenewalKanban() {
         </div>
       </div>
 
-      {/* Board */}
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}

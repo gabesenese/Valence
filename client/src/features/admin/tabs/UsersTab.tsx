@@ -103,7 +103,6 @@ function UserActions({ user, secret, onDone }: { user: AdminUser; secret: string
           <div className="fixed z-50 w-56 rounded-xl border border-surface-400/60 bg-surface-200 shadow-card overflow-hidden"
             style={{ top: pos.top, right: pos.right }}>
 
-            {/* Plan */}
             <div className="px-3 py-2 border-b border-surface-400/30">
               <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-600 mb-1">Plan</p>
               <div className="flex gap-1">
@@ -116,7 +115,6 @@ function UserActions({ user, secret, onDone }: { user: AdminUser; secret: string
               </div>
             </div>
 
-            {/* Role */}
             <div className="px-3 py-2 border-b border-surface-400/30">
               <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-600 mb-1">Role</p>
               <div className="flex flex-wrap gap-1">
@@ -129,7 +127,6 @@ function UserActions({ user, secret, onDone }: { user: AdminUser; secret: string
               </div>
             </div>
 
-            {/* Actions */}
             <div className="flex flex-col">
               <button onClick={() => { impMut.mutate(); setOpen(false); }} disabled={impMut.isPending}
                 className="flex items-center gap-2 px-3 py-2 text-xs text-brand-400 hover:bg-brand-600/10 transition-colors">
@@ -188,7 +185,6 @@ export function UsersTab({ secret }: { secret: string }) {
 
   return (
     <div>
-      {/* Filters */}
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <div className="relative flex-1 min-w-56">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-500" />
@@ -206,7 +202,6 @@ export function UsersTab({ secret }: { secret: string }) {
         <p className="text-xs text-slate-600">{total} user{total !== 1 ? 's' : ''}</p>
       </div>
 
-      {/* Table */}
       <div className="rounded-xl border border-surface-400/40 bg-surface-100 overflow-hidden">
         <table className="w-full text-sm">
           <thead>

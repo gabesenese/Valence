@@ -17,7 +17,6 @@ export function EmailVerificationBanner() {
       await authService.resendVerification();
       setSent(true);
     } catch {
-      // silent — user can retry
     } finally {
       setSending(false);
     }

@@ -150,7 +150,6 @@ export async function changePassword(req: Request, res: Response, next: NextFunc
   }
 }
 
-// ─── Forgot / reset password ──────────────────────────────────────────────────
 
 export async function forgotPassword(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
@@ -179,7 +178,6 @@ export async function resetPassword(req: Request, res: Response, next: NextFunct
   }
 }
 
-// ─── Email verification ───────────────────────────────────────────────────────
 
 export async function verifyEmail(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
@@ -199,7 +197,6 @@ export async function resendVerification(req: Request, res: Response, next: Next
   }
 }
 
-// ─── MFA ─────────────────────────────────────────────────────────────────────
 
 export async function setupMfa(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
@@ -237,7 +234,6 @@ export async function verifyMfaChallenge(req: Request, res: Response, next: Next
   }
 }
 
-// ─── Sessions ─────────────────────────────────────────────────────────────────
 
 export async function listSessions(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
@@ -265,7 +261,6 @@ export async function revokeAllSessions(req: Request, res: Response, next: NextF
   }
 }
 
-// ─── Demo session ─────────────────────────────────────────────────────────────
 
 export async function demoLogin(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {

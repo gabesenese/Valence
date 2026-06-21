@@ -18,7 +18,6 @@ import { usersService } from '@/services/users.service';
 import { authService } from '@/services/auth.service';
 import { organizationService } from '@/services/organization.service';
 
-// ─── Types ────────────────────────────────────────────────────────────────────
 
 type Tab = 'account' | 'security' | 'billing' | 'sessions' | 'preferences' | 'danger';
 
@@ -31,7 +30,6 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'danger',      label: 'Danger Zone' },
 ];
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function parseDevice(ua: string | null): string {
   if (!ua) return 'Unknown device';
@@ -50,7 +48,6 @@ function parseDevice(ua: string | null): string {
   return `${browser} on ${os}`;
 }
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function SettingsPage() {
   const user        = useAuthStore((s) => s.user);
@@ -116,7 +113,6 @@ export default function SettingsPage() {
 
   const inputCls = 'h-9 w-full rounded-lg border border-surface-400 bg-surface-200 px-3 text-sm text-slate-100 placeholder:text-slate-600 transition-colors focus:border-brand-500/60 focus:bg-surface-300 focus:outline-none focus:ring-1 focus:ring-brand-500/30';
 
-  // ── Handlers ──────────────────────────────────────────────────────────────
 
   const openPortal = async () => {
     setPortalLoading(true);
@@ -198,12 +194,10 @@ export default function SettingsPage() {
     finally { setRevokingAll(false); }
   };
 
-  // ── Render ────────────────────────────────────────────────────────────────
 
   return (
     <div className="flex flex-col h-full animate-fade-in">
 
-      {/* ── Header ── */}
       <div className="flex items-center gap-4 px-4 pt-4 pb-4 border-b border-surface-400/30 sm:px-6 sm:pt-6 sm:pb-5">
         <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-brand-600/20 border border-brand-600/30 select-none">
           <span className="text-lg font-bold text-brand-400">{user?.firstName?.[0]}{user?.lastName?.[0]}</span>
@@ -222,7 +216,6 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      {/* ── Tabs ── */}
       <div className="flex border-b border-surface-400/30 px-4 overflow-x-auto sm:px-6">
         {TABS.map(({ id, label }) => (
           <button key={id} onClick={() => setActiveTab(id)}
@@ -237,10 +230,8 @@ export default function SettingsPage() {
         ))}
       </div>
 
-      {/* ── Content ── */}
       <div className="flex-1 overflow-y-auto p-4 sm:p-6">
 
-        {/* ACCOUNT */}
         {activeTab === 'account' && (
           <div className="max-w-xl flex flex-col gap-4">
             <Card>
@@ -282,7 +273,6 @@ export default function SettingsPage() {
           </div>
         )}
 
-        {/* SECURITY */}
         {activeTab === 'security' && (
           <div className="max-w-xl flex flex-col gap-4">
             <Card>
@@ -394,7 +384,6 @@ export default function SettingsPage() {
           </div>
         )}
 
-        {/* BILLING */}
         {activeTab === 'billing' && (
           <div className="max-w-xl flex flex-col gap-4">
             <Card>
@@ -470,7 +459,6 @@ export default function SettingsPage() {
           </div>
         )}
 
-        {/* SESSIONS */}
         {activeTab === 'sessions' && (
           <div className="max-w-xl flex flex-col gap-4">
             {!sessions || sessions.length === 0 ? (
@@ -540,7 +528,6 @@ export default function SettingsPage() {
           </div>
         )}
 
-        {/* PREFERENCES */}
         {activeTab === 'preferences' && (
           <div className="max-w-md flex flex-col gap-4">
             <Card>
@@ -601,7 +588,6 @@ export default function SettingsPage() {
           </div>
         )}
 
-        {/* DANGER ZONE */}
         {activeTab === 'danger' && (
           <div className="max-w-xl flex flex-col gap-4">
             <div className="flex items-center gap-2 mb-1">

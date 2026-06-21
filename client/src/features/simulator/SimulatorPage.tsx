@@ -9,7 +9,6 @@ import { formatCurrency, compactCurrency } from '@/utils/format';
 import { Card, CardBody } from '@/components/ui/Card';
 import { Select } from '@/components/ui/Select';
 
-// ─── Scenario config ──────────────────────────────────────────────────────────
 
 const SCENARIOS: {
   type: ScenarioType;
@@ -45,7 +44,6 @@ const SCENARIOS: {
   },
 ];
 
-// ─── Parameter forms ──────────────────────────────────────────────────────────
 
 function TenantDepartureForm({ value, onChange }: { value: Record<string, unknown>; onChange: (v: Record<string, unknown>) => void }) {
   const { data: tenants, isLoading } = useQuery({
@@ -123,7 +121,6 @@ const PARAM_FORMS: Record<string, React.FC<{ value: Record<string, unknown>; onC
   expense_increase: ExpenseIncreaseForm,
 };
 
-// ─── Impact metric ────────────────────────────────────────────────────────────
 
 function ImpactMetric({ label, current, projected, format }: {
   label: string; current: number; projected: number; format: (v: number) => string;
@@ -157,7 +154,6 @@ function ImpactMetric({ label, current, projected, format }: {
   );
 }
 
-// ─── Results panel ────────────────────────────────────────────────────────────
 
 function ResultsPanel({ result }: { result: SimulationResult }) {
   const { current, projected, impact, analysis } = result;
@@ -170,7 +166,6 @@ function ResultsPanel({ result }: { result: SimulationResult }) {
 
   return (
     <div className="flex flex-col gap-5">
-      {/* Annual impact hero */}
       <div className={`rounded-xl border px-5 py-4 ${annualPositive ? 'border-success/20 bg-success/5' : 'border-danger/20 bg-danger/5'}`}>
         <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Estimated Annual Impact</p>
         <div className="flex items-baseline gap-2">
@@ -208,7 +203,6 @@ function ResultsPanel({ result }: { result: SimulationResult }) {
         </div>
       </div>
 
-      {/* Metric grid */}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <ImpactMetric label="Monthly Revenue"  current={current.monthlyRevenue}  projected={projected.monthlyRevenue}  format={formatCurrency} />
         <ImpactMetric label="Monthly NOI"      current={current.noi}             projected={projected.noi}             format={formatCurrency} />
@@ -216,7 +210,6 @@ function ResultsPanel({ result }: { result: SimulationResult }) {
         <ImpactMetric label="Occupancy Rate"   current={current.occupancyRate}   projected={projected.occupancyRate}   format={v => `${v.toFixed(1)}%`} />
       </div>
 
-      {/* Analysis */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         {[
           { title: 'Findings',        items: analysis.findings,        icon: Zap,          color: 'text-brand-400' },
@@ -247,7 +240,6 @@ function ResultsPanel({ result }: { result: SimulationResult }) {
   );
 }
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function ImpactAnalysisPage() {
   const [selected, setSelected] = useState<ScenarioType>('occupancy_drop');
@@ -270,7 +262,6 @@ export default function ImpactAnalysisPage() {
   return (
     <div className="flex flex-col gap-4 p-4 animate-fade-in sm:p-5">
 
-      {/* Scenario tiles */}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         {SCENARIOS.map(s => {
           const active = s.type === selected;
@@ -299,9 +290,7 @@ export default function ImpactAnalysisPage() {
         })}
       </div>
 
-      {/* Form + Results */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[280px_1fr]">
-        {/* Param form */}
         <div className="rounded-xl border border-surface-400/30 overflow-hidden">
           <div className="px-4 py-3 border-b border-surface-400/40 bg-surface-200/30">
             <span className="text-xs font-semibold text-fg">Parameters</span>
@@ -322,7 +311,6 @@ export default function ImpactAnalysisPage() {
           </div>
         </div>
 
-        {/* Results */}
         <div>
           {mutation.isPending && (
             <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-surface-400/40 bg-surface-100 h-64">

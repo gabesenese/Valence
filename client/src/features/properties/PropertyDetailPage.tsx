@@ -75,7 +75,6 @@ export default function PropertyDetailPage() {
   return (
     <div className="flex flex-col gap-4 p-4 animate-fade-in sm:gap-6 sm:p-6">
 
-      {/* Breadcrumb */}
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="sm" onClick={() => navigate('/properties')}>
           <ArrowLeft className="h-4 w-4" />
@@ -85,7 +84,6 @@ export default function PropertyDetailPage() {
         <span className="text-sm text-slate-400 font-mono">{property.code}</span>
       </div>
 
-      {/* Header */}
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex items-start gap-3">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-600/20 border border-brand-600/30 sm:h-12 sm:w-12">
@@ -112,7 +110,6 @@ export default function PropertyDetailPage() {
         </div>
       </div>
 
-      {/* KPI strip */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
         {[
           {
@@ -132,10 +129,8 @@ export default function PropertyDetailPage() {
         ))}
       </div>
 
-      {/* Body: main content + sidebar — stack on mobile, side by side on lg+ */}
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:gap-5">
 
-        {/* Main: Active Leases */}
         <div className="flex-1 min-w-0">
           <Card>
             <CardHeader>
@@ -202,7 +197,6 @@ export default function PropertyDetailPage() {
             )}
           </Card>
 
-          {/* Activity history — inside main column so it fills below the leases table */}
           {activityData && activityData.length > 0 && (
             <Card>
               <CardHeader>
@@ -246,10 +240,8 @@ export default function PropertyDetailPage() {
           )}
         </div>
 
-        {/* Sidebar */}
         <div className="flex flex-col gap-4 lg:w-72 lg:shrink-0">
 
-          {/* Open alerts */}
           {property._count.alerts > 0 && (
             <div className="rounded-lg border border-danger/20 overflow-hidden">
               <div className="flex items-center gap-2 bg-danger/10 px-4 py-3">
@@ -265,7 +257,6 @@ export default function PropertyDetailPage() {
                   alertsData?.data.map((alert) => (
                     <div key={alert.id} className="group px-4 py-3 hover:bg-white/[0.02] transition-colors">
 
-                      {/* Title + dismiss */}
                       <div className="flex items-start gap-2 mb-2.5">
                         <span className={`mt-[5px] h-1.5 w-1.5 rounded-full shrink-0 ${SEVERITY_DOT[alert.severity] ?? 'bg-slate-500'}`} />
                         <p className="flex-1 text-[13px] font-medium text-slate-200 leading-snug">{alert.title}</p>
@@ -277,7 +268,6 @@ export default function PropertyDetailPage() {
                         </button>
                       </div>
 
-                      {/* Action buttons */}
                       <div className="pl-3.5 flex items-center gap-1.5">
                         {alert.status === 'OPEN' ? (
                           <button
@@ -312,7 +302,6 @@ export default function PropertyDetailPage() {
             </div>
           )}
 
-          {/* Building details */}
           <Card>
             <CardHeader><CardTitle>Building Details</CardTitle></CardHeader>
             <CardBody className="flex flex-col gap-3">

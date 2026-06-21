@@ -63,7 +63,6 @@ export const importService = {
   leases:     (file: File, columnMap?: Record<string, string>, defaults?: Record<string, string>) => postCsv('/import/leases',     file, columnMap, defaults),
 };
 
-// ─── CSV templates ────────────────────────────────────────────────────────────
 
 export const TEMPLATES = {
   properties: {

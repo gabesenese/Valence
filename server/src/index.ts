@@ -14,7 +14,6 @@ import path from 'path';
 async function start() {
   await connectDatabase();
 
-  // Ensure upload directory exists (local dev only)
   try { mkdirSync(path.resolve('uploads/documents'), { recursive: true }); } catch {}
 
   const server = app.listen(env.PORT, () => {
@@ -48,14 +47,12 @@ async function start() {
   cron.schedule('0 * * * *', automate);
   automate();
 
-  // Purge items that have been in trash for 30+ days — runs daily at 2am
   cron.schedule('0 2 * * *', () => {
     purgeStaleTrashed()
       .then(() => logger.info('Trash purge: stale items permanently deleted'))
       .catch((err) => logger.warn('Trash purge failed', { error: err }));
   });
 
-  // Automated backup for all active users — runs daily at 3am
   cron.schedule('0 3 * * *', () => {
     runScheduledBackups()
       .then(() => logger.info('Scheduled backups completed'))

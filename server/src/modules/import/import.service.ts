@@ -17,7 +17,6 @@ export type FieldDefaults = Record<string, string>;
 
 function applyColumnMap(row: Record<string, string>, map: ColumnMap, defaults?: FieldDefaults): Record<string, string> {
   const result = { ...row };
-  // Defaults applied first — column mappings override them
   if (defaults) {
     for (const [field, val] of Object.entries(defaults)) {
       if (val) result[field] = val;
@@ -47,7 +46,6 @@ function toDate(val: string, field: string): string {
   return d.toISOString();
 }
 
-// ─── Properties ───────────────────────────────────────────────────────────────
 
 const VALID_PROPERTY_TYPES = ['RESIDENTIAL', 'COMMERCIAL', 'MIXED_USE', 'INDUSTRIAL', 'RETAIL', 'OFFICE'];
 
@@ -55,7 +53,6 @@ export async function importProperties(buffer: Buffer, plan: Plan, userId: strin
   const rows = parseRows(buffer);
   const limit = PLAN_LIMITS[plan].properties;
   const startCount = await prisma.property.count({ where: { ownerId: userId } });
-  // Only net-new properties count against the plan limit; updates are free
   const netNewAllowed = limit === Infinity ? Infinity : Math.max(0, limit - startCount);
   let netNewCreated = 0;
   const result: ImportResult = {
@@ -106,7 +103,6 @@ export async function importProperties(buffer: Buffer, plan: Plan, userId: strin
         continue;
       }
 
-      // New property — check plan limit
       if (netNewAllowed !== Infinity && netNewCreated >= netNewAllowed) {
         result.errors.push({ row: rowNum, message: `Your ${plan} plan includes up to ${limit} properties and you've reached the limit — upgrade your plan to import more` });
         result.skipped++;
@@ -143,7 +139,6 @@ export async function importProperties(buffer: Buffer, plan: Plan, userId: strin
   return result;
 }
 
-// ─── Tenants ──────────────────────────────────────────────────────────────────
 
 export async function importTenants(buffer: Buffer, userId: string, columnMap?: ColumnMap, defaults?: FieldDefaults): Promise<ImportResult> {
   const rows = parseRows(buffer);
@@ -194,7 +189,6 @@ export async function importTenants(buffer: Buffer, userId: string, columnMap?: 
   return result;
 }
 
-// ─── Leases ───────────────────────────────────────────────────────────────────
 
 const VALID_LEASE_TYPES = ['GROSS', 'NET', 'MODIFIED_GROSS', 'PERCENTAGE', 'GROUND'];
 

@@ -16,13 +16,11 @@ import {
 const router = Router();
 router.use(authenticate);
 
-// GET /tasks?alertId=&leaseId=&propertyId=&status=&assigneeUserId=&unassigned=
 router.get('/', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { alertId, leaseId, propertyId, status, assigneeUserId, unassigned } =
       req.query as Record<string, string | undefined>;
 
-    // If scoped to a specific work item, use the item-level query
     if (alertId || (leaseId && !status && !assigneeUserId) || (propertyId && !status && !assigneeUserId)) {
       const tasks = await getTasksForItem({
         ...(alertId    ? { alertId }    : {}),
@@ -43,7 +41,6 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
   } catch (e) { next(e); }
 });
 
-// POST /tasks
 router.post('/', authorize('ANALYST'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { title, description, alertId, leaseId, propertyId, assigneeUserId, dueAt } = req.body as {
@@ -76,7 +73,6 @@ router.post('/', authorize('ANALYST'), async (req: Request, res: Response, next:
   } catch (e) { next(e); }
 });
 
-// PATCH /tasks/:id
 router.patch('/:id', authorize('ANALYST'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { title, description, assigneeUserId, dueAt } = req.body as {
@@ -96,7 +92,6 @@ router.patch('/:id', authorize('ANALYST'), async (req: Request, res: Response, n
   } catch (e) { next(e); }
 });
 
-// PATCH /tasks/:id/status
 router.patch('/:id/status', authorize('ANALYST'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { status, completionNote } = req.body as {
@@ -115,7 +110,6 @@ router.patch('/:id/status', authorize('ANALYST'), async (req: Request, res: Resp
   } catch (e) { next(e); }
 });
 
-// DELETE /tasks/:id
 router.delete('/:id', authorize('ADMIN'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     await deleteTask(req.params.id);

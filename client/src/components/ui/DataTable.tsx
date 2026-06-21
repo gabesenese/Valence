@@ -26,21 +26,16 @@ interface DataTableProps<T> {
   data: T[];
   keyExtractor: (row: T) => string;
   loading?: boolean;
-  // Empty state
   emptyIcon?: React.ComponentType<{ className?: string }>;
   emptyTitle?: string;
   emptyDescription?: string;
   emptyAction?: React.ReactNode;
-  // Sorting (controlled)
   sortKey?: string;
   sortDir?: 'asc' | 'desc';
   onSort?: (key: string, dir: 'asc' | 'desc') => void;
-  // Pagination (controlled)
   pagination?: DataTablePagination;
-  // Row interaction
   onRowClick?: (row: T) => void;
   rowClassName?: (row: T) => string;
-  // Toolbar
   search?: string;
   onSearch?: (s: string) => void;
   searchPlaceholder?: string;

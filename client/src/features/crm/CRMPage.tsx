@@ -15,7 +15,6 @@ import { PageLoader } from '@/components/ui/Spinner';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { PageHeader } from '@/components/ui/PageHeader';
 
-// ─── Config ───────────────────────────────────────────────────────────────────
 
 const CRM_STATUS_CONFIG: Record<CrmStatus, { label: string; variant: 'success' | 'warning' | 'danger' | 'info' | 'neutral' }> = {
   ACTIVE:     { label: 'Active',      variant: 'success'  },
@@ -49,7 +48,6 @@ function formatTimeAgo(s: string) {
   return `${Math.floor(days / 365)}y ago`;
 }
 
-// ─── Add contact log form ─────────────────────────────────────────────────────
 
 function AddContactLog({
   tenantId,
@@ -127,7 +125,6 @@ function AddContactLog({
   );
 }
 
-// ─── Tenant detail panel ──────────────────────────────────────────────────────
 
 function TenantPanel({ tenant, onClose }: { tenant: CrmTenant; onClose: () => void }) {
   const qc = useQueryClient();
@@ -163,7 +160,6 @@ function TenantPanel({ tenant, onClose }: { tenant: CrmTenant; onClose: () => vo
     <div className="fixed inset-0 z-50 flex justify-end">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
       <div className="relative flex h-full w-full max-w-lg flex-col bg-surface-50 border-l border-surface-400/40 shadow-2xl overflow-y-auto">
-        {/* Header */}
         <div className="flex items-start justify-between p-5 border-b border-surface-400/30 sticky top-0 bg-surface-50 z-10">
           <div>
             <h2 className="text-base font-semibold text-fg">{tenant.name}</h2>
@@ -176,7 +172,6 @@ function TenantPanel({ tenant, onClose }: { tenant: CrmTenant; onClose: () => vo
 
         {isLoading ? <PageLoader /> : profile ? (
           <div className="flex flex-col gap-5 p-5">
-            {/* Contact info */}
             <div className="flex flex-col gap-1.5">
               {tenant.email && (
                 <a href={`mailto:${tenant.email}`} className="flex items-center gap-2 text-sm text-slate-400 hover:text-slate-200">
@@ -196,7 +191,6 @@ function TenantPanel({ tenant, onClose }: { tenant: CrmTenant; onClose: () => vo
               </div>
             </div>
 
-            {/* KPIs */}
             <div className="grid grid-cols-3 gap-3">
               {[
                 { label: 'Monthly Rent', value: `$${Math.round(profile.totalMonthlyRent).toLocaleString()}` },
@@ -210,7 +204,6 @@ function TenantPanel({ tenant, onClose }: { tenant: CrmTenant; onClose: () => vo
               ))}
             </div>
 
-            {/* CRM settings */}
             <div className="rounded-xl border border-surface-400/40 bg-surface-200/30 p-4 flex flex-col gap-3">
               <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">CRM Settings</p>
 
@@ -258,7 +251,6 @@ function TenantPanel({ tenant, onClose }: { tenant: CrmTenant; onClose: () => vo
               </Button>
             </div>
 
-            {/* Active leases */}
             {profile.leases.length > 0 && (
               <div>
                 <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-2">Active Leases</p>
@@ -284,7 +276,6 @@ function TenantPanel({ tenant, onClose }: { tenant: CrmTenant; onClose: () => vo
               </div>
             )}
 
-            {/* Communication history */}
             <div>
               <div className="flex items-center justify-between mb-2">
                 <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Communication History</p>
@@ -352,7 +343,6 @@ function TenantPanel({ tenant, onClose }: { tenant: CrmTenant; onClose: () => vo
   );
 }
 
-// ─── Tenant card ──────────────────────────────────────────────────────────────
 
 function TenantCard({ tenant, onClick }: { tenant: CrmTenant; onClick: () => void }) {
   const statusCfg = CRM_STATUS_CONFIG[tenant.crmStatus];
@@ -417,7 +407,6 @@ function TenantCard({ tenant, onClick }: { tenant: CrmTenant; onClick: () => voi
   );
 }
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
 
 const CRM_STATUS_FILTERS: Array<{ label: string; value: string }> = [
   { label: 'All',        value: '' },
@@ -457,7 +446,6 @@ export default function CRMPage() {
         ].filter(Boolean).join(' · ')}
       />
 
-      {/* Summary chips */}
       {(atRiskCount > 0 || noContactCount > 0) && (
         <div className="flex flex-wrap gap-2">
           {atRiskCount > 0 && (
@@ -475,7 +463,6 @@ export default function CRMPage() {
         </div>
       )}
 
-      {/* Filters */}
       <div className="flex flex-wrap gap-3 items-center">
         <div className="relative max-w-xs flex-1">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-600" />
@@ -504,7 +491,6 @@ export default function CRMPage() {
         </div>
       </div>
 
-      {/* Grid */}
       {isLoading ? (
         <PageLoader />
       ) : tenants.length === 0 ? (

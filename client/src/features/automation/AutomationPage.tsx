@@ -19,7 +19,6 @@ import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
 import { PageLoader } from '@/components/ui/Spinner';
 
-// ─── Config ───────────────────────────────────────────────────────────────────
 
 const TRIGGER_CONFIG: Record<AutomationTrigger, { label: string; description: string; conditionKey: keyof RuleConditions; conditionLabel: string; defaultValue: number; icon: React.ComponentType<{ className?: string }> }> = {
   LEASE_DAYS_REMAINING: {
@@ -65,7 +64,6 @@ function formatDate(s: string | null) {
   return new Date(s).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
-// ─── Create rule modal ────────────────────────────────────────────────────────
 
 function CreateRuleModal({ onClose }: { onClose: () => void }) {
   const qc = useQueryClient();
@@ -122,7 +120,6 @@ function CreateRuleModal({ onClose }: { onClose: () => void }) {
             />
           </div>
 
-          {/* Trigger */}
           <div className="rounded-xl border border-surface-400/40 bg-surface-200/30 p-4">
             <p className="text-xs font-medium text-slate-400 mb-3">When this happens</p>
             <div className="grid grid-cols-1 gap-2 mb-3 sm:grid-cols-2">
@@ -157,7 +154,6 @@ function CreateRuleModal({ onClose }: { onClose: () => void }) {
             </div>
           </div>
 
-          {/* Action */}
           <div className="rounded-xl border border-surface-400/40 bg-surface-200/30 p-4">
             <p className="text-xs font-medium text-slate-400 mb-3">Then do this</p>
             <div className="flex gap-2 mb-3">
@@ -248,7 +244,6 @@ function CreateRuleModal({ onClose }: { onClose: () => void }) {
   );
 }
 
-// ─── Edit rule modal ──────────────────────────────────────────────────────────
 
 function EditRuleModal({ rule, onClose }: { rule: AutomationRule; onClose: () => void }) {
   const qc = useQueryClient();
@@ -294,7 +289,6 @@ function EditRuleModal({ rule, onClose }: { rule: AutomationRule; onClose: () =>
             <input value={description} onChange={e => setDescription(e.target.value)} placeholder="Optional description" className={inputCls} />
           </div>
 
-          {/* Trigger — read-only, only condition value editable */}
           <div className="rounded-xl border border-surface-400/40 bg-surface-200/30 p-4">
             <p className="text-xs font-medium text-slate-400 mb-3">When this happens</p>
             <div className="flex items-center gap-2 mb-3 rounded-lg border border-brand-500/30 bg-brand-600/10 px-3 py-2">
@@ -309,7 +303,6 @@ function EditRuleModal({ rule, onClose }: { rule: AutomationRule; onClose: () =>
             </div>
           </div>
 
-          {/* Action config */}
           {rule.action === 'CREATE_TASK' && (
             <div className="rounded-xl border border-surface-400/40 bg-surface-200/30 p-4">
               <p className="text-xs font-medium text-slate-400 mb-3">Then do this</p>
@@ -354,7 +347,6 @@ function EditRuleModal({ rule, onClose }: { rule: AutomationRule; onClose: () =>
   );
 }
 
-// ─── Rule card ────────────────────────────────────────────────────────────────
 
 function RuleCard({ rule, canEdit }: { rule: AutomationRule; canEdit: boolean }) {
   const qc = useQueryClient();
@@ -441,7 +433,6 @@ function RuleCard({ rule, canEdit }: { rule: AutomationRule; canEdit: boolean })
             <Button variant="ghost" size="sm" onClick={() => setShowEdit(true)} title="Edit">
               <Pencil className="h-3.5 w-3.5" />
             </Button>
-            {/* CSS toggle switch */}
             <button
               onClick={() => toggleMutation.mutate()}
               disabled={toggleMutation.isPending}
@@ -466,7 +457,6 @@ function RuleCard({ rule, canEdit }: { rule: AutomationRule; canEdit: boolean })
         )}
       </div>
 
-      {/* Logs toggle */}
       <div className="border-t border-surface-400/20">
         <button
           onClick={() => setShowLogs((p) => !p)}
@@ -507,7 +497,6 @@ function RuleCard({ rule, canEdit }: { rule: AutomationRule; canEdit: boolean })
   );
 }
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function AutomationPage() {
   const user = useAuthStore((s) => s.user);
@@ -524,7 +513,6 @@ export default function AutomationPage() {
   return (
     <div className="flex flex-col gap-4 p-4 animate-fade-in sm:p-5">
 
-      {/* Header row */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Zap className="h-4 w-4 text-brand-400" />

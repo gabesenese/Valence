@@ -14,7 +14,6 @@ import {
 } from './documents.service';
 import type { DocumentType } from '@prisma/client';
 
-// ─── Upload config ────────────────────────────────────────────────────────────
 
 const UPLOAD_DIR = path.resolve('uploads/documents');
 
@@ -31,12 +30,10 @@ const upload = multer({
   limits: { fileSize: 25 * 1024 * 1024 }, // 25 MB
 });
 
-// ─── Routes ───────────────────────────────────────────────────────────────────
 
 const router = Router();
 router.use(authenticate);
 
-// GET /documents
 router.get('/', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { propertyId, leaseId, tenantId, type } = req.query as Record<string, string | undefined>;
@@ -50,7 +47,6 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
   } catch (e) { next(e); }
 });
 
-// POST /documents — multipart upload
 router.post(
   '/',
   authorize('ANALYST'),
@@ -94,7 +90,6 @@ router.post(
   },
 );
 
-// GET /documents/:id
 router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const doc = await getDocument(req.params.id);
@@ -102,7 +97,6 @@ router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
   } catch (e) { next(e); }
 });
 
-// DELETE /documents/:id
 router.delete('/:id', authorize('ADMIN'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const result = await deleteDocument(req.params.id);

@@ -7,7 +7,6 @@ import { sendSuccess } from '../../utils/response';
 const router = Router();
 router.use(authenticate);
 
-// Returns active announcements relevant to the current user's plan
 router.get('/', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const now = new Date();

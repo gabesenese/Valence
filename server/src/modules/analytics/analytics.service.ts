@@ -17,7 +17,6 @@ export async function getInsights(userId: string): Promise<PortfolioInsight[]> {
   const ownedLease = { property: { ownerId: userId } };
   const ownedProp  = { ownerId: userId };
 
-  // ── Critical expiring leases ────────────────────────────────────────────────
   const criticalLeases = await prisma.lease.findMany({
     where: { ...ownedLease, status: 'ACTIVE', endDate: { gte: now, lte: addDays(now, 60) } },
     include: { property: true, tenant: true },
@@ -38,7 +37,6 @@ export async function getInsights(userId: string): Promise<PortfolioInsight[]> {
     });
   }
 
-  // ── Revenue variance vs 3-month baseline ────────────────────────────────────
   const thisMonthStart = startOfMonth(now);
   const properties = await prisma.property.findMany({
     where: { ...ownedProp, status: 'ACTIVE' },
@@ -90,7 +88,6 @@ export async function getInsights(userId: string): Promise<PortfolioInsight[]> {
     }
   }
 
-  // ── Properties below NOI threshold ──────────────────────────────────────────
   const portfolioNOIs: number[] = [];
   for (const property of properties) {
     const [rev, exp] = await Promise.all([
@@ -123,7 +120,6 @@ export async function getInsights(userId: string): Promise<PortfolioInsight[]> {
     }
   }
 
-  // ── Expiring leases summary (90-day window) ──────────────────────────────────
   const expiring90 = await prisma.lease.count({
     where: { ...ownedLease, status: 'ACTIVE', endDate: { gte: now, lte: addDays(now, 90) } },
   });
@@ -144,7 +140,6 @@ export async function getInsights(userId: string): Promise<PortfolioInsight[]> {
     });
   }
 
-  // ── Open critical alerts summary ─────────────────────────────────────────────
   const criticalAlertCount = await prisma.alert.count({
     where: {
       status: 'OPEN', severity: 'CRITICAL',
@@ -163,7 +158,6 @@ export async function getInsights(userId: string): Promise<PortfolioInsight[]> {
     });
   }
 
-  // Sort: critical first, then warning, then info; within each, lease > financial > operational > risk
   const severityOrder = { critical: 0, warning: 1, info: 2 };
   insights.sort((a, b) => severityOrder[a.severity] - severityOrder[b.severity]);
 

@@ -10,7 +10,6 @@ router.use(authenticate);
 
 const factory = new DemoPortfolioFactory();
 
-// POST /demo/load — reset and seed demo portfolio
 router.post('/load', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const userId = req.user!.id;
@@ -22,7 +21,6 @@ router.post('/load', async (req: Request, res: Response, next: NextFunction) => 
   }
 });
 
-// POST /demo/reset — wipe all portfolio data
 router.post('/reset', async (req: Request, res: Response, next: NextFunction) => {
   try {
     await factory.reset(req.user!.id);

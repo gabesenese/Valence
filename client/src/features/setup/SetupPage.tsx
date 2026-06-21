@@ -118,13 +118,11 @@ export default function SetupPage() {
 
   return (
     <div className="min-h-screen bg-surface-0 flex flex-col items-center px-4 py-16 animate-fade-in">
-      {/* Logo */}
       <div className="flex items-center gap-2.5 mb-12">
         <img src="/logo.svg" alt="Valence" className="h-10 w-6" />
         <span className="text-lg font-bold text-fg tracking-tight">Valence</span>
       </div>
 
-      {/* ── Choose mode ───────────────────────────────────────────────────────── */}
       {(mode === 'choose' || mode === 'demo-loading') && (
         <>
           <div className="text-center mb-10 max-w-lg">
@@ -141,7 +139,6 @@ export default function SetupPage() {
           )}
 
           <div className="w-full max-w-lg grid gap-4 sm:grid-cols-2">
-            {/* Demo data card */}
             <button
               onClick={handleLoadDemo}
               disabled={mode === 'demo-loading'}
@@ -166,7 +163,6 @@ export default function SetupPage() {
               </div>
             </button>
 
-            {/* Real data card */}
             <button
               onClick={() => setMode('manual')}
               disabled={mode === 'demo-loading'}
@@ -193,7 +189,6 @@ export default function SetupPage() {
         </>
       )}
 
-      {/* ── Manual setup ──────────────────────────────────────────────────────── */}
       {mode === 'manual' && (
         <>
           <div className="text-center mb-10 max-w-lg">

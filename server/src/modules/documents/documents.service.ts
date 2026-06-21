@@ -63,7 +63,6 @@ export async function deleteDocument(id: string) {
   const doc = await prisma.document.findUniqueOrThrow({ where: { id } });
   await prisma.document.delete({ where: { id } });
 
-  // Best-effort file deletion — don't throw if file is already gone
   try {
     await unlink(path.resolve(doc.path));
   } catch { /* ignore */ }

@@ -7,7 +7,6 @@ import { env } from '../../config/env';
 import { ConflictError, NotFoundError, UnauthorizedError } from '../../utils/errors';
 import type { UserRole } from '@prisma/client';
 
-// ─── Invites ──────────────────────────────────────────────────────────────────
 
 export async function createInvite(email: string, role: UserRole, invitedById: string) {
   const normalEmail = email.trim().toLowerCase();

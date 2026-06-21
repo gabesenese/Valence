@@ -6,7 +6,6 @@ import type { CreateLeaseInput, UpdateLeaseInput, LeaseQuery, BulkActionInput, A
 import { addDays, differenceInDays, parseISO } from 'date-fns';
 
 export function computeRenewalRisk(endDate: Date, stage?: RenewalStage | null): RenewalRisk {
-  // A signed lease has no renewal risk regardless of days remaining
   if (stage === 'SIGNED') return 'LOW';
 
   const days = differenceInDays(endDate, new Date());
@@ -15,7 +14,6 @@ export function computeRenewalRisk(endDate: Date, stage?: RenewalStage | null): 
     days <= 60 ? 'HIGH' :
     days <= 90 ? 'MEDIUM' : 'LOW';
 
-  // Late-stage renewals: committed to the path, cap risk accordingly
   if (stage === 'SCHEDULED_RENEWAL' || stage === 'LEGAL_REVIEW') {
     if (raw === 'CRITICAL' || raw === 'HIGH') return 'MEDIUM';
   }
@@ -26,7 +24,6 @@ export function computeRenewalRisk(endDate: Date, stage?: RenewalStage | null): 
   return raw;
 }
 
-// ─── Priority scoring ─────────────────────────────────────────────────────────
 
 const RISK_WEIGHT: Record<string, number> = {
   CRITICAL: 400,
@@ -57,12 +54,10 @@ interface PriorityInput {
 
 export function computePriorityScore(input: PriorityInput): { score: number; why: string } {
   const daysToExpiry = differenceInDays(input.endDate, new Date());
-  // Urgency: 0–1000 linearly over 180-day window; anything beyond 180d scores 0
   const urgencyScore = Math.max(0, Math.min(1000, (180 - Math.max(0, daysToExpiry)) * (1000 / 180)));
   const noRenewalMultiplier = !input.renewalDate && !input.renewalScheduledAt ? 2.0 : 1.0;
   const stageMultiplier = STAGE_MULTIPLIER[input.renewalStage] ?? 1.0;
   const riskScore = RISK_WEIGHT[input.renewalRisk] ?? 0;
-  // Normalize monthly rent contribution: $50k/mo → 200 pts
   const rentScore = Math.min(200, (Number(input.baseRent) / 50000) * 200);
   const alertScore = input.openAlertCount * 100;
 
@@ -83,7 +78,6 @@ export function computePriorityScore(input: PriorityInput): { score: number; why
   return { score, why: reasons.length > 0 ? reasons.join(' · ') : 'standard monitoring' };
 }
 
-// ─── Activity logging ─────────────────────────────────────────────────────────
 
 async function logActivity(
   leaseId: string,
@@ -101,7 +95,6 @@ async function logActivity(
   });
 }
 
-// ─── Read operations ──────────────────────────────────────────────────────────
 
 export async function getLeases(query: LeaseQuery, userId: string) {
   const { page, limit, status, renewalRisk, renewalStage, propertyId, tenantId, ownerUserId,
@@ -285,7 +278,6 @@ export async function getLeaseNotes(id: string) {
   });
 }
 
-// ─── Mutations ────────────────────────────────────────────────────────────────
 
 export async function startRenewal(id: string, userId: string) {
   const lease = await prisma.lease.findUnique({ where: { id }, select: { id: true, renewalStage: true } });
@@ -321,7 +313,6 @@ export async function setRenewalDateAction(id: string, userId: string, renewalDa
       tenant: { select: { id: true, name: true, email: true } },
     },
   });
-  // Auto-resolve open RENEWAL_RISK alerts — tag with note so clearRenewalDate can undo this
   await prisma.alert.updateMany({
     where: {
       leaseId: id,
@@ -390,7 +381,6 @@ export async function clearRenewalDate(id: string, userId: string) {
   });
   if (!lease) throw new NotFoundError('Lease');
 
-  // Recalculate risk without the scheduled renewal
   const renewalRisk = computeRenewalRisk(lease.endDate, lease.renewalStage);
 
   const updated = await prisma.lease.update({
@@ -398,7 +388,6 @@ export async function clearRenewalDate(id: string, userId: string) {
     data: { renewalDate: null, renewalScheduledAt: null, renewalRisk },
   });
 
-  // Reopen alerts that were auto-resolved when the renewal date was set
   await prisma.alert.updateMany({
     where: {
       leaseId: id,
@@ -434,7 +423,6 @@ export async function advanceRenewalStage(id: string, userId: string, stage: Ren
 
   await logActivity(id, 'STAGE_ADVANCED', userId, { newStage: stage, previousStage: lease.renewalStage });
 
-  // Signed = renewal complete — auto-resolve any open expiration/risk alerts
   if (stage === 'SIGNED') {
     await prisma.alert.updateMany({
       where: {
@@ -569,7 +557,6 @@ export async function updateLease(id: string, input: UpdateLeaseInput) {
   await getLeaseById(id);
   const { startDate, endDate: endDateStr, renewalDate, propertyId, tenantId, terms, ...rest } = input;
   const endDate = endDateStr ? parseISO(endDateStr) : undefined;
-  // Fetch current stage so risk stays stage-aware when only endDate changes
   const currentStage = rest.renewalStage
     ?? (await prisma.lease.findUnique({ where: { id }, select: { renewalStage: true } }))?.renewalStage;
   const renewalRisk = endDate ? computeRenewalRisk(endDate, currentStage) : rest.renewalRisk;

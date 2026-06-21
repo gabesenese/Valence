@@ -1,7 +1,6 @@
 import { Link } from 'react-router-dom';
 import { AboutMenu } from './AboutMenu';
 
-/** Shared marketing-site header (landing, pricing, about pages). */
 export function PublicHeader() {
   return (
     <header className="relative z-20 border-b border-surface-400/20 bg-surface-0/80 backdrop-blur-sm">

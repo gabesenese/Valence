@@ -201,7 +201,6 @@ export async function createContactLog(
     },
   });
 
-  // Update lastContactAt on tenant
   await prisma.tenant.update({
     where: { id: tenantId },
     data: { lastContactAt: new Date() },

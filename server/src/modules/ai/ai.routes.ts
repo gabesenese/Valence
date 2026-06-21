@@ -15,7 +15,6 @@ import { sendSuccess } from '../../utils/response';
 const router = Router();
 router.use(authenticate);
 
-// ─── PDF lease extraction ─────────────────────────────────────────────────────
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -44,19 +43,16 @@ router.post('/extract-property', planGate('PROFESSIONAL'), upload.single('file')
   } catch (e) { next(e); }
 });
 
-// ─── Executive brief ─────────────────────────────────────────────────────────
 
 router.get('/executive-brief', async (_req: Request, res: Response, next: NextFunction) => {
   try { sendSuccess(res, await generateExecutiveBrief()); } catch (e) { next(e); }
 });
 
-// ─── Portfolio health score ───────────────────────────────────────────────────
 
 router.get('/health-score', async (_req: Request, res: Response, next: NextFunction) => {
   try { sendSuccess(res, await computeHealthScore()); } catch (e) { next(e); }
 });
 
-// ─── Scenario simulator ───────────────────────────────────────────────────────
 
 router.post('/simulate', planGate('EXECUTIVE'), async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -69,7 +65,6 @@ router.get('/simulate/tenants', async (req: Request, res: Response, next: NextFu
   try { sendSuccess(res, await getActiveTenantsForSimulator(req.user!.id)); } catch (e) { next(e); }
 });
 
-// ─── Insights ─────────────────────────────────────────────────────────────────
 
 router.get('/insights/portfolio', async (_req: Request, res: Response, next: NextFunction) => {
   try { sendSuccess(res, await insightEngine.analyzePortfolio()); } catch (e) { next(e); }
@@ -83,7 +78,6 @@ router.get('/insights/lease/:id', async (req: Request, res: Response, next: Next
   try { sendSuccess(res, await insightEngine.analyzeLease(req.params.id)); } catch (e) { next(e); }
 });
 
-// ─── Risk ─────────────────────────────────────────────────────────────────────
 
 router.get('/risk/lease/:id', async (req: Request, res: Response, next: NextFunction) => {
   try { sendSuccess(res, await riskEvaluator.evaluateLeaseRisk(req.params.id)); } catch (e) { next(e); }

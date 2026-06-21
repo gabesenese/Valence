@@ -6,7 +6,6 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Brand
         brand: {
           50: '#eef2ff',
           100: '#e0e7ff',
@@ -20,7 +19,6 @@ export default {
           900: '#312e81',
           950: '#1e1b4b',
         },
-        // Surface
         surface: {
           0:   'rgb(var(--surface-0) / <alpha-value>)',
           50:  'rgb(var(--surface-50) / <alpha-value>)',
@@ -31,7 +29,6 @@ export default {
           500: 'rgb(var(--surface-500) / <alpha-value>)',
           600: 'rgb(var(--surface-600) / <alpha-value>)',
         },
-        // Slate
         slate: {
           50:  'rgb(var(--slate-50) / <alpha-value>)',
           100: 'rgb(var(--slate-100) / <alpha-value>)',
@@ -45,7 +42,6 @@ export default {
           900: 'rgb(var(--slate-900) / <alpha-value>)',
         },
         fg: 'rgb(var(--fg) / <alpha-value>)',
-        // Status
         success: {
           DEFAULT: 'rgb(var(--success) / <alpha-value>)',
           muted: '#064e3b',

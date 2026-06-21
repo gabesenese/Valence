@@ -6,7 +6,6 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { Card, CardBody } from '@/components/ui/Card';
 import { cn } from '@/utils/cn';
 
-// ─── Urgency badge ─────────────────────────────────────────────────────────────
 
 function DaysLeftBadge({ days }: { days: number }) {
   return (
@@ -22,7 +21,6 @@ function DaysLeftBadge({ days }: { days: number }) {
   );
 }
 
-// ─── Action buttons ────────────────────────────────────────────────────────────
 
 function ItemActions({ type, id, onRestore, onPurge, loading }: {
   type: TrashItemType;
@@ -53,7 +51,6 @@ function ItemActions({ type, id, onRestore, onPurge, loading }: {
   );
 }
 
-// ─── Section ───────────────────────────────────────────────────────────────────
 
 function Section<T extends { id: string; daysLeft: number }>({
   title, icon: Icon, items, renderRow, type, onRestore, onPurge, loading,
@@ -90,7 +87,6 @@ function Section<T extends { id: string; daysLeft: number }>({
   );
 }
 
-// ─── Page ──────────────────────────────────────────────────────────────────────
 
 export default function TrashPage() {
   const qc = useQueryClient();
@@ -179,7 +175,6 @@ export default function TrashPage() {
       {!isLoading && !isEmpty && (
         <Card>
           <CardBody className="flex flex-col gap-6">
-            {/* Warning banner */}
             <div className="flex items-start gap-3 rounded-xl border border-warning/20 bg-warning/10 px-4 py-3">
               <AlertTriangle className="h-4 w-4 text-warning shrink-0 mt-0.5" />
               <p className="text-xs text-warning/80">

@@ -2,7 +2,6 @@ import { Link } from 'react-router-dom';
 import { Activity } from 'lucide-react';
 import { ABOUT_LINKS } from './aboutLinks';
 
-/** Shared marketing-site footer (landing, pricing, about pages). */
 export function PublicFooter() {
   return (
     <footer className="relative z-10 border-t border-surface-400/20 py-10">

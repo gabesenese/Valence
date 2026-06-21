@@ -83,10 +83,8 @@ export function OverviewTab({ secret }: { secret: string }) {
 
   return (
     <div className="space-y-8">
-      {/* Funnel */}
       <FunnelSection secret={secret} />
 
-      {/* Revenue KPIs */}
       <div>
         <h2 className="mb-3 text-xs font-semibold uppercase tracking-widest text-slate-500">Revenue</h2>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -112,7 +110,6 @@ export function OverviewTab({ secret }: { secret: string }) {
         </div>
       </div>
 
-      {/* Plan distribution */}
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="rounded-xl border border-surface-400/40 bg-surface-100 p-5">
           <h3 className="mb-4 text-xs font-semibold uppercase tracking-widest text-slate-500">Plan Distribution</h3>
@@ -134,7 +131,6 @@ export function OverviewTab({ secret }: { secret: string }) {
           </div>
         </div>
 
-        {/* Churn signals */}
         <div className="rounded-xl border border-surface-400/40 bg-surface-100 p-5">
           <h3 className="mb-4 text-xs font-semibold uppercase tracking-widest text-slate-500">Churn Signals</h3>
           <div className="space-y-3">
@@ -157,7 +153,6 @@ export function OverviewTab({ secret }: { secret: string }) {
         </div>
       </div>
 
-      {/* Signup trend */}
       <div className="rounded-xl border border-surface-400/40 bg-surface-100 p-5">
         <h3 className="mb-4 text-xs font-semibold uppercase tracking-widest text-slate-500">Signups — Last 30 Days</h3>
         <div className="flex items-end gap-1 h-24">
@@ -179,7 +174,6 @@ export function OverviewTab({ secret }: { secret: string }) {
         </div>
       </div>
 
-      {/* Cohorts */}
       <div className="rounded-xl border border-surface-400/40 bg-surface-100 p-5">
         <h3 className="mb-4 text-xs font-semibold uppercase tracking-widest text-slate-500">Signup Cohorts — Last 12 Weeks</h3>
         {data.cohorts.length === 0 ? (
@@ -196,7 +190,6 @@ export function OverviewTab({ secret }: { secret: string }) {
         )}
       </div>
 
-      {/* Feature adoption */}
       <div className="rounded-xl border border-surface-400/40 bg-surface-100 p-5">
         <h3 className="mb-4 text-xs font-semibold uppercase tracking-widest text-slate-500">Feature Adoption (unique accounts)</h3>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
@@ -215,7 +208,6 @@ export function OverviewTab({ secret }: { secret: string }) {
         </div>
       </div>
 
-      {/* Slow accounts */}
       {data.slowAccounts.length > 0 && (
         <div className="rounded-xl border border-surface-400/40 bg-surface-100 p-5">
           <h3 className="mb-4 text-xs font-semibold uppercase tracking-widest text-slate-500">Top Accounts by Data Volume</h3>

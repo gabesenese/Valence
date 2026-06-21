@@ -17,7 +17,6 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { StatusBadge, type StatusEntry } from '@/components/ui/StatusBadge';
 import { formatRelative } from '@/utils/format';
 
-// ─── Constants ────────────────────────────────────────────────────────────────
 
 const SEVERITY_CONFIG: Record<string, StatusEntry> = {
   CRITICAL: { label: 'Critical', variant: 'danger'  },
@@ -52,7 +51,6 @@ const ACTION_LABELS: Record<string, string> = {
   REOPENED:     'Reopened',
 };
 
-// ─── Activity timeline ────────────────────────────────────────────────────────
 
 function ActivityTimeline({ alertId }: { alertId: string }) {
   const { data, isLoading } = useQuery({
@@ -97,7 +95,6 @@ function ActivityTimeline({ alertId }: { alertId: string }) {
   );
 }
 
-// ─── Notes modal ──────────────────────────────────────────────────────────────
 
 function NotesModal({
   action,
@@ -154,7 +151,6 @@ function NotesModal({
   );
 }
 
-// ─── Workflow actions ─────────────────────────────────────────────────────────
 
 function WorkflowActions({
   alert,
@@ -176,7 +172,6 @@ function WorkflowActions({
   const navigate = useNavigate();
   const { status } = alert;
 
-  // Context links (navigate to related entity)
   const contextLinks: React.ReactNode[] = [];
   if (alert.type === 'LEASE_EXPIRATION' || alert.type === 'RENEWAL_RISK') {
     if (alert.lease) {
@@ -211,17 +206,14 @@ function WorkflowActions({
 
   return (
     <div className="flex items-center gap-2 flex-wrap">
-      {/* Context navigation */}
       {contextLinks}
 
-      {/* Undo */}
       {(status === 'ACKNOWLEDGED' || status === 'IN_PROGRESS') && (
         <Button variant="ghost" size="sm" onClick={() => onReopen(alert.id)} loading={busy} title="Revert to Open">
           <RotateCcw className="h-3.5 w-3.5" />
         </Button>
       )}
 
-      {/* State transitions */}
       {status === 'OPEN' && (
         <Button variant="outline" size="sm" onClick={() => onAcknowledge(alert.id)} loading={busy}>
           <Check className="h-3.5 w-3.5" /> Acknowledge
@@ -253,7 +245,6 @@ function WorkflowActions({
   );
 }
 
-// ─── Accountability line ──────────────────────────────────────────────────────
 
 function AccountabilityLine({ alert }: { alert: Alert }) {
   const { status, acknowledgedByUser, acknowledgedAt, resolvedByUser, resolvedAt, dismissedByUser, dismissedAt } = alert;
@@ -296,7 +287,6 @@ function AccountabilityLine({ alert }: { alert: Alert }) {
   return null;
 }
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function AlertsPage() {
   const [statusFilter, setStatusFilter] = useState('OPEN');
@@ -356,7 +346,6 @@ export default function AlertsPage() {
         }
       />
 
-      {/* Summary strip — always rendered to avoid layout shift when data loads */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <Card className="p-4 text-center" hover={!!summary} onClick={summary ? () => setStatusFilter('OPEN') : undefined}>
           <p className="text-2xl font-bold text-danger tabular-nums">
@@ -378,7 +367,6 @@ export default function AlertsPage() {
         </Card>
       </div>
 
-      {/* Filter tabs */}
       <div className="flex gap-2 flex-wrap">
         {STATUS_TABS.map((tab) => (
           <button
@@ -400,7 +388,6 @@ export default function AlertsPage() {
         ))}
       </div>
 
-      {/* Alert list */}
       <Card>
         <CardHeader>
           <CardTitle>Alerts</CardTitle>
@@ -491,7 +478,6 @@ export default function AlertsPage() {
         )}
       </Card>
 
-      {/* Notes modal */}
       {pendingAction && (
         <NotesModal
           action={pendingAction.action}

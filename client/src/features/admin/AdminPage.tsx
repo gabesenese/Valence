@@ -26,7 +26,6 @@ const TABS: { id: Tab; label: string; icon: React.ComponentType<{ className?: st
   { id: 'system',    label: 'System',    icon: Cpu       },
 ];
 
-// ─── Secret gate ──────────────────────────────────────────────────────────────
 
 function SecretGate({ onUnlock }: { onUnlock: (s: string) => void }) {
   const [value, setValue]   = useState('');
@@ -100,7 +99,6 @@ function SecretGate({ onUnlock }: { onUnlock: (s: string) => void }) {
   );
 }
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function AdminPage() {
   const user     = useAuthStore((s) => s.user);
@@ -135,7 +133,6 @@ export default function AdminPage() {
 
   return (
     <div className="min-h-screen bg-surface-0 text-fg">
-      {/* Header */}
       <header className="border-b border-surface-400/20 bg-surface-50/60 px-6 py-4">
         <div className="mx-auto flex max-w-7xl items-center justify-between">
           <div className="flex items-center gap-3">
@@ -161,7 +158,6 @@ export default function AdminPage() {
       </header>
 
       <div className="mx-auto max-w-7xl px-6 py-6">
-        {/* Stats strip */}
         {stats && (
           <div className="mb-6 grid grid-cols-4 gap-3 sm:grid-cols-8">
             {[
@@ -182,7 +178,6 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* Tabs */}
         <div className="mb-6 flex gap-1 rounded-xl border border-surface-400/30 bg-surface-100/60 p-1">
           {TABS.map(({ id, label, icon: Icon }) => (
             <button
@@ -201,7 +196,6 @@ export default function AdminPage() {
           ))}
         </div>
 
-        {/* Tab content */}
         {tab === 'overview'  && <OverviewTab  secret={secret} />}
         {tab === 'users'     && <UsersTab     secret={secret} />}
         {tab === 'activity'  && <ActivityTab  secret={secret} />}

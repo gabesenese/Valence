@@ -60,7 +60,6 @@ export interface Lease {
   owner?: LeaseOwner | null;
   alerts?: LeaseAlert[];
   financialRecords?: LeaseFinancialRecord[];
-  /** Open alert count when returned from list/priority-queue */
   openAlertCount?: number;
   createdAt: string;
 }
@@ -183,7 +182,6 @@ export const leasesService = {
   getStats: (): Promise<LeaseStats> =>
     api.get('/leases/stats').then(extractData<LeaseStats>),
 
-  // Workflow actions
   startRenewal: (id: string): Promise<Lease> =>
     api.post(`/leases/${id}/start-renewal`).then(extractData<Lease>),
 

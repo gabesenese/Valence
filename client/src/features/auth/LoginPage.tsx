@@ -14,7 +14,6 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // MFA step
   const [mfaToken, setMfaToken] = useState<string | null>(null);
   const [totp, setTotp] = useState('');
 
@@ -72,7 +71,6 @@ export default function LoginPage() {
       </div>
 
       <div className="relative w-full max-w-sm animate-slide-up px-4">
-        {/* Logo */}
         <div className="mb-8 flex flex-col items-center gap-3">
           <img src="/logo.svg" alt="Valence" className="h-16 w-10" />
           <div className="text-center">
@@ -81,7 +79,6 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {/* MFA card */}
         {mfaToken && (
           <div className="rounded-2xl border border-surface-400/60 bg-surface-100/80 p-8 shadow-card backdrop-blur-sm">
             <div className="mb-6">
@@ -118,7 +115,6 @@ export default function LoginPage() {
           </div>
         )}
 
-        {/* Card */}
         {!mfaToken && (
         <div className="rounded-2xl border border-surface-400/60 bg-surface-100/80 p-8 shadow-card backdrop-blur-sm">
           <div className="mb-6">

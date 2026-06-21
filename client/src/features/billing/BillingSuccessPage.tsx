@@ -16,7 +16,6 @@ export default function BillingSuccessPage() {
   useEffect(() => {
     authService.getMe()
       .then((user) => {
-        // Re-hydrate the auth store with the updated user + existing tokens
         if (accessToken && refreshToken) {
           setAuth(user, accessToken, refreshToken);
         }

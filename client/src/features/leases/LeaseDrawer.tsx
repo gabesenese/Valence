@@ -88,7 +88,6 @@ export default function LeaseDrawer({ leaseId, onClose }: Props) {
     onSuccess: invalidate,
   });
 
-  // Close on Escape
   useEffect(() => {
     const handle = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
     document.addEventListener('keydown', handle);
@@ -99,17 +98,14 @@ export default function LeaseDrawer({ leaseId, onClose }: Props) {
 
   return (
     <>
-      {/* Backdrop */}
       <div
         onClick={onClose}
         className={`fixed inset-0 z-40 bg-black/40 transition-opacity duration-200 ${open ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
       />
 
-      {/* Drawer panel */}
       <div
         className={`fixed right-0 top-0 z-50 flex h-full w-full max-w-[520px] flex-col border-l border-surface-400/60 bg-surface-100 shadow-2xl transition-transform duration-200 ease-out ${open ? 'translate-x-0' : 'translate-x-full'}`}
       >
-        {/* Header */}
         <div className="flex items-center justify-between border-b border-surface-400/40 px-5 py-4 shrink-0">
           {data ? (
             <div className="min-w-0">
@@ -134,7 +130,6 @@ export default function LeaseDrawer({ leaseId, onClose }: Props) {
           </button>
         </div>
 
-        {/* Scrollable body */}
         <div className="flex-1 overflow-y-auto">
           {isLoading ? (
             <div className="flex flex-col gap-4 p-5">
@@ -144,7 +139,6 @@ export default function LeaseDrawer({ leaseId, onClose }: Props) {
             </div>
           ) : data ? (
             <>
-              {/* Days remaining + priority */}
               <div className="flex items-center justify-between gap-4 px-5 py-4 border-b border-surface-400/30">
                 <DaysRemaining endDate={data.lease.endDate} />
                 {data.priorityScore > 0 && (
@@ -156,7 +150,6 @@ export default function LeaseDrawer({ leaseId, onClose }: Props) {
                 )}
               </div>
 
-              {/* Key figures */}
               <div className="grid grid-cols-2 gap-px bg-surface-400/30 border-b border-surface-400/30">
                 <Stat label="Monthly rent" value={formatCurrency(Number(data.lease.baseRent))} />
                 <Stat label="Annual rent" value={formatCurrency(Number(data.lease.baseRent) * 12)} />
@@ -164,7 +157,6 @@ export default function LeaseDrawer({ leaseId, onClose }: Props) {
                 <Stat label="End date" value={formatDate(data.lease.endDate)} danger={daysUntil(data.lease.endDate) <= 60} />
               </div>
 
-              {/* Renewal status */}
               <Section title="Renewal">
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-slate-500">Stage</span>
@@ -198,7 +190,6 @@ export default function LeaseDrawer({ leaseId, onClose }: Props) {
                 )}
               </Section>
 
-              {/* Open alerts */}
               {data.lease.alerts && data.lease.alerts.length > 0 && (
                 <Section title={`Open Alerts (${data.lease.alerts.length})`}>
                   <div className="flex flex-col gap-2">
@@ -218,7 +209,6 @@ export default function LeaseDrawer({ leaseId, onClose }: Props) {
                 </Section>
               )}
 
-              {/* Payment trend */}
               {data.paymentSeries.length > 1 && (
                 <Section title="Payment Trend">
                   <ResponsiveContainer width="100%" height={80}>
@@ -252,7 +242,6 @@ export default function LeaseDrawer({ leaseId, onClose }: Props) {
                 </Section>
               )}
 
-              {/* Actions */}
               <Section title="Actions">
                 <div className="flex flex-wrap gap-2">
                   {data.lease.renewalStage === 'NOT_STARTED' && (

@@ -58,7 +58,6 @@ export const usersService = {
   setActive: (id: string, isActive: boolean) =>
     api.patch(`/auth/users/${id}/active`, { isActive }).then(extractData<TeamMember>),
 
-  // Invites
   createInvite: (email: string, role: UserRole) =>
     api.post('/team/invites', { email, role }).then(extractData<Invite>),
 
