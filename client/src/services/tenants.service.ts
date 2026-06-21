@@ -1,5 +1,7 @@
 import { api, extractData, extractPaginated, type PaginatedResult } from './api';
 
+export type CreditScoreSource = 'MANUAL' | 'EQUIFAX' | 'TRANSUNION';
+
 export interface Tenant {
   id: string;
   name: string;
@@ -7,6 +9,8 @@ export interface Tenant {
   phone?: string;
   company?: string;
   creditScore?: number;
+  creditScoreSource?: CreditScoreSource;
+  creditScoreDate?: string;
   isActive: boolean;
   createdAt: string;
   _count: { leases: number };
@@ -41,6 +45,8 @@ export interface CreateTenantInput {
   company?: string;
   taxId?: string;
   creditScore?: number;
+  creditScoreSource?: CreditScoreSource;
+  creditScoreDate?: string;
   notes?: string;
   isActive?: boolean;
 }

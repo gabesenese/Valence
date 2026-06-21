@@ -3,7 +3,19 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
-import { tenantsService, type Tenant, type CreateTenantInput } from '@/services/tenants.service';
+import { Select } from '@/components/ui/Select';
+import {
+  tenantsService,
+  type Tenant,
+  type CreateTenantInput,
+  type CreditScoreSource,
+} from '@/services/tenants.service';
+
+const CREDIT_SOURCE_OPTIONS = [
+  { value: 'MANUAL', label: 'Manual entry' },
+  { value: 'EQUIFAX', label: 'Equifax' },
+  { value: 'TRANSUNION', label: 'TransUnion' },
+];
 
 interface Props {
   open: boolean;
@@ -18,13 +30,16 @@ interface FormData {
   company: string;
   taxId: string;
   creditScore: string;
+  creditScoreSource: string;
+  creditScoreDate: string;
   notes: string;
   isActive: boolean;
 }
 
 const emptyForm: FormData = {
   name: '', email: '', phone: '', company: '',
-  taxId: '', creditScore: '', notes: '', isActive: true,
+  taxId: '', creditScore: '', creditScoreSource: 'MANUAL', creditScoreDate: '',
+  notes: '', isActive: true,
 };
 
 function toForm(t: Tenant): FormData {
@@ -35,6 +50,8 @@ function toForm(t: Tenant): FormData {
     company: t.company ?? '',
     taxId: (t as { taxId?: string }).taxId ?? '',
     creditScore: t.creditScore ? String(t.creditScore) : '',
+    creditScoreSource: t.creditScoreSource ?? 'MANUAL',
+    creditScoreDate: t.creditScoreDate ? t.creditScoreDate.slice(0, 10) : '',
     notes: (t as { notes?: string }).notes ?? '',
     isActive: t.isActive,
   };
@@ -63,6 +80,11 @@ export default function TenantFormModal({ open, onClose, tenant }: Props) {
     setErrors(err => ({ ...err, [field]: undefined }));
   };
 
+  const setField = (field: keyof FormData, value: string) => {
+    setForm(f => ({ ...f, [field]: value }));
+    setErrors(err => ({ ...err, [field]: undefined }));
+  };
+
   const validate = (): boolean => {
     const errs: Partial<Record<keyof FormData, string>> = {};
     if (!form.name.trim()) errs.name = 'Required';
@@ -79,6 +101,12 @@ export default function TenantFormModal({ open, onClose, tenant }: Props) {
     ...(form.company && { company: form.company.trim() }),
     ...(form.taxId && { taxId: form.taxId.trim() }),
     ...(form.creditScore && { creditScore: Number(form.creditScore) }),
+    ...(form.creditScore && form.creditScoreSource && {
+      creditScoreSource: form.creditScoreSource as CreditScoreSource,
+    }),
+    ...(form.creditScore && form.creditScoreDate && {
+      creditScoreDate: new Date(form.creditScoreDate).toISOString(),
+    }),
     ...(form.notes && { notes: form.notes.trim() }),
     isActive: form.isActive,
   });
@@ -132,17 +160,39 @@ export default function TenantFormModal({ open, onClose, tenant }: Props) {
           {/* Financial */}
           <p className={SECTION_CLASS}>Financial</p>
           <div className="mb-4">
-            <Input
-              label="Credit Score"
-              type="number"
-              value={form.creditScore}
-              onChange={set('creditScore')}
-              error={errors.creditScore}
-              placeholder="700"
-              min={300}
-              max={850}
-            />
-            <p className="mt-1 text-xs text-slate-600">300–850 range. Used for renewal risk assessment.</p>
+            <div className="grid grid-cols-2 gap-4">
+              <Input
+                label="Credit Score"
+                type="number"
+                value={form.creditScore}
+                onChange={set('creditScore')}
+                error={errors.creditScore}
+                placeholder="700"
+                min={300}
+                max={850}
+              />
+              <Input
+                label="As of"
+                type="date"
+                value={form.creditScoreDate}
+                onChange={set('creditScoreDate')}
+                disabled={!form.creditScore}
+              />
+            </div>
+            <div className="mt-4 flex flex-col gap-1.5">
+              <label className="text-xs font-medium uppercase tracking-wide text-slate-400">Source</label>
+              <Select
+                value={form.creditScoreSource}
+                onChange={(v) => setField('creditScoreSource', v)}
+                options={CREDIT_SOURCE_OPTIONS}
+                size="md"
+                disabled={!form.creditScore}
+              />
+            </div>
+            <p className="mt-2 text-xs text-slate-600">
+              300–850 range. Enter the score your business has gathered for this tenant — Valence stores it
+              for your records and doesn't run credit checks. Source is optional and just notes where it came from.
+            </p>
           </div>
 
           {/* Notes */}
