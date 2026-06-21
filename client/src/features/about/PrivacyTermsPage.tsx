@@ -8,7 +8,6 @@ export default function PrivacyTermsPage() {
       intro="Plain-language summary of how Valence handles your data and the terms under which you use the platform. This page is a general template — have it reviewed by counsel before relying on it for your jurisdiction."
       updated="June 2026"
     >
-      {/* Privacy */}
       <Section heading="1. Information we collect">
         <p>
           We collect the account information you provide (name, email, organization), the portfolio data you
@@ -43,7 +42,6 @@ export default function PrivacyTermsPage() {
         </p>
       </Section>
 
-      {/* Terms */}
       <Section heading="5. Use of the service">
         <p>
           Your subscription grants your organization a non-exclusive, non-transferable right to use Valence

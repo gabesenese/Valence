@@ -8,7 +8,6 @@ import { cn } from '@/utils/cn';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { supportService, type SupportCategory } from '@/services/support.service';
 
-// ─── Action cards config ──────────────────────────────────────────────────────
 
 const ACTIONS = [
   {
@@ -40,7 +39,6 @@ const ACTIONS = [
   },
 ] as const;
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function SupportPage() {
   const [activeCategory, setActiveCategory] = useState<SupportCategory | null>(null);
@@ -91,7 +89,6 @@ export default function SupportPage() {
     <div className="flex flex-col gap-6 p-6 animate-fade-in">
       <PageHeader title="Support" description="We're here to help" />
 
-      {/* Action cards */}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 max-w-3xl">
         {ACTIONS.map(({ cat, icon: Icon, title, description, color, bg, activeBg }) => (
           <button
@@ -113,7 +110,6 @@ export default function SupportPage() {
         ))}
       </div>
 
-      {/* Form */}
       {activeCategory && activeMeta && (
         <div className="max-w-xl rounded-2xl border border-surface-400/30 bg-surface-100 p-5 flex flex-col gap-4">
           <div className="flex items-center justify-between">

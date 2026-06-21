@@ -8,7 +8,6 @@ import { Button } from '@/components/ui/Button';
 import { aiService, type ExtractedProperty } from '@/services/ai.service';
 import { formatCurrency } from '@/utils/format';
 
-// ─── Types ────────────────────────────────────────────────────────────────────
 
 interface Props {
   open: boolean;
@@ -18,14 +17,12 @@ interface Props {
 
 type Stage = 'upload' | 'extracting' | 'review';
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const PROPERTY_TYPE_LABEL: Record<string, string> = {
   RESIDENTIAL: 'Residential', COMMERCIAL: 'Commercial', MIXED_USE: 'Mixed Use',
   INDUSTRIAL: 'Industrial', RETAIL: 'Retail', OFFICE: 'Office',
 };
 
-// ─── Review row ───────────────────────────────────────────────────────────────
 
 function Row({ label, value }: { label: string; value: string | null }) {
   const found = value !== null && value !== '';
@@ -41,7 +38,6 @@ function Row({ label, value }: { label: string; value: string | null }) {
   );
 }
 
-// ─── Component ────────────────────────────────────────────────────────────────
 
 export default function PropertyImportModal({ open, onClose, onConfirm }: Props) {
   const [stage, setStage]       = useState<Stage>('upload');
@@ -50,8 +46,6 @@ export default function PropertyImportModal({ open, onClose, onConfirm }: Props)
   const [extracted, setExtracted] = useState<ExtractedProperty | null>(null);
   const [error, setError]       = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  // Sequence id for the in-flight extraction. Bumped on reset/close so a request
-  // that resolves after the modal is closed can't apply its result to hidden state.
   const reqId = useRef(0);
 
   function reset() {
@@ -110,7 +104,6 @@ export default function PropertyImportModal({ open, onClose, onConfirm }: Props)
     >
       <div className="px-5 py-5">
 
-        {/* ── Upload stage ──────────────────────────────────────────────── */}
         {stage === 'upload' && (
           <>
             <p className="text-sm text-slate-500 mb-4">
@@ -231,7 +224,6 @@ export default function PropertyImportModal({ open, onClose, onConfirm }: Props)
 
       </div>
 
-      {/* Footer */}
       <div className="flex items-center justify-between border-t border-surface-400/40 px-5 py-4">
         <Button
           variant="ghost"

@@ -4,7 +4,6 @@ import { env } from '../../config/env';
 import { setPlan } from '../plans/plans.service';
 import { trackEvent } from '../analytics/funnel.service';
 
-// ─── Client ───────────────────────────────────────────────────────────────────
 
 function getStripe() {
   if (!env.STRIPE_SECRET_KEY) throw new Error('Stripe is not configured (missing STRIPE_SECRET_KEY)');
@@ -13,7 +12,6 @@ function getStripe() {
 
 type StripeClient = ReturnType<typeof getStripe>;
 
-// ─── Price mapping ────────────────────────────────────────────────────────────
 
 function priceIdForPlan(plan: Plan): string {
   const id = {
@@ -32,7 +30,6 @@ function planForPriceId(priceId: string): Plan | undefined {
   return undefined;
 }
 
-// ─── Customer helpers ─────────────────────────────────────────────────────────
 
 type UserInfo = { id: string; email: string; firstName: string; lastName: string };
 
@@ -46,7 +43,6 @@ async function getOrCreateCustomer(stripe: StripeClient, user: UserInfo) {
   });
 }
 
-// ─── Public API ───────────────────────────────────────────────────────────────
 
 export async function createCheckoutSession(
   user: UserInfo,

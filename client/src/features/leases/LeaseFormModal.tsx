@@ -160,8 +160,6 @@ export default function LeaseFormModal({ open, onClose, lease, initialValues }: 
     endDate: toDatetime(form.endDate),
     baseRent: Number(form.baseRent),
     rentEscalation: Number(form.rentEscalation) / 100,
-    // In edit mode send null to clear; in create mode omit if empty.
-    // Treat "0" the same as empty — 0 is not a valid deposit/sqft.
     ...(isEdit
       ? {
           securityDeposit: Number(form.securityDeposit) > 0 ? Number(form.securityDeposit) : null,
@@ -209,7 +207,6 @@ export default function LeaseFormModal({ open, onClose, lease, initialValues }: 
       <form onSubmit={handleSubmit}>
         <div className="max-h-[68vh] overflow-y-auto px-5 py-4">
 
-          {/* Parties — only shown on create */}
           {!isEdit && (
             <>
               <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Parties</p>
@@ -240,7 +237,6 @@ export default function LeaseFormModal({ open, onClose, lease, initialValues }: 
             </>
           )}
 
-          {/* Lease Details */}
           <p className={isEdit ? 'mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500' : SECTION_CLASS}>
             Lease Details
           </p>
@@ -276,7 +272,6 @@ export default function LeaseFormModal({ open, onClose, lease, initialValues }: 
             />
           </div>
 
-          {/* Term */}
           <p className={SECTION_CLASS}>Term</p>
           <div className="grid grid-cols-2 gap-4 mb-4">
             <div className="flex flex-col gap-1.5">
@@ -291,7 +286,6 @@ export default function LeaseFormModal({ open, onClose, lease, initialValues }: 
             </div>
           </div>
 
-          {/* Financials */}
           <p className={SECTION_CLASS}>Financials</p>
           <div className="grid grid-cols-2 gap-4 mb-4">
             <Input
@@ -336,7 +330,6 @@ export default function LeaseFormModal({ open, onClose, lease, initialValues }: 
             />
           </div>
 
-          {/* Notes */}
           <p className={SECTION_CLASS}>Notes <span className="normal-case font-normal text-slate-600">(optional)</span></p>
           <textarea
             value={form.notes}

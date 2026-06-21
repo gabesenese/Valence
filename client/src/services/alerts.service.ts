@@ -23,7 +23,6 @@ export interface Alert {
   resolutionNote?: string | null;
   metadata?: Record<string, unknown>;
   createdAt: string;
-  // Lifecycle timestamps + actors
   acknowledgedAt?: string | null;
   acknowledgedByUser?: AlertUser | null;
   resolvedAt?: string | null;

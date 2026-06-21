@@ -151,7 +151,6 @@ export function AppLayout() {
           role="presentation"
         />
       )}
-      {/* Sidebar */}
       <aside
         className={cn(
           'fixed inset-y-0 left-0 z-40 flex w-[220px] flex-col border-r border-surface-400/40 bg-surface-50 transition-transform duration-200 lg:static lg:z-auto',
@@ -159,7 +158,6 @@ export function AppLayout() {
           sidebarCollapsed ? 'lg:w-[60px]' : 'lg:w-[220px]',
         )}
       >
-        {/* Logo */}
         <div className={cn('flex h-14 items-center border-b border-surface-400/40 px-4', isCollapsed && 'justify-center px-0')}>
           <div className="flex flex-1 items-center gap-2.5">
             <img src="/logo.svg" alt="Valence" className="h-8 w-5 shrink-0" />
@@ -177,12 +175,10 @@ export function AppLayout() {
           </button>
         </div>
 
-        {/* Nav */}
         <nav className="flex-1 overflow-y-auto p-2">
           <ul className="flex flex-col gap-0">
             {NAV_SECTIONS.map((section, si) => (
               <li key={section.label}>
-                {/* Section header — hidden when collapsed */}
                 {!isCollapsed && (
                   <p className={cn(
                     'px-3 text-[10px] font-semibold uppercase tracking-widest text-slate-600',
@@ -192,7 +188,6 @@ export function AppLayout() {
                   </p>
                 )}
 
-                {/* Collapsed spacer between sections */}
                 {isCollapsed && si > 0 && (
                   <div className="my-2 mx-3 border-t border-surface-400/20" />
                 )}
@@ -258,7 +253,6 @@ export function AppLayout() {
           </ul>
         </nav>
 
-        {/* User footer */}
         <div className="border-t border-surface-400/40 p-2">
           {!isCollapsed && user && (
             <div className="mb-2 rounded-lg px-3 py-2">
@@ -293,7 +287,6 @@ export function AppLayout() {
           </button>
         </div>
 
-        {/* Collapse toggle — desktop only */}
         <button
           type="button"
           onClick={toggleSidebar}
@@ -303,7 +296,6 @@ export function AppLayout() {
         </button>
       </aside>
 
-      {/* Main content */}
       <main className="flex flex-1 flex-col overflow-hidden">
         <header className="flex h-14 items-center justify-between border-b border-surface-400/40 bg-surface-50 px-4 lg:px-6">
           <div className="flex items-center gap-2">

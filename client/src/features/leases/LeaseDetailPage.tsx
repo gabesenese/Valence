@@ -19,7 +19,6 @@ import { DatePicker } from '@/components/ui/DatePicker';
 import { PageLoader } from '@/components/ui/Spinner';
 import { formatCurrency, formatDate, formatRelative, daysUntil, formatPercent } from '@/utils/format';
 
-// ─── Constants ────────────────────────────────────────────────────────────────
 
 const RISK_VARIANT: Record<string, 'success' | 'info' | 'warning' | 'danger'> = {
   LOW: 'success', MEDIUM: 'info', HIGH: 'warning', CRITICAL: 'danger',
@@ -33,7 +32,6 @@ const SEVERITY_COLOR: Record<string, string> = {
   CRITICAL: 'text-danger', WARNING: 'text-warning', INFO: 'text-info',
 };
 
-// Renewal pipeline stages in order
 const PIPELINE: Array<{ stage: RenewalStage; label: string; icon: React.ReactNode }> = [
   { stage: 'CONTACTED',         label: 'Contact tenant',   icon: <Phone className="h-3.5 w-3.5" /> },
   { stage: 'NEGOTIATING',       label: 'Schedule meeting', icon: <Calendar className="h-3.5 w-3.5" /> },
@@ -72,7 +70,6 @@ const ACTION_CONFIG: Record<string, ActionCfg> = {
   NOTE_DELETED:         { Icon: Trash2,        dot: 'bg-slate-600',    label: () => 'Note deleted' },
 };
 
-// ─── Timeline helpers ─────────────────────────────────────────────────────────
 
 import type { LeaseActivityDTO, LeaseNoteDTO } from '@/services/leases.service';
 
@@ -101,7 +98,6 @@ function groupTimeline(entries: TEntry[]): Array<{ label: string; entries: TEntr
   return Array.from(map.entries()).map(([label, entries]) => ({ label, entries }));
 }
 
-// ─── Small helpers ────────────────────────────────────────────────────────────
 
 function ChevronToggle({ open }: { open: boolean }) {
   return open
@@ -109,7 +105,6 @@ function ChevronToggle({ open }: { open: boolean }) {
     : <ChevronDown className="h-3 w-3" />;
 }
 
-// ─── Pipeline step ────────────────────────────────────────────────────────────
 
 function PipelineStep({
   step, index, completed, current, canUndo, onAdvance, onUndo, loading,
@@ -127,7 +122,6 @@ function PipelineStep({
     <div className={`group/step flex items-center gap-3 rounded-xl px-4 py-3 transition-all duration-150 ${
       current ? 'bg-brand-600/15 border border-brand-500/30' : 'border border-transparent'
     }`}>
-      {/* Status circle — only two states: number or check. Never changes on hover. */}
       <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 transition-colors ${
         completed
           ? 'border-success bg-success/20 text-success'
@@ -149,7 +143,6 @@ function PipelineStep({
         {step.label}
       </span>
 
-      {/* Undo — separate from the circle, only last completed step */}
       {canUndo && (
         <button
           onClick={onUndo}
@@ -173,7 +166,6 @@ function PipelineStep({
   );
 }
 
-// ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function LeaseDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -320,7 +312,6 @@ export default function LeaseDetailPage() {
 
   return (
     <div className="flex flex-col gap-4 p-4 animate-fade-in sm:gap-6 sm:p-6">
-      {/* Breadcrumb */}
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="sm" onClick={() => navigate('/leases')}>
           <ArrowLeft className="h-4 w-4" />
@@ -330,7 +321,6 @@ export default function LeaseDetailPage() {
         <span className="text-sm text-slate-400 font-mono">{lease.leaseNumber}</span>
       </div>
 
-      {/* Header */}
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <div className="flex flex-wrap items-center gap-2">
@@ -400,12 +390,9 @@ export default function LeaseDetailPage() {
         </div>
       </div>
 
-      {/* Main + Sidebar layout — stack on mobile, side by side on lg+ */}
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:gap-6">
-        {/* Main column */}
         <div className="flex-1 min-w-0 flex flex-col gap-4">
 
-          {/* Lease Term + Renewal Date — compact side-by-side panel */}
           <div className="rounded-xl border border-surface-400/30 flex flex-col divide-y divide-surface-400/20 sm:flex-row sm:divide-x sm:divide-y-0">
             <div className="flex-1 p-4">
               <p className="mb-3 text-[10px] font-semibold uppercase tracking-wider text-slate-500">Lease Term</p>
@@ -446,7 +433,6 @@ export default function LeaseDetailPage() {
             </div>
           </div>
 
-      {/* ── Renewal Pipeline ─────────────────────────────────────────────────── */}
       {isActive && (
         <Card>
           <CardHeader>
@@ -468,7 +454,6 @@ export default function LeaseDetailPage() {
             </div>
           </CardHeader>
           <CardBody>
-            {/* Progress bar */}
             <div className="mb-4 h-1.5 rounded-full bg-surface-400/40 overflow-hidden">
               <div
                 className="h-full rounded-full bg-brand-500 transition-all duration-500"
@@ -507,7 +492,6 @@ export default function LeaseDetailPage() {
         </Card>
       )}
 
-      {/* ── Open Alerts (actionable) ──────────────────────────────────────────── */}
       {lease.alerts && lease.alerts.length > 0 && (
         <Card>
           <CardHeader>
@@ -566,7 +550,6 @@ export default function LeaseDetailPage() {
         </Card>
       )}
 
-      {/* Closed alerts — always available, not gated on having open alerts */}
       <div className="rounded-lg border border-surface-400/30">
         <button
           onClick={() => setShowClosedAlerts((v) => !v)}
@@ -601,7 +584,6 @@ export default function LeaseDetailPage() {
         )}
       </div>
 
-      {/* ── Payment History ───────────────────────────────────────────────────── */}
       {lease.financialRecords && lease.financialRecords.length > 0 && (
         <Card>
           <CardHeader>
@@ -645,7 +627,6 @@ export default function LeaseDetailPage() {
         </Card>
       )}
 
-      {/* ── Timeline ─────────────────────────────────────────────────────────── */}
       <Card>
         <CardHeader>
           <div className="flex items-center gap-2">
@@ -655,7 +636,6 @@ export default function LeaseDetailPage() {
         </CardHeader>
         <CardBody className="flex flex-col gap-5">
 
-          {/* Compose note */}
           <div className="flex gap-3">
             <div className="h-7 w-7 shrink-0 rounded-full bg-brand-600/30 border border-brand-500/30 flex items-center justify-center">
               <MessageSquare className="h-3.5 w-3.5 text-brand-400" />
@@ -685,7 +665,6 @@ export default function LeaseDetailPage() {
             </div>
           </div>
 
-          {/* Grouped timeline */}
           {(() => {
             const merged: TEntry[] = [
               ...(activity ?? []).map((a) => ({ kind: 'activity' as const, data: a, createdAt: a.createdAt })),
@@ -702,13 +681,11 @@ export default function LeaseDetailPage() {
               <div className="flex flex-col gap-6">
                 {groups.map(({ label, entries }) => (
                   <div key={label}>
-                    {/* Date header */}
                     <div className="flex items-center gap-3 mb-4">
                       <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">{label}</span>
                       <div className="flex-1 h-px bg-surface-400/40" />
                     </div>
 
-                    {/* Entries */}
                     <div className="flex flex-col gap-4">
                       {entries.map((entry) => {
                         if (entry.kind === 'note') {
@@ -721,7 +698,6 @@ export default function LeaseDetailPage() {
                             : 'Unknown';
                           return (
                             <div key={note.id} className="group/note flex items-start gap-3">
-                              {/* Avatar */}
                               <div className="h-7 w-7 shrink-0 rounded-full bg-amber-600/20 ring-1 ring-amber-500/25 flex items-center justify-center text-[10px] font-semibold text-amber-300">
                                 {initials}
                               </div>
@@ -766,7 +742,6 @@ export default function LeaseDetailPage() {
                           );
                         }
 
-                        // Activity entry
                         const act = entry.data;
                         const cfg = ACTION_CONFIG[act.actionType];
                         const Icon = cfg?.Icon ?? Clock;
@@ -782,7 +757,6 @@ export default function LeaseDetailPage() {
 
                         return (
                           <div key={act.id} className="flex items-start gap-3">
-                            {/* Icon dot */}
                             <div className={`h-7 w-7 shrink-0 rounded-full bg-surface-300/60 ring-1 ring-surface-400/50 flex items-center justify-center`}>
                               <Icon className={`h-3.5 w-3.5 ${dotColor.replace('bg-', 'text-')}`} />
                             </div>
@@ -808,7 +782,6 @@ export default function LeaseDetailPage() {
         </CardBody>
       </Card>
 
-      {/* Notes from lease record (original field) */}
       {lease.notes && (
         <Card>
           <CardHeader><CardTitle>Lease Notes</CardTitle></CardHeader>
@@ -820,9 +793,7 @@ export default function LeaseDetailPage() {
 
         </div>{/* end main column */}
 
-        {/* Sidebar — Property, Tenant, Financials */}
         <div className="rounded-xl border border-surface-400/30 divide-y divide-surface-400/20 overflow-hidden lg:w-64 lg:shrink-0">
-          {/* Property */}
           <div className="p-4">
             <p className="mb-2.5 text-[10px] font-semibold uppercase tracking-wider text-slate-500">Property</p>
             <button
@@ -835,7 +806,6 @@ export default function LeaseDetailPage() {
             <p className="mt-1 text-xs text-slate-500 font-mono">{lease.property.code}</p>
           </div>
 
-          {/* Tenant */}
           <div className="p-4">
             <p className="mb-2.5 text-[10px] font-semibold uppercase tracking-wider text-slate-500">Tenant</p>
             <div className="flex items-center gap-2">
@@ -877,7 +847,6 @@ export default function LeaseDetailPage() {
             </div>
           </div>
 
-          {/* Financials */}
           <div className="p-4">
             <p className="mb-2.5 text-[10px] font-semibold uppercase tracking-wider text-slate-500">Financials</p>
             <div className="flex flex-col gap-2.5">

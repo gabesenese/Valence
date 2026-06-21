@@ -23,7 +23,6 @@ function requireAdminSecret(req: Request, _res: Response, next: NextFunction) {
 
 router.use(authenticate, authorize('SUPER_ADMIN'), requireAdminSecret);
 
-// ─── Funnel ───────────────────────────────────────────────────────────────────
 
 router.get('/funnel', async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -32,7 +31,6 @@ router.get('/funnel', async (req: Request, res: Response, next: NextFunction) =>
   } catch (err) { next(err); }
 });
 
-// ─── Stats ────────────────────────────────────────────────────────────────────
 
 router.get('/stats', async (_req: Request, res: Response, next: NextFunction) => {
   try {
@@ -60,13 +58,11 @@ router.get('/stats', async (_req: Request, res: Response, next: NextFunction) =>
   } catch (err) { next(err); }
 });
 
-// ─── Analytics (revenue, cohorts, churn, adoption, slow accounts) ─────────────
 
 router.get('/analytics', async (_req: Request, res: Response, next: NextFunction) => {
   try {
     const now = new Date();
 
-    // Signup trend — last 30 days
     const users30 = await prisma.user.findMany({
       where: { createdAt: { gte: new Date(now.getTime() - 30 * 86400000) } },
       select: { createdAt: true },
@@ -83,7 +79,6 @@ router.get('/analytics', async (_req: Request, res: Response, next: NextFunction
     }
     const signupTrend = Object.entries(signupsByDay).map(([date, count]) => ({ date, count }));
 
-    // Revenue (pseudo-MRR from plan distribution)
     const byPlan = await prisma.user.groupBy({ by: ['plan'], _count: { _all: true }, where: { isActive: true } });
     const planPrices: Record<string, number> = { ESSENTIALS: 149, PROFESSIONAL: 499, EXECUTIVE: 1500 };
     let mrr = 0;
@@ -93,21 +88,18 @@ router.get('/analytics', async (_req: Request, res: Response, next: NextFunction
       mrr += (planPrices[p.plan] ?? 0) * p._count._all;
     }
 
-    // Trial conversion: users who had trial but now have no trialEndsAt (converted)
     const [totalWithTrial, totalActive] = await Promise.all([
       prisma.user.count({ where: { trialEndsAt: { not: null } } }),
       prisma.user.count({ where: { isActive: true } }),
     ]);
     const trialConvRate = totalWithTrial > 0 ? Math.round(((totalActive - totalWithTrial) / totalWithTrial) * 100) : 0;
 
-    // Churn signals — users with no login in 14/30/60 days
     const [inactive14, inactive30, inactive60] = await Promise.all([
       prisma.user.count({ where: { lastLoginAt: { lt: new Date(now.getTime() - 14 * 86400000) }, isActive: true } }),
       prisma.user.count({ where: { lastLoginAt: { lt: new Date(now.getTime() - 30 * 86400000) }, isActive: true } }),
       prisma.user.count({ where: { lastLoginAt: { lt: new Date(now.getTime() - 60 * 86400000) }, isActive: true } }),
     ]);
 
-    // Cohorts — signups per week for last 12 weeks
     const cohortStart = new Date(now.getTime() - 12 * 7 * 86400000);
     const cohortUsers = await prisma.user.findMany({
       where: { createdAt: { gte: cohortStart } },
@@ -124,7 +116,6 @@ router.get('/analytics', async (_req: Request, res: Response, next: NextFunction
       .map(([week, users]) => ({ week, users }))
       .sort((a, b) => a.week.localeCompare(b.week));
 
-    // Feature adoption — count of users who have used each core feature
     const [withProperties, withLeases, withAlerts, withTasks, withAI] = await Promise.all([
       prisma.property.groupBy({ by: ['ownerId'], _count: { _all: true } }).then((r) => r.length),
       prisma.lease.groupBy({ by: ['ownerUserId'] }).then((r) => r.length),
@@ -133,7 +124,6 @@ router.get('/analytics', async (_req: Request, res: Response, next: NextFunction
       prisma.usageRecord.groupBy({ by: ['userId'] }).then((r) => r.length),
     ]);
 
-    // Slow accounts — top 5 by data volume
     const slowAccounts = await prisma.user.findMany({
       take: 5,
       orderBy: { ownedProperties: { _count: 'desc' } },
@@ -154,7 +144,6 @@ router.get('/analytics', async (_req: Request, res: Response, next: NextFunction
   } catch (err) { next(err); }
 });
 
-// ─── System metrics ───────────────────────────────────────────────────────────
 
 router.get('/system', async (_req: Request, res: Response, next: NextFunction) => {
   try {
@@ -188,7 +177,6 @@ router.get('/system', async (_req: Request, res: Response, next: NextFunction) =
   } catch (err) { next(err); }
 });
 
-// ─── Audit log ────────────────────────────────────────────────────────────────
 
 router.get('/audit-log', async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -206,7 +194,6 @@ router.get('/audit-log', async (req: Request, res: Response, next: NextFunction)
   } catch (err) { next(err); }
 });
 
-// ─── User list ────────────────────────────────────────────────────────────────
 
 router.get('/users', async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -243,7 +230,6 @@ router.get('/users', async (req: Request, res: Response, next: NextFunction) => 
   } catch (err) { next(err); }
 });
 
-// ─── Change plan ──────────────────────────────────────────────────────────────
 
 router.patch('/users/:id/plan', async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -252,7 +238,6 @@ router.patch('/users/:id/plan', async (req: Request, res: Response, next: NextFu
   } catch (err) { next(err); }
 });
 
-// ─── Change role ──────────────────────────────────────────────────────────────
 
 router.patch('/users/:id/role', async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -261,7 +246,6 @@ router.patch('/users/:id/role', async (req: Request, res: Response, next: NextFu
   } catch (err) { next(err); }
 });
 
-// ─── Toggle active ────────────────────────────────────────────────────────────
 
 router.patch('/users/:id/active', async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -270,7 +254,6 @@ router.patch('/users/:id/active', async (req: Request, res: Response, next: Next
   } catch (err) { next(err); }
 });
 
-// ─── Set trial end date ───────────────────────────────────────────────────────
 
 router.patch('/users/:id/trial', async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -284,7 +267,6 @@ router.patch('/users/:id/trial', async (req: Request, res: Response, next: NextF
   } catch (err) { next(err); }
 });
 
-// ─── Impersonate user ─────────────────────────────────────────────────────────
 
 router.post('/users/:id/impersonate', async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -311,7 +293,6 @@ router.post('/users/:id/impersonate', async (req: Request, res: Response, next: 
   } catch (err) { next(err); }
 });
 
-// ─── Send password reset ──────────────────────────────────────────────────────
 
 router.post('/users/:id/reset-password', async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -321,7 +302,6 @@ router.post('/users/:id/reset-password', async (req: Request, res: Response, nex
   } catch (err) { next(err); }
 });
 
-// ─── Delete user ──────────────────────────────────────────────────────────────
 
 router.delete('/users/:id', async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -351,7 +331,6 @@ router.delete('/users/:id', async (req: Request, res: Response, next: NextFuncti
   } catch (err) { next(err); }
 });
 
-// ─── Feature flags ────────────────────────────────────────────────────────────
 
 router.get('/flags', async (_req, res, next) => {
   try {
@@ -386,7 +365,6 @@ router.delete('/flags/:id', async (req: Request, res: Response, next: NextFuncti
   } catch (err) { next(err); }
 });
 
-// ─── Announcements ────────────────────────────────────────────────────────────
 
 router.get('/announcements', async (_req, res, next) => {
   try {
@@ -428,7 +406,6 @@ router.delete('/announcements/:id', async (req: Request, res: Response, next: Ne
   } catch (err) { next(err); }
 });
 
-// ─── Maintenance mode ─────────────────────────────────────────────────────────
 
 router.get('/maintenance', async (_req, res, next) => {
   try {

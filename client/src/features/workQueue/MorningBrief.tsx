@@ -71,7 +71,6 @@ export function MorningBrief() {
 
   return (
     <div className="mx-auto mb-6 max-w-5xl rounded-xl border border-brand-500/20 bg-gradient-to-br from-brand-600/8 to-surface-100 p-5">
-      {/* Header */}
       <div className="flex items-start justify-between gap-4 mb-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
@@ -90,7 +89,6 @@ export function MorningBrief() {
         </button>
       </div>
 
-      {/* Stats row */}
       {stats.total > 0 && (
         <div className="mb-4 flex flex-wrap gap-2">
           {stats.critical > 0 && (
@@ -125,7 +123,6 @@ export function MorningBrief() {
         </div>
       )}
 
-      {/* Top items */}
       {data.topItems.length > 0 && (
         <div className="space-y-1.5">
           <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-600 mb-2">Top priorities</p>

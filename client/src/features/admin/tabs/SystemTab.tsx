@@ -26,7 +26,6 @@ export function SystemTab({ secret }: { secret: string }) {
 
   return (
     <div className="space-y-6">
-      {/* Server health */}
       <div>
         <h2 className="mb-3 text-xs font-semibold uppercase tracking-widest text-slate-500">Server Health</h2>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -47,7 +46,6 @@ export function SystemTab({ secret }: { secret: string }) {
         </div>
       </div>
 
-      {/* Memory bars */}
       <div className="grid gap-4 sm:grid-cols-2">
         {[
           { label: 'Heap Usage', pct: heapPct, used: data.memory.heapUsed, total: data.memory.heapTotal },
@@ -69,7 +67,6 @@ export function SystemTab({ secret }: { secret: string }) {
         ))}
       </div>
 
-      {/* DB counts */}
       <div>
         <h2 className="mb-3 text-xs font-semibold uppercase tracking-widest text-slate-500">Database</h2>
         <div className="grid grid-cols-3 gap-3 sm:grid-cols-7">
@@ -82,7 +79,6 @@ export function SystemTab({ secret }: { secret: string }) {
         </div>
       </div>
 
-      {/* Recent errors */}
       <div>
         <h2 className="mb-3 text-xs font-semibold uppercase tracking-widest text-slate-500">Recent Errors</h2>
         {data.recentErrors.length === 0 ? (

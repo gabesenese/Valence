@@ -11,7 +11,6 @@ const TYPE_STYLES: Record<string, string> = {
   DANGER:  'bg-danger/15 text-danger border-danger/30',
 };
 
-// ─── Feature Flags ────────────────────────────────────────────────────────────
 
 function FlagsSection({ secret }: { secret: string }) {
   const [creating, setCreating] = useState(false);
@@ -109,7 +108,6 @@ function FlagsSection({ secret }: { secret: string }) {
   );
 }
 
-// ─── Announcements ────────────────────────────────────────────────────────────
 
 function AnnouncementsSection({ secret }: { secret: string }) {
   const [creating, setCreating] = useState(false);
@@ -214,7 +212,6 @@ function AnnouncementsSection({ secret }: { secret: string }) {
   );
 }
 
-// ─── Maintenance mode ─────────────────────────────────────────────────────────
 
 function MaintenanceSection({ secret }: { secret: string }) {
   const [msg, setMsg] = useState('');
@@ -274,7 +271,6 @@ function MaintenanceSection({ secret }: { secret: string }) {
   );
 }
 
-// ─── Tab ─────────────────────────────────────────────────────────────────────
 
 export function PlatformTab({ secret }: { secret: string }) {
   return (

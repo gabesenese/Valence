@@ -195,16 +195,13 @@ export default function DashboardPage() {
 
       {isEmpty && <WelcomeScreen />}
 
-      {/* Executive Brief — full-width banner above the grid (AI flagship) */}
       {!isEmpty && canAccess('executive_brief') && <ExecutiveBriefCard />}
 
       {!isEmpty && (
         <div className="grid grid-cols-1 xl:grid-cols-[1fr_360px] gap-5">
 
-          {/* ── LEFT: Action column ─────────────────────────────────────────── */}
           <div className="flex flex-col gap-4 min-w-0">
 
-            {/* KPI Strip — 2-col card grid on mobile, horizontal strip on sm+ */}
             <div className="grid grid-cols-2 gap-2 sm:hidden">
               {kpis.map(kpi => (
                 <button key={kpi.label} onClick={() => navigate(kpi.href)}
@@ -241,7 +238,6 @@ export default function DashboardPage() {
               ))}
             </div>
 
-            {/* Action Feed */}
             <div className="rounded-xl border border-surface-400/50 bg-surface-100 overflow-hidden divide-y divide-surface-400/30">
               <div className="flex items-center justify-between px-4 py-2.5 bg-surface-200/40">
                 <div className="flex items-center gap-2">
@@ -294,7 +290,6 @@ export default function DashboardPage() {
               )}
             </div>
 
-            {/* Upcoming Renewals — 31–90 day leases (≤30d are already in the feed) */}
             {renewals31to90.length > 0 && (
               <Card>
                 <CardHeader>
@@ -342,11 +337,9 @@ export default function DashboardPage() {
             )}
           </div>
 
-          {/* ── RIGHT: Context sidebar ──────────────────────────────────────── */}
           <div className="flex flex-col gap-4">
             {canAccess('health_score') && <HealthScoreCard />}
 
-            {/* Property Performance */}
             {performance && performance.length > 0 && (
               <Card>
                 <CardHeader>
@@ -396,7 +389,6 @@ export default function DashboardPage() {
               </Card>
             )}
 
-            {/* Revenue Trend */}
             <Card>
               <CardHeader>
                 <div className="flex flex-col gap-0.5">
@@ -467,7 +459,6 @@ export default function DashboardPage() {
               </CardBody>
             </Card>
 
-            {/* Lease Risk Breakdown */}
             {distribution && totalRiskLeases > 0 && (
               <Card>
                 <CardHeader>

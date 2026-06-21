@@ -19,7 +19,6 @@ import LeaseFormModal from './LeaseFormModal';
 import LeaseImportModal from './LeaseImportModal';
 import type { ExtractedLease } from '@/services/ai.service';
 
-// ─── Constants ────────────────────────────────────────────────────────────────
 
 const RISK_CONFIG: Record<string, StatusEntry> = {
   LOW:      { label: 'Low',      variant: 'success', dot: true },
@@ -64,7 +63,6 @@ const EXPIRY_FILTERS = [
 type SortField = 'endDate' | 'baseRent';
 type ViewMode = 'table' | 'priority' | 'kanban';
 
-// ─── Sub-components ───────────────────────────────────────────────────────────
 
 function SortIcon({ active, order }: { active: boolean; order: 'asc' | 'desc' }) {
   if (!active) return <ChevronUp className="h-3 w-3 opacity-0 group-hover/th:opacity-60 transition-opacity" />;
@@ -120,7 +118,6 @@ function PriorityBar({ score }: { score: number }) {
   );
 }
 
-// ─── Priority Queue View ──────────────────────────────────────────────────────
 
 function PriorityQueueView({
   onOpenDrawer,
@@ -226,7 +223,6 @@ function PriorityQueueView({
   );
 }
 
-// ─── Bulk Action Bar ──────────────────────────────────────────────────────────
 
 function BulkBar({
   count, onAssignOwner, onStartRenewal, onExport, onClear,
@@ -289,7 +285,6 @@ function BulkBar({
   );
 }
 
-// ─── Filter chip ─────────────────────────────────────────────────────────────
 
 function Chip({ label, onRemove }: { label: string; onRemove: () => void }) {
   return (
@@ -302,7 +297,6 @@ function Chip({ label, onRemove }: { label: string; onRemove: () => void }) {
   );
 }
 
-// ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function LeasesPage() {
   const [viewMode, setViewMode] = useState<ViewMode>('kanban');
@@ -422,7 +416,6 @@ export default function LeasesPage() {
 
   return (
     <div className="flex flex-col gap-4 p-4 animate-fade-in pb-24 sm:gap-6 sm:p-6">
-      {/* Header + view toggle */}
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-xl font-bold text-fg tracking-tight">Lease Intelligence</h1>
@@ -463,7 +456,6 @@ export default function LeasesPage() {
           </div>
       </div>
 
-      {/* Stats strip */}
       {stats && (
         <div className="grid grid-cols-2 overflow-hidden rounded-xl border border-surface-400/30 sm:flex sm:items-stretch sm:divide-x sm:divide-surface-400/30 [&>*]:border-b [&>*]:border-surface-400/30 sm:[&>*]:border-0">
           {[
@@ -480,7 +472,6 @@ export default function LeasesPage() {
         </div>
       )}
 
-      {/* Active filter chips */}
       {activeFilters.length > 0 && (
         <div className="flex flex-wrap items-center gap-2">
           {activeFilters.map((f) => (
@@ -495,20 +486,15 @@ export default function LeasesPage() {
         </div>
       )}
 
-      {/* Pipeline (Kanban) */}
       {viewMode === 'kanban' && <RenewalKanban />}
 
-      {/* Priority Queue */}
       {viewMode === 'priority' && (
         <PriorityQueueView onOpenDrawer={setDrawerLeaseId} />
       )}
 
-      {/* Table view */}
       {viewMode === 'table' && (
         <>
-          {/* Filters */}
           <div className="flex flex-col gap-3">
-            {/* Status tabs */}
             <div className="flex items-center gap-1.5 flex-wrap">
               {STATUS_TABS.map((tab) => (
                 <FilterTab
@@ -529,7 +515,6 @@ export default function LeasesPage() {
               ))}
             </div>
 
-            {/* Search + filter toggle */}
             <div className="flex flex-wrap items-center gap-3">
               <div className="relative flex-1 min-w-[200px] max-w-xs">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-600" />
@@ -554,7 +539,6 @@ export default function LeasesPage() {
               </button>
             </div>
 
-            {/* Expanded filter panel */}
             {showFilters && (
               <div className="grid grid-cols-2 gap-4 rounded-lg border border-surface-400/40 bg-surface-200/40 px-4 py-3 sm:grid-cols-4">
                 <FilterGroup label="Risk">
@@ -589,7 +573,6 @@ export default function LeasesPage() {
             )}
           </div>
 
-          {/* Table */}
           <div className="rounded-xl border border-surface-400/30 overflow-hidden">
             {isLoading ? (
               <PageLoader />
@@ -598,7 +581,6 @@ export default function LeasesPage() {
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-surface-400/40">
-                      {/* Bulk select */}
                       <th className="px-4 py-3 w-8">
                         <button onClick={() => toggleAll(leaseIds)} className="text-slate-500 hover:text-fg transition-colors">
                           {allSelected ? <CheckSquare className="h-4 w-4 text-brand-400" /> : <Square className="h-4 w-4" />}
@@ -706,7 +688,6 @@ export default function LeasesPage() {
         </>
       )}
 
-      {/* Bulk action bar */}
       <BulkBar
         count={selectedIds.size}
         busy={bulkMutation.isPending}
@@ -716,7 +697,6 @@ export default function LeasesPage() {
         onClear={() => setSelectedIds(new Set())}
       />
 
-      {/* Drawer */}
       <LeaseDrawer leaseId={drawerLeaseId} onClose={() => setDrawerLeaseId(null)} />
 
       <LeaseFormModal
@@ -830,7 +810,6 @@ function LeaseRow({
         <StatusBadge status={lease.status} config={LEASE_STATUS_CONFIG} />
       </td>
       <td className="px-4 py-3 relative">
-        {/* Default actions — fade out when confirming */}
         <div className={`flex items-center justify-end gap-1 transition-all duration-200 ${confirming ? 'opacity-0 pointer-events-none' : 'opacity-0 group-hover:opacity-100'}`}>
           <button
             onClick={(e) => { e.stopPropagation(); onRequestDelete(); }}
@@ -843,7 +822,6 @@ function LeaseRow({
             <ChevronRight className="h-4 w-4" />
           </button>
         </div>
-        {/* Confirmation — fades in, absolute so it doesn't shift layout */}
         <div
           className={`absolute inset-0 flex items-center justify-end gap-2 px-4 transition-all duration-200 ${confirming ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
           onClick={(e) => e.stopPropagation()}

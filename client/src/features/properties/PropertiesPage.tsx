@@ -111,7 +111,6 @@ export default function PropertiesPage() {
         }
       />
 
-      {/* Filters */}
       <div className="flex flex-wrap items-center gap-3">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-600" />
@@ -135,7 +134,6 @@ export default function PropertiesPage() {
         )}
       </div>
 
-      {/* Grid */}
       {data?.data.length === 0 ? (
         (search || type || status) ? (
           <div className="flex flex-col items-center justify-center py-20 text-center">
@@ -227,7 +225,6 @@ export default function PropertiesPage() {
                 </div>
               </CardBody>
 
-              {/* Confirmation footer — animates in with max-height + opacity */}
               <div
                 className={cn(
                   'overflow-hidden transition-all duration-250 ease-in-out',

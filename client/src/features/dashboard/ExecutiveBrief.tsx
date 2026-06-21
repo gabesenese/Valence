@@ -7,7 +7,6 @@ import {
 } from 'lucide-react';
 import { aiService, type ActionItem } from '@/services/ai.service';
 
-// ─── Config ───────────────────────────────────────────────────────────────────
 
 const HEALTH_CONFIG = {
   critical: { label: 'CRITICAL',  color: 'text-danger',   bg: 'bg-danger/10',  ring: 'ring-danger/30'   },
@@ -37,7 +36,6 @@ function timeAgo(iso: string) {
   return `${Math.round(mins / 60)}h ago`;
 }
 
-// ─── Skeleton ─────────────────────────────────────────────────────────────────
 
 function Skeleton() {
   return (
@@ -63,7 +61,6 @@ function Skeleton() {
   );
 }
 
-// ─── Main component ───────────────────────────────────────────────────────────
 
 export default function ExecutiveBriefCard() {
   const [enabled, setEnabled] = useState(false);
@@ -79,7 +76,6 @@ export default function ExecutiveBriefCard() {
 
   const health = brief ? (HEALTH_CONFIG[brief.portfolioHealth] ?? HEALTH_CONFIG.stable) : null;
 
-  // Not yet generated
   if (!enabled && !brief) {
     return (
       <div className="rounded-2xl border border-brand-500/20 bg-gradient-to-br from-brand-600/5 to-surface-100 overflow-hidden">
@@ -130,7 +126,6 @@ export default function ExecutiveBriefCard() {
   return (
     <div className="rounded-2xl border border-surface-400/40 bg-surface-100 overflow-hidden">
 
-      {/* Header */}
       <div className="flex items-center justify-between px-4 py-3.5 border-b border-surface-400/30 bg-surface-200/30 sm:px-6">
         <div className="flex items-center gap-2">
           <Sparkles className="h-4 w-4 text-brand-400" />
@@ -155,13 +150,11 @@ export default function ExecutiveBriefCard() {
         </div>
       </div>
 
-      {/* Headline + summary */}
       <div className="px-4 py-4 border-b border-surface-400/30 sm:px-6 sm:py-5">
         <p className="text-lg font-semibold text-fg leading-snug">{brief.headline}</p>
         <p className="mt-2 max-w-3xl text-sm text-slate-400 leading-relaxed">{brief.summary}</p>
       </div>
 
-      {/* Recommended Actions — the unique AI value; raw risk list lives in the Action Feed */}
       <div className="px-4 py-4 sm:px-6 sm:py-5">
         <div className="flex items-center gap-2 mb-4">
           <CheckCircle2 className="h-3.5 w-3.5 text-brand-400/70" />

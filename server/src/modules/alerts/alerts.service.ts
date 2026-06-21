@@ -97,7 +97,6 @@ export async function progressAlert(id: string, userId: string) {
   if (!alert) throw new NotFoundError('Alert');
 
   const data: Prisma.AlertUncheckedUpdateInput = { status: 'IN_PROGRESS' };
-  // Carry forward acknowledgedAt/By if not already set (direct OPEN→IN_PROGRESS)
   if (!alert.acknowledgedAt) {
     data.acknowledgedAt = new Date();
     data.acknowledgedById = userId;

@@ -2,28 +2,21 @@ import { prisma } from '../../infrastructure/database';
 import { differenceInDays } from 'date-fns';
 import type { AutomationTrigger, AutomationAction } from '@prisma/client';
 
-// ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface RuleConditions {
-  // LEASE_DAYS_REMAINING: trigger when endDate <= X days from now
   daysRemaining?: number;
-  // PAYMENT_OVERDUE_DAYS: trigger when dueDate <= now - X days
   overdueDays?: number;
-  // OCCUPANCY_BELOW: trigger when property occupancy < X%
   occupancyPct?: number;
-  // RISK_SCORE_ABOVE: trigger when property riskScore >= X
   riskScore?: number;
 }
 
 export interface ActionConfig {
   taskTitle?: string;
   taskDescription?: string;
-  // assignTo: 'lease_owner' | 'manager' | specific userId
   assignTo?: string;
   daysUntilDue?: number;
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 async function acquireJobLock(lockId: string, durationMs: number): Promise<boolean> {
   const now = new Date();
@@ -49,7 +42,6 @@ function resolveAssignee(
   return assignTo; // treat as a literal userId
 }
 
-// ─── Rule evaluation ──────────────────────────────────────────────────────────
 
 async function evaluateRule(
   _ruleId: string,
@@ -94,7 +86,6 @@ async function evaluateRule(
 
     if (action === 'CREATE_TASK') {
       for (const lease of leases) {
-        // Skip if a task was already created recently for this lease by automation
         if (lease.tasks.length > 0) continue;
 
         const daysLeft = differenceInDays(lease.endDate, now);
@@ -297,7 +288,6 @@ async function evaluateRule(
           ? (property._count.leases / property.totalUnits) * 100
           : 0;
 
-        // Risk score 0–100: occupancy shortfall + critical alerts + expiring leases
         const occupancyRisk = Math.max(0, 80 - occupancyRate) * 0.5;       // 0–40
         const alertRisk     = Math.min(40, property.alerts.length * 20);    // 0–40
         const expiryRisk    = Math.min(20, property.leases.length * 7);     // 0–20
@@ -331,7 +321,6 @@ async function evaluateRule(
   return { tasksCreated, details };
 }
 
-// ─── Public API ───────────────────────────────────────────────────────────────
 
 export async function getRules() {
   return prisma.automationRule.findMany({

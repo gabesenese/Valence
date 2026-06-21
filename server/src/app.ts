@@ -43,10 +43,8 @@ import { backupRouter } from './modules/backup/backup.routes';
 
 export const app = express();
 
-// Trust Vercel/reverse-proxy forwarded headers (fixes X-Forwarded-For validation errors)
 app.set('trust proxy', 1);
 
-// ─── Security ─────────────────────────────────────────────────────────────────
 app.use(helmet());
 const allowedOrigins = new Set([
   env.CLIENT_URL,
@@ -62,7 +60,6 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'x-admin-secret'],
 }));
 
-// ─── Rate Limiting ────────────────────────────────────────────────────────────
 app.use(rateLimit({
   windowMs: env.RATE_LIMIT_WINDOW_MS,
   max: env.RATE_LIMIT_MAX_REQUESTS,
@@ -72,25 +69,21 @@ app.use(rateLimit({
   validate: { xForwardedForHeader: false },
 }));
 
-// ─── Parsing + Compression ────────────────────────────────────────────────────
 app.use(compression());
 app.use('/api/billing/webhook', express.raw({ type: 'application/json' }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// ─── Logging ──────────────────────────────────────────────────────────────────
 app.use(morgan(env.NODE_ENV === 'production' ? 'combined' : 'dev', {
   stream: { write: (msg) => logger.http(msg.trim()) },
 }));
 
-// ─── Health Check ─────────────────────────────────────────────────────────────
 app.get('/health', (_req, res) => {
   res.json({ status: 'ok', version: '0.1.0', timestamp: new Date().toISOString() });
 });
 
 
-// ─── API Routes ───────────────────────────────────────────────────────────────
 app.use('/api/auth', authRouter);
 app.use('/api/properties', propertiesRouter);
 app.use('/api/leases', leasesRouter);
@@ -119,7 +112,6 @@ app.use('/api/support', supportRouter);
 app.use('/api/trash', trashRouter);
 app.use('/api/backups', backupRouter);
 
-// ─── Error Handling ───────────────────────────────────────────────────────────
 Sentry.setupExpressErrorHandler(app);
 app.use(notFoundHandler);
 app.use(errorHandler);

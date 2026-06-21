@@ -234,7 +234,6 @@ export async function claimTrial(userId: string): Promise<{ user: AuthUser; toke
   return { user, tokens };
 }
 
-// ─── Forgot / reset password ──────────────────────────────────────────────────
 
 export async function forgotPassword(email: string): Promise<void> {
   const user = await prisma.user.findUnique({ where: { email }, select: { id: true, email: true } });
@@ -267,7 +266,6 @@ export async function resetPassword(token: string, newPassword: string): Promise
   ]);
 }
 
-// ─── Email verification ───────────────────────────────────────────────────────
 
 async function sendEmailVerificationLink(userId: string, email: string): Promise<void> {
   await prisma.emailVerificationToken.deleteMany({ where: { userId } });
@@ -300,7 +298,6 @@ export async function resendVerification(userId: string): Promise<void> {
   await sendEmailVerificationLink(userId, user.email);
 }
 
-// ─── MFA / TOTP ───────────────────────────────────────────────────────────────
 
 export async function setupMfa(userId: string): Promise<{ secret: string; otpauth: string; qrCode: string }> {
   const user = await prisma.user.findUnique({ where: { id: userId }, select: { email: true, mfaEnabled: true } });
@@ -369,7 +366,6 @@ export async function verifyMfaChallenge(
   return { user: authUser, tokens };
 }
 
-// ─── Session management ───────────────────────────────────────────────────────
 
 export async function listSessions(userId: string) {
   return prisma.refreshToken.findMany({
@@ -389,7 +385,6 @@ export async function revokeAllSessions(userId: string): Promise<void> {
   await prisma.refreshToken.updateMany({ where: { userId, revokedAt: null }, data: { revokedAt: new Date() } });
 }
 
-// ─── Demo session ─────────────────────────────────────────────────────────────
 
 export async function demoLogin(meta?: SessionMeta): Promise<{ user: AuthUser; tokens: TokenPair }> {
   const email = `demo-${uuidv4().slice(0, 8)}@valence.demo`;
@@ -441,7 +436,6 @@ export async function cleanupDemoAccounts(): Promise<number> {
   return cleaned;
 }
 
-// ─── Token pair ───────────────────────────────────────────────────────────────
 
 async function createTokenPair(user: AuthUser, meta?: SessionMeta): Promise<TokenPair> {
   const accessToken = signAccessToken(user);

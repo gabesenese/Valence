@@ -95,7 +95,6 @@ export default function PortfolioPerformancePage() {
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
 
-        {/* Top Performers */}
         <div className="rounded-xl border border-surface-400/30 overflow-hidden">
           <div className="flex items-center gap-2 px-4 py-3 border-b border-surface-400/40 bg-surface-200/30">
             <Trophy className="h-3.5 w-3.5 text-amber-400" />
@@ -112,7 +111,6 @@ export default function PortfolioPerformancePage() {
           )}
         </div>
 
-        {/* Needs Attention */}
         <div className="rounded-xl border border-surface-400/30 overflow-hidden">
           <div className="flex items-center gap-2 px-4 py-3 border-b border-surface-400/40 bg-surface-200/30">
             <AlertTriangle className="h-3.5 w-3.5 text-danger" />

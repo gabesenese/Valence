@@ -24,7 +24,6 @@ export const PLAN_PRICES: Record<Plan, number> = {
   EXECUTIVE:    1499,
 };
 
-// Which plans each feature requires
 const FEATURE_MIN_PLAN: Record<string, Plan> = {
   work_queue:            'PROFESSIONAL',
   tasks:                 'PROFESSIONAL',
@@ -50,7 +49,6 @@ export function usePlan() {
     ? Math.max(0, Math.ceil((new Date(trialEndsAt!).getTime() - Date.now()) / 86_400_000))
     : 0;
 
-  // While trial is active, grant at least PROFESSIONAL access
   const effectivePlan: Plan =
     trialActive && PLAN_ORDER[plan] < PLAN_ORDER['PROFESSIONAL'] ? 'PROFESSIONAL' : plan;
 

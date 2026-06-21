@@ -50,7 +50,6 @@ export function Select({
   const selected = options.find((o) => o.value === value);
   const sm = size === 'sm';
 
-  // Estimate dropdown height to decide whether to flip upward
   const estimatedHeight = Math.min(options.length * 28 + 8, 260);
   const dropTop = rect
     ? window.innerHeight - rect.bottom > estimatedHeight

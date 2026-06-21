@@ -14,7 +14,6 @@ import { PageLoader } from '@/components/ui/Spinner';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Select } from '@/components/ui/Select';
 
-// ─── Config ───────────────────────────────────────────────────────────────────
 
 const ROLE_CONFIG: Record<UserRole, { label: string; color: string; icon: React.ComponentType<{ className?: string }> }> = {
   SUPER_ADMIN: { label: 'Super Admin', color: 'text-danger',    icon: Crown    },
@@ -36,7 +35,6 @@ function daysUntil(iso: string) {
   return Math.max(0, Math.ceil((new Date(iso).getTime() - Date.now()) / 86400000));
 }
 
-// ─── Avatar ───────────────────────────────────────────────────────────────────
 
 function Avatar({ member }: { member: TeamMember }) {
   const initials = `${member.firstName[0]}${member.lastName[0]}`.toUpperCase();
@@ -49,7 +47,6 @@ function Avatar({ member }: { member: TeamMember }) {
   );
 }
 
-// ─── Copy button ──────────────────────────────────────────────────────────────
 
 function CopyButton({ text, label = 'Copy' }: { text: string; label?: string }) {
   const [copied, setCopied] = useState(false);
@@ -69,7 +66,6 @@ function CopyButton({ text, label = 'Copy' }: { text: string; label?: string }) 
   );
 }
 
-// ─── Role picker ──────────────────────────────────────────────────────────────
 
 function RolePicker({
   member, currentUserRole, onSelect, busy,
@@ -157,7 +153,6 @@ function RolePicker({
   );
 }
 
-// ─── Member row ───────────────────────────────────────────────────────────────
 
 function MemberRow({ member, currentUserId, currentUserRole }: {
   member: TeamMember; currentUserId: string; currentUserRole: UserRole;
@@ -224,7 +219,6 @@ function MemberRow({ member, currentUserId, currentUserRole }: {
   );
 }
 
-// ─── Invite modal ─────────────────────────────────────────────────────────────
 
 function InviteModal({ onClose }: { onClose: () => void }) {
   const qc = useQueryClient();

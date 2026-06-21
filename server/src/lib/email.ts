@@ -12,7 +12,6 @@ async function send(to: string, subject: string, html: string) {
   await resend.emails.send({ from: env.FROM_EMAIL, to, subject, html });
 }
 
-// ─── Templates ────────────────────────────────────────────────────────────────
 
 function wrap(title: string, body: string) {
   return `<!DOCTYPE html><html><body style="font-family:system-ui,sans-serif;background:#0a0a0f;color:#e2e8f0;margin:0;padding:40px 20px">
@@ -32,7 +31,6 @@ function btn(label: string, url: string) {
   return `<a href="${url}" style="display:inline-block;margin-top:20px;padding:12px 24px;background:#5b21b6;color:#fff;text-decoration:none;border-radius:8px;font-size:14px;font-weight:600">${label}</a>`;
 }
 
-// ─── Senders ──────────────────────────────────────────────────────────────────
 
 export async function sendPasswordResetEmail(to: string, resetUrl: string) {
   const body = `

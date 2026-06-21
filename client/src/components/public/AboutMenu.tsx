@@ -46,7 +46,6 @@ export function AboutMenu() {
         <ChevronDown className={cn('h-3.5 w-3.5 transition-transform', open && 'rotate-180')} />
       </button>
 
-      {/* Hover bridge so the menu doesn't close in the gap below the trigger */}
       <div
         className={cn(
           'absolute right-0 top-full z-50 pt-3 w-72',

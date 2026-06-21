@@ -5,7 +5,6 @@ import { logAudit } from '../audit/audit.service';
 const MAX_AUTOMATED_BACKUPS = 30;
 export const MAX_MANUAL_BACKUPS = 10;
 
-// ─── Snapshot types ───────────────────────────────────────────────────────────
 
 interface SnapshotProperty {
   id: string; name: string; code: string; type: string; status: string;
@@ -53,7 +52,6 @@ function isBackupSnapshot(v: unknown): v is BackupSnapshot {
   return typeof s.version === 'string' && !!s.data && Array.isArray(s.data.properties);
 }
 
-// ─── Snapshot builder ─────────────────────────────────────────────────────────
 
 async function buildSnapshot(userId: string): Promise<BackupSnapshot> {
   const [properties, tenants, leases, financialRecords] = await Promise.all([
@@ -75,7 +73,6 @@ async function buildSnapshot(userId: string): Promise<BackupSnapshot> {
   };
 }
 
-// ─── CRUD ─────────────────────────────────────────────────────────────────────
 
 export async function createBackup(userId: string, label: string, trigger: 'manual' | 'automated' | 'import' = 'manual') {
   const snapshot = await buildSnapshot(userId);
@@ -107,7 +104,6 @@ export async function deleteBackup(id: string, userId: string) {
   await prisma.backup.delete({ where: { id } });
 }
 
-// ─── Restore ─────────────────────────────────────────────────────────────────
 
 export async function restoreBackup(id: string, userId: string) {
   const backup = await getBackup(id, userId);
@@ -119,7 +115,6 @@ export async function restoreBackup(id: string, userId: string) {
   const restored = { properties: 0, tenants: 0, leases: 0, financialRecords: 0 };
 
   await prisma.$transaction(async (tx) => {
-    // Properties and tenants are independent — restore in parallel
     await Promise.all([
       ...properties.map(async (p) => {
         await tx.property.upsert({
@@ -181,7 +176,6 @@ export async function restoreBackup(id: string, userId: string) {
       }),
     ]);
 
-    // Leases depend on properties + tenants
     await Promise.all(leases.map(async (l) => {
       await tx.lease.upsert({
         where: { id: l.id },
@@ -217,7 +211,6 @@ export async function restoreBackup(id: string, userId: string) {
       restored.leases++;
     }));
 
-    // Financial records depend on properties + leases
     await Promise.all(financialRecords.map(async (f) => {
       await tx.financialRecord.upsert({
         where: { id: f.id },
@@ -247,7 +240,6 @@ export async function restoreBackup(id: string, userId: string) {
   return restored;
 }
 
-// ─── Scheduled backups ────────────────────────────────────────────────────────
 
 export async function runScheduledBackups(): Promise<void> {
   const users = await prisma.user.findMany({

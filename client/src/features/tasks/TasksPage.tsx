@@ -153,7 +153,6 @@ function EditTaskModal({
     >
       <div className="w-full max-w-lg rounded-2xl border border-surface-400/40 bg-surface-100 shadow-2xl shadow-black/60 overflow-hidden">
 
-        {/* Header */}
         <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-surface-400/20">
           <div className="flex items-center gap-3">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-600/20">
@@ -177,10 +176,8 @@ function EditTaskModal({
           </button>
         </div>
 
-        {/* Body */}
         <div className="px-6 py-5 flex flex-col gap-5">
 
-          {/* Title */}
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">Title</label>
             <input
@@ -193,7 +190,6 @@ function EditTaskModal({
             />
           </div>
 
-          {/* Description */}
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">Description</label>
             <textarea
@@ -205,7 +201,6 @@ function EditTaskModal({
             />
           </div>
 
-          {/* Assignee + Due date side by side */}
           <div className="grid grid-cols-2 gap-4">
             <div className="flex flex-col gap-1.5">
               <label className="flex items-center gap-1.5 text-xs font-medium text-slate-400 uppercase tracking-wider">
@@ -235,7 +230,6 @@ function EditTaskModal({
           </div>
         </div>
 
-        {/* Footer */}
         <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-surface-400/20 bg-surface-200/30">
           <Button variant="ghost" size="sm" onClick={onClose}>Cancel</Button>
           <Button size="sm" disabled={!title.trim()} onClick={submit}>
@@ -268,7 +262,6 @@ function TaskItem({
 
   return (
     <div className={`flex items-start gap-3 px-4 py-3 border-b border-surface-400/30 last:border-0 transition-colors group sm:gap-4 sm:px-5 sm:py-4 ${isTemp ? 'opacity-60' : 'hover:bg-surface-200/30'}`}>
-      {/* Status */}
       <div className="mt-0.5 shrink-0">
         {isTemp ? (
           <span className="text-xs text-slate-600 italic">Saving…</span>
@@ -277,7 +270,6 @@ function TaskItem({
         )}
       </div>
 
-      {/* Title + description + context + mobile meta */}
       <div className="flex-1 min-w-0">
         <button
           type="button"
@@ -299,7 +291,6 @@ function TaskItem({
           )}
         </button>
 
-        {/* Context links */}
         {(task.lease || task.property || task.alert) && (
           <div className="mt-1.5 flex items-center gap-3 flex-wrap">
             {task.lease && (
@@ -329,7 +320,6 @@ function TaskItem({
           </div>
         )}
 
-        {/* Mobile-only due date + assignee line */}
         {(task.dueAt || task.assignee) && (
           <div className="mt-1.5 flex items-center gap-2 sm:hidden">
             {task.dueAt && (
@@ -347,7 +337,6 @@ function TaskItem({
         )}
       </div>
 
-      {/* Due date — desktop only */}
       <div className="hidden shrink-0 text-right sm:block">
         {task.dueAt ? (
           <span className={`text-xs font-medium ${isOverdue ? 'text-danger' : 'text-slate-400'}`}>
@@ -358,7 +347,6 @@ function TaskItem({
         )}
       </div>
 
-      {/* Assignee — desktop only */}
       <div className="hidden shrink-0 sm:flex sm:items-center sm:gap-1.5">
         {task.assignee ? (
           <>
@@ -372,7 +360,6 @@ function TaskItem({
         )}
       </div>
 
-      {/* Delete — always tappable on mobile, hover-only on desktop */}
       <div className="shrink-0 sm:opacity-0 sm:group-hover:opacity-100 sm:transition-opacity">
         {!isTemp && (
           <button
@@ -623,7 +610,6 @@ export default function TasksPage() {
         }
       />
 
-      {/* Filters */}
       <div className="flex flex-wrap gap-2 items-center justify-between">
         <div className="flex flex-wrap gap-2">
         {STATUS_FILTER_OPTIONS.map((f) => (
@@ -659,7 +645,6 @@ export default function TasksPage() {
         />
       </div>
 
-      {/* Task list */}
       <Card>
         {isLoading ? (
           <PageLoader />

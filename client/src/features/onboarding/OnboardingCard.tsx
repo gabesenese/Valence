@@ -27,7 +27,6 @@ export function OnboardingCard() {
   const navigate = useNavigate();
   const userId = useAuthStore((s) => s.user?.id ?? 'anon');
 
-  // Keys are user-scoped so a new account on the same browser always starts fresh.
   const DISMISS_KEY = `valence-onboarding-dismissed-${userId}`;
   const COMPLETE_KEY = `valence-onboarding-complete-seen-${userId}`;
 
@@ -52,7 +51,6 @@ export function OnboardingCard() {
     setCompleteSeen(true);
   }
 
-  // ── Success state ──────────────────────────────────────────────────────────
 
   if (data.allDone) {
     return (
@@ -90,7 +88,6 @@ export function OnboardingCard() {
     );
   }
 
-  // ── Checklist state ────────────────────────────────────────────────────────
 
   return (
     <div className="rounded-2xl border border-surface-400/40 bg-surface-100 p-5">
@@ -109,7 +106,6 @@ export function OnboardingCard() {
         {data.completed} of {data.total} complete · {data.percent}%
       </p>
 
-      {/* Progress bar */}
       <div className="relative h-1.5 w-full overflow-hidden rounded-full bg-surface-400/40 mb-5">
         <div
           className="absolute inset-y-0 left-0 rounded-full bg-brand-500 transition-all duration-700"
@@ -117,7 +113,6 @@ export function OnboardingCard() {
         />
       </div>
 
-      {/* Milestones */}
       <div className="flex flex-col gap-1">
         {data.milestones.map((m) => (
           <div

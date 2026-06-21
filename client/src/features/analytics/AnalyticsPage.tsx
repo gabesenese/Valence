@@ -37,10 +37,8 @@ export default function AnalyticsPage() {
 
       <div className="grid grid-cols-1 xl:grid-cols-[1fr_320px] gap-4 items-start">
 
-        {/* LEFT: main charts */}
         <div className="flex flex-col gap-4 min-w-0">
 
-          {/* Net Income Trend */}
           <Card>
             <CardHeader>
               <CardTitle>Net Income Trend</CardTitle>
@@ -68,7 +66,6 @@ export default function AnalyticsPage() {
             </CardBody>
           </Card>
 
-          {/* Occupancy by Property */}
           {performance && performance.length > 0 && (
             <div className="rounded-xl border border-surface-400/30 overflow-hidden">
               <div className="px-5 py-3 border-b border-surface-400/40">
@@ -96,10 +93,8 @@ export default function AnalyticsPage() {
           )}
         </div>
 
-        {/* RIGHT: context sidebar */}
         <div className="flex flex-col gap-4">
 
-          {/* Property Revenue Ranking — compact list */}
           {performance && performance.length > 0 && (
             <Card>
               <CardHeader>
@@ -126,7 +121,6 @@ export default function AnalyticsPage() {
             </Card>
           )}
 
-          {/* Lease Status */}
           {statusPie.length > 0 && (
             <Card>
               <CardHeader>

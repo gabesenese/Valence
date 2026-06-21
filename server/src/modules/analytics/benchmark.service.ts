@@ -1,7 +1,6 @@
 import { prisma } from '../../infrastructure/database';
 import { startOfMonth, endOfMonth, subMonths, addDays } from 'date-fns';
 
-// ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface PropertyScorecard {
   id:              string;
@@ -21,9 +20,7 @@ export interface PropertyScorecard {
   expiringSoon:    number;
   highRiskLeases:  number;
   riskScore:       number;
-  // Composite performance score (0–100): weighted avg of normalized revenue, NOI, occupancy ranks
   compositeScore:  number;
-  // Portfolio-relative percentile (0–100): 95 = top 5%, 10 = bottom 10%
   percentile:      number;
   ranks: {
     byRevenue:   number;
@@ -58,7 +55,6 @@ export interface BenchmarkReport {
   properties:  PropertyScorecard[];
 }
 
-// ─── Risk score helper ────────────────────────────────────────────────────────
 
 function computeRiskScore(p: {
   openAlerts: number;
@@ -77,7 +73,6 @@ function computeRiskScore(p: {
   return Math.min(100, score);
 }
 
-// ─── Outlier detection ────────────────────────────────────────────────────────
 
 function detectOutliers(properties: PropertyScorecard[]): void {
   if (properties.length < 2) return;
@@ -111,7 +106,6 @@ function detectOutliers(properties: PropertyScorecard[]): void {
   }
 }
 
-// ─── Main export ──────────────────────────────────────────────────────────────
 
 export async function getBenchmarks(): Promise<BenchmarkReport> {
   const now        = new Date();
@@ -207,7 +201,6 @@ export async function getBenchmarks(): Promise<BenchmarkReport> {
     })
   );
 
-  // ── Assign ranks ───────────────────────────────────────────────────────────
   const byRevenue   = [...scorecards].sort((a, b) => b.monthlyRevenue - a.monthlyRevenue);
   const byNOI       = [...scorecards].sort((a, b) => b.noi - a.noi);
   const byRisk      = [...scorecards].sort((a, b) => a.riskScore - b.riskScore);
@@ -224,31 +217,23 @@ export async function getBenchmarks(): Promise<BenchmarkReport> {
     p.ranks.byGrowth    = gi !== -1 ? gi + 1 : null;
   }
 
-  // ── Composite score & percentile ──────────────────────────────────────────
-  // Normalize each rank to 0–100 (rank 1 of N → 100, rank N of N → 0),
-  // then average revenue, NOI, and occupancy contributions equally.
-  // Risk score is inverted (lower = better) and contributes as a penalty.
   const N = scorecards.length;
   const norm = (rank: number) => N > 1 ? ((N - rank) / (N - 1)) * 100 : 100;
 
   for (const p of scorecards) {
     const perfScore = (norm(p.ranks.byRevenue) + norm(p.ranks.byNOI) + norm(p.ranks.byOccupancy)) / 3;
-    // Risk score is 0–100 where higher = worse; invert for penalty (max -20 pts)
     const riskPenalty = (p.riskScore / 100) * 20;
     p.compositeScore = Math.round(Math.max(0, Math.min(100, perfScore - riskPenalty)));
   }
 
-  // Rank by composite score descending, then assign percentile
   const byComposite = [...scorecards].sort((a, b) => b.compositeScore - a.compositeScore);
   for (const p of scorecards) {
     const compositeRank = byComposite.findIndex(x => x.id === p.id) + 1;
     p.percentile = N > 1 ? Math.round(norm(compositeRank)) : 100;
   }
 
-  // ── Outlier detection ──────────────────────────────────────────────────────
   detectOutliers(scorecards);
 
-  // ── Portfolio averages ─────────────────────────────────────────────────────
   const avg = <T extends number>(arr: T[]) => arr.length > 0 ? arr.reduce((s, v) => s + v, 0) / arr.length : 0;
 
   const portfolioAverages = {

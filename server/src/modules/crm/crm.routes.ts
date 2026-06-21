@@ -16,7 +16,6 @@ import type { CrmStatus, ContactLogType } from '@prisma/client';
 const router = Router();
 router.use(authenticate);
 
-// GET /crm/tenants
 router.get('/tenants', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { search, crmStatus, assignedManagerId, page, limit } =
@@ -32,7 +31,6 @@ router.get('/tenants', async (req: Request, res: Response, next: NextFunction) =
   } catch (e) { next(e); }
 });
 
-// GET /crm/tenants/:id
 router.get('/tenants/:id', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const profile = await getTenantCrmProfile(req.params.id);
@@ -40,7 +38,6 @@ router.get('/tenants/:id', async (req: Request, res: Response, next: NextFunctio
   } catch (e) { next(e); }
 });
 
-// PATCH /crm/tenants/:id
 router.patch('/tenants/:id', authorize('ANALYST'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { crmStatus, renewalProbability, assignedManagerId, notes } = req.body as {
@@ -59,7 +56,6 @@ router.patch('/tenants/:id', authorize('ANALYST'), async (req: Request, res: Res
   } catch (e) { next(e); }
 });
 
-// GET /crm/tenants/:id/contacts
 router.get('/tenants/:id/contacts', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const logs = await getContactLogs(req.params.id);
@@ -67,7 +63,6 @@ router.get('/tenants/:id/contacts', async (req: Request, res: Response, next: Ne
   } catch (e) { next(e); }
 });
 
-// POST /crm/tenants/:id/contacts
 router.post('/tenants/:id/contacts', authorize('ANALYST'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { type, body, leaseId } = req.body as {
@@ -96,7 +91,6 @@ router.post('/tenants/:id/contacts', authorize('ANALYST'), async (req: Request, 
   } catch (e) { next(e); }
 });
 
-// DELETE /crm/contacts/:logId
 router.delete('/contacts/:logId', authorize('ADMIN'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     await deleteContactLog(req.params.logId);

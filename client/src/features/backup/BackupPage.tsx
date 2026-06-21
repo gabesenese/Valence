@@ -19,7 +19,6 @@ function formatDate(iso: string): string {
   });
 }
 
-// ─── Restore result banner ─────────────────────────────────────────────────────
 
 function RestoreBanner({ result, onDismiss }: { result: RestoreResult; onDismiss: () => void }) {
   const total = result.properties + result.tenants + result.leases + result.financialRecords;
@@ -37,7 +36,6 @@ function RestoreBanner({ result, onDismiss }: { result: RestoreResult; onDismiss
   );
 }
 
-// ─── Backup row ────────────────────────────────────────────────────────────────
 
 function BackupRow({ backup, onRestore, onDelete, apiBase, busy }: {
   backup: BackupMeta;
@@ -127,7 +125,6 @@ function BackupRow({ backup, onRestore, onDelete, apiBase, busy }: {
   );
 }
 
-// ─── Page ──────────────────────────────────────────────────────────────────────
 
 export default function BackupPage() {
   const qc = useQueryClient();
@@ -177,7 +174,6 @@ export default function BackupPage() {
 
       {restoreResult && <RestoreBanner result={restoreResult} onDismiss={() => setRestoreResult(null)} />}
 
-      {/* Info card */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {[
           { icon: Clock, label: 'Daily Automated', value: `${backups.filter((b) => b.trigger === 'automated').length} snapshots`, sub: 'Last 30 days retained' },

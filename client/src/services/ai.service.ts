@@ -1,6 +1,5 @@
 import { api, extractData } from './api';
 
-// ─── Executive brief ──────────────────────────────────────────────────────────
 
 export interface RiskItem {
   title:          string;
@@ -30,7 +29,6 @@ export interface ExecutiveBrief {
   actions:         ActionItem[];
 }
 
-// ─── Extracted lease ──────────────────────────────────────────────────────────
 
 export interface ExtractedLease {
   tenantName:      string | null;
@@ -48,7 +46,6 @@ export interface ExtractedLease {
   notes:           string | null;
 }
 
-// ─── Extracted property ───────────────────────────────────────────────────────
 
 export interface ExtractedProperty {
   name:          string | null;
@@ -64,7 +61,6 @@ export interface ExtractedProperty {
   currentValue:  number | null;
 }
 
-// ─── Health score ─────────────────────────────────────────────────────────────
 
 export interface HealthScoreComponent {
   name:        string;
@@ -94,7 +90,6 @@ export interface PortfolioHealthScore {
   computedAt: string;
 }
 
-// ─── Scenario simulator ───────────────────────────────────────────────────────
 
 export type ScenarioType =
   | 'occupancy_drop'
@@ -153,7 +148,6 @@ export interface SimulatorTenant {
   leaseId:      string;
 }
 
-// ─── Service ──────────────────────────────────────────────────────────────────
 
 export const aiService = {
   getExecutiveBrief: (): Promise<ExecutiveBrief> =>

@@ -26,7 +26,6 @@ export interface WorkItem {
   createdAt: Date;
 }
 
-// ─── Priority scoring ─────────────────────────────────────────────────────────
 
 const SEVERITY_BASE: Record<WorkItemSeverity, number> = {
   CRITICAL: 1000,
@@ -46,7 +45,6 @@ function score(item: Pick<WorkItem, 'severity' | 'daysUntilExpiry' | 'monthlyRis
   return base + urgency + rent + age;
 }
 
-// ─── Suggested actions ────────────────────────────────────────────────────────
 
 function suggestAction(
   type: string,
@@ -91,7 +89,6 @@ function suggestAction(
   }
 }
 
-// ─── Main query ───────────────────────────────────────────────────────────────
 
 export async function getWorkQueue(options: { userId: string; assignedToUserId?: string }) {
   const now = new Date();
@@ -99,7 +96,6 @@ export async function getWorkQueue(options: { userId: string; assignedToUserId?:
   const { userId, assignedToUserId } = options;
   const ownedAlert = { OR: [{ property: { ownerId: userId } }, { createdById: userId }] };
 
-  // ── 1. Alerts ────────────────────────────────────────────────────────────────
   const alerts = await prisma.alert.findMany({
     where: {
       ...ownedAlert,
@@ -126,7 +122,6 @@ export async function getWorkQueue(options: { userId: string; assignedToUserId?:
     alerts.map((a) => a.leaseId).filter((id): id is string => id !== null),
   );
 
-  // ── 2. Uncovered expiring leases (safety net) ────────────────────────────────
   const uncoveredLeases = assignedToUserId
     ? []
     : await prisma.lease.findMany({
@@ -143,8 +138,6 @@ export async function getWorkQueue(options: { userId: string; assignedToUserId?:
         },
       });
 
-  // ── 3. Overdue invoices (unpaid revenue past due date) ───────────────────────
-  // Only add when no open PAYMENT_ANOMALY alert already covers the same lease
   const coveredByPaymentAlert = new Set(
     alerts
       .filter((a) => a.type === 'PAYMENT_ANOMALY' && a.leaseId)
@@ -177,7 +170,6 @@ export async function getWorkQueue(options: { userId: string; assignedToUserId?:
         take: 20,
       });
 
-  // ── Build WorkItem arrays ────────────────────────────────────────────────────
 
   const alertItems: WorkItem[] = alerts.map((alert) => {
     const daysUntilExpiry = alert.lease?.endDate

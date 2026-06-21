@@ -16,7 +16,6 @@ import type { AutomationTrigger, AutomationAction } from '@prisma/client';
 const router = Router();
 router.use(authenticate);
 
-// GET /automation/rules
 router.get('/rules', async (_req: Request, res: Response, next: NextFunction) => {
   try {
     const rules = await getRules();
@@ -24,7 +23,6 @@ router.get('/rules', async (_req: Request, res: Response, next: NextFunction) =>
   } catch (e) { next(e); }
 });
 
-// POST /automation/rules (ADMIN+)
 router.post('/rules', authorize('ADMIN', 'SUPER_ADMIN'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { name, description, trigger, conditions, action, actionConfig } = req.body as {
@@ -55,7 +53,6 @@ router.post('/rules', authorize('ADMIN', 'SUPER_ADMIN'), async (req: Request, re
   } catch (e) { next(e); }
 });
 
-// PATCH /automation/rules/:id (ADMIN+)
 router.patch('/rules/:id', authorize('ADMIN', 'SUPER_ADMIN'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const rule = await updateRule(req.params.id, req.body);
@@ -63,7 +60,6 @@ router.patch('/rules/:id', authorize('ADMIN', 'SUPER_ADMIN'), async (req: Reques
   } catch (e) { next(e); }
 });
 
-// DELETE /automation/rules/:id (ADMIN+)
 router.delete('/rules/:id', authorize('ADMIN', 'SUPER_ADMIN'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     await deleteRule(req.params.id);
@@ -71,7 +67,6 @@ router.delete('/rules/:id', authorize('ADMIN', 'SUPER_ADMIN'), async (req: Reque
   } catch (e) { next(e); }
 });
 
-// POST /automation/rules/:id/run — manual trigger (ADMIN+)
 router.post('/rules/:id/run', authorize('ADMIN', 'SUPER_ADMIN'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const result = await runRule(req.params.id);
@@ -79,7 +74,6 @@ router.post('/rules/:id/run', authorize('ADMIN', 'SUPER_ADMIN'), async (req: Req
   } catch (e) { next(e); }
 });
 
-// GET /automation/logs
 router.get('/logs', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { ruleId } = req.query as { ruleId?: string };

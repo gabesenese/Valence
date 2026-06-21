@@ -11,7 +11,6 @@ const router = Router();
 
 const VALID_PLANS: Plan[] = ['ESSENTIALS', 'PROFESSIONAL', 'EXECUTIVE'];
 
-// POST /billing/checkout — create a Stripe Checkout session and return the URL
 router.post('/checkout', authenticate, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { plan } = req.body as { plan?: Plan };
@@ -33,7 +32,6 @@ router.post('/checkout', authenticate, async (req: Request, res: Response, next:
   }
 });
 
-// POST /billing/portal — open Stripe Customer Portal
 router.post('/portal', authenticate, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const u = req.user!;
@@ -47,7 +45,6 @@ router.post('/portal', authenticate, async (req: Request, res: Response, next: N
   }
 });
 
-// POST /billing/webhook — Stripe webhook (raw body required, registered before express.json)
 router.post('/webhook', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const sig = req.headers['stripe-signature'];

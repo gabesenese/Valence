@@ -17,14 +17,10 @@ api.interceptors.response.use(
   (res) => res,
   async (error) => {
     const original = error.config;
-    // Public auth-entry endpoints: a 401 here means bad credentials / invalid code,
-    // not an expired session — let the calling page show the error instead of
-    // attempting a token refresh and hard-redirecting (which looks like a page refresh).
     const url: string = original?.url ?? '';
     const isAuthEntry = /\/auth\/(login|register|refresh|mfa\/verify|demo-session|forgot-password|reset-password)/.test(url);
     if (error.response?.status === 401 && !original._retry && !isAuthEntry) {
       original._retry = true;
-      // If impersonating, exit gracefully instead of logging out
       if (useAuthStore.getState().isImpersonating) {
         useAuthStore.getState().stopImpersonation();
         window.location.href = '/admin';

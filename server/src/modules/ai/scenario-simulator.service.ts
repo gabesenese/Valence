@@ -2,7 +2,6 @@ import Groq from 'groq-sdk';
 import { prisma } from '../../infrastructure/database';
 import { startOfMonth } from 'date-fns';
 
-// ─── Types ────────────────────────────────────────────────────────────────────
 
 export type ScenarioType =
   | 'occupancy_drop'
@@ -66,7 +65,6 @@ export interface SimulationResult {
   computedAt: string;
 }
 
-// ─── Portfolio state (scoped to user) ────────────────────────────────────────
 
 async function getCurrentState(userId: string, propertyId?: string) {
   const now        = new Date();
@@ -102,7 +100,6 @@ async function getCurrentState(userId: string, propertyId?: string) {
 
   const totalUnits     = properties.reduce((s, p) => s + p.totalUnits, 0);
   const occupiedUnits  = properties.reduce((s, p) => s + p._count.leases, 0);
-  // Use actual financial records when available, fall back to summed base rents
   const monthlyRevenue  = Number(revAgg._sum.amount ?? 0) || Number(leaseAgg._sum.baseRent ?? 0);
   const monthlyExpenses = Number(expAgg._sum.amount ?? 0);
 
@@ -117,7 +114,6 @@ async function getCurrentState(userId: string, propertyId?: string) {
   };
 }
 
-// ─── Deterministic impact calculators ────────────────────────────────────────
 
 async function calcOccupancyDrop(
   params: OccupancyDropParams,
@@ -178,7 +174,6 @@ function calcRentIncrease(
   return { revChange, expChange: 0 };
 }
 
-// ─── Groq analysis ────────────────────────────────────────────────────────────
 
 let _client: Groq | null = null;
 function getClient() {
@@ -278,7 +273,6 @@ Provide a concise, expert analysis using the EXACT dollar figures above. Every f
   return JSON.parse(toolCall.function.arguments) as SimulationResult['analysis'];
 }
 
-// ─── Data-driven fallback (used when AI is unavailable) ──────────────────────
 
 function buildFallbackAnalysis(
   scenario: ScenarioType,
@@ -365,7 +359,6 @@ function buildFallbackAnalysis(
   };
 }
 
-// ─── Main export ──────────────────────────────────────────────────────────────
 
 export async function runSimulation(req: SimulationRequest, userId: string): Promise<SimulationResult> {
   const propertyId = 'propertyId' in req.params
@@ -446,7 +439,6 @@ export async function runSimulation(req: SimulationRequest, userId: string): Pro
   try {
     analysis = await generateAnalysis(req.scenario, req.params, current, projected, impact);
   } catch {
-    // AI unavailable — produce fully data-driven fallback with real numbers
     analysis = buildFallbackAnalysis(req.scenario, impact, current, projected);
   }
 
@@ -462,7 +454,6 @@ export async function runSimulation(req: SimulationRequest, userId: string): Pro
   };
 }
 
-// ─── Tenant lookup (scoped to user) ──────────────────────────────────────────
 
 export async function getActiveTenantsForSimulator(userId: string) {
   const leases = await prisma.lease.findMany({

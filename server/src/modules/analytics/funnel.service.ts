@@ -33,10 +33,6 @@ export async function trackEvent(
   } catch { /* non-blocking */ }
 }
 
-// Only tracks the event once per user across their lifetime (DB-level dedup)
-// Tracks the event at most once per user. Uses a create-then-swallow-conflict
-// pattern so race conditions between concurrent requests produce at most one
-// extra record, which is acceptable for analytics purposes.
 export async function trackIfFirstTime(
   event: FunnelEventType,
   userId: string,
@@ -51,7 +47,6 @@ export async function trackIfFirstTime(
   } catch { /* non-blocking — duplicate on race condition is acceptable */ }
 }
 
-// Tracks return_visit at most once per calendar day to avoid log inflation.
 export async function trackReturnVisit(userId: string): Promise<void> {
   try {
     const todayStart = new Date();
@@ -67,7 +62,6 @@ export async function trackReturnVisit(userId: string): Promise<void> {
 export async function getFunnelStats(days = 30) {
   const since = new Date(Date.now() - days * 86400000);
 
-  // Raw event counts (for visitor which is anonymous)
   const rawRows = await prisma.funnelEvent.groupBy({
     by: ['event'],
     _count: { _all: true },
@@ -75,7 +69,6 @@ export async function getFunnelStats(days = 30) {
   });
   const rawCounts = Object.fromEntries(rawRows.map((r) => [r.event, r._count._all]));
 
-  // Unique user counts per step (excludes anonymous events)
   const uniqueRows = await prisma.$queryRaw<{ event: string; unique_users: bigint }[]>`
     SELECT event, COUNT(DISTINCT user_id) AS unique_users
     FROM funnel_events

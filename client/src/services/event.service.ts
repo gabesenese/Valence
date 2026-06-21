@@ -2,8 +2,6 @@ import { api } from './api';
 
 type FunnelEvent = 'visitor' | 'setup_complete';
 
-// visitor is deduplicated per session (anonymous, no userId)
-// setup_complete is deduplicated per user on the server — no client dedup needed
 const SESSION_DEDUP: FunnelEvent[] = ['visitor'];
 
 const SESSION_KEY = 'valence-tracked-events';

@@ -48,7 +48,6 @@ export default function FinancePage() {
   return (
     <div className="flex flex-col gap-4 p-4 animate-fade-in sm:p-5">
 
-      {/* KPI Strip — grid on mobile, horizontal strip on sm+ */}
       {summary && (() => {
         const kpis = [
           { label: 'Total Revenue',   value: compactCurrency(summary.totalRevenue),  color: 'text-success' },
@@ -82,10 +81,8 @@ export default function FinancePage() {
         );
       })()}
 
-      {/* Two-column body */}
       <div className="grid grid-cols-1 xl:grid-cols-[1fr_320px] gap-4 items-start">
 
-        {/* LEFT: Financial Records table */}
         <div className="rounded-xl border border-surface-400/30 overflow-hidden">
           <div className="flex items-center justify-between px-5 py-3 border-b border-surface-400/40">
             <span className="text-sm font-semibold text-fg">Financial Records</span>
@@ -165,7 +162,6 @@ export default function FinancePage() {
           )}
         </div>
 
-        {/* RIGHT: Revenue vs Expenses chart */}
         <Card>
           <CardHeader>
             <div className="flex flex-col gap-0.5">

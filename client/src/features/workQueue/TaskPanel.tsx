@@ -5,7 +5,6 @@ import { tasksService, type Task, type TaskStatus } from '@/services/tasks.servi
 import { Select } from '@/components/ui/Select';
 import { DatePicker } from '@/components/ui/DatePicker';
 
-// ─── Status config ────────────────────────────────────────────────────────────
 
 const STATUS_CONFIG: Record<TaskStatus, { label: string; icon: React.FC<{ className?: string }>; color: string }> = {
   OPEN:        { label: 'Open',        icon: Circle,        color: 'text-slate-400' },
@@ -19,7 +18,6 @@ const NEXT_STATUS: Partial<Record<TaskStatus, TaskStatus>> = {
   IN_PROGRESS: 'COMPLETED',
 };
 
-// ─── Single task row ──────────────────────────────────────────────────────────
 
 function TaskRow({
   task,
@@ -54,7 +52,6 @@ function TaskRow({
   return (
     <div className="flex flex-col gap-1.5 py-2.5 px-3 rounded-lg bg-surface-200/40">
       <div className="flex items-start gap-2">
-        {/* Status toggle button */}
         <button
           onClick={handleAdvance}
           disabled={!next}
@@ -92,7 +89,6 @@ function TaskRow({
         </button>
       </div>
 
-      {/* Completion note input */}
       {showNoteInput && (
         <div className="flex gap-2 mt-1 pl-6">
           <input
@@ -119,7 +115,6 @@ function TaskRow({
   );
 }
 
-// ─── Add task form ────────────────────────────────────────────────────────────
 
 function AddTaskForm({
   onAdd,
@@ -204,7 +199,6 @@ function AddTaskForm({
   );
 }
 
-// ─── Task panel ───────────────────────────────────────────────────────────────
 
 interface TaskPanelProps {
   alertId?: string | null;
@@ -231,7 +225,6 @@ export function TaskPanel({ alertId, leaseId, propertyId }: TaskPanelProps) {
     enabled: expanded,
   });
 
-  // Count open tasks without fetching — load once expanded
   const openCount = tasks.filter((t) => t.status !== 'COMPLETED' && t.status !== 'CANCELLED').length;
   const totalCount = tasks.length;
 
@@ -264,7 +257,6 @@ export function TaskPanel({ alertId, leaseId, propertyId }: TaskPanelProps) {
 
   return (
     <div className="mt-2 border-t border-surface-400/20 pt-2">
-      {/* Toggle header */}
       <button
         onClick={() => setExpanded((p) => !p)}
         className="flex items-center gap-1.5 text-[11px] text-slate-500 hover:text-slate-300 transition-colors"

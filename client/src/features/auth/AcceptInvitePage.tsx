@@ -66,7 +66,6 @@ export default function AcceptInvitePage() {
       </div>
 
       <div className="relative w-full max-w-sm animate-slide-up px-4">
-        {/* Logo */}
         <div className="mb-8 flex flex-col items-center gap-3">
           <img src="/logo.svg" alt="Valence" className="h-16 w-10" />
           <div className="text-center">

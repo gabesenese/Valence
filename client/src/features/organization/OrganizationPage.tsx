@@ -22,7 +22,6 @@ import { Button } from '@/components/ui/Button';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Select } from '@/components/ui/Select';
 
-// ─── Config ───────────────────────────────────────────────────────────────────
 
 const INDUSTRY_OPTIONS = [
   { value: '', label: 'Select industry' },
@@ -120,7 +119,6 @@ function describeActivity(entry: AuditLogEntry): string {
   }
 }
 
-// ─── Shared sub-components ────────────────────────────────────────────────────
 
 function MemberAvatar({ member }: { member: TeamMember }) {
   const initials = `${member.firstName[0]}${member.lastName[0]}`.toUpperCase();
@@ -146,7 +144,6 @@ function CopyButton({ text, label = 'Copy' }: { text: string; label?: string }) 
   );
 }
 
-// ─── Org hero ─────────────────────────────────────────────────────────────────
 
 function OrgHeroCard({ members }: {
   members: TeamMember[];
@@ -224,7 +221,6 @@ function OrgHeroCard({ members }: {
   );
 }
 
-// ─── Role picker ──────────────────────────────────────────────────────────────
 
 function RolePicker({ member, currentUserRole, onSelect, busy }: {
   member: TeamMember; currentUserRole: UserRole; onSelect: (role: UserRole) => void; busy: boolean;
@@ -304,7 +300,6 @@ function RolePicker({ member, currentUserRole, onSelect, busy }: {
   );
 }
 
-// ─── Member row ───────────────────────────────────────────────────────────────
 
 function MemberRow({ member, currentUserId, currentUserRole }: {
   member: TeamMember; currentUserId: string; currentUserRole: UserRole;
@@ -372,7 +367,6 @@ function MemberRow({ member, currentUserId, currentUserRole }: {
   );
 }
 
-// ─── Invite modal ─────────────────────────────────────────────────────────────
 
 function InviteModal({ onClose }: { onClose: () => void }) {
   const qc = useQueryClient();

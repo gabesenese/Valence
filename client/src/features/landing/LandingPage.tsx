@@ -50,7 +50,6 @@ const QUEUE_ITEMS = [
 function QueueMock() {
   return (
     <div className="w-full rounded-2xl border border-surface-400/40 bg-surface-100 shadow-[0_32px_80px_rgba(0,0,0,0.6)] overflow-hidden">
-      {/* Chrome bar */}
       <div className="flex items-center justify-between gap-3 border-b border-surface-400/30 bg-surface-200/60 px-4 py-3">
         <div className="flex items-center gap-2">
           <div className="h-2.5 w-2.5 rounded-full bg-danger/60" />
@@ -65,7 +64,6 @@ function QueueMock() {
         <div className="w-14" />
       </div>
 
-      {/* Header */}
       <div className="flex items-center justify-between border-b border-surface-400/20 px-5 py-4">
         <div>
           <div className="flex items-center gap-2">
@@ -86,7 +84,6 @@ function QueueMock() {
         </div>
       </div>
 
-      {/* Items */}
       <div className="divide-y divide-surface-400/20">
         {QUEUE_ITEMS.map((item) => {
           const Icon = item.icon;
@@ -110,7 +107,6 @@ function QueueMock() {
         })}
       </div>
 
-      {/* Footer strip */}
       <div className="flex items-center justify-between border-t border-surface-400/20 bg-surface-200/30 px-5 py-3">
         <span className="text-[11px] text-slate-600">2 critical · 2 warning · $12,600 at risk</span>
         <span className="text-[11px] text-brand-400">View all items →</span>
@@ -188,16 +184,13 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen bg-surface-0 text-fg">
-      {/* Ambient glow — hidden on mobile, too expensive to rasterize on phone GPUs */}
       <div className="pointer-events-none fixed inset-0 hidden overflow-hidden md:block">
         <div className="absolute -top-48 left-1/2 h-[600px] w-[600px] -translate-x-1/2 rounded-full bg-brand-600/8 blur-[120px]" />
         <div className="absolute top-1/3 -right-48 h-96 w-96 rounded-full bg-brand-800/6 blur-[100px]" />
       </div>
 
-      {/* ── Nav ─────────────────────────────────────────────────────────────── */}
       <PublicHeader />
 
-      {/* ── Hero ────────────────────────────────────────────────────────────── */}
       <section className="relative z-10 mx-auto max-w-6xl px-6 pt-20 pb-12 text-center">
         <div className="inline-flex items-center gap-2 rounded-full border border-brand-500/30 bg-brand-600/10 px-4 py-1.5 text-xs font-semibold text-brand-300 mb-6">
           <Cpu className="h-3 w-3" />
@@ -233,12 +226,10 @@ export default function LandingPage() {
         <p className="mt-4 text-xs text-slate-600">No credit card required · 7-day free trial · Cancel any time</p>
       </section>
 
-      {/* ── Work Queue Visual ────────────────────────────────────────────────── */}
       <section className="relative z-10 mx-auto max-w-3xl px-6 pb-24">
         <QueueMock />
       </section>
 
-      {/* ── How It Works ────────────────────────────────────────────────────── */}
       <section className="relative z-10 border-t border-surface-400/20 bg-surface-50/40 py-20">
         <div className="mx-auto max-w-4xl px-6">
           <div className="mb-12 text-center">
@@ -247,7 +238,6 @@ export default function LandingPage() {
           </div>
 
           <div className="grid gap-8 md:grid-cols-3 relative">
-            {/* Connector lines */}
             <div className="absolute top-7 left-[calc(16.66%+1.75rem)] right-[calc(16.66%+1.75rem)] hidden h-px bg-gradient-to-r from-brand-500/40 via-brand-400/60 to-brand-500/40 md:block" />
 
             <Step
@@ -272,7 +262,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── Built For ───────────────────────────────────────────────────────── */}
       <section className="relative z-10 py-20">
         <div className="mx-auto max-w-5xl px-6">
           <div className="mb-12 text-center">
@@ -318,7 +307,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── Feature Strip ────────────────────────────────────────────────────── */}
       <section className="relative z-10 border-t border-surface-400/20 bg-surface-50/40 py-20">
         <div className="mx-auto max-w-5xl px-6">
           <div className="grid gap-6 md:grid-cols-3">
@@ -359,7 +347,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── About ───────────────────────────────────────────────────────────── */}
       <section className="relative z-10 py-20">
         <div className="mx-auto max-w-5xl px-6">
           <div className="mb-12 text-center">

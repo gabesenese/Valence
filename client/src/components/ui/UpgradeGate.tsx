@@ -6,7 +6,6 @@ import type { Plan } from '@/state/auth.store';
 interface UpgradeGateProps {
   feature: string;
   children: React.ReactNode;
-  // Show inline lock overlay instead of replacing content
   overlay?: boolean;
 }
 

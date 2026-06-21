@@ -9,7 +9,6 @@ import type { UserRole } from '@prisma/client';
 
 const router = Router();
 
-// ─── Public (token-gated) ─────────────────────────────────────────────────────
 
 router.get('/invites/validate/:token', async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -24,7 +23,6 @@ router.post('/invites/accept/:token', async (req: Request, res: Response, next: 
   } catch (e) { next(e); }
 });
 
-// ─── Authenticated ────────────────────────────────────────────────────────────
 
 router.use(authenticate);
 

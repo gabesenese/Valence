@@ -2,7 +2,6 @@ import Groq from 'groq-sdk';
 import { prisma } from '../../infrastructure/database';
 import { differenceInDays } from 'date-fns';
 
-// ─── Output types ─────────────────────────────────────────────────────────────
 
 export interface RiskItem {
   title:       string;
@@ -32,7 +31,6 @@ export interface ExecutiveBrief {
   actions:         ActionItem[];
 }
 
-// ─── Data gathering ───────────────────────────────────────────────────────────
 
 async function gatherContext() {
   const now = new Date();
@@ -122,7 +120,6 @@ async function gatherContext() {
   };
 }
 
-// ─── OpenAI call ──────────────────────────────────────────────────────────────
 
 let _client: Groq | null = null;
 function getClient() {

@@ -96,7 +96,6 @@ export function DatePicker({
     ? parsed.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
     : '';
 
-  // Flip upward if not enough space below
   const dropdownHeight = onClear ? 310 : 280;
   const dropTop = rect
     ? window.innerHeight - rect.bottom > dropdownHeight
@@ -130,7 +129,6 @@ export function DatePicker({
           style={{ position: 'fixed', top: dropTop, left: rect.left, zIndex: 9999, width: 264 }}
           className="overflow-hidden rounded-2xl border border-surface-400/60 bg-surface-100 shadow-2xl shadow-black/50"
         >
-          {/* Month nav */}
           <div className="flex items-center justify-between border-b border-surface-400/30 px-4 py-3">
             <button
               type="button"
@@ -151,7 +149,6 @@ export function DatePicker({
             </button>
           </div>
 
-          {/* Grid */}
           <div className="px-3 pb-3 pt-2">
             <div className="mb-1 grid grid-cols-7">
               {DAY_LABELS.map((d) => (
