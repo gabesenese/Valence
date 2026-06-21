@@ -38,8 +38,10 @@ export default function LoginPage() {
       if (!rememberMe) sessionStorage.setItem('valence-session-active', '1');
       navigate(from, { replace: true });
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
-      setError(msg ?? 'Authentication failed');
+      const msg = (err as Error)?.message;
+      setError(msg === 'Invalid credentials'
+        ? 'The email or password you entered is incorrect.'
+        : msg || 'Authentication failed');
     } finally {
       setLoading(false);
     }
@@ -55,8 +57,8 @@ export default function LoginPage() {
       setAuth(result.user, result.tokens.accessToken, result.tokens.refreshToken);
       navigate(from, { replace: true });
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
-      setError(msg ?? 'Invalid code');
+      const msg = (err as Error)?.message;
+      setError(msg || 'Invalid code');
     } finally {
       setLoading(false);
     }

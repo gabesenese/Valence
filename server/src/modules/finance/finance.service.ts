@@ -87,7 +87,7 @@ export async function updateFinancialRecord(id: string, input: UpdateFinancialRe
   });
 }
 
-export async function getRevenueTrend(query: RevenueTrendQuery, userId?: string) {
+export async function getRevenueTrend(query: RevenueTrendQuery, userId: string) {
   const { propertyId, months } = query;
   const now = new Date();
 
@@ -99,7 +99,7 @@ export async function getRevenueTrend(query: RevenueTrendQuery, userId?: string)
     const end = endOfMonth(monthDate);
 
     const where: Prisma.FinancialRecordWhereInput = {
-      ...(userId && { property: { ownerId: userId } }),
+      property: { ownerId: userId },
       ...(propertyId && { propertyId }),
       periodStart: { gte: start, lte: end },
       status: { not: 'VOID' },

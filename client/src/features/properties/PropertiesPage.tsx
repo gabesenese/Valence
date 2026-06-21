@@ -1,14 +1,16 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { Building2, MapPin, Plus, Search, Trash2 } from 'lucide-react';
+import { Building2, MapPin, Plus, Search, Sparkles, Trash2 } from 'lucide-react';
 import { propertiesService, type PropertyType, type PropertyStatus } from '@/services/properties.service';
+import type { ExtractedProperty } from '@/services/ai.service';
 import { Card, CardBody } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { PageLoader } from '@/components/ui/Spinner';
 import { PageHeader } from '@/components/ui/PageHeader';
 import PropertyFormModal from './PropertyFormModal';
+import PropertyImportModal from './PropertyImportModal';
 import { Select } from '@/components/ui/Select';
 import { cn } from '@/utils/cn';
 
@@ -38,8 +40,28 @@ export default function PropertiesPage() {
   const [type, setType] = useState<PropertyType | ''>('');
   const [status, setStatus] = useState<PropertyStatus | ''>('');
   const [addOpen, setAddOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
+  const [importedValues, setImportedValues] = useState<Partial<Record<string, string>> | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [confirmId, setConfirmId] = useState<string | null>(null);
+
+  const handleImport = (extracted: ExtractedProperty) => {
+    setImportedValues({
+      ...(extracted.name && { name: extracted.name }),
+      ...(extracted.type && { type: extracted.type }),
+      ...(extracted.address && { address: extracted.address }),
+      ...(extracted.city && { city: extracted.city }),
+      ...(extracted.state && { state: extracted.state }),
+      ...(extracted.zipCode && { zipCode: extracted.zipCode }),
+      ...(extracted.totalUnits != null && { totalUnits: String(extracted.totalUnits) }),
+      ...(extracted.totalSqft != null && { totalSqft: String(extracted.totalSqft) }),
+      ...(extracted.yearBuilt != null && { yearBuilt: String(extracted.yearBuilt) }),
+      ...(extracted.purchasePrice != null && { purchasePrice: String(extracted.purchasePrice) }),
+      ...(extracted.currentValue != null && { currentValue: String(extracted.currentValue) }),
+    });
+    setImportOpen(false);
+    setAddOpen(true);
+  };
 
   const handleDelete = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
@@ -76,10 +98,16 @@ export default function PropertiesPage() {
         title="Properties"
         description={`${data?.meta.total ?? 0} properties in portfolio`}
         actions={
-          <Button size="sm" onClick={() => setAddOpen(true)}>
-            <Plus className="h-4 w-4" />
-            Add Property
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="secondary" size="sm" onClick={() => setImportOpen(true)}>
+              <Sparkles className="h-4 w-4" />
+              Import from PDF
+            </Button>
+            <Button size="sm" onClick={() => setAddOpen(true)}>
+              <Plus className="h-4 w-4" />
+              Add Property
+            </Button>
+          </div>
         }
       />
 
@@ -233,7 +261,17 @@ export default function PropertiesPage() {
         </div>
       )}
 
-      <PropertyFormModal open={addOpen} onClose={() => setAddOpen(false)} />
+      <PropertyImportModal
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        onConfirm={handleImport}
+      />
+
+      <PropertyFormModal
+        open={addOpen}
+        onClose={() => { setAddOpen(false); setImportedValues(null); }}
+        initialValues={importedValues ?? undefined}
+      />
     </div>
   );
 }

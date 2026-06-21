@@ -33,6 +33,7 @@ interface Props {
   open: boolean;
   onClose: () => void;
   property?: PropertyDetail;
+  initialValues?: Partial<FormData>;
 }
 
 interface FormData {
@@ -71,7 +72,7 @@ function toForm(p: PropertyDetail): FormData {
 const LABEL_CLASS = 'text-xs font-medium text-slate-400 tracking-wide uppercase';
 const SECTION_CLASS = 'mb-3 border-t border-surface-400/30 pt-4 text-xs font-semibold uppercase tracking-wider text-slate-500';
 
-export default function PropertyFormModal({ open, onClose, property }: Props) {
+export default function PropertyFormModal({ open, onClose, property, initialValues }: Props) {
   const qc = useQueryClient();
   const isEdit = !!property;
 
@@ -80,10 +81,10 @@ export default function PropertyFormModal({ open, onClose, property }: Props) {
 
   useEffect(() => {
     if (open) {
-      setForm(property ? toForm(property) : emptyForm);
+      setForm(property ? toForm(property) : initialValues ? { ...emptyForm, ...initialValues } : emptyForm);
       setErrors({});
     }
-  }, [open, property]);
+  }, [open, property, initialValues]);
 
   const set = (field: keyof FormData) => (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>

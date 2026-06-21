@@ -1,11 +1,11 @@
 import { useState, useRef, useCallback } from 'react';
 import {
-  Upload, FileText, CheckCircle2, AlertTriangle,
+  Upload, Building2, CheckCircle2, AlertTriangle,
   Sparkles, ChevronRight,
 } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
-import { aiService, type ExtractedLease } from '@/services/ai.service';
+import { aiService, type ExtractedProperty } from '@/services/ai.service';
 import { formatCurrency } from '@/utils/format';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -13,22 +13,17 @@ import { formatCurrency } from '@/utils/format';
 interface Props {
   open: boolean;
   onClose: () => void;
-  onConfirm: (extracted: ExtractedLease) => void;
+  onConfirm: (extracted: ExtractedProperty) => void;
 }
 
 type Stage = 'upload' | 'extracting' | 'review';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-const LEASE_TYPE_LABEL: Record<string, string> = {
-  GROSS: 'Gross', NET: 'Net', MODIFIED_GROSS: 'Modified Gross',
-  PERCENTAGE: 'Percentage', GROUND: 'Ground Lease',
+const PROPERTY_TYPE_LABEL: Record<string, string> = {
+  RESIDENTIAL: 'Residential', COMMERCIAL: 'Commercial', MIXED_USE: 'Mixed Use',
+  INDUSTRIAL: 'Industrial', RETAIL: 'Retail', OFFICE: 'Office',
 };
-
-function formatDate(iso: string | null) {
-  if (!iso) return null;
-  return new Date(iso + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-}
 
 // ─── Review row ───────────────────────────────────────────────────────────────
 
@@ -48,11 +43,11 @@ function Row({ label, value }: { label: string; value: string | null }) {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export default function LeaseImportModal({ open, onClose, onConfirm }: Props) {
+export default function PropertyImportModal({ open, onClose, onConfirm }: Props) {
   const [stage, setStage]       = useState<Stage>('upload');
   const [dragging, setDragging] = useState(false);
   const [file, setFile]         = useState<File | null>(null);
-  const [extracted, setExtracted] = useState<ExtractedLease | null>(null);
+  const [extracted, setExtracted] = useState<ExtractedProperty | null>(null);
   const [error, setError]       = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   // Sequence id for the in-flight extraction. Bumped on reset/close so a request
@@ -77,7 +72,7 @@ export default function LeaseImportModal({ open, onClose, onConfirm }: Props) {
     setError(null);
     setStage('extracting');
     try {
-      const result = await aiService.extractLease(f);
+      const result = await aiService.extractProperty(f);
       if (reqId.current !== id) return; // closed/superseded — drop stale result
       setExtracted(result);
       setStage('review');
@@ -98,11 +93,10 @@ export default function LeaseImportModal({ open, onClose, onConfirm }: Props) {
   const onDragOver = (e: React.DragEvent) => { e.preventDefault(); setDragging(true); };
   const onDragLeave = () => setDragging(false);
 
-  function countFound(e: ExtractedLease) {
-    const fields: (keyof ExtractedLease)[] = [
-      'tenantName', 'propertyAddress', 'unitNumber', 'startDate', 'endDate',
-      'baseRent', 'rentEscalation', 'securityDeposit', 'sqft', 'leaseType',
-      'renewalOptions', 'obligations', 'notes',
+  function countFound(e: ExtractedProperty) {
+    const fields: (keyof ExtractedProperty)[] = [
+      'name', 'type', 'address', 'city', 'state', 'zipCode',
+      'totalUnits', 'totalSqft', 'yearBuilt', 'purchasePrice', 'currentValue',
     ];
     return fields.filter((k) => e[k] !== null && e[k] !== '').length;
   }
@@ -111,7 +105,7 @@ export default function LeaseImportModal({ open, onClose, onConfirm }: Props) {
     <Modal
       open={open}
       onClose={() => { reset(); onClose(); }}
-      title="Import Lease from PDF"
+      title="Import Property from PDF"
       className="max-w-xl"
     >
       <div className="px-5 py-5">
@@ -120,8 +114,9 @@ export default function LeaseImportModal({ open, onClose, onConfirm }: Props) {
         {stage === 'upload' && (
           <>
             <p className="text-sm text-slate-500 mb-4">
-              Upload a signed lease PDF. Claude will extract the key terms and
-              pre-fill the lease record — you'll review before anything is saved.
+              Upload a property document — offering memorandum, appraisal, or data
+              sheet. Claude will extract the building details and pre-fill the
+              property record — you'll review before anything is saved.
             </p>
 
             {/* Drop zone */}
@@ -140,7 +135,7 @@ export default function LeaseImportModal({ open, onClose, onConfirm }: Props) {
                 <Upload className="h-5 w-5 text-brand-400" />
               </div>
               <div className="text-center">
-                <p className="text-sm font-medium text-slate-300">Drop your lease PDF here</p>
+                <p className="text-sm font-medium text-slate-300">Drop your property PDF here</p>
                 <p className="mt-0.5 text-xs text-slate-600">or click to browse · PDF only · max 20 MB</p>
               </div>
             </div>
@@ -172,14 +167,14 @@ export default function LeaseImportModal({ open, onClose, onConfirm }: Props) {
               <Sparkles className="h-6 w-6 text-brand-400" />
             </div>
             <div className="text-center">
-              <p className="text-sm font-semibold text-white">Analyzing lease document…</p>
+              <p className="text-sm font-semibold text-white">Analyzing property document…</p>
               <p className="mt-1 text-xs text-slate-500">
-                Claude is reading{file ? ` "${file.name}"` : ' your PDF'} and extracting key terms
+                Claude is reading{file ? ` "${file.name}"` : ' your PDF'} and extracting building details
               </p>
             </div>
             {/* Simulated progress items */}
             <div className="w-full max-w-xs space-y-1.5">
-              {['Reading document', 'Identifying parties', 'Extracting financial terms', 'Parsing renewal clauses'].map((s, i) => (
+              {['Reading document', 'Identifying the building', 'Extracting unit & area data', 'Parsing valuation figures'].map((s, i) => (
                 <div key={s} className="flex items-center gap-2 text-xs text-slate-600">
                   <div className="h-1.5 w-1.5 rounded-full bg-brand-500/60 animate-pulse" style={{ animationDelay: `${i * 200}ms` }} />
                   {s}
@@ -192,7 +187,7 @@ export default function LeaseImportModal({ open, onClose, onConfirm }: Props) {
         {/* ── Review stage ──────────────────────────────────────────────── */}
         {stage === 'review' && extracted && (() => {
           const found = countFound(extracted);
-          const total = 13;
+          const total = 11;
           return (
             <>
               {/* Header */}
@@ -214,23 +209,21 @@ export default function LeaseImportModal({ open, onClose, onConfirm }: Props) {
 
               {/* Fields */}
               <div className="rounded-xl border border-surface-400/30 bg-surface-200/20 px-4 divide-y-0 max-h-[46vh] overflow-y-auto">
-                <Row label="Tenant"           value={extracted.tenantName} />
-                <Row label="Property Address" value={extracted.propertyAddress} />
-                <Row label="Unit / Suite"     value={extracted.unitNumber} />
-                <Row label="Lease Type"       value={extracted.leaseType ? LEASE_TYPE_LABEL[extracted.leaseType] ?? extracted.leaseType : null} />
-                <Row label="Start Date"       value={formatDate(extracted.startDate)} />
-                <Row label="End Date"         value={formatDate(extracted.endDate)} />
-                <Row label="Monthly Rent"     value={extracted.baseRent ? formatCurrency(extracted.baseRent) + '/mo' : null} />
-                <Row label="Escalation"       value={extracted.rentEscalation ? `+${extracted.rentEscalation}% / yr` : null} />
-                <Row label="Security Deposit" value={extracted.securityDeposit ? formatCurrency(extracted.securityDeposit) : null} />
-                <Row label="Sq. Ft."          value={extracted.sqft ? extracted.sqft.toLocaleString() : null} />
-                <Row label="Renewal Options"  value={extracted.renewalOptions} />
-                <Row label="Obligations"      value={extracted.obligations} />
-                <Row label="Notes"            value={extracted.notes} />
+                <Row label="Property Name"  value={extracted.name} />
+                <Row label="Type"           value={extracted.type ? PROPERTY_TYPE_LABEL[extracted.type] ?? extracted.type : null} />
+                <Row label="Address"        value={extracted.address} />
+                <Row label="City"           value={extracted.city} />
+                <Row label="Province"       value={extracted.state} />
+                <Row label="Postal Code"    value={extracted.zipCode} />
+                <Row label="Total Units"    value={extracted.totalUnits != null ? extracted.totalUnits.toLocaleString() : null} />
+                <Row label="Total Sq. Ft."  value={extracted.totalSqft != null ? extracted.totalSqft.toLocaleString() : null} />
+                <Row label="Year Built"     value={extracted.yearBuilt != null ? String(extracted.yearBuilt) : null} />
+                <Row label="Purchase Price" value={extracted.purchasePrice != null ? formatCurrency(extracted.purchasePrice) : null} />
+                <Row label="Current Value"  value={extracted.currentValue != null ? formatCurrency(extracted.currentValue) : null} />
               </div>
 
               <p className="mt-3 text-xs text-slate-600">
-                You'll be able to review and edit all fields before the lease is saved.
+                You'll be able to review and edit all fields before the property is saved.
               </p>
             </>
           );
@@ -253,8 +246,8 @@ export default function LeaseImportModal({ open, onClose, onConfirm }: Props) {
             size="sm"
             onClick={() => { onConfirm(extracted); reset(); onClose(); }}
           >
-            <FileText className="h-3.5 w-3.5" />
-            Create Lease
+            <Building2 className="h-3.5 w-3.5" />
+            Review Property
             <ChevronRight className="h-3.5 w-3.5" />
           </Button>
         )}

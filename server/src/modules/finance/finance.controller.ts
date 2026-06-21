@@ -29,7 +29,7 @@ export async function update(req: Request, res: Response, next: NextFunction): P
 
 export async function trend(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    sendSuccess(res, await service.getRevenueTrend(req.query as never));
+    sendSuccess(res, await service.getRevenueTrend(req.query as never, req.user!.id));
   } catch (err) { next(err); }
 }
 
