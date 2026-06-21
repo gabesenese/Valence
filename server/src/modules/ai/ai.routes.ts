@@ -3,6 +3,7 @@ import type { Request, Response, NextFunction } from 'express';
 import multer from 'multer';
 import { insightEngine, riskEvaluator } from './ai.service';
 import { extractLeaseFromPDF } from './lease-extractor.service';
+import { extractPropertyFromPDF } from './property-extractor.service';
 import { generateExecutiveBrief } from './executive-brief.service';
 import { computeHealthScore } from './health-score.service';
 import { runSimulation, getActiveTenantsForSimulator } from './scenario-simulator.service';
@@ -30,6 +31,15 @@ router.post('/extract-lease', planGate('PROFESSIONAL'), upload.single('file'), a
     if (!req.file) return next(new Error('No file uploaded'));
     void trackUsage(req.user!.id, 'CONTRACT_PROCESSING');
     const result = await extractLeaseFromPDF(req.file.buffer);
+    sendSuccess(res, result);
+  } catch (e) { next(e); }
+});
+
+router.post('/extract-property', planGate('PROFESSIONAL'), upload.single('file'), async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    if (!req.file) return next(new Error('No file uploaded'));
+    void trackUsage(req.user!.id, 'CONTRACT_PROCESSING');
+    const result = await extractPropertyFromPDF(req.file.buffer);
     sendSuccess(res, result);
   } catch (e) { next(e); }
 });

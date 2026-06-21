@@ -48,6 +48,22 @@ export interface ExtractedLease {
   notes:           string | null;
 }
 
+// ─── Extracted property ───────────────────────────────────────────────────────
+
+export interface ExtractedProperty {
+  name:          string | null;
+  type:          'RESIDENTIAL' | 'COMMERCIAL' | 'MIXED_USE' | 'INDUSTRIAL' | 'RETAIL' | 'OFFICE' | null;
+  address:       string | null;
+  city:          string | null;
+  state:         string | null;
+  zipCode:       string | null;
+  totalUnits:    number | null;
+  totalSqft:     number | null;
+  yearBuilt:     number | null;
+  purchasePrice: number | null;
+  currentValue:  number | null;
+}
+
 // ─── Health score ─────────────────────────────────────────────────────────────
 
 export interface HealthScoreComponent {
@@ -149,6 +165,14 @@ export const aiService = {
     return api
       .post('/ai/extract-lease', form, { headers: { 'Content-Type': 'multipart/form-data' }, timeout: 120_000 })
       .then(extractData<ExtractedLease>);
+  },
+
+  extractProperty: (file: File): Promise<ExtractedProperty> => {
+    const form = new FormData();
+    form.append('file', file);
+    return api
+      .post('/ai/extract-property', form, { headers: { 'Content-Type': 'multipart/form-data' }, timeout: 120_000 })
+      .then(extractData<ExtractedProperty>);
   },
 
   getHealthScore: (): Promise<PortfolioHealthScore> =>
