@@ -62,6 +62,10 @@ export default {
           DEFAULT: 'rgb(var(--info) / <alpha-value>)',
           muted: '#1e3a5f',
         },
+        amber: {
+          300: 'rgb(var(--amber-300) / <alpha-value>)',
+          400: 'rgb(var(--amber-400) / <alpha-value>)',
+        },
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
