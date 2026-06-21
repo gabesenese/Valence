@@ -50,8 +50,12 @@ export default function PropertyImportModal({ open, onClose, onConfirm }: Props)
   const [extracted, setExtracted] = useState<ExtractedProperty | null>(null);
   const [error, setError]       = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  // Sequence id for the in-flight extraction. Bumped on reset/close so a request
+  // that resolves after the modal is closed can't apply its result to hidden state.
+  const reqId = useRef(0);
 
   function reset() {
+    reqId.current++;
     setStage('upload');
     setFile(null);
     setExtracted(null);
@@ -63,14 +67,17 @@ export default function PropertyImportModal({ open, onClose, onConfirm }: Props)
       setError('Only PDF files are supported.');
       return;
     }
+    const id = ++reqId.current;
     setFile(f);
     setError(null);
     setStage('extracting');
     try {
       const result = await aiService.extractProperty(f);
+      if (reqId.current !== id) return; // closed/superseded — drop stale result
       setExtracted(result);
       setStage('review');
     } catch (e) {
+      if (reqId.current !== id) return;
       setError((e as Error).message ?? 'Extraction failed. Please try again.');
       setStage('upload');
     }
