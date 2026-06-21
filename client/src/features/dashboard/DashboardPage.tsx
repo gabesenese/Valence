@@ -193,6 +193,9 @@ export default function DashboardPage() {
 
       {isEmpty && <WelcomeScreen />}
 
+      {/* Executive Brief — full-width banner above the grid (AI flagship) */}
+      {!isEmpty && canAccess('executive_brief') && <ExecutiveBriefCard />}
+
       {!isEmpty && (
         <div className="grid grid-cols-1 xl:grid-cols-[1fr_360px] gap-5">
 
@@ -340,7 +343,6 @@ export default function DashboardPage() {
           {/* ── RIGHT: Context sidebar ──────────────────────────────────────── */}
           <div className="flex flex-col gap-4">
             {canAccess('health_score') && <HealthScoreCard />}
-            {canAccess('executive_brief') && <ExecutiveBriefCard />}
 
             {/* Property Performance */}
             {performance && performance.length > 0 && (

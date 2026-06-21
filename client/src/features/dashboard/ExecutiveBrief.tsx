@@ -1,12 +1,11 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
-  Sparkles, RefreshCw, AlertTriangle, TrendingDown,
+  Sparkles, RefreshCw, AlertTriangle,
   Phone, Send, Search, DollarSign, ChevronRight,
   CheckCircle2,
 } from 'lucide-react';
 import { aiService, type ActionItem } from '@/services/ai.service';
-import { formatCurrency } from '@/utils/format';
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
@@ -15,12 +14,6 @@ const HEALTH_CONFIG = {
   at_risk:  { label: 'AT RISK',   color: 'text-warning',  bg: 'bg-warning/10', ring: 'ring-warning/30'  },
   stable:   { label: 'STABLE',    color: 'text-brand-400', bg: 'bg-brand-600/10', ring: 'ring-brand-500/30' },
   healthy:  { label: 'HEALTHY',   color: 'text-success',  bg: 'bg-success/10', ring: 'ring-success/30'  },
-};
-
-const SEVERITY_CONFIG = {
-  critical: { dot: 'bg-danger',   text: 'text-danger',   label: 'CRITICAL' },
-  high:     { dot: 'bg-warning',  text: 'text-warning',  label: 'HIGH'     },
-  medium:   { dot: 'bg-amber-400', text: 'text-amber-400', label: 'MEDIUM' },
 };
 
 const URGENCY_CONFIG = {
@@ -61,11 +54,8 @@ function Skeleton() {
         <div className="h-3 w-full rounded bg-surface-400/30" />
         <div className="h-3 w-5/6 rounded bg-surface-400/30" />
       </div>
-      <div className="grid grid-cols-1 divide-y md:grid-cols-2 md:divide-x md:divide-y-0 divide-surface-400/30 border-t border-surface-400/30">
-        <div className="px-4 py-4 space-y-3 sm:px-6 sm:py-5">
-          {[1,2,3].map(i => <div key={i} className="h-14 rounded-lg bg-surface-400/20" />)}
-        </div>
-        <div className="px-4 py-4 space-y-3 sm:px-6 sm:py-5">
+      <div className="border-t border-surface-400/30 px-4 py-4 sm:px-6 sm:py-5">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
           {[1,2,3].map(i => <div key={i} className="h-14 rounded-lg bg-surface-400/20" />)}
         </div>
       </div>
@@ -141,8 +131,8 @@ export default function ExecutiveBriefCard() {
     <div className="rounded-2xl border border-surface-400/40 bg-surface-100 overflow-hidden">
 
       {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3.5 border-b border-surface-400/30 bg-surface-200/30 sm:px-6">
-        <div className="flex min-w-0 items-center gap-2">
+      <div className="flex items-center justify-between px-4 py-3.5 border-b border-surface-400/30 bg-surface-200/30 sm:px-6">
+        <div className="flex items-center gap-2">
           <Sparkles className="h-4 w-4 text-brand-400" />
           <span className="text-sm font-semibold text-white">Executive Brief</span>
           {health && (
@@ -151,7 +141,7 @@ export default function ExecutiveBriefCard() {
             </span>
           )}
         </div>
-        <div className="ml-auto flex shrink-0 items-center gap-3 text-xs text-slate-600">
+        <div className="flex items-center gap-3 text-xs text-slate-600">
           <span>{timeAgo(brief.generatedAt)}</span>
           <button
             onClick={() => refetch()}
@@ -167,73 +157,38 @@ export default function ExecutiveBriefCard() {
 
       {/* Headline + summary */}
       <div className="px-4 py-4 border-b border-surface-400/30 sm:px-6 sm:py-5">
-        <p className="text-base font-semibold text-white leading-snug">{brief.headline}</p>
-        <p className="mt-2 text-sm text-slate-400 leading-relaxed">{brief.summary}</p>
+        <p className="text-lg font-semibold text-white leading-snug">{brief.headline}</p>
+        <p className="mt-2 max-w-3xl text-sm text-slate-400 leading-relaxed">{brief.summary}</p>
       </div>
 
-      {/* Revenue Risk + Recommended Actions */}
-      <div className="grid grid-cols-1 divide-y divide-surface-400/30">
-
-        {/* Revenue Risk */}
-        <div className="px-4 py-4 sm:px-6 sm:py-5">
-          <div className="flex items-center gap-2 mb-4">
-            <TrendingDown className="h-3.5 w-3.5 text-danger/70" />
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Revenue Risk</span>
-          </div>
-          <div className="flex flex-col gap-3">
-            {brief.revenueRisk.map((item, i) => {
-              const cfg = SEVERITY_CONFIG[item.severity] ?? SEVERITY_CONFIG.medium;
-              return (
-                <div key={i} className="flex items-start gap-3 rounded-xl bg-surface-200/40 px-3.5 py-3">
-                  <span className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${cfg.dot}`} />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5">
-                      <p className="text-sm font-semibold text-slate-200 leading-snug break-words">{item.title}</p>
-                      <span className={`shrink-0 text-[10px] font-bold ${cfg.text}`}>{cfg.label}</span>
-                    </div>
-                    <p className="mt-0.5 text-xs text-slate-500 leading-relaxed">{item.description}</p>
-                    {item.monthlyRevenue && (
-                      <p className={`mt-1 text-xs font-semibold tabular-nums ${cfg.text}`}>
-                        {formatCurrency(item.monthlyRevenue)}/mo at risk
-                      </p>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+      {/* Recommended Actions — the unique AI value; raw risk list lives in the Action Feed */}
+      <div className="px-4 py-4 sm:px-6 sm:py-5">
+        <div className="flex items-center gap-2 mb-4">
+          <CheckCircle2 className="h-3.5 w-3.5 text-brand-400/70" />
+          <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Recommended Actions</span>
         </div>
-
-        {/* Recommended Actions */}
-        <div className="px-4 py-4 sm:px-6 sm:py-5">
-          <div className="flex items-center gap-2 mb-4">
-            <CheckCircle2 className="h-3.5 w-3.5 text-brand-400/70" />
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Recommended Actions</span>
-          </div>
-          <div className="flex flex-col gap-3">
-            {brief.actions.map((item, i) => {
-              const urgency = URGENCY_CONFIG[item.urgency] ?? URGENCY_CONFIG.this_month;
-              const Icon = CATEGORY_ICON[item.category] ?? ChevronRight;
-              return (
-                <div key={i} className="flex items-start gap-3 rounded-xl bg-surface-200/40 px-3.5 py-3">
-                  <div className="mt-0.5 h-6 w-6 shrink-0 rounded-lg bg-surface-300/60 flex items-center justify-center">
-                    <Icon className="h-3 w-3 text-slate-400" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-1.5">
-                      <p className="text-sm font-semibold text-slate-200 leading-snug break-words">{item.action}</p>
-                      <span className={`shrink-0 inline-flex rounded-full border px-1.5 py-0.5 text-[9px] font-bold whitespace-nowrap ${urgency.color}`}>
-                        {urgency.label}
-                      </span>
-                    </div>
-                    <p className="mt-0.5 text-xs text-slate-500 leading-relaxed">{item.context}</p>
-                  </div>
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+          {brief.actions.map((item, i) => {
+            const urgency = URGENCY_CONFIG[item.urgency] ?? URGENCY_CONFIG.this_month;
+            const Icon = CATEGORY_ICON[item.category] ?? ChevronRight;
+            return (
+              <div key={i} className="flex items-start gap-3 rounded-xl bg-surface-200/40 px-3.5 py-3">
+                <div className="mt-0.5 h-6 w-6 shrink-0 rounded-lg bg-surface-300/60 flex items-center justify-center">
+                  <Icon className="h-3 w-3 text-slate-400" />
                 </div>
-              );
-            })}
-          </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-start justify-between gap-1.5">
+                    <p className="text-xs font-semibold text-slate-200 leading-snug">{item.action}</p>
+                    <span className={`shrink-0 inline-flex rounded-full border px-1.5 py-0.5 text-[9px] font-bold whitespace-nowrap ${urgency.color}`}>
+                      {urgency.label}
+                    </span>
+                  </div>
+                  <p className="mt-0.5 text-[11px] text-slate-500 leading-snug">{item.context}</p>
+                </div>
+              </div>
+            );
+          })}
         </div>
-
       </div>
     </div>
   );
