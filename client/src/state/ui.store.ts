@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import type { Theme } from '@/lib/theme';
 
 export type AlertSeverityFilter = 'all' | 'warning' | 'critical';
 
@@ -11,6 +12,8 @@ interface UIState {
   setAlertSeverityFilter: (v: AlertSeverityFilter) => void;
   notificationsClearedAt: number | null;
   clearNotifications: () => void;
+  theme: Theme;
+  setTheme: (t: Theme) => void;
 }
 
 export const useUIStore = create<UIState>()(
@@ -23,12 +26,15 @@ export const useUIStore = create<UIState>()(
       setAlertSeverityFilter: (v: AlertSeverityFilter) => set({ alertSeverityFilter: v }),
       notificationsClearedAt: null,
       clearNotifications: () => set({ notificationsClearedAt: Date.now() }),
+      theme: 'dark' as Theme,
+      setTheme: (t: Theme) => set({ theme: t }),
     }),
     {
       name: 'valence-ui',
       partialize: (s: UIState) => ({
         alertSeverityFilter: s.alertSeverityFilter,
         notificationsClearedAt: s.notificationsClearedAt,
+        theme: s.theme,
       }),
     },
   ),

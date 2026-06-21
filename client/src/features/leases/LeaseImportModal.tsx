@@ -172,7 +172,7 @@ export default function LeaseImportModal({ open, onClose, onConfirm }: Props) {
               <Sparkles className="h-6 w-6 text-brand-400" />
             </div>
             <div className="text-center">
-              <p className="text-sm font-semibold text-white">Analyzing lease document…</p>
+              <p className="text-sm font-semibold text-fg">Analyzing lease document…</p>
               <p className="mt-1 text-xs text-slate-500">
                 Claude is reading{file ? ` "${file.name}"` : ' your PDF'} and extracting key terms
               </p>
@@ -201,7 +201,7 @@ export default function LeaseImportModal({ open, onClose, onConfirm }: Props) {
                   <CheckCircle2 className="h-5 w-5 text-success" />
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-white">Extraction complete</p>
+                  <p className="text-sm font-semibold text-fg">Extraction complete</p>
                   <p className="text-xs text-slate-500">{found} of {total} fields found{file ? ` from "${file.name}"` : ''}</p>
                 </div>
                 <div className="ml-auto h-1.5 w-24 rounded-full bg-surface-400/40 overflow-hidden">

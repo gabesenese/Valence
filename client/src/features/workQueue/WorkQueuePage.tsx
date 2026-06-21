@@ -145,7 +145,7 @@ function QueueHero({
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0 flex-1">
             <p className="text-[11px] font-medium uppercase tracking-wider text-slate-600">{today}</p>
-            <h1 className="mt-1 text-xl font-bold text-white">{greeting}, {user?.firstName}.</h1>
+            <h1 className="mt-1 text-xl font-bold text-fg">{greeting}, {user?.firstName}.</h1>
 
             {allClear ? (
               <p className="mt-3 text-sm text-success">All clear — no items requiring attention.</p>
@@ -165,7 +165,7 @@ function QueueHero({
                 )}
                 {totalRisk > 0 && (
                   <p className="text-sm text-slate-300 leading-relaxed">
-                    <span className="font-semibold text-white">{formatDollars(totalRisk)}/month</span>
+                    <span className="font-semibold text-fg">{formatDollars(totalRisk)}/month</span>
                     {' '}revenue is currently at risk.
                   </p>
                 )}

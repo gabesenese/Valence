@@ -39,7 +39,7 @@ export default function DataControlsPage() {
               <Icon className="h-4 w-4 text-brand-400" />
             </div>
             <div>
-              <h3 className="text-sm font-semibold text-white">{title}</h3>
+              <h3 className="text-sm font-semibold text-fg">{title}</h3>
               <p className="mt-1 text-xs leading-relaxed text-slate-500">{body}</p>
             </div>
           </div>

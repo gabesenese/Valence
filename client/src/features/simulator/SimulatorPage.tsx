@@ -84,7 +84,7 @@ function OccupancyDropForm({ value, onChange }: { value: Record<string, unknown>
         type="number" min={1} max={100}
         value={(value.percentageDrop as number) ?? 5}
         onChange={e => onChange({ ...value, percentageDrop: Number(e.target.value) })}
-        className="w-full rounded-lg border border-surface-400/50 bg-surface-200 px-3 py-2 text-sm text-white focus:border-brand-500 focus:outline-none"
+        className="w-full rounded-lg border border-surface-400/50 bg-surface-200 px-3 py-2 text-sm text-fg focus:border-brand-500 focus:outline-none"
       />
       <p className="mt-1 text-[11px] text-slate-600">e.g. 5 = occupancy drops from 90% to 85%</p>
     </div>
@@ -100,7 +100,7 @@ function ExpenseIncreaseForm({ value, onChange }: { value: Record<string, unknow
           type="number" min={1} max={200}
           value={(value.percentageIncrease as number) ?? 10}
           onChange={e => onChange({ ...value, percentageIncrease: Number(e.target.value) })}
-          className="w-full rounded-lg border border-surface-400/50 bg-surface-200 px-3 py-2 text-sm text-white focus:border-brand-500 focus:outline-none"
+          className="w-full rounded-lg border border-surface-400/50 bg-surface-200 px-3 py-2 text-sm text-fg focus:border-brand-500 focus:outline-none"
         />
       </div>
       <div>
@@ -110,7 +110,7 @@ function ExpenseIncreaseForm({ value, onChange }: { value: Record<string, unknow
           value={(value.category as string) ?? ''}
           placeholder="e.g. Maintenance, Utilities…"
           onChange={e => onChange({ ...value, category: e.target.value })}
-          className="w-full rounded-lg border border-surface-400/50 bg-surface-200 px-3 py-2 text-sm text-white placeholder-slate-600 focus:border-brand-500 focus:outline-none"
+          className="w-full rounded-lg border border-surface-400/50 bg-surface-200 px-3 py-2 text-sm text-fg placeholder-slate-600 focus:border-brand-500 focus:outline-none"
         />
       </div>
     </div>
@@ -144,7 +144,7 @@ function ImpactMetric({ label, current, projected, format }: {
         <ArrowRight className="h-3.5 w-3.5 text-slate-600 mb-0.5 shrink-0" />
         <div className="text-right">
           <p className="text-xs text-slate-600">Projected</p>
-          <p className="text-sm font-bold text-white tabular-nums">{format(projected)}</p>
+          <p className="text-sm font-bold text-fg tabular-nums">{format(projected)}</p>
         </div>
       </div>
       <div className={`flex items-center gap-1 ${color}`}>
@@ -304,7 +304,7 @@ export default function ImpactAnalysisPage() {
         {/* Param form */}
         <div className="rounded-xl border border-surface-400/30 overflow-hidden">
           <div className="px-4 py-3 border-b border-surface-400/40 bg-surface-200/30">
-            <span className="text-xs font-semibold text-white">Parameters</span>
+            <span className="text-xs font-semibold text-fg">Parameters</span>
           </div>
           <div className="p-4 flex flex-col gap-4">
             <ParamForm value={params} onChange={setParams} />
@@ -349,7 +349,7 @@ export default function ImpactAnalysisPage() {
               <CardBody>
                 <div className="flex items-center gap-2 mb-5">
                   <span style={{ color: scenario.accentColor }}><scenario.icon className="h-4 w-4" /></span>
-                  <span className="text-sm font-semibold text-white">{scenario.label} — Results</span>
+                  <span className="text-sm font-semibold text-fg">{scenario.label} — Results</span>
                   <span className="ml-auto text-xs text-slate-600">
                     {new Date(mutation.data.computedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </span>

@@ -121,14 +121,14 @@ export default function SetupPage() {
       {/* Logo */}
       <div className="flex items-center gap-2.5 mb-12">
         <img src="/logo.svg" alt="Valence" className="h-10 w-6" />
-        <span className="text-lg font-bold text-white tracking-tight">Valence</span>
+        <span className="text-lg font-bold text-fg tracking-tight">Valence</span>
       </div>
 
       {/* ── Choose mode ───────────────────────────────────────────────────────── */}
       {(mode === 'choose' || mode === 'demo-loading') && (
         <>
           <div className="text-center mb-10 max-w-lg">
-            <h1 className="text-2xl font-bold text-white tracking-tight">
+            <h1 className="text-2xl font-bold text-fg tracking-tight">
               {getGreeting()}, {user?.firstName}!
             </h1>
             <p className="mt-2 text-slate-400">
@@ -154,7 +154,7 @@ export default function SetupPage() {
                 }
               </div>
               <div>
-                <p className="text-sm font-semibold text-white">
+                <p className="text-sm font-semibold text-fg">
                   {mode === 'demo-loading' ? 'Loading demo…' : 'Explore demo portfolio'}
                 </p>
                 <p className="mt-1 text-xs leading-relaxed text-slate-500">
@@ -176,7 +176,7 @@ export default function SetupPage() {
                 <Database className="h-5 w-5 text-slate-400" />
               </div>
               <div>
-                <p className="text-sm font-semibold text-white">Set up my real portfolio</p>
+                <p className="text-sm font-semibold text-fg">Set up my real portfolio</p>
                 <p className="mt-1 text-xs leading-relaxed text-slate-500">
                   Add your own properties, tenants, and leases step by step. Start with what you have.
                 </p>
@@ -197,7 +197,7 @@ export default function SetupPage() {
       {mode === 'manual' && (
         <>
           <div className="text-center mb-10 max-w-lg">
-            <h1 className="text-2xl font-bold text-white tracking-tight">
+            <h1 className="text-2xl font-bold text-fg tracking-tight">
               {getGreeting()}, {user?.firstName}!
             </h1>
             <p className="mt-2 text-slate-400">
@@ -244,7 +244,7 @@ export default function SetupPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
                         <Icon className={`h-4 w-4 shrink-0 ${step.done ? 'text-success' : 'text-brand-400'}`} />
-                        <h3 className="text-sm font-semibold text-white">{step.title}</h3>
+                        <h3 className="text-sm font-semibold text-fg">{step.title}</h3>
                         {step.done && (
                           <span className="ml-auto text-xs text-success font-medium">{step.doneLabel}</span>
                         )}

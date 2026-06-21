@@ -59,7 +59,7 @@ function SecretGate({ onUnlock }: { onUnlock: (s: string) => void }) {
               <Shield className="h-6 w-6 text-brand-400" />
             </div>
             <div className="text-center">
-              <h1 className="text-base font-bold text-white">Platform Admin</h1>
+              <h1 className="text-base font-bold text-fg">Platform Admin</h1>
               <p className="mt-0.5 text-xs text-slate-500">Enter your admin secret to continue</p>
             </div>
           </div>
@@ -134,13 +134,13 @@ export default function AdminPage() {
   if (!secret) return <SecretGate onUnlock={setSecret} />;
 
   return (
-    <div className="min-h-screen bg-surface-0 text-white">
+    <div className="min-h-screen bg-surface-0 text-fg">
       {/* Header */}
       <header className="border-b border-surface-400/20 bg-surface-50/60 px-6 py-4">
         <div className="mx-auto flex max-w-7xl items-center justify-between">
           <div className="flex items-center gap-3">
             <Shield className="h-5 w-5 text-brand-400" />
-            <span className="text-sm font-bold text-white">Platform Admin</span>
+            <span className="text-sm font-bold text-fg">Platform Admin</span>
             <span className="rounded-full bg-danger/20 px-2 py-0.5 text-[10px] font-bold text-danger">RESTRICTED</span>
           </div>
           <div className="flex items-center gap-2">
@@ -175,7 +175,7 @@ export default function AdminPage() {
               { label: 'Email Verified',value: stats.emailVerified,                 icon: null },
             ].map((s) => (
               <div key={s.label} className="rounded-xl border border-surface-400/40 bg-surface-100 px-3 py-3 text-center">
-                <p className="text-xl font-bold text-white tabular-nums">{s.value}</p>
+                <p className="text-xl font-bold text-fg tabular-nums">{s.value}</p>
                 <p className="mt-0.5 text-[10px] text-slate-500">{s.label}</p>
               </div>
             ))}

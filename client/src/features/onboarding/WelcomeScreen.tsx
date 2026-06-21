@@ -22,7 +22,7 @@ export function WelcomeScreen() {
   return (
     <div className="flex flex-col items-center justify-center min-h-[62vh] px-6 py-12 text-center animate-fade-in">
       <div className="mb-8">
-        <h2 className="text-3xl font-bold tracking-tight text-white">Welcome to Valence</h2>
+        <h2 className="text-3xl font-bold tracking-tight text-fg">Welcome to Valence</h2>
         <p className="mt-2 text-slate-400">Your portfolio intelligence platform. See everything, miss nothing.</p>
       </div>
 

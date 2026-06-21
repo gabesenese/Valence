@@ -8,7 +8,7 @@ export function PublicHeader() {
       <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
         <Link to="/" className="flex items-center gap-2.5">
           <img src="/logo.svg" alt="Valence" className="h-9 w-6" />
-          <span className="text-sm font-bold tracking-tight text-white">Valence</span>
+          <span className="text-sm font-bold tracking-tight text-fg">Valence</span>
         </Link>
 
         <nav className="hidden items-center gap-6 md:flex">
@@ -19,7 +19,7 @@ export function PublicHeader() {
 
         <Link
           to="/auth/register"
-          className="text-sm font-medium text-slate-300 hover:text-white transition-colors"
+          className="text-sm font-medium text-slate-300 hover:text-fg transition-colors"
         >
           Get started
         </Link>

@@ -90,7 +90,7 @@ export default function ExportPage() {
                   <Icon className="h-4 w-4 text-slate-400" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-white">{item.label}</p>
+                  <p className="text-sm font-medium text-fg">{item.label}</p>
                   <p className="text-xs text-slate-500 mt-0.5">{item.description}</p>
                 </div>
               </div>

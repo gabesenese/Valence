@@ -4,6 +4,7 @@ import { AppLayout } from '@/layouts/AppLayout';
 import { ProtectedRoute } from '@/routes/ProtectedRoute';
 import { PageLoader } from '@/components/ui/Spinner';
 import { UpgradeGate } from '@/components/ui/UpgradeGate';
+import { useApplyTheme } from '@/lib/theme';
 
 const LoginPage = lazy(() => import('@/features/auth/LoginPage'));
 const RegisterPage = lazy(() => import('@/features/auth/RegisterPage'));
@@ -47,6 +48,7 @@ const TrashPage = lazy(() => import('@/features/trash/TrashPage'));
 const BackupPage = lazy(() => import('@/features/backup/BackupPage'));
 
 export default function App() {
+  useApplyTheme();
   return (
     <Suspense fallback={<div className="flex h-screen items-center justify-center bg-surface-0"><PageLoader /></div>}>
       <Routes>

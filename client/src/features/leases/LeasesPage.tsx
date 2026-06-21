@@ -172,7 +172,7 @@ function PriorityQueueView({
 
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-sm font-semibold text-white">{lease.tenant.name}</span>
+                <span className="text-sm font-semibold text-fg">{lease.tenant.name}</span>
                 <span className="text-xs text-slate-600 font-mono">{lease.leaseNumber}</span>
                 <StatusBadge status={lease.renewalRisk} config={RISK_CONFIG} />
                 <StatusBadge status={lease.renewalStage} config={STAGE_CONFIG} />
@@ -211,7 +211,7 @@ function PriorityQueueView({
             </div>
 
             <div className="hidden shrink-0 text-right sm:block">
-              <p className={`text-2xl font-bold tabular-nums ${days <= 30 ? 'text-danger' : days <= 60 ? 'text-warning' : 'text-white'}`}>
+              <p className={`text-2xl font-bold tabular-nums ${days <= 30 ? 'text-danger' : days <= 60 ? 'text-warning' : 'text-fg'}`}>
                 {Math.max(0, days)}
               </p>
               <p className="text-xs text-slate-500">days left</p>
@@ -251,7 +251,7 @@ function BulkBar({
   if (count === 0) return null;
   return (
     <div className="fixed bottom-6 left-1/2 z-30 -translate-x-1/2 flex items-center gap-3 rounded-xl border border-surface-400/60 bg-surface-100 px-5 py-3 shadow-2xl">
-      <span className="text-sm font-medium text-white">{count} selected</span>
+      <span className="text-sm font-medium text-fg">{count} selected</span>
       <div className="h-4 w-px bg-surface-400/60" />
       <div className="relative">
         <Button variant="ghost" size="sm" onClick={() => setShowAssign((v) => !v)} disabled={busy}>
@@ -264,7 +264,7 @@ function BulkBar({
             {users?.map((u) => (
               <button
                 key={u.id}
-                className="w-full rounded-md px-2.5 py-1.5 text-left text-sm text-slate-300 hover:bg-surface-300 hover:text-white transition-colors"
+                className="w-full rounded-md px-2.5 py-1.5 text-left text-sm text-slate-300 hover:bg-surface-300 hover:text-fg transition-colors"
                 onClick={() => { onAssignOwner(u.id); setShowAssign(false); }}
               >
                 {u.firstName} {u.lastName}
@@ -282,7 +282,7 @@ function BulkBar({
         <Download className="h-3.5 w-3.5" />
         Export CSV
       </Button>
-      <button onClick={onClear} className="ml-1 rounded-md p-1 text-slate-500 hover:text-white transition-colors">
+      <button onClick={onClear} className="ml-1 rounded-md p-1 text-slate-500 hover:text-fg transition-colors">
         <X className="h-4 w-4" />
       </button>
     </div>
@@ -295,7 +295,7 @@ function Chip({ label, onRemove }: { label: string; onRemove: () => void }) {
   return (
     <span className="flex items-center gap-1 rounded-full border border-brand-600/30 bg-brand-600/10 px-2.5 py-0.5 text-xs text-brand-300">
       {label}
-      <button onClick={onRemove} className="hover:text-white transition-colors">
+      <button onClick={onRemove} className="hover:text-fg transition-colors">
         <X className="h-3 w-3" />
       </button>
     </span>
@@ -425,7 +425,7 @@ export default function LeasesPage() {
       {/* Header + view toggle */}
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-xl font-bold text-white tracking-tight">Lease Intelligence</h1>
+          <h1 className="text-xl font-bold text-fg tracking-tight">Lease Intelligence</h1>
           <p className="mt-0.5 text-sm text-slate-500">Contract visibility & renewal operating console</p>
         </div>
         <div className="flex items-center gap-2">
@@ -440,21 +440,21 @@ export default function LeasesPage() {
           <div className="flex items-center gap-1 rounded-lg border border-surface-400/60 bg-surface-200 p-1">
             <button
               onClick={() => setViewMode('kanban')}
-              className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${viewMode === 'kanban' ? 'bg-surface-400 text-white' : 'text-slate-500 hover:text-slate-300'}`}
+              className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${viewMode === 'kanban' ? 'bg-surface-400 text-fg' : 'text-slate-500 hover:text-slate-300'}`}
             >
               <Columns3 className="h-3.5 w-3.5" />
               Pipeline
             </button>
             <button
               onClick={() => setViewMode('table')}
-              className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${viewMode === 'table' ? 'bg-surface-400 text-white' : 'text-slate-500 hover:text-slate-300'}`}
+              className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${viewMode === 'table' ? 'bg-surface-400 text-fg' : 'text-slate-500 hover:text-slate-300'}`}
             >
               <LayoutList className="h-3.5 w-3.5" />
               Table
             </button>
             <button
               onClick={() => setViewMode('priority')}
-              className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${viewMode === 'priority' ? 'bg-surface-400 text-white' : 'text-slate-500 hover:text-slate-300'}`}
+              className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${viewMode === 'priority' ? 'bg-surface-400 text-fg' : 'text-slate-500 hover:text-slate-300'}`}
             >
               <Zap className="h-3.5 w-3.5" />
               Priority
@@ -600,7 +600,7 @@ export default function LeasesPage() {
                     <tr className="border-b border-surface-400/40">
                       {/* Bulk select */}
                       <th className="px-4 py-3 w-8">
-                        <button onClick={() => toggleAll(leaseIds)} className="text-slate-500 hover:text-white transition-colors">
+                        <button onClick={() => toggleAll(leaseIds)} className="text-slate-500 hover:text-fg transition-colors">
                           {allSelected ? <CheckSquare className="h-4 w-4 text-brand-400" /> : <Square className="h-4 w-4" />}
                         </button>
                       </th>
@@ -685,7 +685,7 @@ export default function LeasesPage() {
                       <button
                         onClick={() => setPage((p) => Math.max(1, p - 1))}
                         disabled={!data.meta.hasPrev}
-                        className="rounded px-3 py-1.5 text-xs text-slate-400 disabled:opacity-30 hover:bg-surface-300 hover:text-white transition-colors"
+                        className="rounded px-3 py-1.5 text-xs text-slate-400 disabled:opacity-30 hover:bg-surface-300 hover:text-fg transition-colors"
                       >
                         Previous
                       </button>
@@ -693,7 +693,7 @@ export default function LeasesPage() {
                       <button
                         onClick={() => setPage((p) => p + 1)}
                         disabled={!data.meta.hasNext}
-                        className="rounded px-3 py-1.5 text-xs text-slate-400 disabled:opacity-30 hover:bg-surface-300 hover:text-white transition-colors"
+                        className="rounded px-3 py-1.5 text-xs text-slate-400 disabled:opacity-30 hover:bg-surface-300 hover:text-fg transition-colors"
                       >
                         Next
                       </button>
@@ -814,7 +814,7 @@ function LeaseRow({
       </td>
       <td className="px-4 py-3 text-sm text-slate-400" onClick={onRowClick}>{lease.property.name}</td>
       <DaysCell endDate={lease.endDate} status={lease.status} />
-      <td className="px-4 py-3 text-sm font-medium text-white tabular-nums" onClick={onRowClick}>
+      <td className="px-4 py-3 text-sm font-medium text-fg tabular-nums" onClick={onRowClick}>
         {formatCurrency(Number(lease.baseRent))}
       </td>
       <td className="px-4 py-3" onClick={onRowClick}>
@@ -858,7 +858,7 @@ function LeaseRow({
           </button>
           <button
             onClick={(e) => { e.stopPropagation(); onCancelDelete(); }}
-            className="rounded-md border border-surface-400/40 px-2.5 py-1 text-xs text-slate-400 hover:text-white transition-colors"
+            className="rounded-md border border-surface-400/40 px-2.5 py-1 text-xs text-slate-400 hover:text-fg transition-colors"
           >
             Cancel
           </button>

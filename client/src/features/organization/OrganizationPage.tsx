@@ -127,7 +127,7 @@ function MemberAvatar({ member }: { member: TeamMember }) {
   const colors = ['bg-brand-600', 'bg-purple-600', 'bg-teal-600', 'bg-orange-600'];
   const color = colors[member.firstName.charCodeAt(0) % colors.length];
   return (
-    <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${color} text-sm font-bold text-white`}>
+    <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${color} text-sm font-bold text-fg`}>
       {initials}
     </div>
   );
@@ -188,7 +188,7 @@ function OrgHeroCard({ members }: {
             </div>
             <div>
               <div className="flex items-center gap-2.5">
-                <h2 className="text-xl font-bold text-white">{org?.name ?? '—'}</h2>
+                <h2 className="text-xl font-bold text-fg">{org?.name ?? '—'}</h2>
                 <span className="rounded-full border border-brand-500/30 bg-brand-600/10 px-2 py-0.5 text-[10px] font-semibold text-brand-400 uppercase tracking-wide">
                   {planLabel}
                 </span>
@@ -393,7 +393,7 @@ function InviteModal({ onClose }: { onClose: () => void }) {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
       <div className="w-full max-w-md rounded-2xl border border-surface-400/40 bg-surface-100 p-6 shadow-xl mx-4">
         <div className="flex items-center justify-between mb-5">
-          <h2 className="text-base font-semibold text-white">
+          <h2 className="text-base font-semibold text-fg">
             {createdToken ? 'Invite link ready' : 'Invite a team member'}
           </h2>
           <button onClick={onClose} className="text-slate-500 hover:text-slate-300 transition-colors">
@@ -599,7 +599,7 @@ function TeamActivityCard() {
               className="flex items-center gap-3 px-5 py-3 border-b border-surface-400/20 last:border-0 hover:bg-surface-200/20 transition-colors"
             >
               {actor ? (
-                <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${avatarColor} text-[10px] font-bold text-white`}>
+                <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${avatarColor} text-[10px] font-bold text-fg`}>
                   {actor.firstName[0]}{actor.lastName[0]}
                 </div>
               ) : (
@@ -778,7 +778,7 @@ function TransferOwnershipModal({ members, onClose, onSuccess }: {
             <Crown className="h-4 w-4 text-danger" />
           </div>
           <div className="flex-1">
-            <h2 className="text-base font-semibold text-white">Transfer Ownership</h2>
+            <h2 className="text-base font-semibold text-fg">Transfer Ownership</h2>
             <p className="text-xs text-slate-500 mt-0.5">This cannot be undone. You will become an Admin.</p>
           </div>
           <button onClick={onClose} className="text-slate-500 hover:text-slate-300 transition-colors">
@@ -794,7 +794,7 @@ function TransferOwnershipModal({ members, onClose, onSuccess }: {
             <div className="rounded-xl border border-surface-400/40 bg-surface-200/50 px-4 py-3 flex items-center gap-3">
               <MemberAvatar member={selectedMember} />
               <div>
-                <p className="text-sm font-semibold text-white">{selectedMember.firstName} {selectedMember.lastName}</p>
+                <p className="text-sm font-semibold text-fg">{selectedMember.firstName} {selectedMember.lastName}</p>
                 <p className="text-xs text-slate-500">{selectedMember.email}</p>
               </div>
             </div>
@@ -861,7 +861,7 @@ function DangerZone({ members }: { members: TeamMember[] }) {
         </CardHeader>
         <CardBody>
           <div className="rounded-xl border border-danger/20 bg-danger/5 px-4 py-4">
-            <p className="text-sm font-semibold text-white">Transfer Ownership</p>
+            <p className="text-sm font-semibold text-fg">Transfer Ownership</p>
             <p className="text-xs text-slate-500 mt-1 mb-3">
               Permanently transfers owner access to another team member. You will be downgraded to Admin
               and signed out immediately. This action cannot be undone.

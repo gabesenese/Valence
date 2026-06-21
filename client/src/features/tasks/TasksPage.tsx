@@ -90,7 +90,7 @@ function StatusPicker({ status, onChange }: { status: TaskStatus; onChange: (s: 
                 type="button"
                 onClick={() => { onChange(s); setOpen(false); }}
                 className={`flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs transition-colors hover:bg-surface-300 ${
-                  s === status ? 'text-white' : 'text-slate-400'
+                  s === status ? 'text-fg' : 'text-slate-400'
                 }`}
               >
                 <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${c.dot}`} />
@@ -160,7 +160,7 @@ function EditTaskModal({
               <Pencil className="h-3.5 w-3.5 text-brand-400" />
             </div>
             <div>
-              <p className="text-sm font-semibold text-white">Edit Task</p>
+              <p className="text-sm font-semibold text-fg">Edit Task</p>
               {context && (
                 <div className="flex items-center gap-1 mt-0.5">
                   <context.icon className="h-3 w-3 text-slate-500" />
@@ -289,7 +289,7 @@ function TaskItem({
             className={`text-sm font-medium transition-colors ${
               task.status === 'COMPLETED' ? 'line-through text-slate-500' :
               task.status === 'CANCELLED' ? 'text-slate-600' :
-              isTemp ? 'text-slate-200' : 'text-slate-200 hover:text-white'
+              isTemp ? 'text-slate-200' : 'text-slate-200 hover:text-fg'
             }`}
           >
             {task.title}
@@ -423,7 +423,7 @@ function CreateTaskModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
       <div className="w-full max-w-md rounded-2xl border border-surface-400/40 bg-surface-100 p-6 shadow-xl">
-        <h2 className="text-base font-semibold text-white mb-4">New Task</h2>
+        <h2 className="text-base font-semibold text-fg mb-4">New Task</h2>
         <div className="flex flex-col gap-3">
           <input
             autoFocus

@@ -27,10 +27,10 @@ export function Modal({ open, onClose, title, children, className }: ModalProps)
         className
       )}>
         <div className="flex items-center justify-between border-b border-surface-400/40 px-5 py-4">
-          <h2 className="text-sm font-semibold text-white">{title}</h2>
+          <h2 className="text-sm font-semibold text-fg">{title}</h2>
           <button
             onClick={onClose}
-            className="rounded-md p-1.5 text-slate-500 hover:bg-surface-300 hover:text-white transition-colors"
+            className="rounded-md p-1.5 text-slate-500 hover:bg-surface-300 hover:text-fg transition-colors"
           >
             <X className="h-4 w-4" />
           </button>

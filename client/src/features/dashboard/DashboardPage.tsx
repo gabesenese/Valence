@@ -17,6 +17,7 @@ import { formatCurrency, compactCurrency, daysUntil, formatDate } from '@/utils/
 import { WelcomeScreen } from '@/features/onboarding/WelcomeScreen';
 import { OnboardingCard } from '@/features/onboarding/OnboardingCard';
 import { usePlan } from '@/hooks/usePlan';
+import { useChartColors } from '@/hooks/useChartColors';
 
 const TREND_OPTIONS = [
   { label: '3M', value: 3 },
@@ -37,6 +38,7 @@ type FeedItem = {
 export default function DashboardPage() {
   const navigate = useNavigate();
   const { canAccess } = usePlan();
+  const c = useChartColors();
   const [trendMonths, setTrendMonths] = useState(12);
 
   const { data: summary, isLoading: summaryLoading } = useQuery({
@@ -379,7 +381,7 @@ export default function DashboardPage() {
                         </div>
                       </div>
                       <div className="text-right shrink-0">
-                        <p className="text-xs font-semibold text-white tabular-nums">{compactCurrency(p.monthlyRevenue)}</p>
+                        <p className="text-xs font-semibold text-fg tabular-nums">{compactCurrency(p.monthlyRevenue)}</p>
                         <p className={`text-[10px] tabular-nums ${
                           p.revenueDeltaPct == null ? 'text-slate-500' : p.revenueDeltaPct >= 0 ? 'text-success' : 'text-danger'
                         }`}>
@@ -429,37 +431,37 @@ export default function DashboardPage() {
                   <AreaChart data={trend ?? []} margin={{ top: 8, right: 4, left: -20, bottom: 0 }}>
                     <defs>
                       <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#6366f1" stopOpacity={0.45} />
-                        <stop offset="100%" stopColor="#6366f1" stopOpacity={0} />
+                        <stop offset="0%" stopColor={c.brand} stopOpacity={0.45} />
+                        <stop offset="100%" stopColor={c.brand} stopOpacity={0} />
                       </linearGradient>
                       <linearGradient id="netGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#10b981" stopOpacity={0.35} />
-                        <stop offset="100%" stopColor="#10b981" stopOpacity={0} />
+                        <stop offset="0%" stopColor={c.success} stopOpacity={0.35} />
+                        <stop offset="100%" stopColor={c.success} stopOpacity={0} />
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#1e1e3a" vertical={false} strokeOpacity={0.7} />
+                    <CartesianGrid strokeDasharray="3 3" stroke={c.grid} vertical={false} strokeOpacity={0.7} />
                     <XAxis
                       dataKey="month"
-                      tick={{ fill: '#475569', fontSize: 10 }}
+                      tick={{ fill: c.axis, fontSize: 10 }}
                       tickLine={false}
                       axisLine={false}
                       dy={4}
                     />
                     <YAxis
-                      tick={{ fill: '#475569', fontSize: 10 }}
+                      tick={{ fill: c.axis, fontSize: 10 }}
                       tickLine={false}
                       axisLine={false}
                       tickFormatter={v => compactCurrency(v)}
                       width={44}
                     />
                     <Tooltip
-                      contentStyle={{ background: '#0f0f1a', border: '1px solid #2d2d50', borderRadius: 10, fontSize: 11, color: '#e2e8f0', padding: '8px 12px' }}
-                      labelStyle={{ color: '#94a3b8', marginBottom: 4, fontWeight: 600 }}
+                      contentStyle={{ background: c.tooltipBg, border: `1px solid ${c.tooltipBorder}`, borderRadius: 10, fontSize: 11, color: c.tooltipText, padding: '8px 12px' }}
+                      labelStyle={{ color: c.tooltipLabel, marginBottom: 4, fontWeight: 600 }}
                       formatter={(v: number, name: string) => [formatCurrency(v), name]}
-                      cursor={{ stroke: '#6366f1', strokeWidth: 1, strokeDasharray: '4 2' }}
+                      cursor={{ stroke: c.brand, strokeWidth: 1, strokeDasharray: '4 2' }}
                     />
-                    <Area type="monotone" dataKey="revenue" stroke="#6366f1" strokeWidth={2} fill="url(#revGrad)" name="Revenue" dot={false} activeDot={{ r: 4, fill: '#6366f1', stroke: '#1e1e32', strokeWidth: 2 }} />
-                    <Area type="monotone" dataKey="net" stroke="#10b981" strokeWidth={1.5} fill="url(#netGrad)" name="Net Income" dot={false} activeDot={{ r: 3, fill: '#10b981', stroke: '#1e1e32', strokeWidth: 2 }} />
+                    <Area type="monotone" dataKey="revenue" stroke={c.brand} strokeWidth={2} fill="url(#revGrad)" name="Revenue" dot={false} activeDot={{ r: 4, fill: c.brand, stroke: c.tooltipBg, strokeWidth: 2 }} />
+                    <Area type="monotone" dataKey="net" stroke={c.success} strokeWidth={1.5} fill="url(#netGrad)" name="Net Income" dot={false} activeDot={{ r: 3, fill: c.success, stroke: c.tooltipBg, strokeWidth: 2 }} />
                   </AreaChart>
                 </ResponsiveContainer>
               </CardBody>

@@ -53,7 +53,7 @@ function CardContent({ lease }: { lease: KanbanLease }) {
   return (
     <>
       <div className="flex items-start justify-between gap-1.5">
-        <p className="text-sm font-semibold text-white leading-snug">{lease.tenantName}</p>
+        <p className="text-sm font-semibold text-fg leading-snug">{lease.tenantName}</p>
         {lease.criticalAlerts > 0 && (
           <span className="shrink-0 flex items-center gap-0.5 text-[10px] font-medium text-danger">
             <AlertTriangle className="h-3 w-3" />
@@ -318,8 +318,8 @@ export default function RenewalKanban() {
           ))}
         </div>
         <div className="ml-auto flex items-center gap-4 text-xs text-slate-500">
-          <span><span className="font-semibold text-white tabular-nums">{totalLeases}</span> leases</span>
-          {totalRent > 0 && <span><span className="font-semibold text-white tabular-nums">{formatCurrency(totalRent)}</span>/mo</span>}
+          <span><span className="font-semibold text-fg tabular-nums">{totalLeases}</span> leases</span>
+          {totalRent > 0 && <span><span className="font-semibold text-fg tabular-nums">{formatCurrency(totalRent)}</span>/mo</span>}
           <span className="text-[11px] text-slate-600 hidden sm:block">Drag to move · Click to open</span>
         </div>
       </div>

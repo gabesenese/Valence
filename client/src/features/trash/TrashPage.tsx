@@ -72,7 +72,7 @@ function Section<T extends { id: string; daysLeft: number }>({
     <div>
       <div className="flex items-center gap-2 mb-3">
         <Icon className="h-4 w-4 text-slate-400" />
-        <h3 className="text-sm font-semibold text-white">{title}</h3>
+        <h3 className="text-sm font-semibold text-fg">{title}</h3>
         <span className="text-xs text-slate-500">{items.length}</span>
       </div>
       <div className="rounded-xl border border-surface-400/30 overflow-hidden divide-y divide-surface-400/20">
@@ -192,7 +192,7 @@ export default function TrashPage() {
               onRestore={onRestore} onPurge={onPurge} loading={isMutating}
               renderRow={(p) => (
                 <div>
-                  <p className="text-sm font-medium text-white truncate">{p.name}</p>
+                  <p className="text-sm font-medium text-fg truncate">{p.name}</p>
                   <p className="text-xs text-slate-500">{p.code} · {p.type} · {p.city}, {p.state}</p>
                 </div>
               )}
@@ -203,7 +203,7 @@ export default function TrashPage() {
               onRestore={onRestore} onPurge={onPurge} loading={isMutating}
               renderRow={(l) => (
                 <div>
-                  <p className="text-sm font-medium text-white truncate">{l.leaseNumber} — {l.tenant.name}</p>
+                  <p className="text-sm font-medium text-fg truncate">{l.leaseNumber} — {l.tenant.name}</p>
                   <p className="text-xs text-slate-500">{l.property.name} · ${Number(l.baseRent).toLocaleString()}/mo</p>
                 </div>
               )}
@@ -214,7 +214,7 @@ export default function TrashPage() {
               onRestore={onRestore} onPurge={onPurge} loading={isMutating}
               renderRow={(t) => (
                 <div>
-                  <p className="text-sm font-medium text-white truncate">{t.name}</p>
+                  <p className="text-sm font-medium text-fg truncate">{t.name}</p>
                   <p className="text-xs text-slate-500">{[t.company, t.email].filter(Boolean).join(' · ') || 'No contact info'}</p>
                 </div>
               )}
@@ -225,7 +225,7 @@ export default function TrashPage() {
               onRestore={onRestore} onPurge={onPurge} loading={isMutating}
               renderRow={(t) => (
                 <div>
-                  <p className="text-sm font-medium text-white truncate">{t.title}</p>
+                  <p className="text-sm font-medium text-fg truncate">{t.title}</p>
                   <p className="text-xs text-slate-500">{t.status.replace(/_/g, ' ')}</p>
                 </div>
               )}

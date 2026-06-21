@@ -88,7 +88,7 @@ export default function ExecutiveBriefCard() {
             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-brand-600/20 ring-1 ring-brand-500/30">
               <Sparkles className="h-4 w-4 text-brand-400" />
             </div>
-            <h3 className="text-sm font-semibold text-white">Executive Intelligence Brief</h3>
+            <h3 className="text-sm font-semibold text-fg">Executive Intelligence Brief</h3>
           </div>
           <p className="text-xs text-slate-500 leading-relaxed">
             Claude analyzes your entire portfolio in real time — surfacing revenue risks,
@@ -134,7 +134,7 @@ export default function ExecutiveBriefCard() {
       <div className="flex items-center justify-between px-4 py-3.5 border-b border-surface-400/30 bg-surface-200/30 sm:px-6">
         <div className="flex items-center gap-2">
           <Sparkles className="h-4 w-4 text-brand-400" />
-          <span className="text-sm font-semibold text-white">Executive Brief</span>
+          <span className="text-sm font-semibold text-fg">Executive Brief</span>
           {health && (
             <span className={`ml-1 inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold ring-1 ${health.bg} ${health.color} ${health.ring}`}>
               {health.label}
@@ -157,7 +157,7 @@ export default function ExecutiveBriefCard() {
 
       {/* Headline + summary */}
       <div className="px-4 py-4 border-b border-surface-400/30 sm:px-6 sm:py-5">
-        <p className="text-lg font-semibold text-white leading-snug">{brief.headline}</p>
+        <p className="text-lg font-semibold text-fg leading-snug">{brief.headline}</p>
         <p className="mt-2 max-w-3xl text-sm text-slate-400 leading-relaxed">{brief.summary}</p>
       </div>
 

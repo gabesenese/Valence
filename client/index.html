@@ -1,7 +1,18 @@
 <!doctype html>
-<html lang="en" class="dark">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <script>
+      (function () {
+        try {
+          var t = localStorage.getItem('valence-theme') || 'dark';
+          var dark = t === 'dark' || (t === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+          document.documentElement.classList.toggle('dark', dark);
+        } catch (e) {
+          document.documentElement.classList.add('dark');
+        }
+      })();
+    </script>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Valence — Protect revenue across your commercial real estate portfolio. Know which leases, properties, and risks require attention before they become problems." />
@@ -21,7 +32,7 @@
       <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" />
     </noscript>
   </head>
-  <body class="bg-surface-0 text-white antialiased">
+  <body class="bg-surface-0 text-fg antialiased">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

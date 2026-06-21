@@ -76,7 +76,7 @@ export default function LoginPage() {
         <div className="mb-8 flex flex-col items-center gap-3">
           <img src="/logo.svg" alt="Valence" className="h-16 w-10" />
           <div className="text-center">
-            <h1 className="text-xl font-bold text-white tracking-tight">Valence</h1>
+            <h1 className="text-xl font-bold text-fg tracking-tight">Valence</h1>
             <p className="mt-0.5 text-xs text-slate-500">Operational Intelligence Platform</p>
           </div>
         </div>
@@ -85,7 +85,7 @@ export default function LoginPage() {
         {mfaToken && (
           <div className="rounded-2xl border border-surface-400/60 bg-surface-100/80 p-8 shadow-card backdrop-blur-sm">
             <div className="mb-6">
-              <h2 className="text-base font-semibold text-white">Two-factor authentication</h2>
+              <h2 className="text-base font-semibold text-fg">Two-factor authentication</h2>
               <p className="mt-0.5 text-xs text-slate-500">Enter the 6-digit code from your authenticator app.</p>
             </div>
             <form onSubmit={handleMfaSubmit} className="flex flex-col gap-4">
@@ -122,7 +122,7 @@ export default function LoginPage() {
         {!mfaToken && (
         <div className="rounded-2xl border border-surface-400/60 bg-surface-100/80 p-8 shadow-card backdrop-blur-sm">
           <div className="mb-6">
-            <h2 className="text-base font-semibold text-white">Sign in</h2>
+            <h2 className="text-base font-semibold text-fg">Sign in</h2>
             <p className="mt-0.5 text-xs text-slate-500">Access your portfolio intelligence</p>
           </div>
 
@@ -169,7 +169,7 @@ export default function LoginPage() {
                 />
                 <div className="h-4 w-4 rounded border border-surface-400 bg-surface-200 transition-colors peer-checked:border-brand-500 peer-checked:bg-brand-600 flex items-center justify-center">
                   {rememberMe && (
-                    <svg className="h-2.5 w-2.5 text-white" viewBox="0 0 10 10" fill="none">
+                    <svg className="h-2.5 w-2.5 text-fg" viewBox="0 0 10 10" fill="none">
                       <path d="M1.5 5L4 7.5L8.5 2.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                   )}

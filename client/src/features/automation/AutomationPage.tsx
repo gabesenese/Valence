@@ -98,7 +98,7 @@ function CreateRuleModal({ onClose }: { onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="w-full max-w-lg rounded-2xl border border-surface-400/40 bg-surface-100 p-6 shadow-xl overflow-y-auto max-h-[90vh]">
-        <h2 className="text-base font-semibold text-white mb-5">New Automation Rule</h2>
+        <h2 className="text-base font-semibold text-fg mb-5">New Automation Rule</h2>
 
         <div className="flex flex-col gap-4">
           <div>
@@ -282,7 +282,7 @@ function EditRuleModal({ rule, onClose }: { rule: AutomationRule; onClose: () =>
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="w-full max-w-lg rounded-2xl border border-surface-400/40 bg-surface-100 p-6 shadow-xl overflow-y-auto max-h-[90vh]">
-        <h2 className="text-base font-semibold text-white mb-5">Edit Rule</h2>
+        <h2 className="text-base font-semibold text-fg mb-5">Edit Rule</h2>
 
         <div className="flex flex-col gap-4">
           <div>
@@ -408,7 +408,7 @@ function RuleCard({ rule, canEdit }: { rule: AutomationRule; canEdit: boolean })
 
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap mb-1">
-            <p className="text-sm font-semibold text-white">{rule.name}</p>
+            <p className="text-sm font-semibold text-fg">{rule.name}</p>
             <Badge variant={rule.isActive ? 'success' : 'neutral'}>{rule.isActive ? 'Active' : 'Paused'}</Badge>
           </div>
           {rule.description && <p className="text-xs text-slate-500 mb-2">{rule.description}</p>}
@@ -528,7 +528,7 @@ export default function AutomationPage() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Zap className="h-4 w-4 text-brand-400" />
-          <span className="text-sm font-semibold text-white">Automation Rules</span>
+          <span className="text-sm font-semibold text-fg">Automation Rules</span>
           <span className="text-xs text-slate-500">{activeCount} active · {rules.length} total</span>
         </div>
         {canEdit && (

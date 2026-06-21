@@ -135,7 +135,7 @@ export function DatePicker({
             <button
               type="button"
               onClick={() => step(-1)}
-              className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-surface-300 hover:text-white"
+              className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-surface-300 hover:text-fg"
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
@@ -145,7 +145,7 @@ export function DatePicker({
             <button
               type="button"
               onClick={() => step(1)}
-              className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-surface-300 hover:text-white"
+              className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-surface-300 hover:text-fg"
             >
               <ChevronRight className="h-4 w-4" />
             </button>
@@ -175,7 +175,7 @@ export function DatePicker({
                           ? 'bg-brand-600 font-semibold text-white shadow-sm shadow-brand-600/40'
                           : isTod(day)
                           ? 'font-medium text-brand-400 ring-1 ring-inset ring-brand-500/50 hover:bg-brand-600/20'
-                          : 'text-slate-300 hover:bg-surface-300 hover:text-white'
+                          : 'text-slate-300 hover:bg-surface-300 hover:text-fg'
                       }`}
                     >
                       {day}
