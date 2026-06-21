@@ -13,6 +13,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { DatePicker } from '@/components/ui/DatePicker';
 import { formatCurrency, formatDate, daysUntil } from '@/utils/format';
+import { useChartColors } from '@/hooks/useChartColors';
 
 const STAGE_LABEL: Record<RenewalStage, string> = {
   NOT_STARTED: 'Not started',
@@ -52,6 +53,7 @@ interface Props {
 export default function LeaseDrawer({ leaseId, onClose }: Props) {
   const navigate = useNavigate();
   const qc = useQueryClient();
+  const c = useChartColors();
   const { data, isLoading } = useQuery({
     queryKey: ['leases', leaseId, 'preview'],
     queryFn: () => leasesService.getPreview(leaseId!),
@@ -112,7 +114,7 @@ export default function LeaseDrawer({ leaseId, onClose }: Props) {
           {data ? (
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="font-mono text-sm font-semibold text-white">{data.lease.leaseNumber}</span>
+                <span className="font-mono text-sm font-semibold text-fg">{data.lease.leaseNumber}</span>
                 <Badge variant={RISK_VARIANT[data.lease.renewalRisk] ?? 'neutral'} dot>
                   {data.lease.renewalRisk}
                 </Badge>
@@ -127,7 +129,7 @@ export default function LeaseDrawer({ leaseId, onClose }: Props) {
           ) : (
             <div className="h-5 w-40 animate-pulse rounded bg-surface-400" />
           )}
-          <button onClick={onClose} className="ml-3 shrink-0 rounded-md p-1.5 text-slate-500 hover:bg-surface-300 hover:text-white transition-colors">
+          <button onClick={onClose} className="ml-3 shrink-0 rounded-md p-1.5 text-slate-500 hover:bg-surface-300 hover:text-fg transition-colors">
             <X className="h-4 w-4" />
           </button>
         </div>
@@ -223,20 +225,20 @@ export default function LeaseDrawer({ leaseId, onClose }: Props) {
                     <AreaChart data={data.paymentSeries} margin={{ top: 4, right: 0, bottom: 0, left: 0 }}>
                       <defs>
                         <linearGradient id="drawerGrad" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3} />
-                          <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
+                          <stop offset="5%" stopColor={c.brand} stopOpacity={0.3} />
+                          <stop offset="95%" stopColor={c.brand} stopOpacity={0} />
                         </linearGradient>
                       </defs>
                       <XAxis dataKey="period" hide />
                       <Tooltip
-                        contentStyle={{ background: '#1e2030', border: '1px solid #3e4257', borderRadius: 8, fontSize: 11 }}
-                        labelStyle={{ color: '#94a3b8' }}
+                        contentStyle={{ background: c.tooltipBg, border: `1px solid ${c.tooltipBorder}`, borderRadius: 8, fontSize: 11, color: c.tooltipText }}
+                        labelStyle={{ color: c.tooltipLabel }}
                         formatter={(v: number) => [formatCurrency(v), 'Revenue']}
                       />
                       <Area
                         type="monotone"
                         dataKey="amount"
-                        stroke="#6366f1"
+                        stroke={c.brand}
                         strokeWidth={1.5}
                         fill="url(#drawerGrad)"
                         dot={false}
@@ -302,7 +304,7 @@ export default function LeaseDrawer({ leaseId, onClose }: Props) {
 
 function DaysRemaining({ endDate }: { endDate: string }) {
   const days = daysUntil(endDate);
-  const color = days <= 30 ? 'text-danger' : days <= 60 ? 'text-warning' : 'text-white';
+  const color = days <= 30 ? 'text-danger' : days <= 60 ? 'text-warning' : 'text-fg';
   const bg = days <= 30 ? 'bg-danger/10 border-danger/30' : days <= 60 ? 'bg-warning/10 border-warning/30' : 'bg-surface-200 border-surface-400/40';
   return (
     <div className={`rounded-xl border px-4 py-2 ${bg}`}>

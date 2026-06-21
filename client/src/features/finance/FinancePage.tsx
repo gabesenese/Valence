@@ -10,6 +10,7 @@ import { Card, CardHeader, CardTitle, CardBody } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { PageLoader } from '@/components/ui/Spinner';
 import { formatCurrency, formatDate, compactCurrency } from '@/utils/format';
+import { useChartColors } from '@/hooks/useChartColors';
 
 const STATUS_VARIANT: Record<string, 'success' | 'warning' | 'danger' | 'neutral' | 'info'> = {
   RECONCILED: 'success',
@@ -20,6 +21,7 @@ const STATUS_VARIANT: Record<string, 'success' | 'warning' | 'danger' | 'neutral
 };
 
 export default function FinancePage() {
+  const c = useChartColors();
   const navigate = useNavigate();
   const [recordsPage, setRecordsPage] = useState(1);
 
@@ -86,7 +88,7 @@ export default function FinancePage() {
         {/* LEFT: Financial Records table */}
         <div className="rounded-xl border border-surface-400/30 overflow-hidden">
           <div className="flex items-center justify-between px-5 py-3 border-b border-surface-400/40">
-            <span className="text-sm font-semibold text-white">Financial Records</span>
+            <span className="text-sm font-semibold text-fg">Financial Records</span>
             <span className="text-xs text-slate-600">{records?.meta.total ?? 0} total</span>
           </div>
           <div className="overflow-x-auto">
@@ -146,7 +148,7 @@ export default function FinancePage() {
                 <button
                   onClick={() => setRecordsPage((p) => Math.max(1, p - 1))}
                   disabled={!records.meta.hasPrev}
-                  className="rounded px-3 py-1.5 text-xs text-slate-400 disabled:opacity-30 hover:bg-surface-300 hover:text-white transition-colors"
+                  className="rounded px-3 py-1.5 text-xs text-slate-400 disabled:opacity-30 hover:bg-surface-300 hover:text-fg transition-colors"
                 >
                   Previous
                 </button>
@@ -154,7 +156,7 @@ export default function FinancePage() {
                 <button
                   onClick={() => setRecordsPage((p) => p + 1)}
                   disabled={!records.meta.hasNext}
-                  className="rounded px-3 py-1.5 text-xs text-slate-400 disabled:opacity-30 hover:bg-surface-300 hover:text-white transition-colors"
+                  className="rounded px-3 py-1.5 text-xs text-slate-400 disabled:opacity-30 hover:bg-surface-300 hover:text-fg transition-colors"
                 >
                   Next
                 </button>
@@ -181,15 +183,15 @@ export default function FinancePage() {
           <CardBody className="pt-2 pb-3 px-2">
             <ResponsiveContainer width="100%" height={200}>
               <BarChart data={trend ?? []} margin={{ top: 5, right: 4, left: -20, bottom: 0 }} barGap={3}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#1e1e32" vertical={false} />
-                <XAxis dataKey="month" tick={{ fill: '#475569', fontSize: 10 }} tickLine={false} axisLine={false} />
-                <YAxis tick={{ fill: '#475569', fontSize: 10 }} tickLine={false} axisLine={false} tickFormatter={v => compactCurrency(v)} />
+                <CartesianGrid strokeDasharray="3 3" stroke={c.grid} vertical={false} />
+                <XAxis dataKey="month" tick={{ fill: c.axis, fontSize: 10 }} tickLine={false} axisLine={false} />
+                <YAxis tick={{ fill: c.axis, fontSize: 10 }} tickLine={false} axisLine={false} tickFormatter={v => compactCurrency(v)} />
                 <Tooltip
-                  contentStyle={{ background: '#13131e', border: '1px solid #252540', borderRadius: 8, fontSize: 11, color: '#e2e8f0' }}
+                  contentStyle={{ background: c.tooltipBg, border: `1px solid ${c.tooltipBorder}`, borderRadius: 8, fontSize: 11, color: c.tooltipText }}
                   formatter={(v: number) => formatCurrency(v)}
                 />
-                <Bar dataKey="revenue" name="Revenue" fill="#6366f1" radius={[3, 3, 0, 0]} maxBarSize={24} />
-                <Bar dataKey="expenses" name="Expenses" fill="#ef4444" radius={[3, 3, 0, 0]} maxBarSize={24} fillOpacity={0.7} />
+                <Bar dataKey="revenue" name="Revenue" fill={c.brand} radius={[3, 3, 0, 0]} maxBarSize={24} />
+                <Bar dataKey="expenses" name="Expenses" fill={c.danger} radius={[3, 3, 0, 0]} maxBarSize={24} fillOpacity={0.7} />
               </BarChart>
             </ResponsiveContainer>
           </CardBody>

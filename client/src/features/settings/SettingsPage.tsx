@@ -60,6 +60,8 @@ export default function SettingsPage() {
   const { plan, limits, daysLeft, trialActive, label: planLabel } = usePlan();
   const alertSeverityFilter    = useUIStore((s) => s.alertSeverityFilter);
   const setAlertSeverityFilter = useUIStore((s) => s.setAlertSeverityFilter);
+  const theme                  = useUIStore((s) => s.theme);
+  const setTheme               = useUIStore((s) => s.setTheme);
 
   const [activeTab, setActiveTab] = useState<Tab>('account');
 
@@ -207,7 +209,7 @@ export default function SettingsPage() {
           <span className="text-lg font-bold text-brand-400">{user?.firstName?.[0]}{user?.lastName?.[0]}</span>
         </div>
         <div className="min-w-0">
-          <h1 className="text-xl font-bold text-white truncate">{user?.firstName} {user?.lastName}</h1>
+          <h1 className="text-xl font-bold text-fg truncate">{user?.firstName} {user?.lastName}</h1>
           <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5">
             <span className="text-xs text-slate-500">{user?.role}</span>
             {org?.name && <><span className="text-slate-700">·</span><span className="text-xs text-slate-500 truncate">{org.name}</span></>}
@@ -272,7 +274,7 @@ export default function SettingsPage() {
             <button onClick={() => navigate('/organization')}
               className="flex items-center justify-between rounded-xl border border-surface-400/30 bg-surface-100 px-4 py-3.5 text-left hover:bg-surface-200/50 transition-colors group">
               <div>
-                <p className="text-sm font-semibold text-white">Organization Settings</p>
+                <p className="text-sm font-semibold text-fg">Organization Settings</p>
                 <p className="text-xs text-slate-500 mt-0.5">Profile, team members, roles, and currency</p>
               </div>
               <ArrowRight className="h-4 w-4 text-slate-600 group-hover:text-slate-400 transition-colors shrink-0" />
@@ -351,7 +353,7 @@ export default function SettingsPage() {
                 {user?.mfaEnabled ? (
                   <div className="flex items-start justify-between gap-4">
                     <div>
-                      <div className="flex items-center gap-2 mb-1"><CheckCircle2 className="h-4 w-4 text-success" /><span className="text-sm font-semibold text-white">MFA is enabled</span></div>
+                      <div className="flex items-center gap-2 mb-1"><CheckCircle2 className="h-4 w-4 text-success" /><span className="text-sm font-semibold text-fg">MFA is enabled</span></div>
                       <p className="text-xs text-slate-500">Your account requires an authenticator code on every sign in.</p>
                       {mfaDone && <p className="mt-1 text-xs text-success">MFA enabled successfully.</p>}
                     </div>
@@ -360,7 +362,7 @@ export default function SettingsPage() {
                 ) : mfaSetupData ? (
                   <div className="flex flex-col gap-4">
                     <div>
-                      <p className="text-sm font-medium text-white mb-1">Scan with your authenticator app</p>
+                      <p className="text-sm font-medium text-fg mb-1">Scan with your authenticator app</p>
                       <p className="text-xs text-slate-500 mb-3">Use Google Authenticator, Authy, or any TOTP app.</p>
                       <img src={mfaSetupData.qrCode} alt="QR Code" className="w-40 h-40 rounded-lg bg-white p-2" />
                       <p className="mt-2 text-xs text-slate-500">Or enter manually:</p>
@@ -403,7 +405,7 @@ export default function SettingsPage() {
               <CardBody className="flex flex-col gap-5">
                 <div className="flex items-end justify-between">
                   <div>
-                    <p className="text-3xl font-bold text-white">
+                    <p className="text-3xl font-bold text-fg">
                       ${PLAN_PRICES[plan].toLocaleString()}
                       <span className="text-base font-normal text-slate-500">/month</span>
                     </p>
@@ -423,7 +425,7 @@ export default function SettingsPage() {
                   ].map(({ label, value }) => (
                     <div key={label} className="rounded-xl border border-surface-400/30 bg-surface-200/30 px-4 py-3">
                       <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 mb-0.5">{label}</p>
-                      <p className="text-lg font-bold text-white">{value}</p>
+                      <p className="text-lg font-bold text-fg">{value}</p>
                     </div>
                   ))}
                 </div>
@@ -544,21 +546,24 @@ export default function SettingsPage() {
             <Card>
               <CardHeader><CardTitle>Preferences</CardTitle></CardHeader>
               <CardBody className="flex flex-col gap-5">
-                {[
-                  {
-                    icon: <Moon className="h-4 w-4 text-slate-400" />,
-                    label: 'Theme', sub: 'Interface color scheme',
-                    control: <span className="rounded-lg border border-surface-400/30 bg-surface-200/50 px-3 py-1.5 text-xs font-medium text-slate-400">Dark</span>,
-                  },
-                ].map(({ icon, label, sub, control }) => (
-                  <div key={label} className="flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-300">{icon}</div>
-                      <div><p className="text-sm font-medium text-slate-300">{label}</p><p className="text-xs text-slate-500">{sub}</p></div>
-                    </div>
-                    {control}
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-300"><Moon className="h-4 w-4 text-slate-400" /></div>
+                    <div><p className="text-sm font-medium text-slate-300">Theme</p><p className="text-xs text-slate-500">Interface color scheme</p></div>
                   </div>
-                ))}
+                  <div className="flex rounded-lg border border-surface-400/30 bg-surface-200/30 p-0.5 shrink-0">
+                    {(['light', 'dark', 'system'] as const).map((opt) => (
+                      <button key={opt} type="button" onClick={() => setTheme(opt)}
+                        className={cn('rounded-md px-3 py-1 text-xs font-medium capitalize transition-colors',
+                          theme === opt
+                            ? 'bg-brand-600/30 text-brand-300 border border-brand-600/40'
+                            : 'border border-transparent text-slate-500 hover:text-slate-300',
+                        )}>
+                        {opt}
+                      </button>
+                    ))}
+                  </div>
+                </div>
 
                 <div className="h-px bg-surface-400/30" />
 
@@ -608,7 +613,7 @@ export default function SettingsPage() {
               <CardBody>
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <p className="text-sm font-semibold text-white">Export Organization Data</p>
+                    <p className="text-sm font-semibold text-fg">Export Organization Data</p>
                     <p className="text-xs text-slate-500 mt-0.5">Download a full export of your portfolio data as CSV.</p>
                   </div>
                   <button onClick={() => navigate('/export')}
@@ -623,7 +628,7 @@ export default function SettingsPage() {
               <CardBody>
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <p className="text-sm font-semibold text-white">Reset Demo Portfolio</p>
+                    <p className="text-sm font-semibold text-fg">Reset Demo Portfolio</p>
                     <p className="text-xs text-slate-500 mt-0.5">Permanently deletes all properties, leases, tenants, financials, alerts, and tasks. Cannot be undone.</p>
                     {resetDone && <p className="text-xs text-success mt-2">Portfolio data cleared successfully.</p>}
                   </div>
@@ -653,7 +658,7 @@ export default function SettingsPage() {
                 <div className="flex items-start justify-between gap-4">
                   <div>
                     <div className="flex items-center gap-2 mb-0.5">
-                      <p className="text-sm font-semibold text-white">Delete Organization</p>
+                      <p className="text-sm font-semibold text-fg">Delete Organization</p>
                       <span className="rounded-full bg-surface-300 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-slate-500">Coming Soon</span>
                     </div>
                     <p className="text-xs text-slate-500">Permanently removes your organization, all data, and cancels billing.</p>

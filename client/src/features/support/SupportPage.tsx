@@ -155,7 +155,7 @@ export default function SupportPage() {
                     activeCategory === 'Feature Request' ? 'e.g. Export leases to CSV' :
                     'How can we help?'
                   }
-                  className="w-full rounded-lg border border-surface-400/50 bg-surface-200 px-3 py-2 text-sm text-white placeholder-slate-600 focus:border-brand-500 focus:outline-none"
+                  className="w-full rounded-lg border border-surface-400/50 bg-surface-200 px-3 py-2 text-sm text-fg placeholder-slate-600 focus:border-brand-500 focus:outline-none"
                 />
               </div>
 
@@ -170,7 +170,7 @@ export default function SupportPage() {
                     activeCategory === 'Feature Request' ? 'Describe the feature and how it would help your workflow…' :
                     'Tell us what you need help with…'
                   }
-                  className="w-full rounded-lg border border-surface-400/50 bg-surface-200 px-3 py-2 text-sm text-white placeholder-slate-600 focus:border-brand-500 focus:outline-none resize-none"
+                  className="w-full rounded-lg border border-surface-400/50 bg-surface-200 px-3 py-2 text-sm text-fg placeholder-slate-600 focus:border-brand-500 focus:outline-none resize-none"
                 />
               </div>
 

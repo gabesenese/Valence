@@ -64,7 +64,7 @@ function BackupRow({ backup, onRestore, onDelete, apiBase, busy }: {
       </div>
 
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-white truncate">{backup.label}</p>
+        <p className="text-sm font-medium text-fg truncate">{backup.label}</p>
         <p className="text-xs text-slate-500">{formatDate(backup.createdAt)} · {formatBytes(backup.sizeBytes)}</p>
       </div>
 
@@ -191,7 +191,7 @@ export default function BackupPage() {
               </div>
               <div>
                 <p className="text-xs text-slate-500">{label}</p>
-                <p className="text-sm font-semibold text-white">{value}</p>
+                <p className="text-sm font-semibold text-fg">{value}</p>
                 <p className="text-[11px] text-slate-600">{sub}</p>
               </div>
             </CardBody>

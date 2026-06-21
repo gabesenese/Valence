@@ -41,10 +41,10 @@ export default function BillingSuccessPage() {
             <CheckCircle2 className="h-8 w-8 text-success" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-white">You're all set</h1>
+            <h1 className="text-2xl font-bold text-fg">You're all set</h1>
             {planLabel && (
               <p className="mt-2 text-sm text-slate-400">
-                Your account has been upgraded to <span className="font-semibold text-white">{planLabel}</span>.
+                Your account has been upgraded to <span className="font-semibold text-fg">{planLabel}</span>.
               </p>
             )}
             <p className="mt-1 text-xs text-slate-600">Redirecting to dashboard…</p>

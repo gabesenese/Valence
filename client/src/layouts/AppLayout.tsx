@@ -16,6 +16,7 @@ import { authService } from '@/services/auth.service';
 import { usePlan, PLAN_LABELS } from '@/hooks/usePlan';
 import { TrialBanner } from '@/components/ui/TrialBanner';
 import { NotificationBell } from '@/components/ui/NotificationBell';
+import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { EmailVerificationBanner } from '@/components/ui/EmailVerificationBanner';
 
 type NavItem = {
@@ -163,7 +164,7 @@ export function AppLayout() {
           <div className="flex flex-1 items-center gap-2.5">
             <img src="/logo.svg" alt="Valence" className="h-8 w-5 shrink-0" />
             {!isCollapsed && (
-              <span className="text-sm font-bold tracking-tight text-white">Valence</span>
+              <span className="text-sm font-bold tracking-tight text-fg">Valence</span>
             )}
           </div>
           <button
@@ -320,6 +321,7 @@ export function AppLayout() {
             <span className="hidden text-xs text-slate-600 sm:inline">Operational Intelligence Platform</span>
           </div>
           <div className="flex items-center gap-3">
+            <ThemeToggle />
             <NotificationBell />
             <div className="hidden items-center gap-2 sm:flex">
               <div className="h-2 w-2 animate-pulse-slow rounded-full bg-success" />

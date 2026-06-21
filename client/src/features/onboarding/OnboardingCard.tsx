@@ -17,7 +17,7 @@ function StatPill({
   return (
     <div className="flex flex-col items-center gap-1.5 rounded-xl border border-surface-400/40 bg-surface-200/40 px-3 py-3">
       <Icon className="h-4 w-4 text-success" />
-      <span className="text-lg font-bold text-white tabular-nums">{value}</span>
+      <span className="text-lg font-bold text-fg tabular-nums">{value}</span>
       <span className="text-[11px] text-slate-500">{label}</span>
     </div>
   );
@@ -60,7 +60,7 @@ export function OnboardingCard() {
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-center gap-2">
             <CheckCircle2 className="h-4 w-4 text-success" />
-            <h3 className="text-sm font-semibold text-white">Portfolio Setup Complete</h3>
+            <h3 className="text-sm font-semibold text-fg">Portfolio Setup Complete</h3>
           </div>
           <button
             onClick={dismissComplete}
@@ -95,7 +95,7 @@ export function OnboardingCard() {
   return (
     <div className="rounded-2xl border border-surface-400/40 bg-surface-100 p-5">
       <div className="flex items-start justify-between mb-1">
-        <h3 className="text-sm font-semibold text-white">Get Started with Valence</h3>
+        <h3 className="text-sm font-semibold text-fg">Get Started with Valence</h3>
         <button
           onClick={dismiss}
           className="text-slate-600 hover:text-slate-400 transition-colors mt-0.5"

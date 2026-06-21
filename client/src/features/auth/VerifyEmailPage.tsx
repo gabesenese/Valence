@@ -30,9 +30,9 @@ export default function VerifyEmailPage() {
       <div className="relative w-full max-w-sm animate-slide-up px-4">
         <div className="mb-8 flex flex-col items-center gap-3">
           <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-600 shadow-glow-brand">
-            <Activity className="h-6 w-6 text-white" />
+            <Activity className="h-6 w-6 text-fg" />
           </div>
-          <h1 className="text-xl font-bold text-white tracking-tight">Valence</h1>
+          <h1 className="text-xl font-bold text-fg tracking-tight">Valence</h1>
         </div>
 
         <div className="rounded-2xl border border-surface-400/60 bg-surface-100/80 p-8 shadow-card backdrop-blur-sm text-center">
@@ -45,7 +45,7 @@ export default function VerifyEmailPage() {
           {status === 'success' && (
             <>
               <CheckCircle2 className="mx-auto mb-3 h-10 w-10 text-success" />
-              <h2 className="text-base font-semibold text-white">Email verified</h2>
+              <h2 className="text-base font-semibold text-fg">Email verified</h2>
               <p className="mt-2 text-xs text-slate-400">Your email address has been confirmed.</p>
               <Link to="/queue" className="mt-6 inline-block text-xs text-brand-400 hover:text-brand-300 transition-colors">
                 Go to dashboard →
@@ -55,7 +55,7 @@ export default function VerifyEmailPage() {
           {status === 'error' && (
             <>
               <XCircle className="mx-auto mb-3 h-10 w-10 text-danger" />
-              <h2 className="text-base font-semibold text-white">Verification failed</h2>
+              <h2 className="text-base font-semibold text-fg">Verification failed</h2>
               <p className="mt-2 text-xs text-slate-400">This link is invalid or has expired.</p>
               <Link to="/auth/login" className="mt-6 inline-block text-xs text-brand-400 hover:text-brand-300 transition-colors">
                 Sign in to resend →

@@ -142,7 +142,7 @@ function UploadModal({ onClose }: { onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
       <div className="w-full max-w-md rounded-2xl border border-surface-400/40 bg-surface-100 p-6 shadow-xl">
-        <h2 className="text-base font-semibold text-white mb-4">Upload Document</h2>
+        <h2 className="text-base font-semibold text-fg mb-4">Upload Document</h2>
         <div
           onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
           onDragLeave={() => setDragging(false)}

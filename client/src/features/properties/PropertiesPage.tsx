@@ -201,7 +201,7 @@ export default function PropertiesPage() {
                     </button>
                   </div>
                 </div>
-                <h3 className="font-semibold text-white">{p.name}</h3>
+                <h3 className="font-semibold text-fg">{p.name}</h3>
                 <div className="mt-1 flex items-center gap-1 text-xs text-slate-500">
                   <MapPin className="h-3 w-3" />
                   {p.city}, {p.state}
@@ -237,7 +237,7 @@ export default function PropertiesPage() {
               >
                 <div className="flex items-center justify-between border-t border-danger/20 bg-danger/5 px-4 py-3">
                   <p className="text-xs text-slate-400">
-                    Delete <span className="font-semibold text-white">{p.name}</span>?
+                    Delete <span className="font-semibold text-fg">{p.name}</span>?
                   </p>
                   <div className="flex items-center gap-2">
                     <button

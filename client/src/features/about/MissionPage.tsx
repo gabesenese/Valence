@@ -48,7 +48,7 @@ export default function MissionPage() {
       </Section>
 
       <div className="rounded-2xl border border-brand-500/20 bg-gradient-to-br from-brand-600/5 to-surface-100 p-8">
-        <h2 className="text-xl font-bold text-white">See it on your own portfolio</h2>
+        <h2 className="text-xl font-bold text-fg">See it on your own portfolio</h2>
         <p className="mt-2 text-sm leading-relaxed text-slate-400">
           Explore the demo portfolio — no account required — or start a free trial and import your own.
         </p>
@@ -61,7 +61,7 @@ export default function MissionPage() {
           </Link>
           <Link
             to="/pricing"
-            className="inline-flex items-center gap-2 rounded-xl border border-surface-500 bg-surface-100 px-5 py-2.5 text-sm font-semibold text-slate-300 hover:border-brand-500/50 hover:text-white transition-colors"
+            className="inline-flex items-center gap-2 rounded-xl border border-surface-500 bg-surface-100 px-5 py-2.5 text-sm font-semibold text-slate-300 hover:border-brand-500/50 hover:text-fg transition-colors"
           >
             View Pricing
           </Link>

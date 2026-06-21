@@ -53,7 +53,7 @@ function SplashScreen({ onStart }: { onStart: () => void }) {
           <Upload className="h-8 w-8 text-brand-400" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-white">Import your portfolio</h1>
+          <h1 className="text-2xl font-bold text-fg">Import your portfolio</h1>
           <p className="mt-2 text-sm text-slate-400 max-w-md">
             Bring your properties, leases, and tenants into Valence in minutes.
             Your CSV doesn't need to match our format exactly — we'll auto-detect your columns.
@@ -67,7 +67,7 @@ function SplashScreen({ onStart }: { onStart: () => void }) {
           <CardBody className="flex flex-col gap-4">
             <div className="flex items-center gap-2">
               <CheckCircle2 className="h-4 w-4 text-success" />
-              <h3 className="text-sm font-semibold text-white">What to prepare</h3>
+              <h3 className="text-sm font-semibold text-fg">What to prepare</h3>
             </div>
             <div className="flex flex-col gap-3">
               {CHECKLIST.map((item) => (
@@ -96,7 +96,7 @@ function SplashScreen({ onStart }: { onStart: () => void }) {
           <CardBody className="flex flex-col gap-4">
             <div className="flex items-center gap-2">
               <Zap className="h-4 w-4 text-brand-400" />
-              <h3 className="text-sm font-semibold text-white">Recommended order</h3>
+              <h3 className="text-sm font-semibold text-fg">Recommended order</h3>
             </div>
             <div className="flex flex-col gap-3">
               {ORDER.map((item) => (
@@ -455,7 +455,7 @@ function MappingView({
             }}
             className={cn(
               'w-full rounded-lg border bg-surface-200 px-2.5 py-1.5 text-sm outline-none transition-colors cursor-pointer',
-              selected ? 'border-brand-500/30 text-white' : 'border-surface-400/40 text-slate-500',
+              selected ? 'border-brand-500/30 text-fg' : 'border-surface-400/40 text-slate-500',
             )}
           >
             <option value="">— Not mapped —</option>
@@ -494,8 +494,8 @@ function MappingView({
         <div className="flex items-center gap-2">
           <Sparkles className="h-4 w-4 text-brand-400 shrink-0" />
           <p className="text-sm text-slate-300">
-            <span className="font-semibold text-white">{autoCount} column{autoCount !== 1 ? 's' : ''} auto-matched</span>
-            {manualCount > 0 && <>, <span className="text-white">{manualCount} manually mapped</span></>}
+            <span className="font-semibold text-fg">{autoCount} column{autoCount !== 1 ? 's' : ''} auto-matched</span>
+            {manualCount > 0 && <>, <span className="text-fg">{manualCount} manually mapped</span></>}
             {unmappedRequired.length > 0 && (
               <> · <span className="text-warning font-medium">{unmappedRequired.length} required field{unmappedRequired.length > 1 ? 's' : ''} need attention</span></>
             )}
@@ -644,7 +644,7 @@ function CsvStep({
           ].map(({ label, value, icon: Icon, color }) => (
             <div key={label} className="flex flex-col items-center gap-1 rounded-xl border border-surface-400/30 bg-surface-100/50 py-4">
               <Icon className={cn('h-5 w-5', color)} />
-              <p className="text-xl font-bold text-white">{value}</p>
+              <p className="text-xl font-bold text-fg">{value}</p>
               <p className="text-xs text-slate-500">{label}</p>
             </div>
           ))}
@@ -657,7 +657,7 @@ function CsvStep({
             <div className="flex items-center gap-3 rounded-xl border border-brand-500/20 bg-brand-600/10 px-4 py-3">
               <TrendingUp className="h-4 w-4 text-brand-400 shrink-0" />
               <p className="flex-1 text-sm min-w-0">
-                <span className="font-semibold text-white">{planLimitErrors.length.toLocaleString()} rows skipped</span>
+                <span className="font-semibold text-fg">{planLimitErrors.length.toLocaleString()} rows skipped</span>
                 <span className="text-slate-400"> — {planName} plan · {result.currentCount}/{result.planLimit} used</span>
               </p>
               <a href="/settings?tab=billing" className="shrink-0 inline-flex items-center gap-1.5 rounded-lg bg-brand-600 hover:bg-brand-500 px-3 py-1.5 text-xs font-semibold text-white transition-colors">
@@ -717,7 +717,7 @@ function CsvStep({
     <div className="flex flex-col gap-4">
       <div className="flex items-start justify-between gap-4 rounded-xl border border-surface-400/30 bg-surface-100/50 p-4">
         <div>
-          <p className="text-sm font-semibold text-white mb-0.5">Download CSV template</p>
+          <p className="text-sm font-semibold text-fg mb-0.5">Download CSV template</p>
           <p className="text-xs text-slate-500 max-w-lg">{tpl.hint}</p>
         </div>
         <button
@@ -801,7 +801,7 @@ function DocumentsStep({ count, onCount }: { count: number; onCount: (n: number)
   return (
     <div className="flex flex-col gap-4">
       <div className="rounded-xl border border-surface-400/30 bg-surface-100/50 p-4">
-        <p className="text-sm font-semibold text-white mb-0.5">Upload lease documents</p>
+        <p className="text-sm font-semibold text-fg mb-0.5">Upload lease documents</p>
         <p className="text-xs text-slate-500">
           PDFs, images, and Word documents. Associate files with properties and leases from the Documents page after uploading.
         </p>
@@ -919,7 +919,7 @@ function IntelligenceStep() {
           <Sparkles className="absolute inset-0 m-auto h-6 w-6 text-brand-400" />
         </div>
         <div className="text-center">
-          <p className="text-lg font-semibold text-white">Generating portfolio intelligence…</p>
+          <p className="text-lg font-semibold text-fg">Generating portfolio intelligence…</p>
           <p className="mt-1 text-sm text-slate-500">Analyzing your properties, leases, and financial data</p>
         </div>
         <div className="flex w-full max-w-sm flex-col gap-2.5">
@@ -930,7 +930,7 @@ function IntelligenceStep() {
                 : i === doneCount
                 ? <Loader2 className="h-4 w-4 shrink-0 text-brand-400 animate-spin" />
                 : <div className="h-4 w-4 shrink-0 rounded-full border border-surface-400/40" />}
-              <span className={cn('text-sm transition-colors', i < doneCount ? 'text-slate-400' : i === doneCount ? 'text-white' : 'text-slate-600')}>
+              <span className={cn('text-sm transition-colors', i < doneCount ? 'text-slate-400' : i === doneCount ? 'text-fg' : 'text-slate-600')}>
                 {item}
               </span>
             </div>
@@ -946,7 +946,7 @@ function IntelligenceStep() {
         <CheckCircle2 className="h-8 w-8 text-success" />
       </div>
       <div>
-        <p className="text-xl font-bold text-white">Your portfolio is ready</p>
+        <p className="text-xl font-bold text-fg">Your portfolio is ready</p>
         <p className="mt-1.5 text-sm text-slate-400">Health score, alerts, and benchmarks are now live.</p>
       </div>
       {summary && (
@@ -957,7 +957,7 @@ function IntelligenceStep() {
             { label: 'Open alerts', value: summary.alerts },
           ].map(({ label, value }) => (
             <div key={label} className="text-center">
-              <p className="text-2xl font-bold text-white tabular-nums">{value}</p>
+              <p className="text-2xl font-bold text-fg tabular-nums">{value}</p>
               <p className="text-xs text-slate-500 mt-0.5">{label}</p>
             </div>
           ))}
@@ -1033,7 +1033,7 @@ export default function ImportPage() {
         <CardBody>
           {current.id !== 'intelligence' && (
             <div className="mb-6">
-              <h2 className="text-base font-semibold text-white">{current.label}</h2>
+              <h2 className="text-base font-semibold text-fg">{current.label}</h2>
               <p className="text-sm text-slate-500 mt-0.5">{STEP_DESCRIPTIONS[current.id]}</p>
             </div>
           )}

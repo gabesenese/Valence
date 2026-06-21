@@ -166,7 +166,7 @@ function TenantPanel({ tenant, onClose }: { tenant: CrmTenant; onClose: () => vo
         {/* Header */}
         <div className="flex items-start justify-between p-5 border-b border-surface-400/30 sticky top-0 bg-surface-50 z-10">
           <div>
-            <h2 className="text-base font-semibold text-white">{tenant.name}</h2>
+            <h2 className="text-base font-semibold text-fg">{tenant.name}</h2>
             {tenant.company && <p className="text-xs text-slate-500 mt-0.5">{tenant.company}</p>}
           </div>
           <button onClick={onClose} className="text-slate-500 hover:text-slate-300 transition-colors">
@@ -204,7 +204,7 @@ function TenantPanel({ tenant, onClose }: { tenant: CrmTenant; onClose: () => vo
                 { label: 'Expiring Soon', value: String(profile.expiringSoon), danger: profile.expiringSoon > 0 },
               ].map((kpi) => (
                 <div key={kpi.label} className="rounded-lg border border-surface-400/40 bg-surface-200/40 px-3 py-2.5 text-center">
-                  <p className={`text-lg font-bold ${kpi.danger ? 'text-warning' : 'text-white'}`}>{kpi.value}</p>
+                  <p className={`text-lg font-bold ${kpi.danger ? 'text-warning' : 'text-fg'}`}>{kpi.value}</p>
                   <p className="text-[10px] text-slate-500 mt-0.5">{kpi.label}</p>
                 </div>
               ))}
@@ -363,7 +363,7 @@ function TenantCard({ tenant, onClick }: { tenant: CrmTenant; onClick: () => voi
     >
       <div className="flex items-start justify-between gap-2 mb-3">
         <div className="min-w-0">
-          <p className="text-sm font-semibold text-white truncate">{tenant.name}</p>
+          <p className="text-sm font-semibold text-fg truncate">{tenant.name}</p>
           {tenant.company && <p className="text-xs text-slate-500 truncate">{tenant.company}</p>}
         </div>
         <Badge variant={statusCfg.variant}>{statusCfg.label}</Badge>

@@ -99,7 +99,7 @@ export default function PortfolioPerformancePage() {
         <div className="rounded-xl border border-surface-400/30 overflow-hidden">
           <div className="flex items-center gap-2 px-4 py-3 border-b border-surface-400/40 bg-surface-200/30">
             <Trophy className="h-3.5 w-3.5 text-amber-400" />
-            <span className="text-xs font-semibold text-white">Top Performers</span>
+            <span className="text-xs font-semibold text-fg">Top Performers</span>
           </div>
           {topPerformers.length === 0 ? (
             <p className="px-4 py-8 text-sm text-slate-600">No data yet</p>
@@ -116,7 +116,7 @@ export default function PortfolioPerformancePage() {
         <div className="rounded-xl border border-surface-400/30 overflow-hidden">
           <div className="flex items-center gap-2 px-4 py-3 border-b border-surface-400/40 bg-surface-200/30">
             <AlertTriangle className="h-3.5 w-3.5 text-danger" />
-            <span className="text-xs font-semibold text-white">Needs Attention</span>
+            <span className="text-xs font-semibold text-fg">Needs Attention</span>
           </div>
           {needsAttention.length === 0 ? (
             <p className="px-4 py-8 text-sm text-slate-600">All properties are performing well</p>

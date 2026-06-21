@@ -70,7 +70,7 @@ function QueueMock() {
         <div>
           <div className="flex items-center gap-2">
             <Inbox className="h-4 w-4 text-brand-400" />
-            <span className="text-sm font-semibold text-white">Work Queue</span>
+            <span className="text-sm font-semibold text-fg">Work Queue</span>
             <span className="rounded-full bg-danger/20 px-2 py-0.5 text-[10px] font-bold text-danger">4 urgent</span>
           </div>
           <p className="mt-0.5 text-xs text-slate-500">Items ranked by revenue impact</p>
@@ -128,7 +128,7 @@ function Step({ n, icon: Icon, title, body }: { n: number; icon: React.Component
         </div>
         <span className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-brand-600 text-[10px] font-bold text-white">{n}</span>
       </div>
-      <h3 className="text-sm font-semibold text-white">{title}</h3>
+      <h3 className="text-sm font-semibold text-fg">{title}</h3>
       <p className="mt-1.5 text-xs leading-relaxed text-slate-500">{body}</p>
     </div>
   );
@@ -147,7 +147,7 @@ function Persona({
       <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-brand-600/10">
         <Icon className="h-5 w-5 text-brand-400" />
       </div>
-      <h3 className="text-sm font-semibold text-white">{title}</h3>
+      <h3 className="text-sm font-semibold text-fg">{title}</h3>
       <p className="mt-1 text-xs text-brand-300/80">{tagline}</p>
       <ul className="mt-4 flex flex-col gap-2">
         {points.map((p) => (
@@ -187,7 +187,7 @@ export default function LandingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-surface-0 text-white">
+    <div className="min-h-screen bg-surface-0 text-fg">
       {/* Ambient glow — hidden on mobile, too expensive to rasterize on phone GPUs */}
       <div className="pointer-events-none fixed inset-0 hidden overflow-hidden md:block">
         <div className="absolute -top-48 left-1/2 h-[600px] w-[600px] -translate-x-1/2 rounded-full bg-brand-600/8 blur-[120px]" />
@@ -204,7 +204,7 @@ export default function LandingPage() {
           Commercial Real Estate Operating System
         </div>
 
-        <h1 className="text-5xl font-bold leading-[1.12] tracking-tight text-white md:text-6xl lg:text-7xl">
+        <h1 className="text-5xl font-bold leading-[1.12] tracking-tight text-fg md:text-6xl lg:text-7xl">
           Protect Revenue<br />
           <span className="text-brand-400">Across Your Portfolio</span>
         </h1>
@@ -223,7 +223,7 @@ export default function LandingPage() {
           <button
             onClick={handleDemo}
             disabled={demoLoading}
-            className="inline-flex items-center gap-2 rounded-xl border border-surface-500 bg-surface-100 px-6 py-3 text-sm font-semibold text-slate-300 hover:border-brand-500/50 hover:text-white transition-colors disabled:opacity-60"
+            className="inline-flex items-center gap-2 rounded-xl border border-surface-500 bg-surface-100 px-6 py-3 text-sm font-semibold text-slate-300 hover:border-brand-500/50 hover:text-fg transition-colors disabled:opacity-60"
           >
             {demoLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5 text-brand-400" />}
             {demoLoading ? 'Loading demo…' : 'Explore Demo Portfolio'}
@@ -243,7 +243,7 @@ export default function LandingPage() {
         <div className="mx-auto max-w-4xl px-6">
           <div className="mb-12 text-center">
             <p className="text-xs font-semibold uppercase tracking-widest text-brand-400 mb-2">How It Works</p>
-            <h2 className="text-3xl font-bold text-white">From spreadsheet chaos<br />to operational clarity</h2>
+            <h2 className="text-3xl font-bold text-fg">From spreadsheet chaos<br />to operational clarity</h2>
           </div>
 
           <div className="grid gap-8 md:grid-cols-3 relative">
@@ -277,7 +277,7 @@ export default function LandingPage() {
         <div className="mx-auto max-w-5xl px-6">
           <div className="mb-12 text-center">
             <p className="text-xs font-semibold uppercase tracking-widest text-brand-400 mb-2">Built For</p>
-            <h2 className="text-3xl font-bold text-white">Every role in your organization</h2>
+            <h2 className="text-3xl font-bold text-fg">Every role in your organization</h2>
           </div>
 
           <div className="grid gap-5 md:grid-cols-3">
@@ -350,7 +350,7 @@ export default function LandingPage() {
                   <f.icon className={cn('h-4 w-4', f.color)} />
                 </div>
                 <div>
-                  <h3 className="text-sm font-semibold text-white">{f.title}</h3>
+                  <h3 className="text-sm font-semibold text-fg">{f.title}</h3>
                   <p className="mt-1 text-xs leading-relaxed text-slate-500">{f.body}</p>
                 </div>
               </div>
@@ -364,7 +364,7 @@ export default function LandingPage() {
         <div className="mx-auto max-w-5xl px-6">
           <div className="mb-12 text-center">
             <p className="text-xs font-semibold uppercase tracking-widest text-brand-400 mb-2">About Valence</p>
-            <h2 className="text-3xl font-bold text-white">Built with intention.<br />Operated with trust.</h2>
+            <h2 className="text-3xl font-bold text-fg">Built with intention.<br />Operated with trust.</h2>
             <p className="mt-4 mx-auto max-w-lg text-sm leading-relaxed text-slate-500">
               We built Valence because commercial real estate operators deserve better than spreadsheets and inboxes.
               Here's what drives us, and how we handle your data.
@@ -409,7 +409,7 @@ export default function LandingPage() {
                   <card.icon className={cn('h-4 w-4', card.iconColor)} />
                 </div>
                 <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-600 mb-1">{card.eyebrow}</p>
-                <h3 className="text-sm font-semibold text-white">{card.heading}</h3>
+                <h3 className="text-sm font-semibold text-fg">{card.heading}</h3>
                 <p className="mt-2 text-xs leading-relaxed text-slate-500 flex-1">{card.body}</p>
                 <Link
                   to={card.href}
@@ -430,7 +430,7 @@ export default function LandingPage() {
           <div className="inline-flex items-center gap-2 rounded-full border border-success/30 bg-success/10 px-4 py-1.5 text-xs font-semibold text-success mb-6">
             <CheckCircle2 className="h-3 w-3" /> Interactive Demo — No Setup Required
           </div>
-          <h2 className="text-4xl font-bold text-white">
+          <h2 className="text-4xl font-bold text-fg">
             See it live.<br />
             <span className="text-brand-400">Decide in minutes.</span>
           </h2>

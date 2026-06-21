@@ -93,7 +93,7 @@ export default function PropertyDetailPage() {
           </div>
           <div>
             <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-lg font-bold text-white tracking-tight sm:text-xl">{property.name}</h1>
+              <h1 className="text-lg font-bold text-fg tracking-tight sm:text-xl">{property.name}</h1>
               <Badge variant={property.status === 'ACTIVE' ? 'success' : 'neutral'}>{property.status}</Badge>
               <Badge variant="neutral">{property.type.replace('_', ' ')}</Badge>
             </div>
@@ -181,7 +181,7 @@ export default function PropertyDetailPage() {
                             {lease.tenant.email && <p className="text-xs text-slate-500">{lease.tenant.email}</p>}
                           </td>
                           <td className="px-4 py-3 text-sm text-slate-500">{lease.unitNumber ?? '—'}</td>
-                          <td className="px-4 py-3 text-sm font-medium text-white tabular-nums">{formatCurrency(lease.baseRent)}/mo</td>
+                          <td className="px-4 py-3 text-sm font-medium text-fg tabular-nums">{formatCurrency(lease.baseRent)}/mo</td>
                           <td className="px-4 py-3">
                             <p className="text-sm text-slate-400">{formatDate(lease.endDate)}</p>
                             <p className={`text-xs font-semibold tabular-nums ${
@@ -221,7 +221,7 @@ export default function PropertyDetailPage() {
                     return (
                       <li key={entry.id} className="mb-5 ml-5">
                         <span className={`absolute -left-[7px] mt-1 flex h-3.5 w-3.5 items-center justify-center rounded-full ${dotColor}`}>
-                          <Icon className="h-2 w-2 text-white" />
+                          <Icon className="h-2 w-2 text-fg" />
                         </span>
                         <div className="flex items-baseline gap-2 flex-wrap">
                           <p className="text-sm font-medium text-slate-200">{actionLabel}</p>

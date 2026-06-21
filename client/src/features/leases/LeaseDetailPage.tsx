@@ -144,7 +144,7 @@ function PipelineStep({
       </div>
 
       <span className={`flex-1 text-sm font-medium ${
-        completed ? 'text-slate-500' : current ? 'text-white' : 'text-slate-600'
+        completed ? 'text-slate-500' : current ? 'text-fg' : 'text-slate-600'
       }`}>
         {step.label}
       </span>
@@ -334,7 +334,7 @@ export default function LeaseDetailPage() {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <div className="flex flex-wrap items-center gap-2">
-            <h1 className="text-lg font-bold text-white font-mono sm:text-xl">{lease.leaseNumber}</h1>
+            <h1 className="text-lg font-bold text-fg font-mono sm:text-xl">{lease.leaseNumber}</h1>
             <Badge variant={RISK_VARIANT[lease.renewalRisk] ?? 'neutral'} dot>{lease.renewalRisk} RISK</Badge>
             <Badge variant={lease.status === 'ACTIVE' ? 'success' : 'neutral'}>{lease.status}</Badge>
           </div>
@@ -387,7 +387,7 @@ export default function LeaseDetailPage() {
                 <p className={`text-2xl font-bold tabular-nums leading-tight ${
                   signed ? 'text-success' :
                   urgent ? 'text-danger' :
-                  warn   ? 'text-warning' : 'text-white'
+                  warn   ? 'text-warning' : 'text-fg'
                 }`}>
                   {days >= 365 ? +(days / 365).toFixed(1) : Math.max(0, days)}
                 </p>
@@ -625,7 +625,7 @@ export default function LeaseDetailPage() {
                   <tr key={rec.id} className="hover:bg-surface-200/30 transition-colors">
                     <td className="px-4 py-2.5 text-xs text-slate-400">{formatDate(rec.periodStart)}</td>
                     <td className="px-4 py-2.5 text-xs text-slate-400">{rec.type}</td>
-                    <td className={`px-4 py-2.5 text-sm font-medium tabular-nums ${rec.type === 'EXPENSE' ? 'text-danger' : 'text-white'}`}>
+                    <td className={`px-4 py-2.5 text-sm font-medium tabular-nums ${rec.type === 'EXPENSE' ? 'text-danger' : 'text-fg'}`}>
                       {rec.type === 'EXPENSE' ? '-' : ''}{formatCurrency(Number(rec.amount))}
                       {rec.discrepancy && Number(rec.discrepancy) !== 0 && (
                         <span className="ml-1.5 text-xs text-danger">(Δ {formatCurrency(Number(rec.discrepancy))})</span>
@@ -883,7 +883,7 @@ export default function LeaseDetailPage() {
             <div className="flex flex-col gap-2.5">
               <div className="flex items-center justify-between">
                 <span className="text-xs text-slate-500 flex items-center gap-1.5"><DollarSign className="h-3.5 w-3.5" />Base Rent</span>
-                <span className="text-sm font-semibold text-white">{formatCurrency(Number(lease.baseRent))}/mo</span>
+                <span className="text-sm font-semibold text-fg">{formatCurrency(Number(lease.baseRent))}/mo</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-xs text-slate-500 flex items-center gap-1.5"><TrendingUp className="h-3.5 w-3.5" />Annual</span>

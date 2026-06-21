@@ -7,10 +7,11 @@ import { analyticsService } from '@/services/analytics.service';
 import { Card, CardHeader, CardTitle, CardBody } from '@/components/ui/Card';
 import { PageLoader } from '@/components/ui/Spinner';
 import { compactCurrency, formatCurrency } from '@/utils/format';
-
-const PIE_COLORS = ['#10b981', '#6366f1', '#f59e0b', '#ef4444'];
+import { useChartColors } from '@/hooks/useChartColors';
 
 export default function AnalyticsPage() {
+  const c = useChartColors();
+  const PIE_COLORS = [c.success, c.brand, c.warning, c.danger];
   const { data: trend, isLoading } = useQuery({
     queryKey: ['analytics', 'revenue-trend', 12],
     queryFn: () => analyticsService.getRevenueTrend(12),
@@ -50,18 +51,18 @@ export default function AnalyticsPage() {
                 <AreaChart data={trend ?? []} margin={{ top: 5, right: 4, left: -20, bottom: 0 }}>
                   <defs>
                     <linearGradient id="netGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%"  stopColor="#6366f1" stopOpacity={0.3} />
-                      <stop offset="95%" stopColor="#6366f1" stopOpacity={0}   />
+                      <stop offset="5%"  stopColor={c.brand} stopOpacity={0.3} />
+                      <stop offset="95%" stopColor={c.brand} stopOpacity={0}   />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#1e1e32" vertical={false} />
-                  <XAxis dataKey="month" tick={{ fill: '#475569', fontSize: 10 }} tickLine={false} axisLine={false} />
-                  <YAxis tick={{ fill: '#475569', fontSize: 10 }} tickLine={false} axisLine={false} tickFormatter={(v: number) => compactCurrency(v)} width={44} />
+                  <CartesianGrid strokeDasharray="3 3" stroke={c.grid} vertical={false} />
+                  <XAxis dataKey="month" tick={{ fill: c.axis, fontSize: 10 }} tickLine={false} axisLine={false} />
+                  <YAxis tick={{ fill: c.axis, fontSize: 10 }} tickLine={false} axisLine={false} tickFormatter={(v: number) => compactCurrency(v)} width={44} />
                   <Tooltip
-                    contentStyle={{ background: '#13131e', border: '1px solid #252540', borderRadius: 8, fontSize: 11, color: '#e2e8f0' }}
+                    contentStyle={{ background: c.tooltipBg, border: `1px solid ${c.tooltipBorder}`, borderRadius: 8, fontSize: 11, color: c.tooltipText }}
                     formatter={(v: number) => [formatCurrency(v), 'Net Income']}
                   />
-                  <Area type="monotone" dataKey="net" stroke="#6366f1" strokeWidth={2} fill="url(#netGrad)" dot={false} activeDot={{ r: 4, fill: '#6366f1', stroke: '#1e1e32', strokeWidth: 2 }} />
+                  <Area type="monotone" dataKey="net" stroke={c.brand} strokeWidth={2} fill="url(#netGrad)" dot={false} activeDot={{ r: 4, fill: c.brand, stroke: c.tooltipBg, strokeWidth: 2 }} />
                 </AreaChart>
               </ResponsiveContainer>
             </CardBody>
@@ -71,7 +72,7 @@ export default function AnalyticsPage() {
           {performance && performance.length > 0 && (
             <div className="rounded-xl border border-surface-400/30 overflow-hidden">
               <div className="px-5 py-3 border-b border-surface-400/40">
-                <span className="text-sm font-semibold text-white">Occupancy by Property</span>
+                <span className="text-sm font-semibold text-fg">Occupancy by Property</span>
               </div>
               <div className="divide-y divide-surface-400/30">
                 {performance.map((p) => (
@@ -85,9 +86,9 @@ export default function AnalyticsPage() {
                           style={{ width: `${Math.min(100, p.occupancyRate)}%` }}
                         />
                       </div>
-                      <span className="text-sm font-semibold text-white w-10 text-right tabular-nums">{p.occupancyRate}%</span>
+                      <span className="text-sm font-semibold text-fg w-10 text-right tabular-nums">{p.occupancyRate}%</span>
                     </div>
-                    <span className="text-sm font-semibold text-white tabular-nums w-14 text-right shrink-0">{compactCurrency(p.monthlyRevenue)}</span>
+                    <span className="text-sm font-semibold text-fg tabular-nums w-14 text-right shrink-0">{compactCurrency(p.monthlyRevenue)}</span>
                   </div>
                 ))}
               </div>
@@ -117,7 +118,7 @@ export default function AnalyticsPage() {
                           <div className="h-full rounded-full bg-brand-500/70" style={{ width: `${pct}%` }} />
                         </div>
                       </div>
-                      <span className="shrink-0 text-xs font-semibold text-white tabular-nums">{compactCurrency(p.monthlyRevenue)}</span>
+                      <span className="shrink-0 text-xs font-semibold text-fg tabular-nums">{compactCurrency(p.monthlyRevenue)}</span>
                     </div>
                   );
                 })}
@@ -140,7 +141,7 @@ export default function AnalyticsPage() {
                       ))}
                     </Pie>
                     <Tooltip
-                      contentStyle={{ background: '#13131e', border: '1px solid #252540', borderRadius: 8, fontSize: 11, color: '#e2e8f0' }}
+                      contentStyle={{ background: c.tooltipBg, border: `1px solid ${c.tooltipBorder}`, borderRadius: 8, fontSize: 11, color: c.tooltipText }}
                     />
                   </PieChart>
                 </ResponsiveContainer>
@@ -151,7 +152,7 @@ export default function AnalyticsPage() {
                         <span className="h-1.5 w-1.5 rounded-full" style={{ background: PIE_COLORS[i % PIE_COLORS.length] }} />
                         {s.name}
                       </span>
-                      <span className="text-xs font-semibold text-white tabular-nums">{s.value}</span>
+                      <span className="text-xs font-semibold text-fg tabular-nums">{s.value}</span>
                     </div>
                   ))}
                 </div>

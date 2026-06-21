@@ -133,7 +133,7 @@ function TierCard({ tier, onSelect, loading }: { tier: Tier; onSelect: () => voi
       <div className="mb-6">
         <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-500">{tier.name}</h3>
         <div className="mt-2 flex items-baseline gap-1.5">
-          <span className="text-4xl font-bold text-white tabular-nums">${tier.price.toLocaleString()}</span>
+          <span className="text-4xl font-bold text-fg tabular-nums">${tier.price.toLocaleString()}</span>
           <span className="text-sm text-slate-500">/ month</span>
         </div>
         <p className={`mt-2 text-sm font-semibold ${tier.featured ? 'text-brand-300' : 'text-slate-300'}`}>
@@ -218,15 +218,15 @@ export default function PricingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-surface-0 text-white">
+    <div className="min-h-screen bg-surface-0 text-fg">
       {/* Nav */}
       <header className="flex items-center justify-between border-b border-surface-400/30 px-8 py-4">
         <button
           onClick={() => navigate('/queue')}
-          className="flex items-center gap-2.5 text-sm font-bold text-white hover:text-brand-300 transition-colors"
+          className="flex items-center gap-2.5 text-sm font-bold text-fg hover:text-brand-300 transition-colors"
         >
           <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand-600 shadow-glow-brand">
-            <Zap className="h-4 w-4 text-white" />
+            <Zap className="h-4 w-4 text-fg" />
           </div>
           Valence
         </button>
@@ -251,7 +251,7 @@ export default function PricingPage() {
         {/* Hero */}
         <div className="text-center mb-16">
           <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-brand-400">Operational Intelligence Platform</p>
-          <h1 className="text-4xl font-bold text-white tracking-tight">
+          <h1 className="text-4xl font-bold text-fg tracking-tight">
             Priced for outcomes,<br />not features
           </h1>
           <p className="mt-4 text-base text-slate-400 max-w-xl mx-auto leading-relaxed">
@@ -268,7 +268,7 @@ export default function PricingPage() {
                 <Icon className={`h-4.5 w-4.5 ${color}`} />
               </div>
               <div>
-                <p className="text-sm font-semibold text-white">{title}</p>
+                <p className="text-sm font-semibold text-fg">{title}</p>
                 <p className="mt-1 text-xs text-slate-500 leading-relaxed">{description}</p>
               </div>
             </div>
@@ -290,7 +290,7 @@ export default function PricingPage() {
         {/* Usage */}
         <div className="rounded-2xl border border-surface-400/40 bg-surface-100 overflow-hidden mb-16">
           <div className="px-6 py-5 border-b border-surface-400/30">
-            <h2 className="text-sm font-semibold text-white">What's included in every plan</h2>
+            <h2 className="text-sm font-semibold text-fg">What's included in every plan</h2>
             <p className="mt-1 text-xs text-slate-500">
               No surprise overages. Each plan comes with a fixed monthly allowance.
             </p>
@@ -323,7 +323,7 @@ export default function PricingPage() {
 
         {/* CTA */}
         <div className="rounded-2xl border border-brand-500/20 bg-gradient-to-br from-brand-600/5 to-surface-100 p-8 text-center">
-          <h2 className="text-xl font-bold text-white mb-2">Most customers land on Professional</h2>
+          <h2 className="text-xl font-bold text-fg mb-2">Most customers land on Professional</h2>
           <p className="text-sm text-slate-400 mb-6 max-w-md mx-auto">
             Once your team uses Valence every morning to manage their work queue,
             it becomes operationally critical — and the ROI is obvious.

@@ -69,7 +69,7 @@ function AuditRow({ entry }: { entry: AuditLogEntry }) {
 
         {/* Description */}
         <span className="flex-1 truncate text-sm text-slate-300">
-          <span className="font-medium text-white">{actor}</span>
+          <span className="font-medium text-fg">{actor}</span>
           {' '}
           {entry.entity}
           {entry.entityName ? <> · <span className="font-mono text-xs text-slate-400">{entry.entityName}</span></> : null}

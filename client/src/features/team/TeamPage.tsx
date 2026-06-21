@@ -43,7 +43,7 @@ function Avatar({ member }: { member: TeamMember }) {
   const colors = ['bg-brand-600', 'bg-purple-600', 'bg-teal-600', 'bg-orange-600'];
   const color = colors[member.firstName.charCodeAt(0) % colors.length];
   return (
-    <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${color} text-sm font-bold text-white`}>
+    <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${color} text-sm font-bold text-fg`}>
       {initials}
     </div>
   );
@@ -250,7 +250,7 @@ function InviteModal({ onClose }: { onClose: () => void }) {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
       <div className="w-full max-w-md rounded-2xl border border-surface-400/40 bg-surface-100 p-6 shadow-xl mx-4">
         <div className="flex items-center justify-between mb-5">
-          <h2 className="text-base font-semibold text-white">
+          <h2 className="text-base font-semibold text-fg">
             {createdToken ? 'Invite link ready' : 'Invite a team member'}
           </h2>
           <button onClick={onClose} className="text-slate-500 hover:text-slate-300 transition-colors">

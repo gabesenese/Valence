@@ -53,7 +53,7 @@ function FunnelSection({ secret }: { secret: string }) {
                 />
               </div>
               <div className="shrink-0 text-right">
-                <p className="text-sm font-bold tabular-nums text-white">{unique}</p>
+                <p className="text-sm font-bold tabular-nums text-fg">{unique}</p>
                 {step.count !== unique && (
                   <p className="text-[10px] text-slate-600 tabular-nums">{step.count} events</p>
                 )}
@@ -101,7 +101,7 @@ export function OverviewTab({ secret }: { secret: string }) {
                 <p className="text-[11px] text-slate-500">{k.label}</p>
                 <k.icon className="h-3.5 w-3.5 text-slate-600" />
               </div>
-              <p className="text-2xl font-bold text-white tabular-nums">{k.value}</p>
+              <p className="text-2xl font-bold text-fg tabular-nums">{k.value}</p>
               {k.up !== null && (
                 <p className={cn('mt-1 text-[10px] font-medium', k.up ? 'text-success' : 'text-danger')}>
                   {k.up ? '↑ Growing' : '↓ Below target'}
@@ -167,7 +167,7 @@ export function OverviewTab({ secret }: { secret: string }) {
                 className="w-full rounded-t-sm bg-brand-500/60 hover:bg-brand-400 transition-colors"
                 style={{ height: `${(d.count / maxBar) * 80}px`, minHeight: d.count > 0 ? '3px' : '0' }}
               />
-              <div className="absolute -top-6 left-1/2 -translate-x-1/2 hidden group-hover:block bg-surface-300 rounded px-1.5 py-0.5 text-[10px] text-white whitespace-nowrap z-10">
+              <div className="absolute -top-6 left-1/2 -translate-x-1/2 hidden group-hover:block bg-surface-300 rounded px-1.5 py-0.5 text-[10px] text-fg whitespace-nowrap z-10">
                 {d.date.slice(5)} · {d.count}
               </div>
             </div>
@@ -188,7 +188,7 @@ export function OverviewTab({ secret }: { secret: string }) {
           <div className="flex flex-wrap gap-2">
             {data.cohorts.map((c) => (
               <div key={c.week} className="rounded-lg border border-surface-400/30 bg-surface-200/50 px-3 py-2 text-center min-w-[72px]">
-                <p className="text-lg font-bold text-white tabular-nums">{c.users}</p>
+                <p className="text-lg font-bold text-fg tabular-nums">{c.users}</p>
                 <p className="text-[10px] text-slate-500">{c.week}</p>
               </div>
             ))}
@@ -208,7 +208,7 @@ export function OverviewTab({ secret }: { secret: string }) {
             { label: 'AI Usage', value: data.adoption.withAI },
           ].map((a) => (
             <div key={a.label} className="rounded-lg border border-surface-400/30 bg-surface-200/50 px-3 py-3 text-center">
-              <p className="text-xl font-bold text-white tabular-nums">{a.value}</p>
+              <p className="text-xl font-bold text-fg tabular-nums">{a.value}</p>
               <p className="mt-0.5 text-[11px] text-slate-500">{a.label}</p>
             </div>
           ))}

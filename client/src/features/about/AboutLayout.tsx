@@ -15,7 +15,7 @@ export function AboutLayout({ eyebrow, title, intro, updated, children }: AboutL
   useEffect(() => { window.scrollTo(0, 0); }, []);
 
   return (
-    <div className="min-h-screen bg-surface-0 text-white">
+    <div className="min-h-screen bg-surface-0 text-fg">
       {/* Ambient glow */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
         <div className="absolute -top-48 left-1/2 h-[600px] w-[600px] -translate-x-1/2 rounded-full bg-brand-600/8 blur-[120px]" />
@@ -25,7 +25,7 @@ export function AboutLayout({ eyebrow, title, intro, updated, children }: AboutL
 
       <section className="relative z-10 mx-auto max-w-3xl px-6 pt-16 pb-10">
         <p className="text-xs font-semibold uppercase tracking-widest text-brand-400 mb-3">{eyebrow}</p>
-        <h1 className="text-4xl font-bold tracking-tight text-white md:text-5xl">{title}</h1>
+        <h1 className="text-4xl font-bold tracking-tight text-fg md:text-5xl">{title}</h1>
         <p className="mt-5 text-lg leading-relaxed text-slate-400">{intro}</p>
         {updated && <p className="mt-4 text-xs text-slate-600">Last updated {updated}</p>}
       </section>
@@ -43,7 +43,7 @@ export function AboutLayout({ eyebrow, title, intro, updated, children }: AboutL
 export function Section({ heading, children }: { heading: string; children: React.ReactNode }) {
   return (
     <div>
-      <h2 className="text-lg font-semibold text-white">{heading}</h2>
+      <h2 className="text-lg font-semibold text-fg">{heading}</h2>
       <div className="mt-3 flex flex-col gap-3 text-sm leading-relaxed text-slate-400">{children}</div>
     </div>
   );

@@ -121,7 +121,7 @@ function NotesModal({
         className="w-full max-w-md rounded-xl border border-surface-400/60 bg-surface-100 p-6 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <h3 className="text-base font-semibold text-white">
+        <h3 className="text-base font-semibold text-fg">
           {action === 'resolve' ? 'Resolve alert' : 'Dismiss alert'}
         </h3>
         <p className="mt-1 text-sm text-slate-500">
@@ -373,7 +373,7 @@ export default function AlertsPage() {
           <p className="mt-0.5 text-xs text-slate-500">In Progress</p>
         </Card>
         <Card className="p-4 text-center" hover={!!summary} onClick={summary ? () => setStatusFilter('OPEN') : undefined}>
-          <p className="text-2xl font-bold text-white tabular-nums">{summary ? summary.openTotal : '—'}</p>
+          <p className="text-2xl font-bold text-fg tabular-nums">{summary ? summary.openTotal : '—'}</p>
           <p className="mt-0.5 text-xs text-slate-500">Total Open</p>
         </Card>
       </div>

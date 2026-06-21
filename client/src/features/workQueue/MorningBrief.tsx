@@ -78,7 +78,7 @@ export function MorningBrief() {
             <Sparkles className="h-3.5 w-3.5 text-brand-400" />
             <span className="text-[11px] font-semibold uppercase tracking-wider text-brand-400">{label}</span>
           </div>
-          <p className="text-base font-semibold text-white">{greeting}, {user?.firstName}.</p>
+          <p className="text-base font-semibold text-fg">{greeting}, {user?.firstName}.</p>
           <p className="mt-0.5 text-sm text-slate-400">{data.headline}</p>
         </div>
         <button

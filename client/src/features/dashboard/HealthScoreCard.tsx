@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { TrendingUp, TrendingDown, Minus, Activity, ShieldAlert, CheckCircle2 } from 'lucide-react';
 import { aiService, type PortfolioHealthScore } from '@/services/ai.service';
+import { useChartColors } from '@/hooks/useChartColors';
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
@@ -14,7 +15,8 @@ const BAND_CONFIG = {
 // ─── Gauge arc ────────────────────────────────────────────────────────────────
 
 function ScoreGauge({ score, band }: { score: number; band: PortfolioHealthScore['band'] }) {
-  const cfg   = BAND_CONFIG[band];
+  const c     = useChartColors();
+  const ringColor = { critical: c.danger, at_risk: c.warning, stable: c.brand, healthy: c.success }[band];
   const r     = 52;
   const cx    = 64;
   const cy    = 64;
@@ -26,14 +28,14 @@ function ScoreGauge({ score, band }: { score: number; band: PortfolioHealthScore
   return (
     <div className="relative flex items-center justify-center w-32 h-32 shrink-0">
       <svg width="128" height="128" viewBox="0 0 128 128">
-        <circle cx={cx} cy={cy} r={r} fill="none" stroke="#1e1e3a" strokeWidth="10"
+        <circle cx={cx} cy={cy} r={r} fill="none" stroke={c.grid} strokeWidth="10"
           strokeDasharray={`${arc} ${circ - arc}`} strokeDashoffset={-offset} strokeLinecap="round" />
-        <circle cx={cx} cy={cy} r={r} fill="none" stroke={cfg.ring} strokeWidth="10"
+        <circle cx={cx} cy={cy} r={r} fill="none" stroke={ringColor} strokeWidth="10"
           strokeDasharray={`${fill} ${circ - fill}`} strokeDashoffset={-offset} strokeLinecap="round"
           style={{ transition: 'stroke-dasharray 0.8s ease' }} />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="text-3xl font-bold text-white tabular-nums leading-none">{score}</span>
+        <span className="text-3xl font-bold text-fg tabular-nums leading-none">{score}</span>
         <span className="text-[10px] text-slate-500 tracking-widest mt-0.5">/ 100</span>
       </div>
     </div>
@@ -85,7 +87,7 @@ export default function HealthScoreCard() {
       <div className="flex items-center justify-between px-5 py-3 border-b border-surface-400/30 bg-surface-200/30">
         <div className="flex items-center gap-2">
           <Activity className="h-4 w-4 text-brand-400" />
-          <span className="text-sm font-semibold text-white">Portfolio Health</span>
+          <span className="text-sm font-semibold text-fg">Portfolio Health</span>
           <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold ring-1 ring-inset ${cfg.text} ${cfg.bg}`}>
             {cfg.label}
           </span>

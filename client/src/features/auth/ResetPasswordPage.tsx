@@ -54,10 +54,10 @@ export default function ResetPasswordPage() {
       <div className="relative w-full max-w-sm animate-slide-up px-4">
         <div className="mb-8 flex flex-col items-center gap-3">
           <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-600 shadow-glow-brand">
-            <Activity className="h-6 w-6 text-white" />
+            <Activity className="h-6 w-6 text-fg" />
           </div>
           <div className="text-center">
-            <h1 className="text-xl font-bold text-white tracking-tight">Valence</h1>
+            <h1 className="text-xl font-bold text-fg tracking-tight">Valence</h1>
           </div>
         </div>
 
@@ -65,13 +65,13 @@ export default function ResetPasswordPage() {
           {done ? (
             <div className="text-center">
               <CheckCircle2 className="mx-auto mb-3 h-10 w-10 text-success" />
-              <h2 className="text-base font-semibold text-white">Password reset</h2>
+              <h2 className="text-base font-semibold text-fg">Password reset</h2>
               <p className="mt-2 text-xs text-slate-400">Redirecting you to sign in…</p>
             </div>
           ) : (
             <>
               <div className="mb-6">
-                <h2 className="text-base font-semibold text-white">Set new password</h2>
+                <h2 className="text-base font-semibold text-fg">Set new password</h2>
                 <p className="mt-0.5 text-xs text-slate-500">Must be at least 8 characters.</p>
               </div>
 

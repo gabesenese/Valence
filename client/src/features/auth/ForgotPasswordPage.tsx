@@ -34,10 +34,10 @@ export default function ForgotPasswordPage() {
       <div className="relative w-full max-w-sm animate-slide-up px-4">
         <div className="mb-8 flex flex-col items-center gap-3">
           <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-600 shadow-glow-brand">
-            <Activity className="h-6 w-6 text-white" />
+            <Activity className="h-6 w-6 text-fg" />
           </div>
           <div className="text-center">
-            <h1 className="text-xl font-bold text-white tracking-tight">Valence</h1>
+            <h1 className="text-xl font-bold text-fg tracking-tight">Valence</h1>
             <p className="mt-0.5 text-xs text-slate-500">Operational Intelligence Platform</p>
           </div>
         </div>
@@ -46,7 +46,7 @@ export default function ForgotPasswordPage() {
           {sent ? (
             <div className="text-center">
               <CheckCircle2 className="mx-auto mb-3 h-10 w-10 text-success" />
-              <h2 className="text-base font-semibold text-white">Check your email</h2>
+              <h2 className="text-base font-semibold text-fg">Check your email</h2>
               <p className="mt-2 text-xs text-slate-400 leading-relaxed">
                 If <span className="text-slate-300">{email}</span> is registered, we've sent a password reset link. Check your spam folder if you don't see it.
               </p>
@@ -57,7 +57,7 @@ export default function ForgotPasswordPage() {
           ) : (
             <>
               <div className="mb-6">
-                <h2 className="text-base font-semibold text-white">Reset your password</h2>
+                <h2 className="text-base font-semibold text-fg">Reset your password</h2>
                 <p className="mt-0.5 text-xs text-slate-500">Enter your email and we'll send a reset link.</p>
               </div>
 

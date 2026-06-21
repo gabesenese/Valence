@@ -41,7 +41,7 @@ export function SystemTab({ secret }: { secret: string }) {
                 <p className="text-[11px] text-slate-500">{k.label}</p>
                 <k.icon className="h-3.5 w-3.5 text-slate-600" />
               </div>
-              <p className="text-lg font-bold text-white tabular-nums">{k.value}</p>
+              <p className="text-lg font-bold text-fg tabular-nums">{k.value}</p>
             </div>
           ))}
         </div>
@@ -75,7 +75,7 @@ export function SystemTab({ secret }: { secret: string }) {
         <div className="grid grid-cols-3 gap-3 sm:grid-cols-7">
           {Object.entries(data.db).map(([key, count]) => (
             <div key={key} className="rounded-xl border border-surface-400/40 bg-surface-100 px-3 py-3 text-center">
-              <p className="text-xl font-bold text-white tabular-nums">{count}</p>
+              <p className="text-xl font-bold text-fg tabular-nums">{count}</p>
               <p className="mt-0.5 text-[11px] text-slate-500 capitalize">{key}</p>
             </div>
           ))}

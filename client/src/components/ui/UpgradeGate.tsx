@@ -18,7 +18,7 @@ function UpgradeBanner({ required }: { required: Plan }) {
         <Lock className="h-5 w-5 text-slate-400" />
       </div>
       <div>
-        <p className="text-sm font-semibold text-white">
+        <p className="text-sm font-semibold text-fg">
           {PLAN_LABELS[required]} plan required
         </p>
         <p className="mt-1 text-xs text-slate-500 max-w-xs">
@@ -51,7 +51,7 @@ export function UpgradeGate({ feature, children, overlay }: UpgradeGateProps) {
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="rounded-xl border border-surface-400/60 bg-surface-100 px-6 py-4 text-center shadow-xl">
             <Lock className="mx-auto mb-2 h-4 w-4 text-slate-400" />
-            <p className="text-xs font-semibold text-white">{PLAN_LABELS[required]} required</p>
+            <p className="text-xs font-semibold text-fg">{PLAN_LABELS[required]} required</p>
           </div>
         </div>
       </div>
