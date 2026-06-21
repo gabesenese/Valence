@@ -39,6 +39,8 @@ export async function getTenants(
   return { tenants, total };
 }
 
+export type CreditScoreSource = 'MANUAL' | 'EQUIFAX' | 'TRANSUNION';
+
 export interface CreateTenantInput {
   name: string;
   email?: string;
@@ -46,8 +48,18 @@ export interface CreateTenantInput {
   company?: string;
   taxId?: string;
   creditScore?: number;
+  creditScoreSource?: CreditScoreSource;
+  creditScoreDate?: string | Date;
   notes?: string;
   isActive?: boolean;
+}
+
+/** Coerce an incoming ISO/date string into a Date so Prisma accepts it. */
+function normalizeDates<T extends Partial<CreateTenantInput>>(input: T): T {
+  if (input.creditScoreDate && typeof input.creditScoreDate === 'string') {
+    return { ...input, creditScoreDate: new Date(input.creditScoreDate) };
+  }
+  return input;
 }
 
 export async function createTenant(input: CreateTenantInput, userId: string) {
@@ -55,7 +67,7 @@ export async function createTenant(input: CreateTenantInput, userId: string) {
     const existing = await prisma.tenant.findFirst({ where: { email: input.email, ownerId: userId } });
     if (existing) throw new ConflictError(`A tenant with email "${input.email}" already exists`);
   }
-  const tenant = await prisma.tenant.create({ data: { ...input, ownerId: userId } });
+  const tenant = await prisma.tenant.create({ data: { ...normalizeDates(input), ownerId: userId } });
   void trackIfFirstTime('data_imported', userId, { source: 'manual', entity: 'tenant' });
   return tenant;
 }
@@ -66,7 +78,7 @@ export async function updateTenant(id: string, input: Partial<CreateTenantInput>
     const conflict = await prisma.tenant.findFirst({ where: { email: input.email, ownerId: userId, NOT: { id } } });
     if (conflict) throw new ConflictError(`A tenant with email "${input.email}" already exists`);
   }
-  return prisma.tenant.update({ where: { id }, data: input });
+  return prisma.tenant.update({ where: { id }, data: normalizeDates(input) });
 }
 
 export async function getTenantById(id: string) {

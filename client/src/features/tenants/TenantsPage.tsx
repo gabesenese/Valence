@@ -1,12 +1,21 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { User, Building2, Star } from 'lucide-react';
+import { User, Building2, Star, Plus } from 'lucide-react';
 import { tenantsService } from '@/services/tenants.service';
 import { Badge } from '@/components/ui/Badge';
+import { Button } from '@/components/ui/Button';
 import { DataTable, type Column } from '@/components/ui/DataTable';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { formatDate } from '@/utils/format';
+import TenantFormModal from './TenantFormModal';
 
 type Tenant = Awaited<ReturnType<typeof tenantsService.getTenants>>['data'][number];
+
+const CREDIT_SOURCE_LABEL: Record<string, string> = {
+  MANUAL: 'Manual',
+  EQUIFAX: 'Equifax',
+  TRANSUNION: 'TransUnion',
+};
 
 const COLUMNS: Column<Tenant>[] = [
   {
@@ -57,20 +66,27 @@ const COLUMNS: Column<Tenant>[] = [
   {
     key: 'creditScore',
     header: 'Credit Score',
-    render: (t) =>
-      t.creditScore ? (
-        <div className="flex items-center gap-1.5">
-          <Star className="h-3.5 w-3.5 shrink-0 text-warning" />
-          <span className={`text-sm font-semibold tabular-nums ${
-            t.creditScore >= 750 ? 'text-success' :
-            t.creditScore >= 650 ? 'text-warning' : 'text-danger'
-          }`}>
-            {t.creditScore}
-          </span>
+    render: (t) => {
+      if (!t.creditScore) return <span className="text-sm text-slate-600">—</span>;
+      const meta = [
+        t.creditScoreSource ? CREDIT_SOURCE_LABEL[t.creditScoreSource] ?? t.creditScoreSource : null,
+        t.creditScoreDate ? `as of ${formatDate(t.creditScoreDate)}` : null,
+      ].filter(Boolean).join(' · ');
+      return (
+        <div className="flex flex-col gap-0.5">
+          <div className="flex items-center gap-1.5">
+            <Star className="h-3.5 w-3.5 shrink-0 text-warning" />
+            <span className={`text-sm font-semibold tabular-nums ${
+              t.creditScore >= 750 ? 'text-success' :
+              t.creditScore >= 650 ? 'text-warning' : 'text-danger'
+            }`}>
+              {t.creditScore}
+            </span>
+          </div>
+          {meta && <span className="pl-5 text-[10px] text-slate-600">{meta}</span>}
         </div>
-      ) : (
-        <span className="text-sm text-slate-600">—</span>
-      ),
+      );
+    },
   },
   {
     key: 'status',
@@ -86,6 +102,8 @@ const COLUMNS: Column<Tenant>[] = [
 export default function TenantsPage() {
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
+  const [formOpen, setFormOpen] = useState(false);
+  const [editing, setEditing] = useState<Tenant | undefined>(undefined);
 
   const { data, isLoading } = useQuery({
     queryKey: ['tenants', { search, page }],
@@ -93,11 +111,20 @@ export default function TenantsPage() {
     placeholderData: (prev) => prev,
   });
 
+  const openAdd = () => { setEditing(undefined); setFormOpen(true); };
+  const openEdit = (t: Tenant) => { setEditing(t); setFormOpen(true); };
+
   return (
     <div className="flex flex-col gap-4 p-4 animate-fade-in sm:gap-6 sm:p-6">
       <PageHeader
         title="Tenants"
         description={`${data?.meta.total ?? 0} tenants in portfolio`}
+        actions={
+          <Button size="sm" onClick={openAdd}>
+            <Plus className="h-4 w-4" />
+            Add Tenant
+          </Button>
+        }
       />
 
       <DataTable
@@ -105,11 +132,13 @@ export default function TenantsPage() {
         data={data?.data ?? []}
         keyExtractor={(t) => t.id}
         loading={isLoading}
+        onRowClick={openEdit}
         search={search}
         onSearch={(s) => { setSearch(s); setPage(1); }}
         searchPlaceholder="Search tenants…"
         emptyIcon={User}
         emptyTitle="No tenants found"
+        emptyAction={<Button size="sm" onClick={openAdd}><Plus className="h-4 w-4" />Add Tenant</Button>}
         pagination={data ? {
           page,
           pages: data.meta.pages,
@@ -117,6 +146,12 @@ export default function TenantsPage() {
           label: 'tenants',
           onPageChange: setPage,
         } : undefined}
+      />
+
+      <TenantFormModal
+        open={formOpen}
+        onClose={() => setFormOpen(false)}
+        tenant={editing}
       />
     </div>
   );

@@ -139,6 +139,12 @@ enum CrmStatus {
   CHURNED
 }
 
+enum CreditScoreSource {
+  MANUAL
+  EQUIFAX
+  TRANSUNION
+}
+
 enum ContactLogType {
   CALL
   EMAIL
@@ -333,7 +339,9 @@ model Tenant {
   phone              String?
   company            String?
   taxId              String?    @map("tax_id")
-  creditScore        Int?       @map("credit_score")
+  creditScore        Int?               @map("credit_score")
+  creditScoreSource  CreditScoreSource? @map("credit_score_source")
+  creditScoreDate    DateTime?          @map("credit_score_date")
   notes              String?
   isActive           Boolean    @default(true) @map("is_active")
   deletedAt          DateTime?  @map("deleted_at")
