@@ -6,7 +6,7 @@
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "test": "vitest run",
-    "vercel-build": "npx prisma generate && npx prisma migrate deploy",
+    "vercel-build": "npx prisma generate && if [ \"$VERCEL_ENV\" = \"production\" ]; then npx prisma migrate deploy; fi",
     "start": "node dist/index.js",
     "typecheck": "tsc --noEmit",
     "db:migrate": "prisma migrate dev",
