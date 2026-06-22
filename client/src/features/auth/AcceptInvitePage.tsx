@@ -4,6 +4,7 @@ import { Eye, EyeOff, AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
 import { usersService, type InviteInfo } from '@/services/users.service';
 import { useAuthStore } from '@/state/auth.store';
 import { Button } from '@/components/ui/Button';
+import { Logo } from '@/components/ui/Logo';
 import type { Plan } from '@/state/auth.store';
 
 const ROLE_LABELS: Record<string, string> = {
@@ -67,7 +68,7 @@ export default function AcceptInvitePage() {
 
       <div className="relative w-full max-w-sm animate-slide-up px-4">
         <div className="mb-8 flex flex-col items-center gap-3">
-          <img src="/logo.svg" alt="Valence" className="h-16 w-10" />
+          <Logo className="h-16 w-10" />
           <div className="text-center">
             <h1 className="text-xl font-bold text-fg tracking-tight">Valence</h1>
             <p className="mt-0.5 text-xs text-slate-500">Operational Intelligence Platform</p>

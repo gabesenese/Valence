@@ -6,6 +6,7 @@ import {
   ArrowRight, ChevronRight, Zap, Database, Loader2,
 } from 'lucide-react';
 import { useAuthStore } from '@/state/auth.store';
+import { Logo } from '@/components/ui/Logo';
 import { propertiesService } from '@/services/properties.service';
 import { tenantsService } from '@/services/tenants.service';
 import { leasesService } from '@/services/leases.service';
@@ -119,7 +120,7 @@ export default function SetupPage() {
   return (
     <div className="min-h-screen bg-surface-0 flex flex-col items-center px-4 py-16 animate-fade-in">
       <div className="flex items-center gap-2.5 mb-12">
-        <img src="/logo.svg" alt="Valence" className="h-10 w-6" />
+        <Logo className="h-10 w-6" />
         <span className="text-lg font-bold text-fg tracking-tight">Valence</span>
       </div>
 

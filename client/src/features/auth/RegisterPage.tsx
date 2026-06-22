@@ -5,6 +5,7 @@ import { useAuthStore } from '@/state/auth.store';
 import { authService } from '@/services/auth.service';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { Logo } from '@/components/ui/Logo';
 
 export default function RegisterPage() {
   const [form, setForm] = useState({ email: '', password: '', firstName: '', lastName: '' });
@@ -51,7 +52,7 @@ export default function RegisterPage() {
     <div className="flex min-h-screen items-center justify-center bg-surface-0 px-4">
       <div className="w-full max-w-sm animate-slide-up">
         <div className="mb-8 flex flex-col items-center gap-3">
-          <img src="/logo.svg" alt="Valence" className="h-16 w-10" />
+          <Logo className="h-16 w-10" />
           <div className="text-center">
             <h1 className="text-xl font-bold text-fg tracking-tight">Valence</h1>
             <p className="mt-0.5 text-xs text-slate-500">Create your account</p>
