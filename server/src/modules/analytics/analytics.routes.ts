@@ -32,8 +32,8 @@ router.get('/insights', async (req: Request, res: Response, next: NextFunction) 
   try { sendSuccess(res, await service.getInsights(req.user!.id)); } catch (e) { next(e); }
 });
 
-router.get('/benchmarks', async (_req: Request, res: Response, next: NextFunction) => {
-  try { sendSuccess(res, await getBenchmarks()); } catch (e) { next(e); }
+router.get('/benchmarks', async (req: Request, res: Response, next: NextFunction) => {
+  try { sendSuccess(res, await getBenchmarks(req.user!.id)); } catch (e) { next(e); }
 });
 
 export { router as analyticsRouter };

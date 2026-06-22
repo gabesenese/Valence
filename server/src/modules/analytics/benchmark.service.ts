@@ -107,14 +107,14 @@ function detectOutliers(properties: PropertyScorecard[]): void {
 }
 
 
-export async function getBenchmarks(): Promise<BenchmarkReport> {
+export async function getBenchmarks(userId: string): Promise<BenchmarkReport> {
   const now        = new Date();
   const monthStart = startOfMonth(now);
   const lastStart  = startOfMonth(subMonths(now, 1));
   const lastEnd    = endOfMonth(subMonths(now, 1));
 
   const rawProperties = await prisma.property.findMany({
-    where: { status: 'ACTIVE' },
+    where: { status: 'ACTIVE', ownerId: userId },
     select: {
       id: true,
       name: true,

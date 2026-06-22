@@ -8,6 +8,7 @@ import { generateExecutiveBrief } from './executive-brief.service';
 import { computeHealthScore } from './health-score.service';
 import { runSimulation, getActiveTenantsForSimulator } from './scenario-simulator.service';
 import { authenticate } from '../../middleware/authenticate';
+import { requireOwner } from '../../middleware/ownership';
 import { planGate } from '../../middleware/planGate';
 import { trackUsage } from '../plans/plans.service';
 import { sendSuccess } from '../../utils/response';
@@ -44,13 +45,13 @@ router.post('/extract-property', planGate('PROFESSIONAL'), upload.single('file')
 });
 
 
-router.get('/executive-brief', async (_req: Request, res: Response, next: NextFunction) => {
-  try { sendSuccess(res, await generateExecutiveBrief()); } catch (e) { next(e); }
+router.get('/executive-brief', async (req: Request, res: Response, next: NextFunction) => {
+  try { sendSuccess(res, await generateExecutiveBrief(req.user!.id)); } catch (e) { next(e); }
 });
 
 
-router.get('/health-score', async (_req: Request, res: Response, next: NextFunction) => {
-  try { sendSuccess(res, await computeHealthScore()); } catch (e) { next(e); }
+router.get('/health-score', async (req: Request, res: Response, next: NextFunction) => {
+  try { sendSuccess(res, await computeHealthScore(req.user!.id)); } catch (e) { next(e); }
 });
 
 
@@ -70,16 +71,16 @@ router.get('/insights/portfolio', async (_req: Request, res: Response, next: Nex
   try { sendSuccess(res, await insightEngine.analyzePortfolio()); } catch (e) { next(e); }
 });
 
-router.get('/insights/property/:id', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/insights/property/:id', requireOwner('property'), async (req: Request, res: Response, next: NextFunction) => {
   try { sendSuccess(res, await insightEngine.analyzeProperty(req.params.id)); } catch (e) { next(e); }
 });
 
-router.get('/insights/lease/:id', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/insights/lease/:id', requireOwner('lease'), async (req: Request, res: Response, next: NextFunction) => {
   try { sendSuccess(res, await insightEngine.analyzeLease(req.params.id)); } catch (e) { next(e); }
 });
 
 
-router.get('/risk/lease/:id', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/risk/lease/:id', requireOwner('lease'), async (req: Request, res: Response, next: NextFunction) => {
   try { sendSuccess(res, await riskEvaluator.evaluateLeaseRisk(req.params.id)); } catch (e) { next(e); }
 });
 

@@ -32,12 +32,12 @@ export interface ExecutiveBrief {
 }
 
 
-async function gatherContext() {
+async function gatherContext(userId: string) {
   const now = new Date();
 
   const [leases, properties, criticalAlerts, flaggedFinancials] = await Promise.all([
     prisma.lease.findMany({
-      where: { status: 'ACTIVE' },
+      where: { status: 'ACTIVE', property: { ownerId: userId } },
       include: {
         property: { select: { name: true, code: true } },
         tenant:   { select: { name: true, email: true } },
@@ -50,11 +50,18 @@ async function gatherContext() {
       orderBy: { endDate: 'asc' },
     }),
     prisma.property.findMany({
-      where: { status: 'ACTIVE' },
+      where: { status: 'ACTIVE', ownerId: userId },
       select: { totalUnits: true, _count: { select: { leases: { where: { status: 'ACTIVE' } } } } },
     }),
     prisma.alert.findMany({
-      where: { severity: 'CRITICAL', status: { in: ['OPEN', 'ACKNOWLEDGED', 'IN_PROGRESS'] } },
+      where: {
+        severity: 'CRITICAL',
+        status: { in: ['OPEN', 'ACKNOWLEDGED', 'IN_PROGRESS'] },
+        OR: [
+          { property: { ownerId: userId } },
+          { lease: { property: { ownerId: userId } } },
+        ],
+      },
       include: {
         lease:    { select: { leaseNumber: true, tenant: { select: { name: true } } } },
         property: { select: { name: true } },
@@ -63,7 +70,7 @@ async function gatherContext() {
       orderBy: { createdAt: 'desc' },
     }),
     prisma.financialRecord.findMany({
-      where: { status: { in: ['FLAGGED', 'DISPUTED'] } },
+      where: { status: { in: ['FLAGGED', 'DISPUTED'] }, property: { ownerId: userId } },
       include: { lease: { select: { leaseNumber: true, tenant: { select: { name: true } } } } },
       take: 10,
     }),
@@ -189,8 +196,8 @@ function buildFallbackBrief(ctx: Awaited<ReturnType<typeof gatherContext>>): Exe
   };
 }
 
-export async function generateExecutiveBrief(): Promise<ExecutiveBrief> {
-  const ctx = await gatherContext();
+export async function generateExecutiveBrief(userId: string): Promise<ExecutiveBrief> {
+  const ctx = await gatherContext(userId);
 
   if (!process.env.GROQ_API_KEY) return buildFallbackBrief(ctx);
 

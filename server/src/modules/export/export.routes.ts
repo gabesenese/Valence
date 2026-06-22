@@ -21,9 +21,10 @@ function send(res: Response, filename: string, body: string) {
   res.send(body);
 }
 
-router.get('/properties', async (_req: Request, res: Response, next: NextFunction) => {
+router.get('/properties', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const rows = await prisma.property.findMany({
+      where: { ownerId: req.user!.id },
       orderBy: { name: 'asc' },
       select: { name: true, code: true, type: true, status: true, address: true, city: true, state: true, zipCode: true, country: true, totalUnits: true, totalSqft: true, yearBuilt: true, purchaseDate: true, purchasePrice: true, currentValue: true, createdAt: true },
     });
@@ -34,9 +35,10 @@ router.get('/properties', async (_req: Request, res: Response, next: NextFunctio
   } catch (e) { next(e); }
 });
 
-router.get('/leases', async (_req: Request, res: Response, next: NextFunction) => {
+router.get('/leases', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const rows = await prisma.lease.findMany({
+      where: { property: { ownerId: req.user!.id } },
       orderBy: { createdAt: 'desc' },
       include: { property: { select: { name: true } }, tenant: { select: { name: true } } },
     });
@@ -47,10 +49,10 @@ router.get('/leases', async (_req: Request, res: Response, next: NextFunction) =
   } catch (e) { next(e); }
 });
 
-router.get('/tenants', async (_req: Request, res: Response, next: NextFunction) => {
+router.get('/tenants', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const rows = await prisma.tenant.findMany({
-      where: { isActive: true },
+      where: { isActive: true, ownerId: req.user!.id },
       orderBy: { name: 'asc' },
       select: { name: true, email: true, phone: true, company: true, creditScore: true, crmStatus: true, renewalProbability: true, lastContactAt: true, createdAt: true },
     });
@@ -61,9 +63,18 @@ router.get('/tenants', async (_req: Request, res: Response, next: NextFunction) 
   } catch (e) { next(e); }
 });
 
-router.get('/tasks', async (_req: Request, res: Response, next: NextFunction) => {
+router.get('/tasks', async (req: Request, res: Response, next: NextFunction) => {
   try {
+    const userId = req.user!.id;
     const rows = await prisma.task.findMany({
+      where: {
+        OR: [
+          { property: { ownerId: userId } },
+          { lease: { property: { ownerId: userId } } },
+          { createdById: userId },
+          { assigneeUserId: userId },
+        ],
+      },
       orderBy: { createdAt: 'desc' },
       include: {
         assignee: { select: { firstName: true, lastName: true } },

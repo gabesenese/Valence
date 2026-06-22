@@ -1,21 +1,21 @@
 import { prisma } from '../../infrastructure/database';
 import { NotFoundError, UnauthorizedError } from '../../utils/errors';
 
-export async function getOrganization() {
-  let org = await prisma.organization.findFirst();
+export async function getOrganization(userId: string) {
+  let org = await prisma.organization.findUnique({ where: { ownerId: userId } });
   if (!org) {
-    org = await prisma.organization.create({ data: {} });
+    org = await prisma.organization.create({ data: { ownerId: userId } });
   }
   return org;
 }
 
-export async function updateOrganization(data: {
+export async function updateOrganization(userId: string, data: {
   name?: string;
   industry?: string | null;
   timezone?: string;
   currency?: string;
 }) {
-  const org = await getOrganization();
+  const org = await getOrganization(userId);
   return prisma.organization.update({ where: { id: org.id }, data });
 }
 

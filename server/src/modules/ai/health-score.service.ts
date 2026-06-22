@@ -44,7 +44,7 @@ async function getMonthRevenue(propertyIds: string[], monthDate: Date): Promise<
   const end   = endOfMonth(monthDate);
   const agg = await prisma.financialRecord.aggregate({
     where: {
-      ...(propertyIds.length ? { propertyId: { in: propertyIds } } : {}),
+      propertyId:  { in: propertyIds },
       type:        'REVENUE',
       periodStart: { gte: start, lte: end },
       status:      { not: 'VOID' },
@@ -102,11 +102,12 @@ function scoreOccupancy(occupancyRate: number): { score: number; description: st
   return              { score: 0,  description: `${r}% — critical vacancy risk` };
 }
 
-async function scoreLeaseRisk(totalRevenue: number, refDate?: Date): Promise<{ score: number; description: string }> {
+async function scoreLeaseRisk(propertyIds: string[], totalRevenue: number, refDate?: Date): Promise<{ score: number; description: string }> {
   const base    = refDate ?? new Date();
   const horizon = addDays(base, 90);
   const atRisk  = await prisma.lease.findMany({
     where: {
+      propertyId:   { in: propertyIds },
       status:       'ACTIVE',
       endDate:      { gte: base, lte: horizon },
       renewalStage: { in: ['NOT_STARTED', 'CONTACTED'] },
@@ -122,9 +123,9 @@ async function scoreLeaseRisk(totalRevenue: number, refDate?: Date): Promise<{ s
   return                { score: 0,  description: `${pct.toFixed(1)}% of revenue at critical expiry risk` };
 }
 
-async function scorePaymentReliability(): Promise<{ score: number; description: string }> {
+async function scorePaymentReliability(propertyIds: string[]): Promise<{ score: number; description: string }> {
   const count = await prisma.financialRecord.count({
-    where: { status: { in: ['FLAGGED', 'DISPUTED'] } },
+    where: { status: { in: ['FLAGGED', 'DISPUTED'] }, propertyId: { in: propertyIds } },
   });
   if (count === 0) return { score: 15, description: 'No flagged or disputed payment records' };
   if (count <= 2)  return { score: 10, description: `${count} payment record${count > 1 ? 's' : ''} flagged or disputed` };
@@ -132,10 +133,16 @@ async function scorePaymentReliability(): Promise<{ score: number; description: 
   return                  { score: 0,  description: `${count} flagged/disputed records — requires immediate review` };
 }
 
-async function scoreAlerts(): Promise<{ score: number; description: string }> {
+async function scoreAlerts(userId: string): Promise<{ score: number; description: string }> {
+  const owned = {
+    OR: [
+      { property: { ownerId: userId } },
+      { lease: { property: { ownerId: userId } } },
+    ],
+  };
   const [critical, warning] = await Promise.all([
-    prisma.alert.count({ where: { severity: 'CRITICAL', status: { in: ['OPEN', 'ACKNOWLEDGED', 'IN_PROGRESS'] } } }),
-    prisma.alert.count({ where: { severity: 'WARNING',  status: { in: ['OPEN', 'ACKNOWLEDGED', 'IN_PROGRESS'] } } }),
+    prisma.alert.count({ where: { ...owned, severity: 'CRITICAL', status: { in: ['OPEN', 'ACKNOWLEDGED', 'IN_PROGRESS'] } } }),
+    prisma.alert.count({ where: { ...owned, severity: 'WARNING',  status: { in: ['OPEN', 'ACKNOWLEDGED', 'IN_PROGRESS'] } } }),
   ]);
   const penalty = Math.min(15, critical * 5 + warning * 2);
   const score   = 15 - penalty;
@@ -154,10 +161,10 @@ async function scoreVacancyExposure(properties: { totalUnits: number; _count: { 
   return               { score: 0, description: `${under.length} of ${properties.length} properties below 80% occupancy — critical` };
 }
 
-async function scoreRetentionRisk(): Promise<{ score: number; description: string }> {
+async function scoreRetentionRisk(propertyIds: string[]): Promise<{ score: number; description: string }> {
   const [total, highRisk] = await Promise.all([
-    prisma.lease.count({ where: { status: 'ACTIVE' } }),
-    prisma.lease.count({ where: { status: 'ACTIVE', renewalRisk: { in: ['HIGH', 'CRITICAL'] } } }),
+    prisma.lease.count({ where: { status: 'ACTIVE', propertyId: { in: propertyIds } } }),
+    prisma.lease.count({ where: { status: 'ACTIVE', propertyId: { in: propertyIds }, renewalRisk: { in: ['HIGH', 'CRITICAL'] } } }),
   ]);
   if (total === 0) return { score: 3, description: 'No active leases' };
   const pct = (highRisk / total) * 100;
@@ -178,7 +185,7 @@ async function computeLastMonthComponents(
 
   const [revStabLast, leaseRiskLast] = await Promise.all([
     scoreRevenueStabilityLastMonth(propertyIds),
-    scoreLeaseRisk(totalRevenue, subMonths(now, 1)).then(r => r.score),
+    scoreLeaseRisk(propertyIds, totalRevenue, subMonths(now, 1)).then(r => r.score),
   ]);
 
   return {
@@ -193,19 +200,19 @@ async function computeLastMonthComponents(
 }
 
 
-export async function computeHealthScore(): Promise<PortfolioHealthScore> {
+export async function computeHealthScore(userId: string): Promise<PortfolioHealthScore> {
   const now = new Date();
 
   const [properties, activeLeaseAgg] = await Promise.all([
     prisma.property.findMany({
-      where: { status: 'ACTIVE' },
+      where: { status: 'ACTIVE', ownerId: userId },
       select: {
         id: true,
         totalUnits: true,
         _count: { select: { leases: { where: { status: 'ACTIVE' } } } },
       },
     }),
-    prisma.lease.aggregate({ where: { status: 'ACTIVE' }, _sum: { baseRent: true } }),
+    prisma.lease.aggregate({ where: { status: 'ACTIVE', property: { ownerId: userId } }, _sum: { baseRent: true } }),
   ]);
 
   const propertyIds   = properties.map(p => p.id);
@@ -216,11 +223,11 @@ export async function computeHealthScore(): Promise<PortfolioHealthScore> {
 
   const [revStab, leaseRisk, payments, alerts, vacancy, retention] = await Promise.all([
     scoreRevenueStability(propertyIds),
-    scoreLeaseRisk(totalRevenue),
-    scorePaymentReliability(),
-    scoreAlerts(),
+    scoreLeaseRisk(propertyIds, totalRevenue),
+    scorePaymentReliability(propertyIds),
+    scoreAlerts(userId),
     scoreVacancyExposure(properties),
-    scoreRetentionRisk(),
+    scoreRetentionRisk(propertyIds),
   ]);
   const occupancy = scoreOccupancy(occupancyRate);
 

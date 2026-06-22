@@ -4,6 +4,7 @@ import * as service from './alerts.service';
 import { runAnomalyScan } from './anomaly.service';
 import { authenticate } from '../../middleware/authenticate';
 import { authorize } from '../../middleware/authorize';
+import { requireOwner } from '../../middleware/ownership';
 import { sendSuccess, sendPaginated } from '../../utils/response';
 
 const router = Router();
@@ -33,24 +34,24 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
   } catch (e) { next(e); }
 });
 
-router.get('/:id/activity', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/:id/activity', requireOwner('alert'), async (req: Request, res: Response, next: NextFunction) => {
   try { sendSuccess(res, await service.getAlertActivity(req.params.id)); } catch (e) { next(e); }
 });
 
-router.post('/:id/progress', authorize('ANALYST'), async (req: Request, res: Response, next: NextFunction) => {
+router.post('/:id/progress', authorize('ANALYST'), requireOwner('alert'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     sendSuccess(res, await service.progressAlert(req.params.id, req.user!.id));
   } catch (e) { next(e); }
 });
 
-router.post('/:id/resolve', authorize('ANALYST'), async (req: Request, res: Response, next: NextFunction) => {
+router.post('/:id/resolve', authorize('ANALYST'), requireOwner('alert'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const note = req.body?.note as string | undefined;
     sendSuccess(res, await service.resolveAlert(req.params.id, req.user!.id, note));
   } catch (e) { next(e); }
 });
 
-router.post('/:id/dismiss', authorize('ANALYST'), async (req: Request, res: Response, next: NextFunction) => {
+router.post('/:id/dismiss', authorize('ANALYST'), requireOwner('alert'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const note = req.body?.note as string | undefined;
     sendSuccess(res, await service.dismissAlert(req.params.id, req.user!.id, note));
@@ -64,20 +65,20 @@ router.post('/dismiss-all', authorize('ADMIN'), async (req: Request, res: Respon
   } catch (e) { next(e); }
 });
 
-router.post('/:id/assign', authorize('ANALYST'), async (req: Request, res: Response, next: NextFunction) => {
+router.post('/:id/assign', authorize('ANALYST'), requireOwner('alert'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { assigneeUserId } = req.body as { assigneeUserId: string };
     sendSuccess(res, await service.assignAlert(req.params.id, assigneeUserId, req.user!.id));
   } catch (e) { next(e); }
 });
 
-router.post('/:id/reopen', authorize('ANALYST'), async (req: Request, res: Response, next: NextFunction) => {
+router.post('/:id/reopen', authorize('ANALYST'), requireOwner('alert'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     sendSuccess(res, await service.reopenAlert(req.params.id, req.user!.id));
   } catch (e) { next(e); }
 });
 
-router.post('/:id/acknowledge', authorize('ANALYST'), async (req: Request, res: Response, next: NextFunction) => {
+router.post('/:id/acknowledge', authorize('ANALYST'), requireOwner('alert'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     sendSuccess(res, await service.acknowledgeAlert(req.params.id, req.user!.id));
   } catch (e) { next(e); }
