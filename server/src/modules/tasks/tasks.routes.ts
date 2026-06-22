@@ -2,6 +2,7 @@ import { Router } from 'express';
 import type { Request, Response, NextFunction } from 'express';
 import { authenticate } from '../../middleware/authenticate';
 import { authorize } from '../../middleware/authorize';
+import { requireOwner } from '../../middleware/ownership';
 import { sendSuccess } from '../../utils/response';
 import {
   getTasksForItem,
@@ -73,7 +74,7 @@ router.post('/', authorize('ANALYST'), async (req: Request, res: Response, next:
   } catch (e) { next(e); }
 });
 
-router.patch('/:id', authorize('ANALYST'), async (req: Request, res: Response, next: NextFunction) => {
+router.patch('/:id', authorize('ANALYST'), requireOwner('task'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { title, description, assigneeUserId, dueAt } = req.body as {
       title?: string;
@@ -92,7 +93,7 @@ router.patch('/:id', authorize('ANALYST'), async (req: Request, res: Response, n
   } catch (e) { next(e); }
 });
 
-router.patch('/:id/status', authorize('ANALYST'), async (req: Request, res: Response, next: NextFunction) => {
+router.patch('/:id/status', authorize('ANALYST'), requireOwner('task'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { status, completionNote } = req.body as {
       status: TaskStatus;
@@ -110,7 +111,7 @@ router.patch('/:id/status', authorize('ANALYST'), async (req: Request, res: Resp
   } catch (e) { next(e); }
 });
 
-router.delete('/:id', authorize('ADMIN'), async (req: Request, res: Response, next: NextFunction) => {
+router.delete('/:id', authorize('ADMIN'), requireOwner('task'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     await deleteTask(req.params.id);
     sendSuccess(res, { deleted: true });

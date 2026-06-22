@@ -740,6 +740,7 @@ model UsageRecord {
 
 model Organization {
   id        String   @id @default(uuid())
+  ownerId   String?  @unique @map("owner_id")
   name      String   @default("My Organization")
   industry  String?
   timezone  String   @default("UTC")

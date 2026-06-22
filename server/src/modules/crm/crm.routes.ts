@@ -2,6 +2,7 @@ import { Router } from 'express';
 import type { Request, Response, NextFunction } from 'express';
 import { authenticate } from '../../middleware/authenticate';
 import { authorize } from '../../middleware/authorize';
+import { requireOwner } from '../../middleware/ownership';
 import { sendSuccess } from '../../utils/response';
 import {
   getCrmTenants,
@@ -31,14 +32,14 @@ router.get('/tenants', async (req: Request, res: Response, next: NextFunction) =
   } catch (e) { next(e); }
 });
 
-router.get('/tenants/:id', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/tenants/:id', requireOwner('tenant'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const profile = await getTenantCrmProfile(req.params.id);
     sendSuccess(res, profile);
   } catch (e) { next(e); }
 });
 
-router.patch('/tenants/:id', authorize('ANALYST'), async (req: Request, res: Response, next: NextFunction) => {
+router.patch('/tenants/:id', authorize('ANALYST'), requireOwner('tenant'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { crmStatus, renewalProbability, assignedManagerId, notes } = req.body as {
       crmStatus?: CrmStatus;
@@ -56,14 +57,14 @@ router.patch('/tenants/:id', authorize('ANALYST'), async (req: Request, res: Res
   } catch (e) { next(e); }
 });
 
-router.get('/tenants/:id/contacts', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/tenants/:id/contacts', requireOwner('tenant'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const logs = await getContactLogs(req.params.id);
     sendSuccess(res, logs);
   } catch (e) { next(e); }
 });
 
-router.post('/tenants/:id/contacts', authorize('ANALYST'), async (req: Request, res: Response, next: NextFunction) => {
+router.post('/tenants/:id/contacts', authorize('ANALYST'), requireOwner('tenant'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { type, body, leaseId } = req.body as {
       type: ContactLogType;
@@ -91,7 +92,7 @@ router.post('/tenants/:id/contacts', authorize('ANALYST'), async (req: Request, 
   } catch (e) { next(e); }
 });
 
-router.delete('/contacts/:logId', authorize('ADMIN'), async (req: Request, res: Response, next: NextFunction) => {
+router.delete('/contacts/:logId', authorize('ADMIN'), requireOwner('contactLog', 'logId'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     await deleteContactLog(req.params.logId);
     sendSuccess(res, { deleted: true });

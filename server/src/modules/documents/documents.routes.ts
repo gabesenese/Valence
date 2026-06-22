@@ -5,6 +5,7 @@ import path from 'path';
 import { v4 as uuid } from 'uuid';
 import { authenticate } from '../../middleware/authenticate';
 import { authorize } from '../../middleware/authorize';
+import { requireOwner } from '../../middleware/ownership';
 import { sendSuccess } from '../../utils/response';
 import {
   createDocument,
@@ -90,14 +91,14 @@ router.post(
   },
 );
 
-router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/:id', requireOwner('document'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const doc = await getDocument(req.params.id);
     sendSuccess(res, doc);
   } catch (e) { next(e); }
 });
 
-router.delete('/:id', authorize('ADMIN'), async (req: Request, res: Response, next: NextFunction) => {
+router.delete('/:id', authorize('ADMIN'), requireOwner('document'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const result = await deleteDocument(req.params.id);
     sendSuccess(res, result);

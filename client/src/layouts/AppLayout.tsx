@@ -8,6 +8,7 @@ import {
   UserX, Sparkles, HelpCircle, Trash2, Database, Menu, X,
 } from 'lucide-react';
 import { cn } from '@/utils/cn';
+import { Logo } from '@/components/ui/Logo';
 import { setOrgCurrency } from '@/utils/format';
 import { organizationService } from '@/services/organization.service';
 import { useAuthStore } from '@/state/auth.store';
@@ -160,7 +161,7 @@ export function AppLayout() {
       >
         <div className={cn('flex h-14 items-center border-b border-surface-400/40 px-4', isCollapsed && 'justify-center px-0')}>
           <div className="flex flex-1 items-center gap-2.5">
-            <img src="/logo.svg" alt="Valence" className="h-8 w-5 shrink-0" />
+            <Logo className="h-8 w-5 shrink-0" />
             {!isCollapsed && (
               <span className="text-sm font-bold tracking-tight text-fg">Valence</span>
             )}

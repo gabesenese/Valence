@@ -1,12 +1,13 @@
 import { Link } from 'react-router-dom';
 import { AboutMenu } from './AboutMenu';
+import { Logo } from '@/components/ui/Logo';
 
 export function PublicHeader() {
   return (
     <header className="relative z-20 border-b border-surface-400/20 bg-surface-0/80 backdrop-blur-sm">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
         <Link to="/" className="flex items-center gap-2.5">
-          <img src="/logo.svg" alt="Valence" className="h-9 w-6" />
+          <Logo className="h-9 w-6" />
           <span className="text-sm font-bold tracking-tight text-fg">Valence</span>
         </Link>
 

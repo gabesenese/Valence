@@ -8,9 +8,9 @@ import * as orgService from './organization.service';
 const router = Router();
 router.use(authenticate);
 
-router.get('/', async (_req: Request, res: Response, next: NextFunction) => {
+router.get('/', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    sendSuccess(res, await orgService.getOrganization());
+    sendSuccess(res, await orgService.getOrganization(req.user!.id));
   } catch (e) { next(e); }
 });
 
@@ -22,7 +22,7 @@ router.patch('/', authorize('ADMIN', 'SUPER_ADMIN'), async (req: Request, res: R
       timezone?: string;
       currency?: string;
     };
-    sendSuccess(res, await orgService.updateOrganization({ name, industry, timezone, currency }));
+    sendSuccess(res, await orgService.updateOrganization(req.user!.id, { name, industry, timezone, currency }));
   } catch (e) { next(e); }
 });
 
