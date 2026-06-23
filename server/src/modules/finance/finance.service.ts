@@ -14,7 +14,7 @@ export async function getFinancialRecords(query: FinanceQuery, userId: string) {
   const skip = (page - 1) * limit;
 
   const where: Prisma.FinancialRecordWhereInput = {
-    property: { ownerId: userId },
+    property: { ownerId: userId, deletedAt: null },
     ...(type && { type }),
     ...(status && { status }),
     ...(propertyId && { propertyId }),
@@ -99,7 +99,7 @@ export async function getRevenueTrend(query: RevenueTrendQuery, userId: string) 
     const end = endOfMonth(monthDate);
 
     const where: Prisma.FinancialRecordWhereInput = {
-      property: { ownerId: userId },
+      property: { ownerId: userId, deletedAt: null },
       ...(propertyId && { propertyId }),
       periodStart: { gte: start, lte: end },
       status: { not: 'VOID' },
@@ -132,7 +132,7 @@ export async function getRevenueTrend(query: RevenueTrendQuery, userId: string) 
 
 export async function getFinancialSummary(propertyId: string | undefined, userId: string) {
   const where: Prisma.FinancialRecordWhereInput = {
-    property: { ownerId: userId },
+    property: { ownerId: userId, deletedAt: null },
     ...(propertyId && { propertyId }),
     status: { not: 'VOID' },
   };
