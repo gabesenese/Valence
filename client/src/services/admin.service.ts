@@ -41,7 +41,7 @@ export interface AnalyticsData {
 
 export interface SystemData {
   db: { users: number; properties: number; leases: number; tenants: number; alerts: number; tasks: number; financialRecords: number };
-  memory: { heapUsed: number; heapTotal: number; rss: number; systemUsed: number; systemTotal: number };
+  memory: { heapUsed: number; heapTotal: number; heapLimit: number; rss: number; systemUsed: number; systemTotal: number };
   uptime: number;
   recentErrors: { id: string; method: string; path: string; status: number; message: string; userId: string | null; createdAt: string }[];
 }
