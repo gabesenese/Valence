@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  Shield, LogOut, RefreshCw, BarChart2, Users, Activity, Flag, Cpu,
+  Shield, LogOut, RefreshCw, BarChart2, Users, Activity, Flag, Cpu, Database,
   Eye, EyeOff, Loader2, TrendingUp, CheckCircle2,
 } from 'lucide-react';
 import { adminService } from '@/services/admin.service';
@@ -13,14 +13,16 @@ import { UsersTab } from './tabs/UsersTab';
 import { ActivityTab } from './tabs/ActivityTab';
 import { PlatformTab } from './tabs/PlatformTab';
 import { SystemTab } from './tabs/SystemTab';
+import { DataTab } from './tabs/DataTab';
 
 const SECRET_KEY = 'valence-admin-secret';
 
-type Tab = 'overview' | 'users' | 'activity' | 'platform' | 'system';
+type Tab = 'overview' | 'users' | 'data' | 'activity' | 'platform' | 'system';
 
 const TABS: { id: Tab; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
   { id: 'overview',  label: 'Overview',  icon: BarChart2 },
   { id: 'users',     label: 'Users',     icon: Users     },
+  { id: 'data',      label: 'Data',      icon: Database  },
   { id: 'activity',  label: 'Activity',  icon: Activity  },
   { id: 'platform',  label: 'Platform',  icon: Flag      },
   { id: 'system',    label: 'System',    icon: Cpu       },
@@ -198,6 +200,7 @@ export default function AdminPage() {
 
         {tab === 'overview'  && <OverviewTab  secret={secret} />}
         {tab === 'users'     && <UsersTab     secret={secret} />}
+        {tab === 'data'      && <DataTab      secret={secret} />}
         {tab === 'activity'  && <ActivityTab  secret={secret} />}
         {tab === 'platform'  && <PlatformTab  secret={secret} />}
         {tab === 'system'    && <SystemTab    secret={secret} />}

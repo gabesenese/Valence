@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import type { Request, Response, NextFunction } from 'express';
+import { Prisma } from '@prisma/client';
 import jwt from 'jsonwebtoken';
 import os from 'os';
 import v8 from 'node:v8';
@@ -11,6 +12,11 @@ import { sendSuccess } from '../../utils/response';
 import { ForbiddenError, NotFoundError } from '../../utils/errors';
 import * as authService from '../auth/auth.service';
 import { getFunnelStats } from '../analytics/funnel.service';
+import { deleteProperty } from '../properties/properties.service';
+import { deleteLease } from '../leases/leases.service';
+import { deleteTenant } from '../tenants/tenants.service';
+import { deleteTask } from '../tasks/tasks.service';
+import { dismissAlert } from '../alerts/alerts.service';
 
 const router = Router();
 
@@ -331,6 +337,75 @@ router.delete('/users/:id', async (req: Request, res: Response, next: NextFuncti
     });
 
     sendSuccess(res, { message: 'User deleted' });
+  } catch (err) { next(err); }
+});
+
+
+// ─── Granular data management ────────────────────────────────────────────────
+
+const openAlertScope = (userId: string): Prisma.AlertWhereInput => ({
+  status: { in: ['OPEN', 'IN_PROGRESS', 'ACKNOWLEDGED'] },
+  OR: [{ property: { ownerId: userId } }, { lease: { property: { ownerId: userId } } }],
+});
+
+router.get('/users/:id/data-summary', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+    const [properties, leases, tenants, tasks, openAlerts, financialRecords] = await Promise.all([
+      prisma.property.count({ where: { ownerId: id, deletedAt: null } }),
+      prisma.lease.count({ where: { property: { ownerId: id }, deletedAt: null } }),
+      prisma.tenant.count({ where: { ownerId: id, deletedAt: null } }),
+      prisma.task.count({ where: { property: { ownerId: id }, deletedAt: null } }),
+      prisma.alert.count({ where: openAlertScope(id) }),
+      prisma.financialRecord.count({ where: { property: { ownerId: id } } }),
+    ]);
+    sendSuccess(res, { properties, leases, tenants, tasks, openAlerts, financialRecords });
+  } catch (err) { next(err); }
+});
+
+router.get('/users/:id/records', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+    const [properties, tenants] = await Promise.all([
+      prisma.property.findMany({ where: { ownerId: id, deletedAt: null }, select: { id: true, name: true, code: true }, orderBy: { name: 'asc' } }),
+      prisma.tenant.findMany({ where: { ownerId: id, deletedAt: null }, select: { id: true, name: true }, orderBy: { name: 'asc' } }),
+    ]);
+    sendSuccess(res, { properties, tenants });
+  } catch (err) { next(err); }
+});
+
+// Delete one record. Reuses the cascade-aware service deletes (so deleting a
+// property still soft-deletes its leases/tasks and dismisses its alerts).
+router.delete('/data/:type/:id', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { type, id } = req.params;
+    switch (type) {
+      case 'property': await deleteProperty(id); break;
+      case 'lease':    await deleteLease(id); break;
+      case 'tenant':   await deleteTenant(id); break;
+      case 'task':     await deleteTask(id); break;
+      case 'alert':    await dismissAlert(id, req.user!.id); break;
+      default: return next(new NotFoundError(`Unknown data type: ${type}`));
+    }
+    sendSuccess(res, { deleted: true, type, id });
+  } catch (err) { next(err); }
+});
+
+// Wipe a user's entire portfolio but keep the account/login.
+router.post('/users/:id/wipe', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+    const now = new Date();
+    const result = await prisma.$transaction(async (tx) => {
+      const financialRecords = await tx.financialRecord.deleteMany({ where: { property: { ownerId: id } } });
+      const alerts = await tx.alert.updateMany({ where: openAlertScope(id), data: { status: 'DISMISSED', dismissedAt: now } });
+      const tasks = await tx.task.updateMany({ where: { property: { ownerId: id }, deletedAt: null }, data: { deletedAt: now } });
+      const leases = await tx.lease.updateMany({ where: { property: { ownerId: id }, deletedAt: null }, data: { deletedAt: now } });
+      const tenants = await tx.tenant.updateMany({ where: { ownerId: id, deletedAt: null }, data: { deletedAt: now } });
+      const properties = await tx.property.updateMany({ where: { ownerId: id, deletedAt: null }, data: { deletedAt: now } });
+      return { properties: properties.count, leases: leases.count, tenants: tenants.count, tasks: tasks.count, alerts: alerts.count, financialRecords: financialRecords.count };
+    });
+    sendSuccess(res, { wiped: true, ...result });
   } catch (err) { next(err); }
 });
 
