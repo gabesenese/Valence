@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  Shield, LogOut, RefreshCw, BarChart2, Users, Activity, Flag, Cpu, Database,
+  Shield, LogOut, RefreshCw, BarChart2, Users, Activity, Flag, Cpu, DollarSign, HeartPulse, Database,
   Eye, EyeOff, Loader2, TrendingUp, CheckCircle2,
 } from 'lucide-react';
 import { adminService } from '@/services/admin.service';
@@ -13,16 +13,20 @@ import { UsersTab } from './tabs/UsersTab';
 import { ActivityTab } from './tabs/ActivityTab';
 import { PlatformTab } from './tabs/PlatformTab';
 import { SystemTab } from './tabs/SystemTab';
+import { RevenueTab } from './tabs/RevenueTab';
+import { CustomerHealthTab } from './tabs/CustomerHealthTab';
 import { DataTab } from './tabs/DataTab';
 
 const SECRET_KEY = 'valence-admin-secret';
 
-type Tab = 'overview' | 'users' | 'data' | 'activity' | 'platform' | 'system';
+type Tab = 'revenue' | 'overview' | 'users' | 'data' | 'health' | 'activity' | 'platform' | 'system';
 
 const TABS: { id: Tab; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
+  { id: 'revenue',   label: 'Revenue',   icon: DollarSign },
   { id: 'overview',  label: 'Overview',  icon: BarChart2 },
   { id: 'users',     label: 'Users',     icon: Users     },
   { id: 'data',      label: 'Data',      icon: Database  },
+  { id: 'health',    label: 'Health',    icon: HeartPulse },
   { id: 'activity',  label: 'Activity',  icon: Activity  },
   { id: 'platform',  label: 'Platform',  icon: Flag      },
   { id: 'system',    label: 'System',    icon: Cpu       },
@@ -109,7 +113,7 @@ export default function AdminPage() {
   const qc       = useQueryClient();
 
   const [secret, setSecret] = useState<string | null>(null);
-  const [tab, setTab]       = useState<Tab>('overview');
+  const [tab, setTab]       = useState<Tab>('revenue');
 
   useEffect(() => {
     if (!user) {
@@ -198,9 +202,11 @@ export default function AdminPage() {
           ))}
         </div>
 
+        {tab === 'revenue'   && <RevenueTab   secret={secret} />}
         {tab === 'overview'  && <OverviewTab  secret={secret} />}
         {tab === 'users'     && <UsersTab     secret={secret} />}
         {tab === 'data'      && <DataTab      secret={secret} />}
+        {tab === 'health'    && <CustomerHealthTab secret={secret} />}
         {tab === 'activity'  && <ActivityTab  secret={secret} />}
         {tab === 'platform'  && <PlatformTab  secret={secret} />}
         {tab === 'system'    && <SystemTab    secret={secret} />}

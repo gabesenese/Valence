@@ -152,6 +152,102 @@ router.get('/analytics', async (_req: Request, res: Response, next: NextFunction
 });
 
 
+router.get('/customer-health', async (_req: Request, res: Response, next: NextFunction) => {
+  try {
+    const now = new Date();
+    const users = await prisma.user.findMany({
+      where: { isActive: true },
+      select: { id: true, email: true, firstName: true, lastName: true, plan: true, trialEndsAt: true, lastLoginAt: true },
+    });
+
+    // One pass over properties → per-owner counts of properties, leases, finance records.
+    const props = await prisma.property.findMany({
+      where: { deletedAt: null },
+      select: { ownerId: true, _count: { select: { leases: { where: { deletedAt: null } }, financialRecords: true } } },
+    });
+    const agg = new Map<string, { props: number; leases: number; fin: number }>();
+    for (const p of props) {
+      if (!p.ownerId) continue;
+      const a = agg.get(p.ownerId) ?? { props: 0, leases: 0, fin: 0 };
+      a.props += 1; a.leases += p._count.leases; a.fin += p._count.financialRecords;
+      agg.set(p.ownerId, a);
+    }
+
+    const accounts = users.map((u) => {
+      const a = agg.get(u.id) ?? { props: 0, leases: 0, fin: 0 };
+      const hasProperties = a.props > 0, hasLeases = a.leases > 0, hasRevenue = a.fin > 0;
+      const daysSinceLogin = u.lastLoginAt ? Math.floor((now.getTime() - u.lastLoginAt.getTime()) / 86400000) : null;
+
+      const eng = daysSinceLogin === null ? 0
+        : daysSinceLogin <= 7 ? 35 : daysSinceLogin <= 14 ? 20 : daysSinceLogin <= 30 ? 10 : 0;
+      const score = Math.min(100, eng + (hasProperties ? 20 : 0) + (hasLeases ? 20 : 0) + (hasRevenue ? 25 : 0));
+      const band = score >= 75 ? 'healthy' : score >= 45 ? 'watch' : 'at_risk';
+
+      const risks: string[] = [];
+      const trialDays = u.trialEndsAt ? Math.ceil((u.trialEndsAt.getTime() - now.getTime()) / 86400000) : null;
+      if (trialDays !== null && trialDays >= 0 && trialDays <= 3) risks.push(`Trial ends in ${trialDays} day${trialDays === 1 ? '' : 's'}`);
+      if (daysSinceLogin === null) risks.push('Never logged in');
+      else if (daysSinceLogin > 12) risks.push(`Inactive ${daysSinceLogin} days`);
+      if (!hasLeases) risks.push('No leases imported');
+      if (!hasProperties && !hasLeases) risks.push('Never reached first insight');
+
+      return {
+        id: u.id, email: u.email, name: `${u.firstName} ${u.lastName}`.trim(), plan: u.plan,
+        score, band,
+        signals: { active: daysSinceLogin !== null && daysSinceLogin <= 7, hasProperties, hasLeases, hasRevenue },
+        risks, lastLoginAt: u.lastLoginAt, trialEndsAt: u.trialEndsAt,
+      };
+    }).sort((x, y) => x.score - y.score);
+
+    const summary = {
+      total: accounts.length,
+      healthy: accounts.filter((a) => a.band === 'healthy').length,
+      watch: accounts.filter((a) => a.band === 'watch').length,
+      atRisk: accounts.filter((a) => a.band === 'at_risk').length,
+    };
+    sendSuccess(res, { summary, accounts });
+  } catch (err) { next(err); }
+});
+
+
+router.get('/revenue', async (_req: Request, res: Response, next: NextFunction) => {
+  try {
+    const now = new Date();
+    const planPrices: Record<string, number> = { ESSENTIALS: 149, PROFESSIONAL: 499, EXECUTIVE: 1500 };
+
+    // Paying = active and not currently inside a trial window.
+    const payingFilter = { isActive: true, OR: [{ trialEndsAt: null }, { trialEndsAt: { lt: now } }] };
+    const byPlan = await prisma.user.groupBy({ by: ['plan'], _count: { _all: true }, where: payingFilter });
+
+    const planMix = byPlan
+      .map((p) => ({ plan: p.plan, count: p._count._all, price: planPrices[p.plan] ?? 0, mrr: (planPrices[p.plan] ?? 0) * p._count._all }))
+      .sort((a, b) => b.price - a.price);
+    const mrr = planMix.reduce((s, p) => s + p.mrr, 0);
+    const payingAccounts = planMix.reduce((s, p) => s + (p.price > 0 ? p.count : 0), 0);
+
+    // Estimated monthly infrastructure cost. Replace with real billing data when wired.
+    const costs = { vercel: 190, neon: 95, resend: 45, aiGateway: 135 };
+    const totalCost = costs.vercel + costs.neon + costs.resend + costs.aiGateway;
+    const netProfit = mrr - totalCost;
+    const arpu = payingAccounts > 0 ? Math.round(mrr / payingAccounts) : 0;
+    const margin = mrr > 0 ? Math.round((netProfit / mrr) * 1000) / 10 : 0;
+
+    const [withTrial, activeTrials] = await Promise.all([
+      prisma.user.count({ where: { trialEndsAt: { not: null } } }),
+      prisma.user.count({ where: { isActive: true, trialEndsAt: { gte: now } } }),
+    ]);
+    const trialConvRate = withTrial > 0 ? Math.round((payingAccounts / withTrial) * 100) : 0;
+
+    sendSuccess(res, {
+      mrr, arr: mrr * 12, netProfit, margin, arpu,
+      payingAccounts, activeTrials, trialConvRate,
+      costs, totalCost, costEstimated: true,
+      planMix,
+    });
+  } catch (err) { next(err); }
+});
+
+
 router.get('/system', async (_req: Request, res: Response, next: NextFunction) => {
   try {
     const [users, properties, leases, tenants, alerts, tasks, financialRecords, recentErrors] = await Promise.all([

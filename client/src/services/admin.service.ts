@@ -99,7 +99,8 @@ export const adminService = {
   getActiveAnnouncements: ()                                             => api.get<{ data: Announcement[] }>('/announcements').then((r) => r.data.data),
   getFunnel: (s: string, days = 30) =>
     api.get<{ data: { step: string; count: number; convRate: number | null }[] }>('/admin/funnel', { ...h(s), params: { days } }).then((r) => r.data.data),
-
+  getRevenue: (s: string) => api.get<{ data: RevenueData }>('/admin/revenue', h(s)).then((r) => r.data.data),
+  getCustomerHealth: (s: string) => api.get<{ data: CustomerHealth }>('/admin/customer-health', h(s)).then((r) => r.data.data),
   getDataSummary: (s: string, id: string) =>
     api.get<{ data: DataSummary }>(`/admin/users/${id}/data-summary`, h(s)).then((r) => r.data.data),
   getUserRecords: (s: string, id: string) =>
@@ -109,6 +110,39 @@ export const adminService = {
   wipeUserData: (s: string, id: string) =>
     api.post(`/admin/users/${id}/wipe`, {}, h(s)).then((r) => r.data),
 };
+
+export interface HealthAccount {
+  id: string;
+  email: string;
+  name: string;
+  plan: string;
+  score: number;
+  band: 'healthy' | 'watch' | 'at_risk';
+  signals: { active: boolean; hasProperties: boolean; hasLeases: boolean; hasRevenue: boolean };
+  risks: string[];
+  lastLoginAt: string | null;
+  trialEndsAt: string | null;
+}
+
+export interface CustomerHealth {
+  summary: { total: number; healthy: number; watch: number; atRisk: number };
+  accounts: HealthAccount[];
+}
+
+export interface RevenueData {
+  mrr: number;
+  arr: number;
+  netProfit: number;
+  margin: number;
+  arpu: number;
+  payingAccounts: number;
+  activeTrials: number;
+  trialConvRate: number;
+  costs: { vercel: number; neon: number; resend: number; aiGateway: number };
+  totalCost: number;
+  costEstimated: boolean;
+  planMix: { plan: string; count: number; price: number; mrr: number }[];
+}
 
 export interface DataSummary {
   properties: number;
