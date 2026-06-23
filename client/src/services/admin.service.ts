@@ -100,7 +100,26 @@ export const adminService = {
   getFunnel: (s: string, days = 30) =>
     api.get<{ data: { step: string; count: number; convRate: number | null }[] }>('/admin/funnel', { ...h(s), params: { days } }).then((r) => r.data.data),
   getRevenue: (s: string) => api.get<{ data: RevenueData }>('/admin/revenue', h(s)).then((r) => r.data.data),
+  getCustomerHealth: (s: string) => api.get<{ data: CustomerHealth }>('/admin/customer-health', h(s)).then((r) => r.data.data),
 };
+
+export interface HealthAccount {
+  id: string;
+  email: string;
+  name: string;
+  plan: string;
+  score: number;
+  band: 'healthy' | 'watch' | 'at_risk';
+  signals: { active: boolean; hasProperties: boolean; hasLeases: boolean; hasRevenue: boolean };
+  risks: string[];
+  lastLoginAt: string | null;
+  trialEndsAt: string | null;
+}
+
+export interface CustomerHealth {
+  summary: { total: number; healthy: number; watch: number; atRisk: number };
+  accounts: HealthAccount[];
+}
 
 export interface RevenueData {
   mrr: number;

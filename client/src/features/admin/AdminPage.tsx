@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  Shield, LogOut, RefreshCw, BarChart2, Users, Activity, Flag, Cpu, DollarSign,
+  Shield, LogOut, RefreshCw, BarChart2, Users, Activity, Flag, Cpu, DollarSign, HeartPulse,
   Eye, EyeOff, Loader2, TrendingUp, CheckCircle2,
 } from 'lucide-react';
 import { adminService } from '@/services/admin.service';
@@ -14,15 +14,17 @@ import { ActivityTab } from './tabs/ActivityTab';
 import { PlatformTab } from './tabs/PlatformTab';
 import { SystemTab } from './tabs/SystemTab';
 import { RevenueTab } from './tabs/RevenueTab';
+import { CustomerHealthTab } from './tabs/CustomerHealthTab';
 
 const SECRET_KEY = 'valence-admin-secret';
 
-type Tab = 'revenue' | 'overview' | 'users' | 'activity' | 'platform' | 'system';
+type Tab = 'revenue' | 'overview' | 'users' | 'health' | 'activity' | 'platform' | 'system';
 
 const TABS: { id: Tab; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
   { id: 'revenue',   label: 'Revenue',   icon: DollarSign },
   { id: 'overview',  label: 'Overview',  icon: BarChart2 },
   { id: 'users',     label: 'Users',     icon: Users     },
+  { id: 'health',    label: 'Health',    icon: HeartPulse },
   { id: 'activity',  label: 'Activity',  icon: Activity  },
   { id: 'platform',  label: 'Platform',  icon: Flag      },
   { id: 'system',    label: 'System',    icon: Cpu       },
@@ -201,6 +203,7 @@ export default function AdminPage() {
         {tab === 'revenue'   && <RevenueTab   secret={secret} />}
         {tab === 'overview'  && <OverviewTab  secret={secret} />}
         {tab === 'users'     && <UsersTab     secret={secret} />}
+        {tab === 'health'    && <CustomerHealthTab secret={secret} />}
         {tab === 'activity'  && <ActivityTab  secret={secret} />}
         {tab === 'platform'  && <PlatformTab  secret={secret} />}
         {tab === 'system'    && <SystemTab    secret={secret} />}
