@@ -37,7 +37,7 @@ const tenantCrmSelect = {
   },
 } as const;
 
-export async function getCrmTenants(opts: {
+export async function getCrmTenants(userId: string, opts: {
   search?: string;
   crmStatus?: CrmStatus;
   assignedManagerId?: string;
@@ -47,7 +47,7 @@ export async function getCrmTenants(opts: {
   const { search, crmStatus, assignedManagerId, page = 1, limit = 25 } = opts;
   const skip = (page - 1) * limit;
 
-  const where: Record<string, unknown> = { isActive: true };
+  const where: Record<string, unknown> = { ownerId: userId, deletedAt: null, isActive: true };
   if (crmStatus) where.crmStatus = crmStatus;
   if (assignedManagerId) where.assignedManagerId = assignedManagerId;
   if (search) {

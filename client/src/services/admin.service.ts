@@ -101,6 +101,14 @@ export const adminService = {
     api.get<{ data: { step: string; count: number; convRate: number | null }[] }>('/admin/funnel', { ...h(s), params: { days } }).then((r) => r.data.data),
   getRevenue: (s: string) => api.get<{ data: RevenueData }>('/admin/revenue', h(s)).then((r) => r.data.data),
   getCustomerHealth: (s: string) => api.get<{ data: CustomerHealth }>('/admin/customer-health', h(s)).then((r) => r.data.data),
+  getDataSummary: (s: string, id: string) =>
+    api.get<{ data: DataSummary }>(`/admin/users/${id}/data-summary`, h(s)).then((r) => r.data.data),
+  getUserRecords: (s: string, id: string) =>
+    api.get<{ data: UserRecords }>(`/admin/users/${id}/records`, h(s)).then((r) => r.data.data),
+  deleteData: (s: string, type: string, id: string) =>
+    api.delete(`/admin/data/${type}/${id}`, h(s)).then((r) => r.data),
+  wipeUserData: (s: string, id: string) =>
+    api.post(`/admin/users/${id}/wipe`, {}, h(s)).then((r) => r.data),
 };
 
 export interface HealthAccount {
@@ -134,4 +142,18 @@ export interface RevenueData {
   totalCost: number;
   costEstimated: boolean;
   planMix: { plan: string; count: number; price: number; mrr: number }[];
+}
+
+export interface DataSummary {
+  properties: number;
+  leases: number;
+  tenants: number;
+  tasks: number;
+  openAlerts: number;
+  financialRecords: number;
+}
+
+export interface UserRecords {
+  properties: { id: string; name: string; code: string }[];
+  tenants: { id: string; name: string }[];
 }

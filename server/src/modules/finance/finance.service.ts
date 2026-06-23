@@ -2,6 +2,7 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '../../infrastructure/database';
 import { NotFoundError } from '../../utils/errors';
 import { subMonths, startOfMonth, endOfMonth, parseISO, format } from 'date-fns';
+import { recordChange } from '../changes/changes.service';
 import type {
   CreateFinancialRecordInput,
   UpdateFinancialRecordInput,
@@ -73,9 +74,9 @@ export async function createFinancialRecord(input: CreateFinancialRecordInput) {
 }
 
 export async function updateFinancialRecord(id: string, input: UpdateFinancialRecordInput) {
-  await getFinancialRecordById(id);
+  const prev = await getFinancialRecordById(id);
   const { periodStart, periodEnd, dueDate, paidDate, ...rest } = input;
-  return prisma.financialRecord.update({
+  const record = await prisma.financialRecord.update({
     where: { id },
     data: {
       ...rest,
@@ -85,6 +86,19 @@ export async function updateFinancialRecord(id: string, input: UpdateFinancialRe
       ...(paidDate && { paidDate: parseISO(paidDate) }),
     },
   });
+
+  if (record.status === 'RECONCILED' && prev.status !== 'RECONCILED' && record.type === 'REVENUE') {
+    void recordChange({
+      type: 'REVENUE_RECONCILED',
+      entityType: 'financial_record',
+      entityId: record.id,
+      title: 'Revenue reconciled',
+      amount: Number(record.amount),
+      propertyId: record.propertyId,
+    });
+  }
+
+  return record;
 }
 
 export async function getRevenueTrend(query: RevenueTrendQuery, userId: string) {

@@ -11,6 +11,8 @@ import { analyticsService } from '@/services/analytics.service';
 import { leasesService } from '@/services/leases.service';
 import ExecutiveBriefCard from './ExecutiveBrief';
 import HealthScoreCard from './HealthScoreCard';
+import { WhatChangedPanel } from '@/features/changes/WhatChangedPanel';
+import { TodayHub } from './TodayHub';
 import { Card, CardHeader, CardTitle, CardBody } from '@/components/ui/Card';
 import { PageLoader } from '@/components/ui/Spinner';
 import { formatCurrency, compactCurrency, daysUntil, formatDate } from '@/utils/format';
@@ -194,6 +196,10 @@ export default function DashboardPage() {
       <OnboardingCard />
 
       {isEmpty && <WelcomeScreen />}
+
+      {!isEmpty && <WhatChangedPanel />}
+
+      {!isEmpty && <TodayHub />}
 
       {!isEmpty && canAccess('executive_brief') && <ExecutiveBriefCard />}
 

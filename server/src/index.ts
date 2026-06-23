@@ -6,6 +6,7 @@ import { runAllRules } from './modules/automation/automation.service';
 import { cleanupDemoAccounts } from './modules/auth/auth.service';
 import { purgeStaleTrashed } from './modules/trash/trash.service';
 import { runScheduledBackups } from './modules/backup/backup.service';
+import { sendDailyBriefs } from './modules/brief/brief.service';
 import { env } from './config/env';
 import cron from 'node-cron';
 import { mkdirSync } from 'fs';
@@ -57,6 +58,12 @@ async function start() {
     runScheduledBackups()
       .then(() => logger.info('Scheduled backups completed'))
       .catch((err) => logger.warn('Scheduled backup run failed', { error: err }));
+  });
+
+  cron.schedule('0 8 * * *', () => {
+    sendDailyBriefs()
+      .then(({ sent, skipped }) => { if (sent > 0) logger.info(`Daily brief: sent ${sent}, skipped ${skipped} empty`); })
+      .catch((err) => logger.warn('Daily brief run failed', { error: err }));
   });
 
   const shutdown = async (signal: string) => {

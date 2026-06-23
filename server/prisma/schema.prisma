@@ -194,6 +194,9 @@ model User {
   isActive         Boolean   @default(true) @map("is_active")
   isDemo           Boolean   @default(false) @map("is_demo")
   lastLoginAt      DateTime? @map("last_login_at")
+  lastChangesSeenAt DateTime? @map("last_changes_seen_at")
+  lastBriefSentAt   DateTime? @map("last_brief_sent_at")
+  dailyBriefOptOut  Boolean   @default(false) @map("daily_brief_opt_out")
   createdAt        DateTime  @default(now()) @map("created_at")
   updatedAt        DateTime  @updatedAt @map("updated_at")
 
@@ -826,4 +829,30 @@ model Backup {
 
   @@index([userId, createdAt])
   @@map("backups")
+}
+
+enum ChangeEventType {
+  LEASE_RISK_UP
+  LEASE_RISK_DOWN
+  RENEWAL_WINDOW_OPENED
+  TASK_COMPLETED
+  REVENUE_RECONCILED
+  ALERT_CREATED
+}
+
+model ChangeEvent {
+  id          String          @id @default(uuid())
+  ownerUserId String          @map("owner_user_id")
+  actorUserId String?         @map("actor_user_id")
+  type        ChangeEventType
+  entityType  String          @map("entity_type")
+  entityId    String          @map("entity_id")
+  title       String
+  detail      String?
+  amount      Decimal?        @db.Decimal(15, 2)
+  severity    String?
+  createdAt   DateTime        @default(now()) @map("created_at")
+
+  @@index([ownerUserId, createdAt])
+  @@map("change_events")
 }

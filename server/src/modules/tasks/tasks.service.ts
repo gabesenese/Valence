@@ -1,4 +1,5 @@
 import { prisma } from '../../infrastructure/database';
+import { recordChange } from '../changes/changes.service';
 
 export type TaskStatus = 'OPEN' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
 
@@ -106,7 +107,7 @@ export async function updateTaskStatus(
 ) {
   const isCompleting = status === 'COMPLETED';
 
-  return prisma.task.update({
+  const task = await prisma.task.update({
     where: { id },
     data: {
       status,
@@ -120,6 +121,20 @@ export async function updateTaskStatus(
     },
     select: taskSelect,
   });
+
+  if (isCompleting) {
+    void recordChange({
+      type: 'TASK_COMPLETED',
+      entityType: 'task',
+      entityId: task.id,
+      title: `Task completed: ${task.title}`,
+      actorUserId: userId,
+      leaseId: task.leaseId,
+      propertyId: task.propertyId,
+    });
+  }
+
+  return task;
 }
 
 export async function deleteTask(id: string) {
