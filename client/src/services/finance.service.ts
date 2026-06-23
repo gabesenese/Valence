@@ -34,6 +34,29 @@ export interface RevenueTrendPoint {
   net: number;
 }
 
+export interface RevenueRisk {
+  leaseId: string;
+  propertyId: string;
+  propertyName: string;
+  tenantName: string;
+  monthlyRent: number;
+  daysToExpiry: number;
+  endDate: string;
+  renewalRisk: string;
+  renewalStage: string;
+  impactScore: number;
+  reasons: string[];
+}
+
+export interface RevenueAtRisk {
+  totalAtRisk: number;
+  leaseCount: number;
+  expiringWithin30: number;
+  renewalsNotStarted: number;
+  highRiskCount: number;
+  risks: RevenueRisk[];
+}
+
 export const financeService = {
   getRecords: (query: Record<string, unknown> = {}): Promise<PaginatedResult<FinancialRecord>> =>
     api.get('/finance', { params: query }).then(extractPaginated<FinancialRecord>),
@@ -46,4 +69,7 @@ export const financeService = {
 
   getTrend: (propertyId?: string, months = 12): Promise<RevenueTrendPoint[]> =>
     api.get('/finance/trend', { params: { propertyId, months } }).then(extractData<RevenueTrendPoint[]>),
+
+  getAtRisk: (): Promise<RevenueAtRisk> =>
+    api.get('/finance/at-risk').then(extractData<RevenueAtRisk>),
 };

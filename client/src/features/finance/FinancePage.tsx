@@ -6,6 +6,7 @@ import {
 import { FileText } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { financeService } from '@/services/finance.service';
+import { RevenueAtRisk } from './RevenueAtRisk';
 import { Card, CardHeader, CardTitle, CardBody } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { PageLoader } from '@/components/ui/Spinner';
@@ -80,6 +81,8 @@ export default function FinancePage() {
           </>
         );
       })()}
+
+      <RevenueAtRisk />
 
       <div className="grid grid-cols-1 xl:grid-cols-[1fr_320px] gap-4 items-start">
 
