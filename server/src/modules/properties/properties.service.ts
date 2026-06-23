@@ -85,7 +85,11 @@ export async function updateProperty(id: string, input: UpdatePropertyInput, use
 
 export async function deleteProperty(id: string) {
   await getPropertyById(id);
-  return prisma.property.update({ where: { id }, data: { deletedAt: new Date() } });
+  const now = new Date();
+  return prisma.$transaction(async (tx) => {
+    await tx.lease.updateMany({ where: { propertyId: id, deletedAt: null }, data: { deletedAt: now } });
+    return tx.property.update({ where: { id }, data: { deletedAt: now } });
+  });
 }
 
 export async function getPropertySummary(userId: string) {
