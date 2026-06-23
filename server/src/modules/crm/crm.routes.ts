@@ -21,7 +21,7 @@ router.get('/tenants', async (req: Request, res: Response, next: NextFunction) =
   try {
     const { search, crmStatus, assignedManagerId, page, limit } =
       req.query as Record<string, string | undefined>;
-    const result = await getCrmTenants({
+    const result = await getCrmTenants(req.user!.id, {
       search,
       crmStatus: crmStatus as CrmStatus | undefined,
       assignedManagerId,
