@@ -15,6 +15,7 @@
     "db:backfill-revenue": "tsx src/scripts/backfill-revenue.ts",
     "db:reconcile-orphan-leases": "tsx src/scripts/reconcile-orphan-leases.ts",
     "db:reconcile-orphan-tasks": "tsx src/scripts/reconcile-orphan-tasks.ts",
+    "db:reconcile-orphan-alerts": "tsx src/scripts/reconcile-orphan-alerts.ts",
     "db:studio": "prisma studio",
     "db:reset": "prisma migrate reset --force",
     "db:generate": "prisma generate"
