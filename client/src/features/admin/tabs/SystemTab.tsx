@@ -21,7 +21,7 @@ export function SystemTab({ secret }: { secret: string }) {
     return <div className="flex items-center justify-center py-24 text-xs text-slate-500"><Loader2 className="h-4 w-4 animate-spin mr-2" />Loading system data…</div>;
   }
 
-  const heapPct = Math.round((data.memory.heapUsed / data.memory.heapTotal) * 100);
+  const heapPct = Math.round((data.memory.heapUsed / data.memory.heapLimit) * 100);
   const sysPct  = Math.round((data.memory.systemUsed / data.memory.systemTotal) * 100);
 
   return (
@@ -48,7 +48,7 @@ export function SystemTab({ secret }: { secret: string }) {
 
       <div className="grid gap-4 sm:grid-cols-2">
         {[
-          { label: 'Heap Usage', pct: heapPct, used: data.memory.heapUsed, total: data.memory.heapTotal },
+          { label: 'Heap Usage', pct: heapPct, used: data.memory.heapUsed, total: data.memory.heapLimit },
           { label: 'System Memory', pct: sysPct, used: data.memory.systemUsed, total: data.memory.systemTotal },
         ].map((m) => (
           <div key={m.label} className="rounded-xl border border-surface-400/40 bg-surface-100 p-4">

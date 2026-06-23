@@ -2,6 +2,7 @@ import { Router } from 'express';
 import type { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import os from 'os';
+import v8 from 'node:v8';
 import { prisma } from '../../infrastructure/database';
 import { authenticate } from '../../middleware/authenticate';
 import { authorize } from '../../middleware/authorize';
@@ -161,12 +162,14 @@ router.get('/system', async (_req: Request, res: Response, next: NextFunction) =
     const mem = process.memoryUsage();
     const totalMem = os.totalmem();
     const freeMem  = os.freemem();
+    const heapLimit = v8.getHeapStatistics().heap_size_limit;
 
     sendSuccess(res, {
       db: { users, properties, leases, tenants, alerts, tasks, financialRecords },
       memory: {
         heapUsed: Math.round(mem.heapUsed / 1024 / 1024),
         heapTotal: Math.round(mem.heapTotal / 1024 / 1024),
+        heapLimit: Math.round(heapLimit / 1024 / 1024),
         rss: Math.round(mem.rss / 1024 / 1024),
         systemUsed: Math.round((totalMem - freeMem) / 1024 / 1024),
         systemTotal: Math.round(totalMem / 1024 / 1024),
