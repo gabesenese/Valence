@@ -1,5 +1,6 @@
 import type { Request, Response, NextFunction } from 'express';
 import * as service from './finance.service';
+import { getRevenueAtRisk } from './revenue-at-risk.service';
 import { sendSuccess, sendPaginated } from '../../utils/response';
 
 export async function list(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -36,5 +37,11 @@ export async function trend(req: Request, res: Response, next: NextFunction): Pr
 export async function summary(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     sendSuccess(res, await service.getFinancialSummary(req.query.propertyId as string | undefined, req.user!.id));
+  } catch (err) { next(err); }
+}
+
+export async function atRisk(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    sendSuccess(res, await getRevenueAtRisk(req.user!.id));
   } catch (err) { next(err); }
 }
