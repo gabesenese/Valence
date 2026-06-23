@@ -89,6 +89,7 @@ export async function deleteProperty(id: string) {
   return prisma.$transaction(async (tx) => {
     await tx.lease.updateMany({ where: { propertyId: id, deletedAt: null }, data: { deletedAt: now } });
     await tx.task.updateMany({ where: { deletedAt: null, OR: [{ propertyId: id }, { lease: { propertyId: id } }] }, data: { deletedAt: now } });
+    await tx.alert.updateMany({ where: { status: { in: ['OPEN', 'IN_PROGRESS', 'ACKNOWLEDGED'] }, OR: [{ propertyId: id }, { lease: { propertyId: id } }] }, data: { status: 'DISMISSED', dismissedAt: now } });
     return tx.property.update({ where: { id }, data: { deletedAt: now } });
   });
 }
