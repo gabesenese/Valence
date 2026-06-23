@@ -1,6 +1,7 @@
 import { parse } from 'csv-parse/sync';
 import { prisma } from '../../infrastructure/database';
 import { PLAN_LIMITS } from '../plans/plans.service';
+import { syncLeaseRevenueSchedule } from '../finance/revenue-schedule.service';
 import type { Plan, PropertyType, LeaseType } from '@prisma/client';
 
 export interface ImportResult {
@@ -250,7 +251,7 @@ export async function importLeases(buffer: Buffer, plan: Plan, userId: string, c
         throw new Error(`type must be one of: ${VALID_LEASE_TYPES.join(', ')}`);
       }
 
-      await prisma.lease.create({
+      const lease = await prisma.lease.create({
         data: {
           leaseNumber: leaseNumber.trim(),
           propertyId: property.id,
@@ -266,6 +267,7 @@ export async function importLeases(buffer: Buffer, plan: Plan, userId: string, c
           ...(row.notes && { notes: row.notes.trim() }),
         },
       });
+      await syncLeaseRevenueSchedule(lease);
 
       result.created++;
     } catch (err) {
