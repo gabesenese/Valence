@@ -2,6 +2,7 @@ import { parse } from 'csv-parse/sync';
 import { prisma } from '../../infrastructure/database';
 import { PLAN_LIMITS } from '../plans/plans.service';
 import { syncLeaseRevenueSchedule } from '../finance/revenue-schedule.service';
+import { computeRenewalRisk } from '../leases/leases.service';
 import type { Plan, PropertyType, LeaseType } from '@prisma/client';
 
 export interface ImportResult {
@@ -251,13 +252,15 @@ export async function importLeases(buffer: Buffer, plan: Plan, userId: string, c
         throw new Error(`type must be one of: ${VALID_LEASE_TYPES.join(', ')}`);
       }
 
+      const leaseEndDate = new Date(toDate(endDate, 'endDate'));
       const lease = await prisma.lease.create({
         data: {
           leaseNumber: leaseNumber.trim(),
           propertyId: property.id,
           tenantId,
           startDate: new Date(toDate(startDate, 'startDate')),
-          endDate: new Date(toDate(endDate, 'endDate')),
+          endDate: leaseEndDate,
+          renewalRisk: computeRenewalRisk(leaseEndDate),
           baseRent: parseFloat(baseRent),
           type: leaseType as LeaseType,
           ...(row.unitNumber && { unitNumber: row.unitNumber.trim() }),
