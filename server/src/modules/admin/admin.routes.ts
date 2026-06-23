@@ -93,7 +93,7 @@ router.get('/analytics', async (_req: Request, res: Response, next: NextFunction
 
     // MRR counts only real paying customers — exclude demo, internal staff, and
     // internal/test email domains so test accounts and the owner don't inflate it.
-    const INTERNAL_EMAIL = ['@test.com', '@demo.com', '@valence.dev', '@admin.com', 'valenceos.ca', 'idor-test', 'privaterelay.appleid.com'];
+    const INTERNAL_EMAIL = ['@test.com', '@demo.com', '@valence.dev', '@admin.com', 'valenceos.ca', 'idor-test', 'privaterelay.appleid.com', 'bru.dotac@gmail.com'];
     const payingByPlan = await prisma.user.groupBy({
       by: ['plan'], _count: { _all: true },
       where: {
@@ -283,7 +283,7 @@ router.get('/revenue', async (_req: Request, res: Response, next: NextFunction) 
     // `plan` defaults to ESSENTIALS on free signup, so exclude demo accounts,
     // internal staff (SUPER_ADMIN), and internal/test email domains — otherwise
     // test accounts and the owner inflate MRR/profit.
-    const INTERNAL_EMAIL = ['@test.com', '@demo.com', '@valence.dev', '@admin.com', 'valenceos.ca', 'idor-test', 'privaterelay.appleid.com'];
+    const INTERNAL_EMAIL = ['@test.com', '@demo.com', '@valence.dev', '@admin.com', 'valenceos.ca', 'idor-test', 'privaterelay.appleid.com', 'bru.dotac@gmail.com'];
     const realAccount: Prisma.UserWhereInput = {
       isActive: true,
       isDemo: false,
