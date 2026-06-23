@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  Shield, LogOut, RefreshCw, BarChart2, Users, Activity, Flag, Cpu,
+  Shield, LogOut, RefreshCw, BarChart2, Users, Activity, Flag, Cpu, DollarSign,
   Eye, EyeOff, Loader2, TrendingUp, CheckCircle2,
 } from 'lucide-react';
 import { adminService } from '@/services/admin.service';
@@ -13,12 +13,14 @@ import { UsersTab } from './tabs/UsersTab';
 import { ActivityTab } from './tabs/ActivityTab';
 import { PlatformTab } from './tabs/PlatformTab';
 import { SystemTab } from './tabs/SystemTab';
+import { RevenueTab } from './tabs/RevenueTab';
 
 const SECRET_KEY = 'valence-admin-secret';
 
-type Tab = 'overview' | 'users' | 'activity' | 'platform' | 'system';
+type Tab = 'revenue' | 'overview' | 'users' | 'activity' | 'platform' | 'system';
 
 const TABS: { id: Tab; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
+  { id: 'revenue',   label: 'Revenue',   icon: DollarSign },
   { id: 'overview',  label: 'Overview',  icon: BarChart2 },
   { id: 'users',     label: 'Users',     icon: Users     },
   { id: 'activity',  label: 'Activity',  icon: Activity  },
@@ -107,7 +109,7 @@ export default function AdminPage() {
   const qc       = useQueryClient();
 
   const [secret, setSecret] = useState<string | null>(null);
-  const [tab, setTab]       = useState<Tab>('overview');
+  const [tab, setTab]       = useState<Tab>('revenue');
 
   useEffect(() => {
     if (!user) {
@@ -196,6 +198,7 @@ export default function AdminPage() {
           ))}
         </div>
 
+        {tab === 'revenue'   && <RevenueTab   secret={secret} />}
         {tab === 'overview'  && <OverviewTab  secret={secret} />}
         {tab === 'users'     && <UsersTab     secret={secret} />}
         {tab === 'activity'  && <ActivityTab  secret={secret} />}
