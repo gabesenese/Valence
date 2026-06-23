@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  Shield, LogOut, RefreshCw, BarChart2, Users, Activity, Flag, Cpu, DollarSign, HeartPulse, Database,
+  Shield, LogOut, RefreshCw, BarChart2, Users, Activity, Flag, Cpu, DollarSign, HeartPulse, Database, PieChart,
   Eye, EyeOff, Loader2, TrendingUp, CheckCircle2,
 } from 'lucide-react';
 import { adminService } from '@/services/admin.service';
@@ -16,10 +16,11 @@ import { SystemTab } from './tabs/SystemTab';
 import { RevenueTab } from './tabs/RevenueTab';
 import { CustomerHealthTab } from './tabs/CustomerHealthTab';
 import { DataTab } from './tabs/DataTab';
+import { AdoptionTab } from './tabs/AdoptionTab';
 
 const SECRET_KEY = 'valence-admin-secret';
 
-type Tab = 'revenue' | 'overview' | 'users' | 'data' | 'health' | 'activity' | 'platform' | 'system';
+type Tab = 'revenue' | 'overview' | 'users' | 'data' | 'health' | 'adoption' | 'activity' | 'platform' | 'system';
 
 const TABS: { id: Tab; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
   { id: 'revenue',   label: 'Revenue',   icon: DollarSign },
@@ -27,6 +28,7 @@ const TABS: { id: Tab; label: string; icon: React.ComponentType<{ className?: st
   { id: 'users',     label: 'Users',     icon: Users     },
   { id: 'data',      label: 'Data',      icon: Database  },
   { id: 'health',    label: 'Health',    icon: HeartPulse },
+  { id: 'adoption',  label: 'Adoption',  icon: PieChart  },
   { id: 'activity',  label: 'Activity',  icon: Activity  },
   { id: 'platform',  label: 'Platform',  icon: Flag      },
   { id: 'system',    label: 'System',    icon: Cpu       },
@@ -207,6 +209,7 @@ export default function AdminPage() {
         {tab === 'users'     && <UsersTab     secret={secret} />}
         {tab === 'data'      && <DataTab      secret={secret} />}
         {tab === 'health'    && <CustomerHealthTab secret={secret} />}
+        {tab === 'adoption'  && <AdoptionTab   secret={secret} />}
         {tab === 'activity'  && <ActivityTab  secret={secret} />}
         {tab === 'platform'  && <PlatformTab  secret={secret} />}
         {tab === 'system'    && <SystemTab    secret={secret} />}
