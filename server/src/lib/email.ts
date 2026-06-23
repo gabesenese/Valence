@@ -32,6 +32,10 @@ function btn(label: string, url: string) {
 }
 
 
+export async function sendDailyBriefEmail(to: string, bodyHtml: string) {
+  await send(to, 'Your Valence daily brief', wrap('Your daily brief', bodyHtml));
+}
+
 export async function sendPasswordResetEmail(to: string, resetUrl: string) {
   const body = `
     <p style="margin:0 0 16px;font-size:14px;color:#94a3b8;line-height:1.6">

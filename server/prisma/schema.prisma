@@ -195,6 +195,8 @@ model User {
   isDemo           Boolean   @default(false) @map("is_demo")
   lastLoginAt      DateTime? @map("last_login_at")
   lastChangesSeenAt DateTime? @map("last_changes_seen_at")
+  lastBriefSentAt   DateTime? @map("last_brief_sent_at")
+  dailyBriefOptOut  Boolean   @default(false) @map("daily_brief_opt_out")
   createdAt        DateTime  @default(now()) @map("created_at")
   updatedAt        DateTime  @updatedAt @map("updated_at")
 
