@@ -109,7 +109,25 @@ export const adminService = {
     api.delete(`/admin/data/${type}/${id}`, h(s)).then((r) => r.data),
   wipeUserData: (s: string, id: string) =>
     api.post(`/admin/users/${id}/wipe`, {}, h(s)).then((r) => r.data),
+  getAdoption: (s: string) => api.get<{ data: AdoptionData }>('/admin/adoption', h(s)).then((r) => r.data.data),
 };
+
+export interface AdoptionAccount {
+  id: string;
+  email: string;
+  name: string;
+  plan: string;
+  import: boolean;
+  finance: number;
+  workQueue: number;
+  automation: number;
+  ai: number;
+}
+
+export interface AdoptionData {
+  summary: { total: number; import: number; finance: number; workQueue: number; automation: number; ai: number };
+  accounts: AdoptionAccount[];
+}
 
 export interface HealthAccount {
   id: string;

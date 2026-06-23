@@ -152,6 +152,61 @@ router.get('/analytics', async (_req: Request, res: Response, next: NextFunction
 });
 
 
+router.get('/adoption', async (_req: Request, res: Response, next: NextFunction) => {
+  try {
+    const users = await prisma.user.findMany({ where: { isActive: true }, select: { id: true, email: true, firstName: true, lastName: true, plan: true } });
+
+    const props = await prisma.property.findMany({ where: { deletedAt: null }, select: { ownerId: true, _count: { select: { leases: { where: { deletedAt: null } }, financialRecords: true } } } });
+    const byOwner = new Map<string, { props: number; fin: number }>();
+    for (const p of props) {
+      if (!p.ownerId) continue;
+      const a = byOwner.get(p.ownerId) ?? { props: 0, fin: 0 };
+      a.props += 1; a.fin += p._count.financialRecords;
+      byOwner.set(p.ownerId, a);
+    }
+
+    const taskRows = await prisma.task.findMany({ where: { deletedAt: null }, select: { property: { select: { ownerId: true } } } });
+    const tasksByOwner = new Map<string, number>();
+    for (const t of taskRows) {
+      const o = t.property?.ownerId;
+      if (!o) continue;
+      tasksByOwner.set(o, (tasksByOwner.get(o) ?? 0) + 1);
+    }
+
+    const [autoBy, aiBy] = await Promise.all([
+      prisma.automationRule.groupBy({ by: ['createdById'], _count: { _all: true } }),
+      prisma.usageRecord.groupBy({ by: ['userId'], _count: { _all: true } }),
+    ]);
+    const autoMap = new Map(autoBy.filter((r) => r.createdById).map((r) => [r.createdById as string, r._count._all]));
+    const aiMap = new Map(aiBy.filter((r) => r.userId).map((r) => [r.userId as string, r._count._all]));
+
+    const accounts = users.map((u) => {
+      const a = byOwner.get(u.id) ?? { props: 0, fin: 0 };
+      return {
+        id: u.id, email: u.email, name: `${u.firstName} ${u.lastName}`.trim(), plan: u.plan,
+        import: a.props > 0,
+        finance: a.fin,
+        workQueue: tasksByOwner.get(u.id) ?? 0,
+        automation: autoMap.get(u.id) ?? 0,
+        ai: aiMap.get(u.id) ?? 0,
+      };
+    });
+
+    const n = accounts.length || 1;
+    const pct = (f: (x: typeof accounts[number]) => boolean) => Math.round((accounts.filter(f).length / n) * 100);
+    const summary = {
+      total: accounts.length,
+      import: pct((a) => a.import),
+      finance: pct((a) => a.finance > 0),
+      workQueue: pct((a) => a.workQueue > 0),
+      automation: pct((a) => a.automation > 0),
+      ai: pct((a) => a.ai > 0),
+    };
+    sendSuccess(res, { summary, accounts });
+  } catch (err) { next(err); }
+});
+
+
 router.get('/customer-health', async (_req: Request, res: Response, next: NextFunction) => {
   try {
     const now = new Date();
