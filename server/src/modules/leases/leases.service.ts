@@ -2,6 +2,7 @@ import { Prisma, RenewalRisk, RenewalStage } from '@prisma/client';
 import { prisma } from '../../infrastructure/database';
 import { NotFoundError } from '../../utils/errors';
 import { trackIfFirstTime } from '../analytics/funnel.service';
+import { syncLeaseRevenueSchedule } from '../finance/revenue-schedule.service';
 import type { CreateLeaseInput, UpdateLeaseInput, LeaseQuery, BulkActionInput, AddNoteInput } from './leases.schemas';
 import { addDays, differenceInDays, parseISO } from 'date-fns';
 
@@ -527,27 +528,31 @@ export async function createLease(input: CreateLeaseInput, userId?: string) {
   const renewalRisk = computeRenewalRisk(endDate);
   const leaseNumber = `LSE-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 7).toUpperCase()}`;
 
-  const lease = await prisma.lease.create({
-    data: {
-      leaseNumber,
-      renewalRisk,
-      propertyId: input.propertyId,
-      tenantId: input.tenantId,
-      unitNumber: input.unitNumber,
-      type: input.type,
-      baseRent: input.baseRent,
-      rentEscalation: input.rentEscalation,
-      securityDeposit: input.securityDeposit,
-      sqft: input.sqft,
-      notes: input.notes,
-      startDate: parseISO(input.startDate),
-      endDate,
-      renewalDate: input.renewalDate ? parseISO(input.renewalDate) : undefined,
-    },
-    include: {
-      property: { select: { id: true, name: true, code: true } },
-      tenant: { select: { id: true, name: true, email: true } },
-    },
+  const lease = await prisma.$transaction(async (tx) => {
+    const created = await tx.lease.create({
+      data: {
+        leaseNumber,
+        renewalRisk,
+        propertyId: input.propertyId,
+        tenantId: input.tenantId,
+        unitNumber: input.unitNumber,
+        type: input.type,
+        baseRent: input.baseRent,
+        rentEscalation: input.rentEscalation,
+        securityDeposit: input.securityDeposit,
+        sqft: input.sqft,
+        notes: input.notes,
+        startDate: parseISO(input.startDate),
+        endDate,
+        renewalDate: input.renewalDate ? parseISO(input.renewalDate) : undefined,
+      },
+      include: {
+        property: { select: { id: true, name: true, code: true } },
+        tenant: { select: { id: true, name: true, email: true } },
+      },
+    });
+    await syncLeaseRevenueSchedule(created, tx);
+    return created;
   });
   if (userId) void trackIfFirstTime('data_imported', userId, { source: 'manual', entity: 'lease' });
   return lease;
@@ -560,20 +565,26 @@ export async function updateLease(id: string, input: UpdateLeaseInput) {
   const currentStage = rest.renewalStage
     ?? (await prisma.lease.findUnique({ where: { id }, select: { renewalStage: true } }))?.renewalStage;
   const renewalRisk = endDate ? computeRenewalRisk(endDate, currentStage) : rest.renewalRisk;
+  const revenueChanged = startDate !== undefined || endDate !== undefined
+    || rest.baseRent !== undefined || rest.rentEscalation !== undefined;
 
-  return prisma.lease.update({
-    where: { id },
-    data: {
-      ...rest,
-      ...(startDate && { startDate: parseISO(startDate) }),
-      ...(endDate && { endDate }),
-      ...(renewalDate && { renewalDate: parseISO(renewalDate) }),
-      ...(renewalRisk && { renewalRisk }),
-    },
-    include: {
-      property: { select: { id: true, name: true, code: true } },
-      tenant: { select: { id: true, name: true, email: true } },
-    },
+  return prisma.$transaction(async (tx) => {
+    const lease = await tx.lease.update({
+      where: { id },
+      data: {
+        ...rest,
+        ...(startDate && { startDate: parseISO(startDate) }),
+        ...(endDate && { endDate }),
+        ...(renewalDate && { renewalDate: parseISO(renewalDate) }),
+        ...(renewalRisk && { renewalRisk }),
+      },
+      include: {
+        property: { select: { id: true, name: true, code: true } },
+        tenant: { select: { id: true, name: true, email: true } },
+      },
+    });
+    if (revenueChanged) await syncLeaseRevenueSchedule(lease, tx);
+    return lease;
   });
 }
 
