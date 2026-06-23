@@ -590,7 +590,11 @@ export async function updateLease(id: string, input: UpdateLeaseInput) {
 
 export async function deleteLease(id: string) {
   await getLeaseById(id);
-  return prisma.lease.update({ where: { id }, data: { deletedAt: new Date() } });
+  const now = new Date();
+  return prisma.$transaction(async (tx) => {
+    await tx.task.updateMany({ where: { deletedAt: null, leaseId: id }, data: { deletedAt: now } });
+    return tx.lease.update({ where: { id }, data: { deletedAt: now } });
+  });
 }
 
 export async function getLeaseStats(userId: string) {
