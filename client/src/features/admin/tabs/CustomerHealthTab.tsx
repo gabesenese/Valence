@@ -46,7 +46,14 @@ function HealthCard({ a }: { a: HealthAccount }) {
       )}
       <div className="mt-3 flex items-center justify-between">
         <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${band.pill}`}>{band.label}</span>
-        {a.band === 'at_risk' && <button className="rounded-lg border border-surface-400/50 px-2.5 py-1 text-[11px] font-medium text-slate-300 hover:text-fg">Reach out</button>}
+        {a.band === 'at_risk' && (
+          <a
+            href={`mailto:${a.email}?subject=${encodeURIComponent('Checking in on your Valence account')}&body=${encodeURIComponent(`Hi ${a.name?.split(' ')[0] || 'there'},\n\nI noticed you haven't had a chance to get going in Valence yet — happy to help you get your portfolio set up so you can see your revenue at a glance.\n\n`)}`}
+            className="rounded-lg border border-surface-400/50 px-2.5 py-1 text-[11px] font-medium text-slate-300 hover:text-fg"
+          >
+            Reach out
+          </a>
+        )}
       </div>
     </div>
   );
