@@ -3,6 +3,7 @@ import { prisma } from '../../infrastructure/database';
 import { NotFoundError } from '../../utils/errors';
 import { addDays } from 'date-fns';
 import { computeRenewalRisk } from '../leases/leases.service';
+import { recordChange } from '../changes/changes.service';
 
 const ALERT_INCLUDE = {
   property: { select: { id: true, name: true, code: true } },
@@ -264,6 +265,16 @@ export async function generateLeaseExpirationAlerts(): Promise<number> {
         },
       });
       await logAlertActivity(alert.id, 'SCAN_CREATED', undefined, { source: 'anomaly_scan', daysLeft });
+      void recordChange({
+        type: 'ALERT_CREATED',
+        entityType: 'alert',
+        entityId: alert.id,
+        title: alert.title,
+        detail: `${lease.tenant.name} · ${lease.property.name}`,
+        severity: String(severity).toLowerCase(),
+        leaseId: lease.id,
+        propertyId: lease.propertyId,
+      });
       created++;
     }
   }
