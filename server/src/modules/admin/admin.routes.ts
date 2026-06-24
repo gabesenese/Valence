@@ -554,9 +554,15 @@ router.post('/users/:id/wipe', async (req: Request, res: Response, next: NextFun
       const leases = await tx.lease.updateMany({ where: { property: { ownerId: id }, deletedAt: null }, data: { deletedAt: now } });
       const tenants = await tx.tenant.updateMany({ where: { ownerId: id, deletedAt: null }, data: { deletedAt: now } });
       const properties = await tx.property.updateMany({ where: { ownerId: id, deletedAt: null }, data: { deletedAt: now } });
+      // Reset account-level state so it's indistinguishable from a brand-new account
+      // (default plan, no trial, cleared proactive-layer cursors). Login is kept.
+      await tx.user.update({
+        where: { id },
+        data: { plan: 'ESSENTIALS', trialEndsAt: null, lastChangesSeenAt: null, lastBriefSentAt: null, dailyBriefOptOut: false },
+      });
       return { properties: properties.count, leases: leases.count, tenants: tenants.count, tasks: tasks.count, alerts: alerts.count, financialRecords: financialRecords.count };
     });
-    sendSuccess(res, { wiped: true, ...result });
+    sendSuccess(res, { wiped: true, reset: true, ...result });
   } catch (err) { next(err); }
 });
 
