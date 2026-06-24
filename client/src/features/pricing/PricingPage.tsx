@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Check, Zap, Shield, Eye, TrendingUp, ArrowRight, ArrowUpRight, Loader2, AlertCircle } from 'lucide-react';
+import { Zap, ArrowRight, ArrowDown, ChevronDown, Loader2, AlertCircle } from 'lucide-react';
 import { billingService } from '@/services/billing.service';
 import { authService } from '@/services/auth.service';
 import { useAuthStore } from '@/state/auth.store';
@@ -10,11 +10,12 @@ import type { Plan } from '@/state/auth.store';
 interface Tier {
   name: string;
   transformation: string;
-  audience: string;
+  outcome: string;
+  description: string;
+  includes: string;
+  limitNote: string;
   plan: Plan | null;
   price: number;
-  description: string;
-  outcomes: string[];
   cta: string;
   featured?: boolean;
 }
@@ -31,47 +32,49 @@ const TIERS: Tier[] = [
   {
     name: 'Free',
     transformation: 'Try Valence',
-    audience: 'For exploring Valence',
+    outcome: 'Organize everything.',
+    description: 'Keep your properties, leases, and tenants in one place.',
+    includes: 'Properties · Leases · Tenants',
+    limitNote: 'Up to 3 properties',
     plan: 'FREE',
     price: 0,
-    description: 'Store and organize your portfolio.',
-    outcomes: ['Properties', 'Leases', 'Tenants'],
     cta: 'Start free',
   },
   {
     name: 'Essentials',
     transformation: 'Get Control',
-    audience: 'For owner-operators',
+    outcome: 'Stop managing from spreadsheets.',
+    description: 'See revenue, lease activity, and operational issues across your portfolio.',
+    includes: 'Revenue · Leases · Alerts',
+    limitNote: 'Up to 25 properties',
     plan: 'ESSENTIALS',
     price: 149,
-    description: 'Monitor revenue, leases, and operational risk.',
-    outcomes: ['Revenue Visibility', 'Lease Monitoring', 'Payment Alerts'],
-    cta: 'Start with Essentials',
+    cta: 'Get Essentials',
   },
   {
     name: 'Professional',
     transformation: 'Protect Revenue',
-    audience: 'For growing teams',
+    outcome: 'Know what\'s about to cost you money.',
+    description: 'Valence surfaces expiring leases, revenue risk, and operational issues before they become problems.',
+    includes: 'Daily Brief · Revenue at Risk · Automation',
+    limitNote: 'Up to 150 properties',
     plan: 'PROFESSIONAL',
     price: 499,
-    description: 'Know what needs attention before it costs you money.',
-    outcomes: ['Daily Brief', 'Revenue At Risk', 'Automation'],
-    cta: 'Start with Professional',
+    cta: 'Get Professional',
     featured: true,
   },
   {
     name: 'Executive',
     transformation: 'Lead With Confidence',
-    audience: 'For portfolio leadership',
+    outcome: 'See what\'s coming before everyone else.',
+    description: 'Forecast revenue, evaluate risk, and understand the future of your portfolio before you act.',
+    includes: 'Revenue Forecasting · Portfolio Intelligence · AI Analyst',
+    limitNote: 'Unlimited properties',
     plan: null,
     price: 1499,
-    description: 'Make better portfolio decisions with forecasting and intelligence.',
-    outcomes: ['Revenue Forecasting', 'AI Analyst'],
-    cta: 'Talk to us',
+    cta: 'Get Executive',
   },
 ];
-
-const UPGRADE_TRIGGERS = ['Revenue tracking', 'Portfolio alerts', 'Financial monitoring', 'Operational workflows'];
 
 const USAGE_LINES: UsageLine[] = [
   { name: 'Contract Processing', essentials: '100 / month',  professional: '1,000 / month', executive: 'Unlimited' },
@@ -79,38 +82,14 @@ const USAGE_LINES: UsageLine[] = [
   { name: 'Impact Simulations',  essentials: '100 / month',  professional: '500 / month',   executive: 'Unlimited' },
 ];
 
-const VALUE_PROPS = [
-  {
-    icon: Eye,
-    color: 'text-brand-400',
-    bg: 'bg-brand-600/10',
-    title: 'Visibility',
-    description: 'Every property, lease, tenant, and financial in one place — always current.',
-  },
-  {
-    icon: Shield,
-    color: 'text-success',
-    bg: 'bg-success/10',
-    title: 'Protection',
-    description: 'Detect revenue risk before it becomes revenue loss.',
-  },
-  {
-    icon: TrendingUp,
-    color: 'text-amber-400',
-    bg: 'bg-amber-500/10',
-    title: 'Decisions',
-    description: 'Turn portfolio data into clear priorities and strategic decisions.',
-  },
-];
-
 
 function TierCard({ tier, onSelect, loading }: { tier: Tier; onSelect: () => void; loading: boolean }) {
   return (
     <div
-      className={`relative flex flex-col rounded-2xl border p-6 transition-all ${
+      className={`relative flex flex-col rounded-2xl p-6 transition-all ${
         tier.featured
-          ? 'border-brand-500/50 bg-brand-600/5 ring-1 ring-brand-500/20 shadow-glow-brand'
-          : 'border-surface-400/40 bg-surface-100'
+          ? 'border-2 border-brand-500 bg-gradient-to-b from-brand-600/8 to-surface-100 shadow-glow-brand lg:-translate-y-3'
+          : 'border border-surface-400/40 bg-surface-100'
       }`}
     >
       {tier.featured && (
@@ -122,42 +101,33 @@ function TierCard({ tier, onSelect, loading }: { tier: Tier; onSelect: () => voi
         </div>
       )}
 
-      <div className="mb-6">
-        <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">{tier.name}</p>
-        <h3 className={`mt-1 text-2xl font-bold tracking-tight ${tier.featured ? 'text-brand-300' : 'text-fg'}`}>
-          {tier.transformation}
-        </h3>
-        {tier.featured && <p className="mt-1 text-[11px] font-medium text-brand-400">{tier.audience}</p>}
-        <div className="mt-4 flex items-baseline gap-1.5">
-          <span className="text-4xl font-bold text-fg tabular-nums">${tier.price.toLocaleString()}</span>
-          <span className="text-sm text-slate-500">/ month</span>
-        </div>
-        <p className="mt-3 text-sm text-slate-400 leading-relaxed">{tier.description}</p>
-      </div>
+      <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">{tier.name}</p>
+      <h3 className={`mt-2 text-xl font-bold tracking-tight ${tier.featured ? 'text-brand-300' : 'text-fg'}`}>
+        {tier.transformation}
+      </h3>
+      <p className="mt-2 text-base font-semibold text-fg leading-snug">{tier.outcome}</p>
+      <p className="mt-2 flex-1 text-xs text-slate-500 leading-relaxed">{tier.description}</p>
 
-      <ul className="flex flex-col gap-3 flex-1">
-        {tier.outcomes.map((outcome, i) => (
-          <li key={i} className="flex items-center gap-2.5">
-            <div className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full ${tier.featured ? 'bg-brand-600/30' : 'bg-surface-300/60'}`}>
-              <Check className={`h-2.5 w-2.5 ${tier.featured ? 'text-brand-300' : 'text-slate-400'}`} />
-            </div>
-            <span className="text-xs font-medium text-slate-300">{outcome}</span>
-          </li>
-        ))}
-      </ul>
+      <div className="mt-6 flex items-baseline gap-1.5">
+        <span className="text-3xl font-bold text-fg tabular-nums">${tier.price.toLocaleString()}</span>
+        <span className="text-sm text-slate-500">/ month</span>
+      </div>
 
       <button
         onClick={onSelect}
         disabled={loading}
-        className={`mt-6 w-full rounded-xl px-4 py-2.5 text-sm font-semibold transition-colors disabled:opacity-60 inline-flex items-center justify-center gap-2 ${
+        className={`mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-colors disabled:opacity-60 ${
           tier.featured
             ? 'bg-brand-600 hover:bg-brand-500 text-white shadow-glow-brand'
-            : 'bg-surface-300/60 hover:bg-surface-300 text-slate-200'
+            : 'border border-surface-400 bg-surface-100 hover:bg-surface-200 text-slate-200'
         }`}
       >
         {loading && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
         {tier.cta}
       </button>
+
+      <p className="mt-4 text-[11px] text-slate-500">Includes <span className="text-slate-400">{tier.includes}</span></p>
+      <p className="mt-1 text-[11px] text-slate-500">{tier.limitNote}</p>
     </div>
   );
 }
@@ -175,7 +145,7 @@ export default function PricingPage() {
   const handleSelect = async (tier: Tier) => {
     if (!isAuthenticated) { navigate('/auth/register'); return; }
     if (tier.plan === 'FREE') { navigate('/queue'); return; } // Free is the signup default — just enter the app
-    if (!tier.plan) { navigate('/auth/register'); return; } // Executive: contact us
+    if (!tier.plan) { navigate('/auth/register'); return; } // Executive: routed to contact/registration until self-serve checkout exists
     setCheckoutLoading(tier.plan);
     try {
       const url = await billingService.createCheckout(tier.plan);
@@ -239,32 +209,24 @@ export default function PricingPage() {
       </header>
 
       <div className="mx-auto max-w-6xl px-6 py-16">
-        <div className="text-center mb-16">
-          <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-brand-400">Operational Intelligence Platform</p>
-          <h1 className="text-4xl font-bold text-fg tracking-tight">
-            Priced for outcomes,<br />not features
+        {/* Outcome-first hero */}
+        <div className="text-center mb-6">
+          <h1 className="text-4xl sm:text-5xl font-bold text-fg tracking-tight leading-[1.1]">
+            Fewer surprises. Protected revenue.<br />Better decisions.
           </h1>
-          <p className="mt-4 text-base text-slate-400 max-w-xl mx-auto leading-relaxed">
-            Valence is not property management software. It's not a CRM.
-            It's the command center that turns portfolio data into daily decisions.
+          <p className="mt-5 text-base text-slate-400 max-w-lg mx-auto leading-relaxed">
+            Choose where your portfolio is today. Valence grows with you.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 mb-16">
-          {VALUE_PROPS.map(({ icon: Icon, color, bg, title, description }) => (
-            <div key={title} className="flex items-start gap-4 rounded-xl border border-surface-400/30 bg-surface-100 p-5">
-              <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${bg}`}>
-                <Icon className={`h-4.5 w-4.5 ${color}`} />
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-fg">{title}</p>
-                <p className="mt-1 text-xs text-slate-500 leading-relaxed">{description}</p>
-              </div>
-            </div>
-          ))}
+        {/* Point the eye at Professional */}
+        <div className="flex items-center justify-center gap-2 mb-10 text-sm">
+          <span className="text-slate-400">Most teams choose</span>
+          <span className="font-semibold text-brand-400">Protect Revenue</span>
+          <ArrowDown className="h-4 w-4 text-brand-400" />
         </div>
 
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 mb-16">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 items-stretch mb-12">
           {TIERS.map(tier => (
             <TierCard
               key={tier.name}
@@ -275,21 +237,17 @@ export default function PricingPage() {
           ))}
         </div>
 
-        <div className="mb-16 rounded-2xl border border-brand-500/20 bg-brand-600/5 p-6 sm:p-7">
-          <p className="text-sm font-semibold text-fg">Most owners upgrade from Free when they need:</p>
-          <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-            {UPGRADE_TRIGGERS.map(trigger => (
-              <div key={trigger} className="flex items-center gap-2.5 rounded-xl border border-surface-400/40 bg-surface-100 px-3.5 py-2.5">
-                <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-brand-600/15">
-                  <ArrowUpRight className="h-2.5 w-2.5 text-brand-400" />
-                </span>
-                <span className="text-xs font-medium text-slate-300">{trigger}</span>
-              </div>
-            ))}
-          </div>
+        <div className="text-center mb-16">
+          <a
+            href="#compare"
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-brand-400 hover:text-brand-300 transition-colors"
+          >
+            Compare every feature
+            <ChevronDown className="h-4 w-4" />
+          </a>
         </div>
 
-        <div className="rounded-2xl border border-surface-400/40 bg-surface-100 overflow-hidden mb-16">
+        <div id="compare" className="scroll-mt-8 rounded-2xl border border-surface-400/40 bg-surface-100 overflow-hidden mb-16">
           <div className="px-6 py-5 border-b border-surface-400/30">
             <h2 className="text-sm font-semibold text-fg">What's included in every plan</h2>
             <p className="mt-1 text-xs text-slate-500">
@@ -322,12 +280,11 @@ export default function PricingPage() {
           </div>
         </div>
 
-        {/* CTA */}
+        {/* Trial CTA */}
         <div className="rounded-2xl border border-brand-500/20 bg-gradient-to-br from-brand-600/5 to-surface-100 p-8 text-center">
-          <h2 className="text-xl font-bold text-fg mb-2">Most customers land on Professional</h2>
+          <h2 className="text-xl font-bold text-fg mb-2">Try Professional free for 7 days</h2>
           <p className="text-sm text-slate-400 mb-6 max-w-md mx-auto">
-            Once your team uses Valence every morning to manage their work queue,
-            it becomes operationally critical — and the ROI is obvious.
+            Start every morning knowing exactly what needs your attention — no credit card required.
           </p>
           <button
             onClick={handleGetStarted}
@@ -335,7 +292,7 @@ export default function PricingPage() {
             className="inline-flex items-center gap-2 rounded-xl bg-brand-600 hover:bg-brand-500 disabled:opacity-60 px-6 py-3 text-sm font-semibold text-white transition-colors shadow-glow-brand"
           >
             {trialClaiming && <Loader2 className="h-4 w-4 animate-spin" />}
-            Get started
+            Start free trial
             <ArrowRight className="h-4 w-4" />
           </button>
           {trialError ? (
@@ -344,7 +301,7 @@ export default function PricingPage() {
               {trialError}
             </div>
           ) : (
-            <p className="mt-3 text-xs text-slate-600">No credit card required · 7-day free trial</p>
+            <p className="mt-3 text-xs text-slate-600">No credit card required · Cancel anytime</p>
           )}
         </div>
       </div>
