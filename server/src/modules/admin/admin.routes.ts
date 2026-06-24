@@ -88,12 +88,21 @@ router.get('/analytics', async (_req: Request, res: Response, next: NextFunction
 
     const byPlan = await prisma.user.groupBy({ by: ['plan'], _count: { _all: true }, where: { isActive: true } });
     const planPrices: Record<string, number> = { ESSENTIALS: 149, PROFESSIONAL: 499, EXECUTIVE: 1500 };
-    let mrr = 0;
     const planDist: Record<string, number> = {};
-    for (const p of byPlan) {
-      planDist[p.plan] = p._count._all;
-      mrr += (planPrices[p.plan] ?? 0) * p._count._all;
-    }
+    for (const p of byPlan) planDist[p.plan] = p._count._all; // account distribution (all active)
+
+    // MRR counts only real paying customers — exclude demo, internal staff, and
+    // internal/test email domains so test accounts and the owner don't inflate it.
+    const INTERNAL_EMAIL = ['@test.com', '@demo.com', '@valence.dev', '@admin.com', 'valenceos.ca', 'idor-test', 'privaterelay.appleid.com', 'bru.dotac@gmail.com'];
+    const payingByPlan = await prisma.user.groupBy({
+      by: ['plan'], _count: { _all: true },
+      where: {
+        isActive: true, isDemo: false, role: { not: 'SUPER_ADMIN' },
+        OR: [{ trialEndsAt: null }, { trialEndsAt: { lt: now } }],
+        NOT: INTERNAL_EMAIL.map((d) => ({ email: { contains: d } })),
+      },
+    });
+    const mrr = payingByPlan.reduce((s, p) => s + (planPrices[p.plan] ?? 0) * p._count._all, 0);
 
     const [totalWithTrial, totalActive] = await Promise.all([
       prisma.user.count({ where: { trialEndsAt: { not: null } } }),
@@ -270,8 +279,19 @@ router.get('/revenue', async (_req: Request, res: Response, next: NextFunction) 
     const now = new Date();
     const planPrices: Record<string, number> = { ESSENTIALS: 149, PROFESSIONAL: 499, EXECUTIVE: 1500 };
 
-    // Paying = active and not currently inside a trial window.
-    const payingFilter = { isActive: true, OR: [{ trialEndsAt: null }, { trialEndsAt: { lt: now } }] };
+    // Real paying customers only. There's no Stripe subscription record yet and
+    // `plan` defaults to ESSENTIALS on free signup, so exclude demo accounts,
+    // internal staff (SUPER_ADMIN), and internal/test email domains — otherwise
+    // test accounts and the owner inflate MRR/profit.
+    const INTERNAL_EMAIL = ['@test.com', '@demo.com', '@valence.dev', '@admin.com', 'valenceos.ca', 'idor-test', 'privaterelay.appleid.com', 'bru.dotac@gmail.com'];
+    const realAccount: Prisma.UserWhereInput = {
+      isActive: true,
+      isDemo: false,
+      role: { not: 'SUPER_ADMIN' },
+      NOT: INTERNAL_EMAIL.map((d) => ({ email: { contains: d } })),
+    };
+    // Paying = a real account that isn't currently inside a trial window.
+    const payingFilter: Prisma.UserWhereInput = { ...realAccount, OR: [{ trialEndsAt: null }, { trialEndsAt: { lt: now } }] };
     const byPlan = await prisma.user.groupBy({ by: ['plan'], _count: { _all: true }, where: payingFilter });
 
     const planMix = byPlan
@@ -288,8 +308,8 @@ router.get('/revenue', async (_req: Request, res: Response, next: NextFunction) 
     const margin = mrr > 0 ? Math.round((netProfit / mrr) * 1000) / 10 : 0;
 
     const [withTrial, activeTrials] = await Promise.all([
-      prisma.user.count({ where: { trialEndsAt: { not: null } } }),
-      prisma.user.count({ where: { isActive: true, trialEndsAt: { gte: now } } }),
+      prisma.user.count({ where: { ...realAccount, trialEndsAt: { not: null } } }),
+      prisma.user.count({ where: { ...realAccount, trialEndsAt: { gte: now } } }),
     ]);
     const trialConvRate = withTrial > 0 ? Math.round((payingAccounts / withTrial) * 100) : 0;
 
