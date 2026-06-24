@@ -45,7 +45,7 @@ const TIERS: Tier[] = [
     plan: 'ESSENTIALS',
     price: 149,
     description: 'Monitor revenue, leases, and operational risk.',
-    outcomes: ['Revenue Tracking', 'Lease Monitoring', 'Payment Alerts'],
+    outcomes: ['Revenue Visibility', 'Lease Monitoring', 'Payment Alerts'],
     cta: 'Start with Essentials',
   },
   {
@@ -66,7 +66,7 @@ const TIERS: Tier[] = [
     plan: null,
     price: 1499,
     description: 'Make better portfolio decisions with forecasting and intelligence.',
-    outcomes: ['Revenue Forecasting', 'Portfolio Intelligence', 'AI Analyst'],
+    outcomes: ['Revenue Forecasting', 'AI Analyst'],
     cta: 'Talk to us',
   },
 ];
