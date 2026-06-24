@@ -16,6 +16,7 @@ enum UserRole {
 }
 
 enum Plan {
+  FREE
   ESSENTIALS
   PROFESSIONAL
   EXECUTIVE
@@ -186,7 +187,7 @@ model User {
   firstName        String    @map("first_name")
   lastName         String    @map("last_name")
   role             UserRole  @default(ANALYST)
-  plan             Plan      @default(ESSENTIALS)
+  plan             Plan      @default(FREE)
   trialEndsAt      DateTime? @map("trial_ends_at")
   emailVerifiedAt  DateTime? @map("email_verified_at")
   mfaSecret        String?   @map("mfa_secret")

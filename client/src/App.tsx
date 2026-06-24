@@ -80,11 +80,11 @@ export default function App() {
             <Route path="leases/:id" element={<LeaseDetailPage />} />
             <Route path="properties" element={<PropertiesPage />} />
             <Route path="properties/:id" element={<PropertyDetailPage />} />
-            <Route path="finance" element={<FinancePage />} />
-            <Route path="analytics" element={<AnalyticsPage />} />
+            <Route path="finance" element={<UpgradeGate feature="finance"><FinancePage /></UpgradeGate>} />
+            <Route path="analytics" element={<UpgradeGate feature="analytics"><AnalyticsPage /></UpgradeGate>} />
             <Route path="benchmarks" element={<UpgradeGate feature="performance"><BenchmarksPage /></UpgradeGate>} />
             <Route path="simulator" element={<UpgradeGate feature="impact_analysis"><SimulatorPage /></UpgradeGate>} />
-            <Route path="alerts" element={<AlertsPage />} />
+            <Route path="alerts" element={<UpgradeGate feature="alerts"><AlertsPage /></UpgradeGate>} />
             <Route path="tenants" element={<TenantsPage />} />
             <Route path="crm" element={<UpgradeGate feature="crm"><CRMPage /></UpgradeGate>} />
             <Route path="tasks" element={<UpgradeGate feature="tasks"><TasksPage /></UpgradeGate>} />

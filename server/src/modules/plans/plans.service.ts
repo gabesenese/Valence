@@ -10,15 +10,17 @@ export const PLAN_LIMITS: Record<Plan, {
   contracts: number;
   simulations: number;
 }> = {
+  FREE:         { properties: 3,        leases: 25,       aiRuns: 0,        contracts: 0,        simulations: 0        },
   ESSENTIALS:   { properties: 25,       leases: 500,      aiRuns: 0,        contracts: 0,        simulations: 0        },
   PROFESSIONAL: { properties: 150,      leases: 5_000,    aiRuns: 500,      contracts: 100,      simulations: 100      },
   EXECUTIVE:    { properties: Infinity, leases: Infinity, aiRuns: Infinity, contracts: Infinity, simulations: Infinity },
 };
 
 export const PLAN_ORDER: Record<Plan, number> = {
-  ESSENTIALS:   0,
-  PROFESSIONAL: 1,
-  EXECUTIVE:    2,
+  FREE:         0,
+  ESSENTIALS:   1,
+  PROFESSIONAL: 2,
+  EXECUTIVE:    3,
 };
 
 export function meetsMinPlan(userPlan: Plan, required: Plan): boolean {

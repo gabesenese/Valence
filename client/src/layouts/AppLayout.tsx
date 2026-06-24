@@ -49,8 +49,8 @@ const NAV_SECTIONS: NavSection[] = [
     label: 'Intelligence',
     items: [
       { to: '/dashboard',  icon: LayoutDashboard, label: 'Dashboard'                                          },
-      { to: '/finance',    icon: DollarSign,      label: 'Finance'                                            },
-      { to: '/analytics',  icon: BarChart3,       label: 'Analytics'                                          },
+      { to: '/finance',    icon: DollarSign,      label: 'Finance',     feature: 'finance'                     },
+      { to: '/analytics',  icon: BarChart3,       label: 'Analytics',   feature: 'analytics'                   },
       { to: '/benchmarks', icon: Layers,          label: 'Performance', feature: 'performance'                },
     ],
   },
@@ -59,7 +59,7 @@ const NAV_SECTIONS: NavSection[] = [
     items: [
       { to: '/simulator',  icon: Wand2, label: 'Impact Analysis', feature: 'impact_analysis' },
       { to: '/automation', icon: Zap,   label: 'Automation',      feature: 'automation'      },
-      { to: '/alerts',     icon: Bell,  label: 'Alerts'                                       },
+      { to: '/alerts',     icon: Bell,  label: 'Alerts',          feature: 'alerts'          },
     ],
   },
   {
