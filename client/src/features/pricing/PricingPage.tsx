@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Check, Zap, Shield, Eye, TrendingUp, ArrowRight, Loader2, AlertCircle } from 'lucide-react';
+import { Check, Zap, Shield, Eye, TrendingUp, ArrowRight, ArrowUpRight, Loader2, AlertCircle } from 'lucide-react';
 import { billingService } from '@/services/billing.service';
 import { authService } from '@/services/auth.service';
 import { useAuthStore } from '@/state/auth.store';
@@ -9,11 +9,13 @@ import type { Plan } from '@/state/auth.store';
 
 interface Tier {
   name: string;
+  transformation: string;
+  sizing: string;
+  bestFor: string;
   plan: Plan | null;
   price: number;
   tagline: string;
   description: string;
-  limit: string;
   outcomes: string[];
   cta: string;
   featured?: boolean;
@@ -30,67 +32,79 @@ interface UsageLine {
 const TIERS: Tier[] = [
   {
     name: 'Free',
+    transformation: 'Try Valence',
+    sizing: 'For getting started · up to 3 properties',
+    bestFor: 'Owners exploring Valence on a few properties.',
     plan: 'FREE',
     price: 0,
-    tagline: 'Start tracking your portfolio — no card required.',
-    description: 'A simple operational record for a handful of properties. Upgrade when you need monitoring, alerts, and financial insight.',
-    limit: 'Up to 3 properties · 25 leases',
+    tagline: 'A simple home for your portfolio — no card required.',
+    description: 'A digital filing cabinet for your properties, leases, and tenants. Upgrade the moment you need to run operations on top of it.',
     outcomes: [
-      'Keep properties, leases, and tenants in one place',
-      'See every lease and its key dates at a glance',
-      'Upgrade anytime to unlock monitoring, alerts, and financials',
+      'Store properties',
+      'Store leases',
+      'Track tenants',
+      'Basic portfolio overview',
     ],
     cta: 'Start free',
   },
   {
     name: 'Essentials',
+    transformation: 'Get Control',
+    sizing: 'For portfolios up to 25 properties',
+    bestFor: 'Independent owners and small portfolios.',
     plan: 'ESSENTIALS',
     price: 149,
-    tagline: 'Never miss a lease expiration or payment issue again.',
-    description: 'The operational system of record for your portfolio — properties, leases, tenants, and financials in one place.',
-    limit: 'Up to 25 properties · 500 leases',
+    tagline: 'Get control of your portfolio.',
+    description: 'Turn your filing cabinet into an operational system that tracks the money and watches for problems automatically.',
     outcomes: [
-      'Know the status of every lease before it becomes a problem',
-      'Get alerted to missed payments before they turn into delinquencies',
-      'Track revenue and expenses across every property in real time',
-      'Replace the spreadsheet with a single source of truth your whole team shares',
+      'Revenue tracking',
+      'Expense tracking',
+      'Lease expiration monitoring',
+      'Payment monitoring',
+      'Operational alerts',
     ],
     cta: 'Start with Essentials',
   },
   {
     name: 'Professional',
+    transformation: 'Protect Revenue',
+    sizing: 'For growing portfolios up to 150 properties',
+    bestFor: 'Growing property management teams.',
     plan: 'PROFESSIONAL',
     price: 499,
     tagline: 'Protect revenue. Stay ahead of risk.',
-    description: 'For growing portfolios where every lease matters and daily operations need a command center.',
-    limit: 'Up to 150 properties · 5,000 leases',
+    description: 'Valence monitors your portfolio continuously and tells your team exactly what needs attention next.',
     outcomes: [
-      'Start every morning knowing exactly what to work on',
-      'Automated monitoring flags lease expirations 90 days out',
-      'AI-generated briefs surface your portfolio\'s biggest risks daily',
-      'See which properties are underperforming and exactly why',
-      'Build workflows that escalate problems before they become crises',
+      'Start every day with a prioritized work queue',
+      'Detect lease expirations, revenue risk, and operational issues early',
+      'AI-generated daily briefs surface your biggest risks',
+      'Automate follow-ups, tasks, and escalation workflows',
+      'Turn portfolio data into action',
     ],
     cta: 'Start with Professional',
     featured: true,
   },
   {
     name: 'Executive',
+    transformation: 'Lead With Confidence',
+    sizing: 'For large and institutional portfolios',
+    bestFor: 'Owners, operators, and portfolio leadership.',
     plan: null,
     price: 1499,
-    tagline: 'Strategic intelligence for portfolio leadership.',
-    description: 'For owners and executives who need forecasting, board reporting, and portfolio-wide contract intelligence — not just operations.',
-    limit: 'Unlimited properties and leases',
+    tagline: 'Lead your portfolio with confidence.',
+    description: 'Forecast revenue, understand risk, and make better portfolio decisions before problems reach the boardroom.',
     outcomes: [
-      '12-month revenue forecasting across your entire portfolio',
-      'Board-ready reporting with executive-level portfolio summaries',
-      'Portfolio-wide contract intelligence and obligation tracking',
-      'Model the financial impact of any strategic decision before you commit',
-      'Dedicated AI analyst available on demand',
+      'Forecast portfolio revenue 12 months ahead',
+      'Understand where revenue is most exposed',
+      'Evaluate major portfolio decisions before committing',
+      'Executive-level portfolio intelligence',
+      'Dedicated AI analyst for strategic insights',
     ],
     cta: 'Talk to us',
   },
 ];
+
+const UPGRADE_TRIGGERS = ['Revenue tracking', 'Portfolio alerts', 'Financial monitoring', 'Operational workflows'];
 
 const USAGE_LINES: UsageLine[] = [
   { name: 'Contract Processing', essentials: '100 / month',  professional: '1,000 / month', executive: 'Unlimited' },
@@ -104,21 +118,21 @@ const VALUE_PROPS = [
     color: 'text-brand-400',
     bg: 'bg-brand-600/10',
     title: 'Visibility',
-    description: 'Know what\'s happening across every property, lease, and tenant — without digging through spreadsheets.',
+    description: 'Know exactly what\'s happening across your portfolio — properties, leases, tenants, and finances in one place.',
   },
   {
     icon: Shield,
     color: 'text-success',
     bg: 'bg-success/10',
     title: 'Protection',
-    description: 'Prevent revenue loss before it happens. Automated monitoring catches lease risk, overdue payments, and vacancy exposure early.',
+    description: 'Detect revenue risk before it becomes revenue loss.',
   },
   {
     icon: TrendingUp,
     color: 'text-amber-400',
     bg: 'bg-amber-500/10',
     title: 'Decisions',
-    description: 'Know what to do next. AI-generated briefings turn portfolio data into specific, prioritized actions every morning.',
+    description: 'Turn portfolio data into clear priorities and strategic decisions.',
   },
 ];
 
@@ -142,16 +156,19 @@ function TierCard({ tier, onSelect, loading }: { tier: Tier; onSelect: () => voi
       )}
 
       <div className="mb-6">
-        <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-500">{tier.name}</h3>
-        <div className="mt-2 flex items-baseline gap-1.5">
+        <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">{tier.name}</p>
+        <h3 className={`mt-1 text-2xl font-bold tracking-tight ${tier.featured ? 'text-brand-300' : 'text-fg'}`}>
+          {tier.transformation}
+        </h3>
+        <p className="mt-1 text-[11px] text-slate-500">{tier.sizing}</p>
+        <div className="mt-4 flex items-baseline gap-1.5">
           <span className="text-4xl font-bold text-fg tabular-nums">${tier.price.toLocaleString()}</span>
           <span className="text-sm text-slate-500">/ month</span>
         </div>
-        <p className={`mt-2 text-sm font-semibold ${tier.featured ? 'text-brand-300' : 'text-slate-300'}`}>
+        <p className={`mt-3 text-sm font-semibold ${tier.featured ? 'text-brand-300' : 'text-slate-300'}`}>
           {tier.tagline}
         </p>
         <p className="mt-1.5 text-xs text-slate-500 leading-relaxed">{tier.description}</p>
-        <p className="mt-3 text-[11px] text-slate-600">{tier.limit}</p>
       </div>
 
       <ul className="flex flex-col gap-3 flex-1">
@@ -164,6 +181,10 @@ function TierCard({ tier, onSelect, loading }: { tier: Tier; onSelect: () => voi
           </li>
         ))}
       </ul>
+
+      <p className="mt-5 border-t border-surface-400/20 pt-4 text-[11px] leading-relaxed text-slate-500">
+        <span className="text-slate-600">Best for </span>{tier.bestFor}
+      </p>
 
       <button
         onClick={onSelect}
@@ -292,6 +313,20 @@ export default function PricingPage() {
               onSelect={() => handleSelect(tier)}
             />
           ))}
+        </div>
+
+        <div className="mb-16 rounded-2xl border border-brand-500/20 bg-brand-600/5 p-6 sm:p-7">
+          <p className="text-sm font-semibold text-fg">Most owners upgrade from Free when they need:</p>
+          <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {UPGRADE_TRIGGERS.map(trigger => (
+              <div key={trigger} className="flex items-center gap-2.5 rounded-xl border border-surface-400/40 bg-surface-100 px-3.5 py-2.5">
+                <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-brand-600/15">
+                  <ArrowUpRight className="h-2.5 w-2.5 text-brand-400" />
+                </span>
+                <span className="text-xs font-medium text-slate-300">{trigger}</span>
+              </div>
+            ))}
+          </div>
         </div>
 
         <div className="rounded-2xl border border-surface-400/40 bg-surface-100 overflow-hidden mb-16">
