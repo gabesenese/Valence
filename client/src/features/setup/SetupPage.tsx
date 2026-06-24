@@ -63,7 +63,7 @@ export default function SetupPage() {
 
   useEffect(() => {
     if (!allDone || mode !== 'manual') return;
-    const t = setTimeout(() => { eventService.track('setup_complete'); navigate('/queue'); }, 2500);
+    const t = setTimeout(() => { eventService.track('setup_complete'); navigate('/dashboard'); }, 2500);
     return () => clearTimeout(t);
   }, [allDone, mode, navigate]);
 
@@ -73,7 +73,7 @@ export default function SetupPage() {
     try {
       await demoService.loadDemo();
       eventService.track('setup_complete');
-      navigate('/queue');
+      navigate('/dashboard');
     } catch {
       setDemoError('Failed to load demo data. Please try again.');
       setMode('choose');
@@ -267,7 +267,7 @@ export default function SetupPage() {
           </div>
 
           <div className="flex flex-col items-center gap-2">
-            <Button onClick={() => { eventService.track('setup_complete'); navigate('/queue'); }} size="md">
+            <Button onClick={() => { eventService.track('setup_complete'); navigate('/dashboard'); }} size="md">
               {allDone ? 'Go to Dashboard' : 'Skip for Now'}
               <ArrowRight className="h-4 w-4" />
             </Button>
