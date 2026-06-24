@@ -26,9 +26,9 @@ export interface OnboardingProgress {
 export async function getOnboardingProgress(userId: string): Promise<OnboardingProgress> {
   const [user, propertyCount, leaseCount, alertCount, inviteCount] = await Promise.all([
     prisma.user.findUnique({ where: { id: userId }, select: { isDemo: true } }),
-    prisma.property.count({ where: { ownerId: userId } }),
-    prisma.lease.count({ where: { property: { ownerId: userId } } }),
-    prisma.alert.count({ where: { property: { ownerId: userId } } }),
+    prisma.property.count({ where: { ownerId: userId, deletedAt: null } }),
+    prisma.lease.count({ where: { property: { ownerId: userId }, deletedAt: null } }),
+    prisma.alert.count({ where: { property: { ownerId: userId, deletedAt: null } } }),
     prisma.invite.count({ where: { invitedById: userId } }),
   ]);
 
