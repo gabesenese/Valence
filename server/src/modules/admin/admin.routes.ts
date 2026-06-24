@@ -578,7 +578,7 @@ router.post('/users/:id/wipe', async (req: Request, res: Response, next: NextFun
       // (default plan, no trial, cleared proactive-layer cursors). Login is kept.
       await tx.user.update({
         where: { id },
-        data: { plan: 'ESSENTIALS', trialEndsAt: null, lastChangesSeenAt: null, lastBriefSentAt: null, dailyBriefOptOut: false },
+        data: { plan: 'FREE', trialEndsAt: null, lastChangesSeenAt: null, lastBriefSentAt: null, dailyBriefOptOut: false },
       });
       return { properties: properties.count, leases: leases.count, tenants: tenants.count, tasks: tasks.count, alerts: alerts.count, financialRecords: financialRecords.count };
     });

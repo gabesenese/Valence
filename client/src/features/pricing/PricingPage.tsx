@@ -29,6 +29,20 @@ interface UsageLine {
 
 const TIERS: Tier[] = [
   {
+    name: 'Free',
+    plan: 'FREE',
+    price: 0,
+    tagline: 'Start tracking your portfolio — no card required.',
+    description: 'A simple operational record for a handful of properties. Upgrade when you need monitoring, alerts, and financial insight.',
+    limit: 'Up to 3 properties · 25 leases',
+    outcomes: [
+      'Keep properties, leases, and tenants in one place',
+      'See every lease and its key dates at a glance',
+      'Upgrade anytime to unlock monitoring, alerts, and financials',
+    ],
+    cta: 'Start free',
+  },
+  {
     name: 'Essentials',
     plan: 'ESSENTIALS',
     price: 149,
@@ -179,6 +193,7 @@ export default function PricingPage() {
 
   const handleSelect = async (tier: Tier) => {
     if (!isAuthenticated) { navigate('/auth/register'); return; }
+    if (tier.plan === 'FREE') { navigate('/queue'); return; } // Free is the signup default — just enter the app
     if (!tier.plan) { navigate('/auth/register'); return; } // Executive: contact us
     setCheckoutLoading(tier.plan);
     try {
@@ -268,7 +283,7 @@ export default function PricingPage() {
           ))}
         </div>
 
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 mb-16">
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 mb-16">
           {TIERS.map(tier => (
             <TierCard
               key={tier.name}
