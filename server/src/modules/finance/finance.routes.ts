@@ -4,6 +4,7 @@ import { validate } from '../../middleware/validate';
 import { authenticate } from '../../middleware/authenticate';
 import { authorize } from '../../middleware/authorize';
 import { requireOwner } from '../../middleware/ownership';
+import { planGate } from '../../middleware/planGate';
 import {
   createFinancialRecordSchema,
   updateFinancialRecordSchema,
@@ -14,6 +15,7 @@ import {
 const router = Router();
 
 router.use(authenticate);
+router.use(planGate('ESSENTIALS')); // Finance is a paid feature — FREE tier upgrades to view it.
 
 router.get('/summary', controller.summary);
 router.get('/trend', validate(revenueTrendQuerySchema, 'query'), controller.trend);

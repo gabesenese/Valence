@@ -11,7 +11,7 @@ function resolveEffectivePlan(plan: Plan, trialEndsAt: string | null): Plan {
 
 export function planGate(required: Plan) {
   return (req: Request, res: Response, next: NextFunction): void => {
-    const rawPlan = (req.user?.plan) ?? 'ESSENTIALS';
+    const rawPlan = (req.user?.plan) ?? 'FREE';
     const trialEndsAt = req.user?.trialEndsAt ?? null;
     const effective = resolveEffectivePlan(rawPlan, trialEndsAt);
     if (meetsMinPlan(effective, required)) return next();

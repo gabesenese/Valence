@@ -10,7 +10,7 @@ import { adminService, type AdminUser } from '@/services/admin.service';
 import { useAuthStore } from '@/state/auth.store';
 import { cn } from '@/utils/cn';
 
-const PLANS = ['ESSENTIALS', 'PROFESSIONAL', 'EXECUTIVE'];
+const PLANS = ['FREE', 'ESSENTIALS', 'PROFESSIONAL', 'EXECUTIVE'];
 const ROLES = ['VIEWER', 'ANALYST', 'ADMIN', 'SUPER_ADMIN'];
 
 const PLAN_COLORS: Record<string, string> = {

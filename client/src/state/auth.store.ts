@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 
-export type Plan = 'ESSENTIALS' | 'PROFESSIONAL' | 'EXECUTIVE';
+export type Plan = 'FREE' | 'ESSENTIALS' | 'PROFESSIONAL' | 'EXECUTIVE';
 
 interface AuthUser {
   id: string;

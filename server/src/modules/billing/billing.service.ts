@@ -14,7 +14,8 @@ type StripeClient = ReturnType<typeof getStripe>;
 
 
 function priceIdForPlan(plan: Plan): string {
-  const id = {
+  const id: string | undefined = {
+    FREE:         undefined,
     ESSENTIALS:   env.STRIPE_PRICE_ESSENTIALS,
     PROFESSIONAL: env.STRIPE_PRICE_PROFESSIONAL,
     EXECUTIVE:    env.STRIPE_PRICE_EXECUTIVE,
@@ -108,7 +109,7 @@ export async function handleWebhookEvent(payload: Buffer, sig: string): Promise<
     case 'customer.subscription.deleted': {
       const customer = await stripe.customers.retrieve(obj.customer as string) as { metadata?: { userId?: string } };
       const userId = customer.metadata?.userId;
-      if (userId) await setPlan(userId, 'ESSENTIALS');
+      if (userId) await setPlan(userId, 'FREE');
       break;
     }
 
