@@ -10,11 +10,9 @@ import type { Plan } from '@/state/auth.store';
 interface Tier {
   name: string;
   transformation: string;
-  sizing: string;
-  bestFor: string;
+  audience: string;
   plan: Plan | null;
   price: number;
-  tagline: string;
   description: string;
   outcomes: string[];
   cta: string;
@@ -33,73 +31,42 @@ const TIERS: Tier[] = [
   {
     name: 'Free',
     transformation: 'Try Valence',
-    sizing: 'For getting started · up to 3 properties',
-    bestFor: 'Owners exploring Valence on a few properties.',
+    audience: 'For exploring Valence',
     plan: 'FREE',
     price: 0,
-    tagline: 'A simple home for your portfolio — no card required.',
-    description: 'A digital filing cabinet for your properties, leases, and tenants. Upgrade the moment you need to run operations on top of it.',
-    outcomes: [
-      'Store properties',
-      'Store leases',
-      'Track tenants',
-      'Basic portfolio overview',
-    ],
+    description: 'Store and organize your portfolio.',
+    outcomes: ['Properties', 'Leases', 'Tenants'],
     cta: 'Start free',
   },
   {
     name: 'Essentials',
     transformation: 'Get Control',
-    sizing: 'For portfolios up to 25 properties',
-    bestFor: 'Independent owners and small portfolios.',
+    audience: 'For owner-operators',
     plan: 'ESSENTIALS',
     price: 149,
-    tagline: 'Get control of your portfolio.',
-    description: 'Turn your filing cabinet into an operational system that tracks the money and watches for problems automatically.',
-    outcomes: [
-      'Revenue tracking',
-      'Expense tracking',
-      'Lease expiration monitoring',
-      'Payment monitoring',
-      'Operational alerts',
-    ],
+    description: 'Monitor revenue, leases, and operational risk.',
+    outcomes: ['Revenue Tracking', 'Lease Monitoring', 'Payment Alerts'],
     cta: 'Start with Essentials',
   },
   {
     name: 'Professional',
     transformation: 'Protect Revenue',
-    sizing: 'For growing portfolios up to 150 properties',
-    bestFor: 'Growing property management teams.',
+    audience: 'For growing teams',
     plan: 'PROFESSIONAL',
     price: 499,
-    tagline: 'Protect revenue. Stay ahead of risk.',
-    description: 'Valence monitors your portfolio continuously and tells your team exactly what needs attention next.',
-    outcomes: [
-      'Start every day with a prioritized work queue',
-      'Detect lease expirations, revenue risk, and operational issues early',
-      'AI-generated daily briefs surface your biggest risks',
-      'Automate follow-ups, tasks, and escalation workflows',
-      'Turn portfolio data into action',
-    ],
+    description: 'Know what needs attention before it costs you money.',
+    outcomes: ['Daily Brief', 'Revenue At Risk', 'Automation'],
     cta: 'Start with Professional',
     featured: true,
   },
   {
     name: 'Executive',
     transformation: 'Lead With Confidence',
-    sizing: 'For large and institutional portfolios',
-    bestFor: 'Owners, operators, and portfolio leadership.',
+    audience: 'For portfolio leadership',
     plan: null,
     price: 1499,
-    tagline: 'Lead your portfolio with confidence.',
-    description: 'Forecast revenue, understand risk, and make better portfolio decisions before problems reach the boardroom.',
-    outcomes: [
-      'Forecast portfolio revenue 12 months ahead',
-      'Understand where revenue is most exposed',
-      'Evaluate major portfolio decisions before committing',
-      'Executive-level portfolio intelligence',
-      'Dedicated AI analyst for strategic insights',
-    ],
+    description: 'Make better portfolio decisions with forecasting and intelligence.',
+    outcomes: ['Revenue Forecasting', 'Portfolio Intelligence', 'AI Analyst'],
     cta: 'Talk to us',
   },
 ];
@@ -118,7 +85,7 @@ const VALUE_PROPS = [
     color: 'text-brand-400',
     bg: 'bg-brand-600/10',
     title: 'Visibility',
-    description: 'Know exactly what\'s happening across your portfolio — properties, leases, tenants, and finances in one place.',
+    description: 'Every property, lease, tenant, and financial in one place — always current.',
   },
   {
     icon: Shield,
@@ -148,7 +115,7 @@ function TierCard({ tier, onSelect, loading }: { tier: Tier; onSelect: () => voi
     >
       {tier.featured && (
         <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-600 px-3 py-1 text-[11px] font-bold text-white shadow-glow-brand">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-600 px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-white shadow-glow-brand">
             <Zap className="h-3 w-3" />
             Most Popular
           </span>
@@ -160,31 +127,24 @@ function TierCard({ tier, onSelect, loading }: { tier: Tier; onSelect: () => voi
         <h3 className={`mt-1 text-2xl font-bold tracking-tight ${tier.featured ? 'text-brand-300' : 'text-fg'}`}>
           {tier.transformation}
         </h3>
-        <p className="mt-1 text-[11px] text-slate-500">{tier.sizing}</p>
+        {tier.featured && <p className="mt-1 text-[11px] font-medium text-brand-400">{tier.audience}</p>}
         <div className="mt-4 flex items-baseline gap-1.5">
           <span className="text-4xl font-bold text-fg tabular-nums">${tier.price.toLocaleString()}</span>
           <span className="text-sm text-slate-500">/ month</span>
         </div>
-        <p className={`mt-3 text-sm font-semibold ${tier.featured ? 'text-brand-300' : 'text-slate-300'}`}>
-          {tier.tagline}
-        </p>
-        <p className="mt-1.5 text-xs text-slate-500 leading-relaxed">{tier.description}</p>
+        <p className="mt-3 text-sm text-slate-400 leading-relaxed">{tier.description}</p>
       </div>
 
       <ul className="flex flex-col gap-3 flex-1">
         {tier.outcomes.map((outcome, i) => (
-          <li key={i} className="flex items-start gap-2.5">
-            <div className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full ${tier.featured ? 'bg-brand-600/30' : 'bg-surface-300/60'}`}>
+          <li key={i} className="flex items-center gap-2.5">
+            <div className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full ${tier.featured ? 'bg-brand-600/30' : 'bg-surface-300/60'}`}>
               <Check className={`h-2.5 w-2.5 ${tier.featured ? 'text-brand-300' : 'text-slate-400'}`} />
             </div>
-            <span className="text-xs text-slate-400 leading-relaxed">{outcome}</span>
+            <span className="text-xs font-medium text-slate-300">{outcome}</span>
           </li>
         ))}
       </ul>
-
-      <p className="mt-5 border-t border-surface-400/20 pt-4 text-[11px] leading-relaxed text-slate-500">
-        <span className="text-slate-600">Best for </span>{tier.bestFor}
-      </p>
 
       <button
         onClick={onSelect}
