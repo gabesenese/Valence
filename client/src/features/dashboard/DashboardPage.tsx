@@ -120,7 +120,7 @@ export default function DashboardPage() {
       trend: undefined,
       sub: `${summary.occupancy.occupied}/${summary.occupancy.total} units`,
       subColor: 'text-slate-500',
-      href: '/properties',
+      href: '/properties?vacant=true',
     },
     {
       label: 'Open Alerts',

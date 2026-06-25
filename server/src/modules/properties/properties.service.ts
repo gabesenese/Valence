@@ -5,7 +5,7 @@ import { trackIfFirstTime } from '../analytics/funnel.service';
 import type { CreatePropertyInput, UpdatePropertyInput, PropertyQuery } from './properties.schemas';
 
 export async function getProperties(query: PropertyQuery, userId: string) {
-  const { page, limit, status, type, search } = query;
+  const { page, limit, status, type, search, vacant } = query;
   const skip = (page - 1) * limit;
 
   const where: Prisma.PropertyWhereInput = {
@@ -23,16 +23,21 @@ export async function getProperties(query: PropertyQuery, userId: string) {
     }),
   };
 
+  const include = {
+    _count: { select: { leases: { where: { status: 'ACTIVE', deletedAt: null } } } },
+  } satisfies Prisma.PropertyInclude;
+
+  // Vacancy (activeLeases < totalUnits) can't be expressed in a Prisma `where`
+  // (relation count vs. scalar field), so filter in memory. Owner property sets
+  // are bounded, and this only runs when the vacant filter is active.
+  if (vacant) {
+    const all = await prisma.property.findMany({ where, orderBy: { createdAt: 'desc' }, include });
+    const vacantProps = all.filter((p) => p._count.leases < p.totalUnits);
+    return { properties: vacantProps.slice(skip, skip + limit), total: vacantProps.length };
+  }
+
   const [properties, total] = await Promise.all([
-    prisma.property.findMany({
-      where,
-      skip,
-      take: limit,
-      orderBy: { createdAt: 'desc' },
-      include: {
-        _count: { select: { leases: { where: { status: 'ACTIVE', deletedAt: null } } } },
-      },
-    }),
+    prisma.property.findMany({ where, skip, take: limit, orderBy: { createdAt: 'desc' }, include }),
     prisma.property.count({ where }),
   ]);
 

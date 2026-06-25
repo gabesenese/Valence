@@ -27,6 +27,10 @@ export const propertyQuerySchema = z.object({
   status: z.nativeEnum(PropertyStatus).optional(),
   type: z.nativeEnum(PropertyType).optional(),
   search: z.string().optional(),
+  vacant: z
+    .union([z.boolean(), z.literal('true'), z.literal('false')])
+    .optional()
+    .transform((v) => v === true || v === 'true'),
 });
 
 export type CreatePropertyInput = z.infer<typeof createPropertySchema>;
