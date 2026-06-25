@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { LeaseStatus, LeaseType, RenewalRisk, RenewalStage } from '@prisma/client';
+import { LeaseStatus, LeaseType, RenewalRisk, RenewalStage, LateFeeType } from '@prisma/client';
 
 export const createLeaseSchema = z.object({
   propertyId: z.string().uuid(),
@@ -13,6 +13,11 @@ export const createLeaseSchema = z.object({
   rentEscalation: z.number().min(0).max(1).default(0),
   securityDeposit: z.number().positive().optional(),
   sqft: z.number().positive().optional(),
+  lateFeeType: z.nativeEnum(LateFeeType).optional(),
+  lateFeeFlat: z.number().nonnegative().nullable().optional(),
+  lateFeePercent: z.number().min(0).max(100).nullable().optional(),
+  lateFeeGraceDays: z.number().int().min(0).max(90).optional(),
+  lateFeeInterestPct: z.number().min(0).max(100).nullable().optional(),
   terms: z.record(z.unknown()).optional(),
   notes: z.string().optional(),
 });

@@ -53,6 +53,11 @@ export interface Lease {
   rentEscalation: number;
   securityDeposit?: number | null;
   sqft?: number | null;
+  lateFeeType?: string | null;
+  lateFeeFlat?: number | null;
+  lateFeePercent?: number | null;
+  lateFeeGraceDays?: number | null;
+  lateFeeInterestPct?: number | null;
   notes?: string | null;
   ownerUserId?: string | null;
   property: { id: string; name: string; code: string };
@@ -145,6 +150,11 @@ export interface CreateLeaseInput {
   rentEscalation?: number;
   securityDeposit?: number;
   sqft?: number;
+  lateFeeType?: string;
+  lateFeeFlat?: number | null;
+  lateFeePercent?: number | null;
+  lateFeeGraceDays?: number;
+  lateFeeInterestPct?: number | null;
   notes?: string;
 }
 

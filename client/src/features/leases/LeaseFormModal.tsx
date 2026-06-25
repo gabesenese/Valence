@@ -26,6 +26,12 @@ const LEASE_STATUSES = [
   { value: 'RENEWED', label: 'Renewed' },
 ];
 
+const LATE_FEE_TYPES = [
+  { value: 'NONE', label: 'No late fee' },
+  { value: 'FLAT', label: 'Flat amount' },
+  { value: 'PERCENTAGE', label: 'Percentage of rent' },
+];
+
 interface Props {
   open: boolean;
   onClose: () => void;
@@ -45,6 +51,11 @@ interface FormData {
   rentEscalation: string;
   securityDeposit: string;
   sqft: string;
+  lateFeeType: string;
+  lateFeeFlat: string;
+  lateFeePercent: string;
+  lateFeeGraceDays: string;
+  lateFeeInterestPct: string;
   notes: string;
 }
 
@@ -53,7 +64,9 @@ const emptyForm: FormData = {
   type: 'GROSS', status: 'ACTIVE',
   startDate: '', endDate: '',
   baseRent: '', rentEscalation: '0',
-  securityDeposit: '', sqft: '', notes: '',
+  securityDeposit: '', sqft: '',
+  lateFeeType: 'NONE', lateFeeFlat: '', lateFeePercent: '', lateFeeGraceDays: '0', lateFeeInterestPct: '',
+  notes: '',
 };
 
 function toForm(l: Lease): FormData {
@@ -69,6 +82,11 @@ function toForm(l: Lease): FormData {
     rentEscalation: String(parseFloat((Number(l.rentEscalation) * 100).toFixed(10))),
     securityDeposit: l.securityDeposit ? String(l.securityDeposit) : '',
     sqft: l.sqft ? String(l.sqft) : '',
+    lateFeeType: l.lateFeeType ?? 'NONE',
+    lateFeeFlat: l.lateFeeFlat != null ? String(l.lateFeeFlat) : '',
+    lateFeePercent: l.lateFeePercent != null ? String(l.lateFeePercent) : '',
+    lateFeeGraceDays: l.lateFeeGraceDays != null ? String(l.lateFeeGraceDays) : '0',
+    lateFeeInterestPct: l.lateFeeInterestPct != null ? String(l.lateFeeInterestPct) : '',
     notes: l.notes ?? '',
   };
 }
@@ -160,6 +178,11 @@ export default function LeaseFormModal({ open, onClose, lease, initialValues }: 
     endDate: toDatetime(form.endDate),
     baseRent: Number(form.baseRent),
     rentEscalation: Number(form.rentEscalation) / 100,
+    lateFeeType: form.lateFeeType,
+    lateFeeGraceDays: form.lateFeeGraceDays ? Number(form.lateFeeGraceDays) : 0,
+    lateFeeFlat: form.lateFeeType === 'FLAT' && Number(form.lateFeeFlat) > 0 ? Number(form.lateFeeFlat) : null,
+    lateFeePercent: form.lateFeeType === 'PERCENTAGE' && Number(form.lateFeePercent) > 0 ? Number(form.lateFeePercent) : null,
+    lateFeeInterestPct: form.lateFeeType !== 'NONE' && Number(form.lateFeeInterestPct) > 0 ? Number(form.lateFeeInterestPct) : null,
     ...(isEdit
       ? {
           securityDeposit: Number(form.securityDeposit) > 0 ? Number(form.securityDeposit) : null,
@@ -201,6 +224,15 @@ export default function LeaseFormModal({ open, onClose, lease, initialValues }: 
 
   const isPending = createMutation.isPending || updateMutation.isPending;
   const serverError = createMutation.error || updateMutation.error;
+
+  const lateFeeEstimate =
+    form.lateFeeType === 'FLAT' ? Number(form.lateFeeFlat) || 0
+    : form.lateFeeType === 'PERCENTAGE' ? (Number(form.baseRent) || 0) * (Number(form.lateFeePercent) || 0) / 100
+    : 0;
+  const graceDays = Number(form.lateFeeGraceDays) || 0;
+  const lateFeePreview = lateFeeEstimate > 0
+    ? `Estimated fee on a missed rent payment: $${lateFeeEstimate.toLocaleString(undefined, { maximumFractionDigits: 2 })}${graceDays > 0 ? ` (after a ${graceDays}-day grace period)` : ''}.`
+    : null;
 
   return (
     <Modal open={open} onClose={onClose} title={isEdit ? 'Edit Lease' : 'Add New Lease'} className="max-w-2xl">
@@ -329,6 +361,58 @@ export default function LeaseFormModal({ open, onClose, lease, initialValues }: 
               min={0}
             />
           </div>
+
+          <p className={SECTION_CLASS}>Late Fees <span className="normal-case font-normal text-slate-600">(optional)</span></p>
+          <div className="grid grid-cols-2 gap-4 mb-2">
+            <div className="flex flex-col gap-1.5">
+              <label className={LABEL_CLASS}>Late Fee Type</label>
+              <Select value={form.lateFeeType} onChange={setField('lateFeeType')} options={LATE_FEE_TYPES} />
+            </div>
+            {form.lateFeeType === 'FLAT' && (
+              <Input
+                label="Flat Late Fee"
+                value={fmtMoney(form.lateFeeFlat)}
+                onChange={setMoney('lateFeeFlat')}
+                placeholder="50"
+                prefix={<DollarSign className="h-3.5 w-3.5" />}
+              />
+            )}
+            {form.lateFeeType === 'PERCENTAGE' && (
+              <div className="flex flex-col gap-1.5">
+                <label className={LABEL_CLASS}>Late Fee (% of rent)</label>
+                <div className="relative flex items-center">
+                  <input
+                    type="number" value={form.lateFeePercent} onChange={set('lateFeePercent')}
+                    placeholder="5" min={0} max={100} step={0.1}
+                    className="h-9 w-full rounded-lg border border-surface-400 bg-surface-200 px-3 pr-8 text-sm text-slate-100 placeholder:text-slate-600 focus:border-brand-500/60 focus:outline-none focus:ring-1 focus:ring-brand-500/30"
+                  />
+                  <span className="absolute right-3 text-xs text-slate-500">%</span>
+                </div>
+              </div>
+            )}
+          </div>
+          {form.lateFeeType !== 'NONE' && (
+            <>
+              <div className="grid grid-cols-2 gap-4 mb-2">
+                <Input
+                  label="Grace Period (days)" type="number" value={form.lateFeeGraceDays}
+                  onChange={set('lateFeeGraceDays')} placeholder="5" min={0}
+                />
+                <div className="flex flex-col gap-1.5">
+                  <label className={LABEL_CLASS}>Monthly Interest on Overdue %</label>
+                  <div className="relative flex items-center">
+                    <input
+                      type="number" value={form.lateFeeInterestPct} onChange={set('lateFeeInterestPct')}
+                      placeholder="1.5" min={0} max={100} step={0.1}
+                      className="h-9 w-full rounded-lg border border-surface-400 bg-surface-200 px-3 pr-8 text-sm text-slate-100 placeholder:text-slate-600 focus:border-brand-500/60 focus:outline-none focus:ring-1 focus:ring-brand-500/30"
+                    />
+                    <span className="absolute right-3 text-xs text-slate-500">%</span>
+                  </div>
+                </div>
+              </div>
+              {lateFeePreview && <p className="mb-4 text-[11px] text-slate-500">{lateFeePreview}</p>}
+            </>
+          )}
 
           <p className={SECTION_CLASS}>Notes <span className="normal-case font-normal text-slate-600">(optional)</span></p>
           <textarea
