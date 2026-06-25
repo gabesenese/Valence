@@ -60,6 +60,12 @@ enum LeaseType {
   GROUND
 }
 
+enum LateFeeType {
+  NONE
+  FLAT
+  PERCENTAGE
+}
+
 enum RenewalRisk {
   LOW
   MEDIUM
@@ -390,6 +396,11 @@ model Lease {
   rentEscalation   Decimal     @default(0) @map("rent_escalation") @db.Decimal(5, 4)
   securityDeposit  Decimal?    @map("security_deposit") @db.Decimal(12, 2)
   sqft             Decimal?    @db.Decimal(10, 2)
+  lateFeeType        LateFeeType @default(NONE) @map("late_fee_type")
+  lateFeeFlat        Decimal?    @map("late_fee_flat") @db.Decimal(12, 2)
+  lateFeePercent     Decimal?    @map("late_fee_percent") @db.Decimal(5, 2)
+  lateFeeGraceDays   Int         @default(0) @map("late_fee_grace_days")
+  lateFeeInterestPct Decimal?    @map("late_fee_interest_pct") @db.Decimal(5, 2)
   terms              Json?
   notes              String?
   terminatedAt       DateTime?    @map("terminated_at")
