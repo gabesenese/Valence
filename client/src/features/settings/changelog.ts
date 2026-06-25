@@ -16,6 +16,16 @@ export const CHANGE_TYPE_LABEL: Record<ChangeType, string> = {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: 'June 25, 2026',
+    title: 'Documents, late fees, and integrations',
+    changes: [
+      { type: 'added', text: 'Attach documents to any lease — agreements, amendments, insurance certificates, inspection reports — right from the lease page.' },
+      { type: 'added', text: 'Configure late fees per lease (flat amount or % of rent, grace period, interest) with a live estimate of the fee on a missed payment.' },
+      { type: 'added', text: 'A new Integrations area to request connections with your property management software (AppFolio, Buildium, Yardi, Rent Manager, MRI).' },
+      { type: 'added', text: "This \"What's New\" page, so you can follow every update we ship." },
+    ],
+  },
+  {
+    date: 'June 25, 2026',
     title: 'Click any chart to see what is behind the number',
     changes: [
       { type: 'added', text: 'Lease Status, Lease Risk and Revenue at Risk now drill straight into the matching leases when you click them.' },
