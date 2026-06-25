@@ -271,7 +271,11 @@ export default function PropertyDetailPage() {
                       <div className="pl-3.5 flex items-center gap-1.5">
                         {alert.status === 'OPEN' ? (
                           <button
-                            onClick={() => progressMutation.mutate(alert.id)}
+                            onClick={() => {
+                              progressMutation.mutate(alert.id);
+                              const leaseId = alert.leaseId ?? alert.lease?.id;
+                              navigate(leaseId ? `/leases/${leaseId}` : '/alerts');
+                            }}
                             className="inline-flex items-center gap-1 rounded-full bg-brand-600/20 border border-brand-500/25 px-2.5 py-1 text-[11px] font-medium text-brand-300 hover:bg-brand-600/35 hover:border-brand-500/40 transition-all"
                           >
                             <Play className="h-2.5 w-2.5" />
