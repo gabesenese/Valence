@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, PieChart, Pie, Cell,
@@ -11,7 +12,10 @@ import { useChartColors } from '@/hooks/useChartColors';
 
 export default function AnalyticsPage() {
   const c = useChartColors();
+  const navigate = useNavigate();
   const PIE_COLORS = [c.success, c.brand, c.warning, c.danger];
+  const filterLeasesByStatus = (status: string) =>
+    navigate(`/leases?status=${encodeURIComponent(status)}`);
   const { data: trend, isLoading } = useQuery({
     queryKey: ['analytics', 'revenue-trend', 12],
     queryFn: () => analyticsService.getRevenueTrend(12),
@@ -129,25 +133,42 @@ export default function AnalyticsPage() {
               <CardBody className="flex flex-col items-center gap-3 pb-4">
                 <ResponsiveContainer width="100%" height={150}>
                   <PieChart>
-                    <Pie data={statusPie} cx="50%" cy="50%" innerRadius={40} outerRadius={64} paddingAngle={3} dataKey="value" stroke="none">
+                    <Pie
+                      data={statusPie}
+                      cx="50%" cy="50%"
+                      innerRadius={40} outerRadius={64}
+                      paddingAngle={3}
+                      dataKey="value"
+                      stroke="none"
+                      className="cursor-pointer focus:outline-none"
+                      onClick={(_, i) => filterLeasesByStatus(statusPie[i].name)}
+                    >
                       {statusPie.map((_, i) => (
                         <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} opacity={0.9} />
                       ))}
                     </Pie>
                     <Tooltip
                       contentStyle={{ background: c.tooltipBg, border: `1px solid ${c.tooltipBorder}`, borderRadius: 8, fontSize: 11, color: c.tooltipText }}
+                      itemStyle={{ color: c.tooltipText }}
+                      labelStyle={{ color: c.tooltipLabel }}
                     />
                   </PieChart>
                 </ResponsiveContainer>
                 <div className="w-full flex flex-col gap-1.5 px-1">
                   {statusPie.map((s, i) => (
-                    <div key={s.name} className="flex items-center justify-between">
+                    <button
+                      key={s.name}
+                      type="button"
+                      onClick={() => filterLeasesByStatus(s.name)}
+                      className="flex items-center justify-between rounded-md px-1.5 py-1 -mx-1.5 transition-colors hover:bg-surface-300/40 focus:outline-none focus-visible:ring-1 focus-visible:ring-brand-500"
+                      title={`View ${s.name.toLowerCase()} leases`}
+                    >
                       <span className="flex items-center gap-1.5 text-xs text-slate-400">
                         <span className="h-1.5 w-1.5 rounded-full" style={{ background: PIE_COLORS[i % PIE_COLORS.length] }} />
                         {s.name}
                       </span>
                       <span className="text-xs font-semibold text-fg tabular-nums">{s.value}</span>
-                    </div>
+                    </button>
                   ))}
                 </div>
               </CardBody>
