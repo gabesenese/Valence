@@ -278,6 +278,15 @@ export default function SettingsPage() {
               </div>
               <ArrowRight className="h-4 w-4 text-slate-600 group-hover:text-slate-400 transition-colors shrink-0" />
             </button>
+
+            <button onClick={() => navigate('/integrations')}
+              className="flex items-center justify-between rounded-xl border border-surface-400/30 bg-surface-100 px-4 py-3.5 text-left hover:bg-surface-200/50 transition-colors group">
+              <div>
+                <p className="text-sm font-semibold text-fg">Integrations</p>
+                <p className="text-xs text-slate-500 mt-0.5">Connect Valence to your property management software</p>
+              </div>
+              <ArrowRight className="h-4 w-4 text-slate-600 group-hover:text-slate-400 transition-colors shrink-0" />
+            </button>
           </div>
         )}
 
