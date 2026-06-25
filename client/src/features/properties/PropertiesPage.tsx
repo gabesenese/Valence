@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Building2, MapPin, Plus, Search, Sparkles, Trash2 } from 'lucide-react';
 import { propertiesService, type PropertyType, type PropertyStatus } from '@/services/properties.service';
 import type { ExtractedProperty } from '@/services/ai.service';
@@ -36,9 +36,11 @@ const STATUS_OPTIONS: { value: PropertyStatus | ''; label: string }[] = [
 export default function PropertiesPage() {
   const navigate = useNavigate();
   const qc = useQueryClient();
+  const [searchParams] = useSearchParams();
   const [search, setSearch] = useState('');
   const [type, setType] = useState<PropertyType | ''>('');
   const [status, setStatus] = useState<PropertyStatus | ''>('');
+  const [vacant, setVacant] = useState(searchParams.get('vacant') === 'true');
   const [addOpen, setAddOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [importedValues, setImportedValues] = useState<Partial<Record<string, string>> | null>(null);
@@ -82,11 +84,12 @@ export default function PropertiesPage() {
   const cancelConfirm = (e: React.MouseEvent) => { e.stopPropagation(); setConfirmId(null); };
 
   const { data, isLoading } = useQuery({
-    queryKey: ['properties', { search, type, status }],
+    queryKey: ['properties', { search, type, status, vacant }],
     queryFn: () => propertiesService.getProperties({
       search: search || undefined,
       type: type || undefined,
       status: status || undefined,
+      vacant: vacant || undefined,
     }),
   });
 
@@ -124,9 +127,22 @@ export default function PropertiesPage() {
         </div>
         <Select value={type} onChange={(v) => setType(v as PropertyType | '')} options={TYPE_OPTIONS} className="w-40" />
         <Select value={status} onChange={(v) => setStatus(v as PropertyStatus | '')} options={STATUS_OPTIONS} className="w-44" />
-        {(search || type || status) && (
+        <button
+          type="button"
+          onClick={() => setVacant((v) => !v)}
+          aria-pressed={vacant}
+          className={cn(
+            'h-9 rounded-lg border px-3 text-sm transition-colors',
+            vacant
+              ? 'border-warning/50 bg-warning/10 text-warning'
+              : 'border-surface-400 bg-surface-200 text-slate-400 hover:text-slate-200',
+          )}
+        >
+          Vacant only
+        </button>
+        {(search || type || status || vacant) && (
           <button
-            onClick={() => { setSearch(''); setType(''); setStatus(''); }}
+            onClick={() => { setSearch(''); setType(''); setStatus(''); setVacant(false); }}
             className="text-xs text-slate-500 hover:text-slate-300 transition-colors"
           >
             Clear filters
@@ -135,7 +151,7 @@ export default function PropertiesPage() {
       </div>
 
       {data?.data.length === 0 ? (
-        (search || type || status) ? (
+        (search || type || status || vacant) ? (
           <div className="flex flex-col items-center justify-center py-20 text-center">
             <Building2 className="h-10 w-10 text-slate-700 mb-3" />
             <p className="text-sm text-slate-500">No properties match your filters</p>

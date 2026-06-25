@@ -43,6 +43,7 @@ export interface PropertyQuery {
   search?: string;
   status?: PropertyStatus;
   type?: PropertyType;
+  vacant?: boolean;
 }
 
 export interface CreatePropertyInput {
