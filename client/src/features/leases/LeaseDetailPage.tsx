@@ -10,6 +10,7 @@ import {
 import { leasesService, type RenewalStage } from '@/services/leases.service';
 import { Select } from '@/components/ui/Select';
 import LeaseFormModal from './LeaseFormModal';
+import { LeaseDocuments } from './LeaseDocuments';
 import { alertsService } from '@/services/alerts.service';
 import { authService } from '@/services/auth.service';
 import { Card, CardHeader, CardTitle, CardBody } from '@/components/ui/Card';
@@ -790,6 +791,8 @@ export default function LeaseDetailPage() {
           </CardBody>
         </Card>
       )}
+
+      <LeaseDocuments leaseId={lease.id} />
 
         </div>{/* end main column */}
 
