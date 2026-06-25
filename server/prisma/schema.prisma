@@ -233,10 +233,34 @@ model User {
   ownedTenants       Tenant[]        @relation("TenantOwner")
   sentInvites        Invite[]        @relation("InvitedBy")
   backups            Backup[]
+  integrations       Integration[]
 
   @@index([email])
   @@index([role])
   @@map("users")
+}
+
+enum IntegrationStatus {
+  REQUESTED
+  CONNECTED
+  DISCONNECTED
+}
+
+model Integration {
+  id           String            @id @default(uuid())
+  ownerId      String            @map("owner_id")
+  provider     String
+  status       IntegrationStatus @default(REQUESTED)
+  config       Json?
+  lastSyncedAt DateTime?         @map("last_synced_at")
+  createdAt    DateTime          @default(now()) @map("created_at")
+  updatedAt    DateTime          @updatedAt @map("updated_at")
+
+  owner User @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  @@unique([ownerId, provider])
+  @@index([ownerId])
+  @@map("integrations")
 }
 
 model Invite {

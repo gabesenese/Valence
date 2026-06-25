@@ -23,6 +23,7 @@ const AnalyticsPage = lazy(() => import('@/features/analytics/AnalyticsPage'));
 const AlertsPage = lazy(() => import('@/features/alerts/AlertsPage'));
 const TenantsPage = lazy(() => import('@/features/tenants/TenantsPage'));
 const SettingsPage = lazy(() => import('@/features/settings/SettingsPage'));
+const IntegrationsPage = lazy(() => import('@/features/integrations/IntegrationsPage'));
 const SetupPage = lazy(() => import('@/features/setup/SetupPage'));
 const WorkQueuePage = lazy(() => import('@/features/workQueue/WorkQueuePage'));
 const BenchmarksPage = lazy(() => import('@/features/benchmarks/BenchmarksPage'));
@@ -94,6 +95,7 @@ export default function App() {
             <Route path="audit" element={<AuditPage />} />
             <Route path="organization" element={<OrganizationPage />} />
             <Route path="settings" element={<SettingsPage />} />
+            <Route path="integrations" element={<IntegrationsPage />} />
             <Route path="support" element={<SupportPage />} />
             <Route path="export" element={<ExportPage />} />
             <Route path="trash" element={<TrashPage />} />
