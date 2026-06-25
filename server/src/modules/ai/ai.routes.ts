@@ -9,9 +9,10 @@ import { computeHealthScore } from './health-score.service';
 import { runSimulation, getActiveTenantsForSimulator } from './scenario-simulator.service';
 import { authenticate } from '../../middleware/authenticate';
 import { requireOwner } from '../../middleware/ownership';
-import { planGate } from '../../middleware/planGate';
-import { trackUsage } from '../plans/plans.service';
+import { planGate, resolveEffectivePlan } from '../../middleware/planGate';
+import { trackUsage, enforceUsageLimit } from '../plans/plans.service';
 import { sendSuccess } from '../../utils/response';
+import type { UsageType } from '@prisma/client';
 
 const router = Router();
 router.use(authenticate);
@@ -26,38 +27,49 @@ const upload = multer({
   },
 });
 
-router.post('/extract-lease', planGate('PROFESSIONAL'), upload.single('file'), async (req: Request, res: Response, next: NextFunction) => {
+
+function meterUsage(type: UsageType) {
+  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const plan = resolveEffectivePlan(req.user?.plan ?? 'FREE', req.user?.trialEndsAt ?? null);
+      await enforceUsageLimit(plan, req.user!.id, type);
+      res.on('finish', () => {
+        if (res.statusCode < 400) void trackUsage(req.user!.id, type);
+      });
+      next();
+    } catch (e) { next(e); }
+  };
+}
+
+router.post('/extract-lease', planGate('ESSENTIALS'), meterUsage('CONTRACT_PROCESSING'), upload.single('file'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     if (!req.file) return next(new Error('No file uploaded'));
-    void trackUsage(req.user!.id, 'CONTRACT_PROCESSING');
     const result = await extractLeaseFromPDF(req.file.buffer);
     sendSuccess(res, result);
   } catch (e) { next(e); }
 });
 
-router.post('/extract-property', planGate('PROFESSIONAL'), upload.single('file'), async (req: Request, res: Response, next: NextFunction) => {
+router.post('/extract-property', planGate('ESSENTIALS'), meterUsage('CONTRACT_PROCESSING'), upload.single('file'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     if (!req.file) return next(new Error('No file uploaded'));
-    void trackUsage(req.user!.id, 'CONTRACT_PROCESSING');
     const result = await extractPropertyFromPDF(req.file.buffer);
     sendSuccess(res, result);
   } catch (e) { next(e); }
 });
 
 
-router.get('/executive-brief', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/executive-brief', planGate('EXECUTIVE'), async (req: Request, res: Response, next: NextFunction) => {
   try { sendSuccess(res, await generateExecutiveBrief(req.user!.id)); } catch (e) { next(e); }
 });
 
 
-router.get('/health-score', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/health-score', planGate('PROFESSIONAL'), async (req: Request, res: Response, next: NextFunction) => {
   try { sendSuccess(res, await computeHealthScore(req.user!.id)); } catch (e) { next(e); }
 });
 
 
-router.post('/simulate', planGate('EXECUTIVE'), async (req: Request, res: Response, next: NextFunction) => {
+router.post('/simulate', planGate('ESSENTIALS'), meterUsage('IMPACT_SIMULATION'), async (req: Request, res: Response, next: NextFunction) => {
   try {
-    void trackUsage(req.user!.id, 'IMPACT_SIMULATION');
     sendSuccess(res, await runSimulation(req.body, req.user!.id));
   } catch (e) { next(e); }
 });
@@ -67,24 +79,24 @@ router.get('/simulate/tenants', async (req: Request, res: Response, next: NextFu
 });
 
 
-router.get('/insights/portfolio', async (_req: Request, res: Response, next: NextFunction) => {
+router.get('/insights/portfolio', planGate('ESSENTIALS'), meterUsage('AI_ANALYSIS'), async (_req: Request, res: Response, next: NextFunction) => {
   try { sendSuccess(res, await insightEngine.analyzePortfolio()); } catch (e) { next(e); }
 });
 
-router.get('/insights/property/:id', requireOwner('property'), async (req: Request, res: Response, next: NextFunction) => {
+router.get('/insights/property/:id', planGate('ESSENTIALS'), meterUsage('AI_ANALYSIS'), requireOwner('property'), async (req: Request, res: Response, next: NextFunction) => {
   try { sendSuccess(res, await insightEngine.analyzeProperty(req.params.id)); } catch (e) { next(e); }
 });
 
-router.get('/insights/lease/:id', requireOwner('lease'), async (req: Request, res: Response, next: NextFunction) => {
+router.get('/insights/lease/:id', planGate('ESSENTIALS'), meterUsage('AI_ANALYSIS'), requireOwner('lease'), async (req: Request, res: Response, next: NextFunction) => {
   try { sendSuccess(res, await insightEngine.analyzeLease(req.params.id)); } catch (e) { next(e); }
 });
 
 
-router.get('/risk/lease/:id', requireOwner('lease'), async (req: Request, res: Response, next: NextFunction) => {
+router.get('/risk/lease/:id', planGate('ESSENTIALS'), meterUsage('AI_ANALYSIS'), requireOwner('lease'), async (req: Request, res: Response, next: NextFunction) => {
   try { sendSuccess(res, await riskEvaluator.evaluateLeaseRisk(req.params.id)); } catch (e) { next(e); }
 });
 
-router.get('/risk/portfolio', async (_req: Request, res: Response, next: NextFunction) => {
+router.get('/risk/portfolio', planGate('ESSENTIALS'), meterUsage('AI_ANALYSIS'), async (_req: Request, res: Response, next: NextFunction) => {
   try { sendSuccess(res, await riskEvaluator.evaluatePortfolioRisk()); } catch (e) { next(e); }
 });
 

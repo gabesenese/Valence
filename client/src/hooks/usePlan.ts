@@ -41,8 +41,8 @@ const FEATURE_MIN_PLAN: Record<string, Plan> = {
   performance:           'PROFESSIONAL',
   executive_brief:       'EXECUTIVE',
   health_score:          'PROFESSIONAL',
-  impact_analysis:       'EXECUTIVE',
-  contract_intelligence: 'EXECUTIVE',
+  impact_analysis:       'ESSENTIALS',
+  contract_intelligence: 'ESSENTIALS',
 };
 
 export function usePlan() {
