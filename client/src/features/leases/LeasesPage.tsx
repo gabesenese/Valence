@@ -299,9 +299,10 @@ function Chip({ label, onRemove }: { label: string; onRemove: () => void }) {
 
 
 export default function LeasesPage() {
-  const [viewMode, setViewMode] = useState<ViewMode>('kanban');
+  const initialStatus = new URLSearchParams(window.location.search).get('status');
+  const [viewMode, setViewMode] = useState<ViewMode>(initialStatus ? 'table' : 'kanban');
   const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState('ACTIVE');
+  const [statusFilter, setStatusFilter] = useState(initialStatus ?? 'ACTIVE');
   const [riskFilter, setRiskFilter] = useState('');
   const [stageFilter, setStageFilter] = useState('');
   const [expiryFilter, setExpiryFilter] = useState('');
