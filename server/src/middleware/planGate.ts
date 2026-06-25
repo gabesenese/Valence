@@ -2,7 +2,7 @@ import type { Request, Response, NextFunction } from 'express';
 import type { Plan } from '@prisma/client';
 import { meetsMinPlan, PLAN_ORDER } from '../modules/plans/plans.service';
 
-function resolveEffectivePlan(plan: Plan, trialEndsAt: string | null): Plan {
+export function resolveEffectivePlan(plan: Plan, trialEndsAt: string | null): Plan {
   if (trialEndsAt && new Date(trialEndsAt) > new Date()) {
     if (PLAN_ORDER[plan] < PLAN_ORDER['PROFESSIONAL']) return 'PROFESSIONAL';
   }

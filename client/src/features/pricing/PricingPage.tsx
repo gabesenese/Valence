@@ -5,6 +5,7 @@ import { billingService } from '@/services/billing.service';
 import { authService } from '@/services/auth.service';
 import { useAuthStore } from '@/state/auth.store';
 import type { Plan } from '@/state/auth.store';
+import { PLAN_LIMITS, formatAllowance, type PlanUsageLimits } from '@valence/shared';
 
 
 interface Tier {
@@ -76,11 +77,17 @@ const TIERS: Tier[] = [
   },
 ];
 
-const USAGE_LINES: UsageLine[] = [
-  { name: 'Contract Processing', essentials: '100 / month',  professional: '1,000 / month', executive: 'Unlimited' },
-  { name: 'AI Analysis Runs',    essentials: '500 / month',  professional: '5,000 / month', executive: 'Unlimited' },
-  { name: 'Impact Simulations',  essentials: '100 / month',  professional: '500 / month',   executive: 'Unlimited' },
+const USAGE_METRICS: { name: string; key: keyof PlanUsageLimits }[] = [
+  { name: 'Contract Processing', key: 'contracts' },
+  { name: 'Impact Simulations',  key: 'simulations' },
 ];
+
+const USAGE_LINES: UsageLine[] = USAGE_METRICS.map(({ name, key }) => ({
+  name,
+  essentials:   formatAllowance(PLAN_LIMITS.ESSENTIALS[key]),
+  professional: formatAllowance(PLAN_LIMITS.PROFESSIONAL[key]),
+  executive:    formatAllowance(PLAN_LIMITS.EXECUTIVE[key]),
+}));
 
 
 function TierCard({ tier, onSelect, loading }: { tier: Tier; onSelect: () => void; loading: boolean }) {

@@ -11,8 +11,8 @@ export const PLAN_LIMITS: Record<Plan, {
   simulations: number;
 }> = {
   FREE:         { properties: 3,        leases: 25,       aiRuns: 0,        contracts: 0,        simulations: 0        },
-  ESSENTIALS:   { properties: 25,       leases: 500,      aiRuns: 0,        contracts: 0,        simulations: 0        },
-  PROFESSIONAL: { properties: 150,      leases: 5_000,    aiRuns: 500,      contracts: 100,      simulations: 100      },
+  ESSENTIALS:   { properties: 25,       leases: 500,      aiRuns: 500,      contracts: 100,      simulations: 100      },
+  PROFESSIONAL: { properties: 150,      leases: 5_000,    aiRuns: 5_000,    contracts: 1_000,    simulations: 500      },
   EXECUTIVE:    { properties: Infinity, leases: Infinity, aiRuns: Infinity, contracts: Infinity, simulations: Infinity },
 };
 
@@ -56,6 +56,31 @@ export async function enforceLeaseLimit(plan: Plan, userId?: string): Promise<vo
 function currentPeriodStart(): Date {
   const now = new Date();
   return new Date(now.getFullYear(), now.getMonth(), 1);
+}
+
+const USAGE_LIMIT_KEY: Record<UsageType, 'aiRuns' | 'contracts' | 'simulations'> = {
+  AI_ANALYSIS:         'aiRuns',
+  CONTRACT_PROCESSING: 'contracts',
+  IMPACT_SIMULATION:   'simulations',
+};
+
+const USAGE_LABEL: Record<UsageType, string> = {
+  AI_ANALYSIS:         'AI analysis runs',
+  CONTRACT_PROCESSING: 'contract extractions',
+  IMPACT_SIMULATION:   'impact simulations',
+};
+
+export async function enforceUsageLimit(plan: Plan, userId: string, type: UsageType): Promise<void> {
+  const limit = PLAN_LIMITS[plan][USAGE_LIMIT_KEY[type]];
+  if (limit === Infinity) return;
+  const used = await prisma.usageRecord.count({
+    where: { userId, type, periodStart: currentPeriodStart() },
+  });
+  if (used >= limit) {
+    throw new ForbiddenError(
+      `Your ${plan} plan includes ${limit.toLocaleString()} ${USAGE_LABEL[type]} per month — upgrade your plan for more.`
+    );
+  }
 }
 
 export async function trackUsage(userId: string, type: UsageType): Promise<void> {
