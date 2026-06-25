@@ -17,9 +17,10 @@ import { demoService } from '@/services/demo.service';
 import { usersService } from '@/services/users.service';
 import { authService } from '@/services/auth.service';
 import { organizationService } from '@/services/organization.service';
+import { CHANGELOG, CHANGE_TYPE_LABEL, type ChangeType } from './changelog';
 
 
-type Tab = 'account' | 'security' | 'billing' | 'sessions' | 'preferences' | 'danger';
+type Tab = 'account' | 'security' | 'billing' | 'sessions' | 'preferences' | 'changelog' | 'danger';
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'account',     label: 'Account'     },
@@ -27,8 +28,15 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'billing',     label: 'Billing'     },
   { id: 'sessions',    label: 'Sessions'    },
   { id: 'preferences', label: 'Preferences' },
+  { id: 'changelog',   label: "What's New"  },
   { id: 'danger',      label: 'Danger Zone' },
 ];
+
+const CHANGE_TYPE_CLASS: Record<ChangeType, string> = {
+  added:    'text-success bg-success/10 border-success/20',
+  improved: 'text-brand-300 bg-brand-500/10 border-brand-500/20',
+  fixed:    'text-amber-400 bg-amber-500/10 border-amber-500/20',
+};
 
 
 function parseDevice(ua: string | null): string {
@@ -585,6 +593,33 @@ export default function SettingsPage() {
                 </div>
               </CardBody>
             </Card>
+          </div>
+        )}
+
+        {activeTab === 'changelog' && (
+          <div className="max-w-2xl flex flex-col gap-6">
+            <p className="text-sm text-slate-500">The latest improvements and fixes we've shipped to Valence.</p>
+            <div className="flex flex-col gap-6">
+              {CHANGELOG.map((entry) => (
+                <div key={entry.date + entry.title} className="relative flex flex-col gap-3 border-l-2 border-surface-400/40 pl-5">
+                  <span className="absolute -left-[5px] top-1.5 h-2 w-2 rounded-full bg-brand-500" />
+                  <div>
+                    <p className="text-[11px] font-medium uppercase tracking-wider text-slate-500">{entry.date}</p>
+                    <h3 className="mt-0.5 text-sm font-semibold text-fg">{entry.title}</h3>
+                  </div>
+                  <ul className="flex flex-col gap-2.5">
+                    {entry.changes.map((change, i) => (
+                      <li key={i} className="flex items-start gap-2.5">
+                        <span className={cn('mt-0.5 shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold', CHANGE_TYPE_CLASS[change.type])}>
+                          {CHANGE_TYPE_LABEL[change.type]}
+                        </span>
+                        <span className="text-sm leading-relaxed text-slate-300">{change.text}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
