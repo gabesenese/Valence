@@ -299,13 +299,18 @@ function Chip({ label, onRemove }: { label: string; onRemove: () => void }) {
 
 
 export default function LeasesPage() {
-  const initialStatus = new URLSearchParams(window.location.search).get('status');
-  const [viewMode, setViewMode] = useState<ViewMode>(initialStatus ? 'table' : 'kanban');
+  const initialParams = new URLSearchParams(window.location.search);
+  const initialStatus = initialParams.get('status');
+  const initialRisk = initialParams.get('risk');
+  const initialStage = initialParams.get('stage');
+  const initialExpiring = initialParams.get('expiring');
+  const hasDrillDown = Boolean(initialStatus || initialRisk || initialStage || initialExpiring);
+  const [viewMode, setViewMode] = useState<ViewMode>(hasDrillDown ? 'table' : 'kanban');
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState(initialStatus ?? 'ACTIVE');
-  const [riskFilter, setRiskFilter] = useState('');
-  const [stageFilter, setStageFilter] = useState('');
-  const [expiryFilter, setExpiryFilter] = useState('');
+  const [riskFilter, setRiskFilter] = useState(initialRisk ?? '');
+  const [stageFilter, setStageFilter] = useState(initialStage ?? '');
+  const [expiryFilter, setExpiryFilter] = useState(initialExpiring ?? '');
   const [hasAlertsFilter, setHasAlertsFilter] = useState<'' | 'true' | 'false'>('');
   const [sortBy, setSortBy] = useState<SortField>('endDate');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
