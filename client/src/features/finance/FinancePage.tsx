@@ -4,7 +4,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from 'recharts';
 import { FileText } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { financeService } from '@/services/finance.service';
 import { RevenueAtRisk } from './RevenueAtRisk';
 import { Card, CardHeader, CardTitle, CardBody } from '@/components/ui/Card';
@@ -21,10 +21,43 @@ const STATUS_VARIANT: Record<string, 'success' | 'warning' | 'danger' | 'neutral
   VOID:       'neutral',
 };
 
+const MONTH_ABBR = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+// Trend bars are labelled "MMM yyyy" (e.g. "Jun 2026"); map a clicked label to the
+// month's [from, to] range so the records table can filter by periodStart.
+function monthLabelToRange(label: string): { from: string; to: string } | null {
+  const [mon, yearStr] = label.split(' ');
+  const m = MONTH_ABBR.indexOf(mon);
+  const year = Number(yearStr);
+  if (m < 0 || !Number.isFinite(year)) return null;
+  return {
+    from: new Date(year, m, 1, 0, 0, 0, 0).toISOString(),
+    to: new Date(year, m + 1, 0, 23, 59, 59, 999).toISOString(),
+  };
+}
+
 export default function FinancePage() {
   const c = useChartColors();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [recordsPage, setRecordsPage] = useState(1);
+
+  const periodLabel = searchParams.get('period') ?? undefined;
+  const from = searchParams.get('from') ?? undefined;
+  const to = searchParams.get('to') ?? undefined;
+
+  function selectMonth(label: string | undefined) {
+    if (!label) return;
+    const range = monthLabelToRange(label);
+    if (!range) return;
+    setRecordsPage(1);
+    setSearchParams({ period: label, from: range.from, to: range.to });
+  }
+
+  function clearPeriod() {
+    setRecordsPage(1);
+    setSearchParams({});
+  }
 
   const { data: summary, isLoading: summaryLoading } = useQuery({
     queryKey: ['finance', 'summary'],
@@ -37,8 +70,8 @@ export default function FinancePage() {
   });
 
   const { data: records } = useQuery({
-    queryKey: ['finance', 'records', recordsPage],
-    queryFn: () => financeService.getRecords({ limit: 20, page: recordsPage }),
+    queryKey: ['finance', 'records', recordsPage, from, to],
+    queryFn: () => financeService.getRecords({ limit: 20, page: recordsPage, from, to }),
     placeholderData: (prev) => prev,
   });
 
@@ -88,7 +121,15 @@ export default function FinancePage() {
 
         <div className="rounded-xl border border-surface-400/30 overflow-hidden">
           <div className="flex items-center justify-between px-5 py-3 border-b border-surface-400/40">
-            <span className="text-sm font-semibold text-fg">Financial Records</span>
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-semibold text-fg">Financial Records</span>
+              {periodLabel && (
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-500/10 px-2 py-0.5 text-xs text-brand-300">
+                  {periodLabel}
+                  <button onClick={clearPeriod} className="text-brand-300/70 hover:text-brand-200" aria-label="Clear period filter">×</button>
+                </span>
+              )}
+            </div>
             <span className="text-xs text-slate-600">{records?.meta.total ?? 0} total</span>
           </div>
           <div className="overflow-x-auto">
@@ -169,6 +210,7 @@ export default function FinancePage() {
           <CardHeader>
             <div className="flex flex-col gap-0.5">
               <CardTitle>Revenue vs Expenses</CardTitle>
+              <span className="text-[10px] text-slate-600">Click a month to see its records</span>
               <div className="flex items-center gap-3">
                 <span className="flex items-center gap-1 text-[10px] text-slate-500">
                   <span className="inline-block h-1.5 w-1.5 rounded-full bg-[#6366f1]" />Revenue
@@ -181,7 +223,13 @@ export default function FinancePage() {
           </CardHeader>
           <CardBody className="pt-2 pb-3 px-2">
             <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={trend ?? []} margin={{ top: 5, right: 4, left: -20, bottom: 0 }} barGap={3}>
+              <BarChart
+                data={trend ?? []}
+                margin={{ top: 5, right: 4, left: -20, bottom: 0 }}
+                barGap={3}
+                className="cursor-pointer"
+                onClick={(s) => selectMonth(s?.activeLabel)}
+              >
                 <CartesianGrid strokeDasharray="3 3" stroke={c.grid} vertical={false} />
                 <XAxis dataKey="month" tick={{ fill: c.axis, fontSize: 10 }} tickLine={false} axisLine={false} />
                 <YAxis tick={{ fill: c.axis, fontSize: 10 }} tickLine={false} axisLine={false} tickFormatter={v => compactCurrency(v)} />
