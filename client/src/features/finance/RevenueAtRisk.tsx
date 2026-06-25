@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { AlertTriangle, CalendarClock, ClipboardPlus, Check } from 'lucide-react';
 import { financeService, type RevenueRisk } from '@/services/finance.service';
@@ -16,6 +17,7 @@ const RISK_DOT: Record<string, string> = {
 
 export function RevenueAtRisk() {
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const [done, setDone] = useState<Record<string, ActionKind[]>>({});
 
   const { data } = useQuery({
@@ -82,7 +84,12 @@ export function RevenueAtRisk() {
       <div className="divide-y divide-surface-400/30">
         {data.risks.map((risk, i) => (
           <div key={risk.leaseId} className="flex flex-col gap-3 px-5 py-3.5 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex min-w-0 items-start gap-3">
+            <button
+              type="button"
+              onClick={() => navigate(`/leases/${risk.leaseId}`)}
+              className="flex min-w-0 items-start gap-3 rounded-lg px-1 py-0.5 -mx-1 text-left transition-colors hover:bg-warning/[0.06] focus:outline-none focus-visible:ring-1 focus-visible:ring-warning/50"
+              title={`View ${risk.tenantName}'s lease`}
+            >
               <span className="mt-0.5 w-4 shrink-0 text-right text-xs font-semibold tabular-nums text-slate-600">{i + 1}</span>
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
@@ -99,7 +106,7 @@ export function RevenueAtRisk() {
                   ))}
                 </div>
               </div>
-            </div>
+            </button>
 
             <div className="flex items-center gap-3 pl-7 sm:pl-0">
               <div className="text-right">
