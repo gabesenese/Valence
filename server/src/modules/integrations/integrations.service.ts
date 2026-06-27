@@ -1,20 +1,22 @@
-import { Prisma } from '@prisma/client';
+import { Prisma, type Plan } from '@prisma/client';
 import { prisma } from '../../infrastructure/database';
-import { NotFoundError, ValidationError } from '../../utils/errors';
-import { PM_PROVIDERS, isKnownProvider, getProviderImpl } from './providers';
+import { NotFoundError, ForbiddenError, ValidationError } from '../../utils/errors';
+import { CONNECTORS, isKnownConnector, getConnector, planAllowsIntegrations } from './connector';
 
 export async function listIntegrations(ownerId: string) {
   const connections = await prisma.integration.findMany({ where: { ownerId } });
   const byProvider = new Map(connections.map((c) => [c.provider, c]));
 
-  return PM_PROVIDERS.map((p) => {
-    const conn = byProvider.get(p.id);
+  return CONNECTORS.map((c) => {
+    const conn = byProvider.get(c.id);
     return {
-      id: p.id,
-      name: p.name,
-      description: p.description,
-      status: p.status,
-      available: Boolean(getProviderImpl(p.id)),
+      id: c.id,
+      name: c.name,
+      description: c.description,
+      category: c.category,
+      authType: c.authType,
+      status: c.status,
+      available: Boolean(getConnector(c.id)),
       connection: conn
         ? { status: conn.status, lastSyncedAt: conn.lastSyncedAt, requestedAt: conn.createdAt }
         : null,
@@ -22,15 +24,20 @@ export async function listIntegrations(ownerId: string) {
   });
 }
 
-export async function connectIntegration(ownerId: string, provider: string, config?: Record<string, unknown>) {
-  if (!isKnownProvider(provider)) throw new NotFoundError('Integration');
+export async function connectIntegration(ownerId: string, plan: Plan, provider: string, config?: Record<string, unknown>) {
+  if (!isKnownConnector(provider)) throw new NotFoundError('Integration');
 
-  const impl = getProviderImpl(provider);
-  // Real provider available → validate credentials and mark connected.
+  const impl = getConnector(provider);
+  // Real connector → validate credentials and mark connected (Professional-gated).
   // Otherwise record the user's interest so we can prioritise the integration.
-  const status = impl ? 'CONNECTED' : 'REQUESTED';
-  if (impl) await impl.connect(config ?? {});
+  if (impl) {
+    if (!planAllowsIntegrations(plan)) {
+      throw new ForbiddenError('Connecting an integration requires the Professional plan.');
+    }
+    await impl.connect(ownerId, { type: 'api_key', credentials: (config ?? {}) as Record<string, string> });
+  }
 
+  const status = impl ? 'CONNECTED' : 'REQUESTED';
   const configValue = config ? { config: config as Prisma.InputJsonValue } : {};
   return prisma.integration.upsert({
     where:  { ownerId_provider: { ownerId, provider } },
@@ -40,17 +47,22 @@ export async function connectIntegration(ownerId: string, provider: string, conf
 }
 
 export async function disconnectIntegration(ownerId: string, provider: string) {
-  if (!isKnownProvider(provider)) throw new NotFoundError('Integration');
+  if (!isKnownConnector(provider)) throw new NotFoundError('Integration');
+  const impl = getConnector(provider);
+  if (impl?.disconnect) await impl.disconnect(ownerId);
   await prisma.integration.deleteMany({ where: { ownerId, provider } });
   return { disconnected: true };
 }
 
-export async function syncIntegration(ownerId: string, provider: string) {
-  if (!isKnownProvider(provider)) throw new NotFoundError('Integration');
+export async function syncIntegration(ownerId: string, plan: Plan, provider: string) {
+  if (!isKnownConnector(provider)) throw new NotFoundError('Integration');
 
-  const impl = getProviderImpl(provider);
+  const impl = getConnector(provider);
   if (!impl) {
     throw new ValidationError("This integration isn't available yet — we'll let you know when it goes live.");
+  }
+  if (!planAllowsIntegrations(plan)) {
+    throw new ForbiddenError('Syncing an integration requires the Professional plan.');
   }
 
   const result = await impl.sync(ownerId);

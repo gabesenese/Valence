@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Plug, Check, RefreshCw, Clock } from 'lucide-react';
-import { integrationsService, type IntegrationProvider } from '@/services/integrations.service';
+import { integrationsService, type IntegrationProvider, type ConnectorCategory, CONNECTOR_CATEGORY_LABEL } from '@/services/integrations.service';
 import { Card, CardBody } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { PageHeader } from '@/components/ui/PageHeader';
@@ -30,12 +30,12 @@ export default function IntegrationsPage() {
     <div className="flex flex-col gap-4 p-4 animate-fade-in sm:gap-6 sm:p-6">
       <PageHeader
         title="Integrations"
-        description="Sync Valence with the property management system you already use."
+        description="Connect the property management and accounting software you already use."
       />
 
       <div className="rounded-xl border border-brand-500/20 bg-brand-600/[0.04] px-5 py-4">
         <p className="text-sm text-slate-300">
-          Valence works as the intelligence layer on top of your PM software — not a replacement.
+          Valence is the intelligence layer on top of your PM and accounting software — not a replacement.
         </p>
         <p className="mt-1 text-xs text-slate-500">
           These integrations are on our roadmap. Request the ones you use and we'll prioritise them — you'll be
@@ -43,20 +43,29 @@ export default function IntegrationsPage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        {providers?.map((p) => (
-          <IntegrationCard
-            key={p.id}
-            provider={p}
-            onRequest={() => connect.mutate(p.id)}
-            onCancel={() => disconnect.mutate(p.id)}
-            busy={
-              (connect.isPending && connect.variables === p.id) ||
-              (disconnect.isPending && disconnect.variables === p.id)
-            }
-          />
-        ))}
-      </div>
+      {(['property_management', 'accounting', 'crm', 'storage'] as ConnectorCategory[]).map((cat) => {
+        const items = providers?.filter((p) => p.category === cat) ?? [];
+        if (items.length === 0) return null;
+        return (
+          <div key={cat} className="flex flex-col gap-3">
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-500">{CONNECTOR_CATEGORY_LABEL[cat]}</h2>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              {items.map((p) => (
+                <IntegrationCard
+                  key={p.id}
+                  provider={p}
+                  onRequest={() => connect.mutate(p.id)}
+                  onCancel={() => disconnect.mutate(p.id)}
+                  busy={
+                    (connect.isPending && connect.variables === p.id) ||
+                    (disconnect.isPending && disconnect.variables === p.id)
+                  }
+                />
+              ))}
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }
