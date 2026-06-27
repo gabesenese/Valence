@@ -23,6 +23,14 @@ export interface IntegrationProvider {
     lastSyncedAt: string | null;
     requestedAt: string;
   } | null;
+  health: {
+    lastSyncedAt: string | null;
+    lastSuccessAt: string | null;
+    nextSyncAt: string;
+    failures30d: number;
+    successRatePct: number | null;
+    records: Record<string, number>;
+  } | null;
 }
 
 export interface MappingQueue {
