@@ -14,6 +14,9 @@ export interface PropertyScorecard {
   noi:             number;
   revenuePerUnit:  number;
   noiPerUnit:      number;
+  totalSqft:       number;
+  costPerSqft:     number;
+  noiPerSqft:      number;
   revenueDeltaPct: number | null;
   openAlerts:      number;
   criticalAlerts:  number;
@@ -120,6 +123,7 @@ export async function getBenchmarks(userId: string): Promise<BenchmarkReport> {
       name: true,
       code: true,
       totalUnits: true,
+      totalSqft: true,
       _count: { select: { leases: { where: { status: 'ACTIVE' } } } },
     },
   });
@@ -167,6 +171,7 @@ export async function getBenchmarks(userId: string): Promise<BenchmarkReport> {
       const prevRevenue     = Number(prevRev._sum.amount ?? 0);
       const monthlyExpenses = Number(exp._sum.amount ?? 0);
       const noi             = monthlyRevenue - monthlyExpenses;
+      const sqft            = Number(p.totalSqft ?? 0);
       const occupancyRate   = p.totalUnits > 0 ? (p._count.leases / p.totalUnits) * 100 : 0;
       const revenueDeltaPct = prevRevenue > 0 ? Number((((monthlyRevenue - prevRevenue) / prevRevenue) * 100).toFixed(1)) : null;
 
@@ -186,6 +191,9 @@ export async function getBenchmarks(userId: string): Promise<BenchmarkReport> {
         noi,
         revenuePerUnit: p.totalUnits > 0 ? Math.round(monthlyRevenue / p.totalUnits) : 0,
         noiPerUnit: p.totalUnits > 0 ? Math.round(noi / p.totalUnits) : 0,
+        totalSqft: sqft,
+        costPerSqft: sqft > 0 ? Number((monthlyExpenses / sqft).toFixed(2)) : 0,
+        noiPerSqft: sqft > 0 ? Number((noi / sqft).toFixed(2)) : 0,
         revenueDeltaPct,
         openAlerts,
         criticalAlerts,
