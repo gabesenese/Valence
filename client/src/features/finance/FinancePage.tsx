@@ -90,6 +90,11 @@ export default function FinancePage() {
     queryFn: () => financeService.getExpenseBreakdown({ from, to }),
   });
 
+  const { data: expenseTrend } = useQuery({
+    queryKey: ['finance', 'expense-trend'],
+    queryFn: () => financeService.getExpenseTrend({ months: 6 }),
+  });
+
   if (summaryLoading) return <PageLoader />;
 
   const netIncomeColor = summary && summary.netIncome >= 0 ? 'text-success' : 'text-danger';
@@ -312,6 +317,48 @@ export default function FinancePage() {
                 ) : (
                   <div key={row.category} className="flex flex-col gap-1 px-2 py-1.5 -mx-2">
                     {inner}
+                  </div>
+                );
+              })}
+            </CardBody>
+          </Card>
+        )}
+
+        {expenseTrend && expenseTrend.categories.length > 0 && (
+          <Card>
+            <CardHeader>
+              <div className="flex flex-col gap-0.5">
+                <CardTitle>Expense Trends</CardTitle>
+                <span className="text-[10px] text-slate-600">Last {expenseTrend.months.length} months · latest vs prior average</span>
+              </div>
+            </CardHeader>
+            <CardBody className="flex flex-col gap-3 pb-3">
+              {expenseTrend.categories.map((row) => {
+                const max = Math.max(...row.totals, 1);
+                const delta = row.deltaPct;
+                const deltaColor = delta == null ? 'text-slate-600' : delta > 0 ? 'text-danger' : delta < 0 ? 'text-success' : 'text-slate-500';
+                const lastBar = delta != null && delta > 0 ? 'bg-danger/70' : delta != null && delta < 0 ? 'bg-success/70' : 'bg-brand-500/70';
+                return (
+                  <div key={row.category} className="flex flex-col gap-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs text-slate-300">{categoryLabel(row.category)}</span>
+                      <span className="flex items-center gap-1.5 text-xs">
+                        <span className="font-semibold tabular-nums text-slate-300">{compactCurrency(row.latest)}</span>
+                        {delta != null && (
+                          <span className={`tabular-nums ${deltaColor}`}>{delta > 0 ? '▲' : delta < 0 ? '▼' : ''}{Math.abs(delta)}%</span>
+                        )}
+                      </span>
+                    </div>
+                    <div className="flex items-end gap-0.5 h-6">
+                      {row.totals.map((t, i) => (
+                        <div
+                          key={i}
+                          className={`flex-1 rounded-sm ${i === row.totals.length - 1 ? lastBar : 'bg-surface-400/60'}`}
+                          style={{ height: `${Math.max(6, (t / max) * 100)}%` }}
+                          title={`${expenseTrend.months[i]}: ${compactCurrency(t)}`}
+                        />
+                      ))}
+                    </div>
                   </div>
                 );
               })}

@@ -9,6 +9,7 @@ import type {
   FinanceQuery,
   RevenueTrendQuery,
   ExpenseBreakdownQuery,
+  ExpenseTrendQuery,
 } from './finance.schemas';
 
 export async function getFinancialRecords(query: FinanceQuery, userId: string) {
@@ -207,4 +208,59 @@ export async function getExpenseBreakdown(query: ExpenseBreakdownQuery, userId: 
   const totalExpenses = categories.reduce((sum, c) => sum + c.total, 0);
 
   return { totalExpenses, categories };
+}
+
+export async function getExpenseTrend(query: ExpenseTrendQuery, userId: string) {
+  const { propertyId, months } = query;
+  const now = new Date();
+
+  const buckets = Array.from({ length: months }, (_, idx) => {
+    const d = subMonths(now, months - 1 - idx);
+    return { label: format(d, 'MMM yyyy'), start: startOfMonth(d), end: endOfMonth(d) };
+  });
+
+  const perBucket = await Promise.all(
+    buckets.map((b) =>
+      prisma.financialRecord.groupBy({
+        by: ['category'],
+        where: {
+          property: { ownerId: userId, deletedAt: null },
+          type: 'EXPENSE',
+          status: { not: 'VOID' },
+          ...(propertyId && { propertyId }),
+          periodStart: { gte: b.start, lte: b.end },
+        },
+        _sum: { amount: true },
+      }),
+    ),
+  );
+
+  const catTotals = new Map<string, number[]>();
+  perBucket.forEach((groups, i) => {
+    for (const g of groups) {
+      const cat = g.category ?? 'UNCATEGORIZED';
+      if (!catTotals.has(cat)) catTotals.set(cat, new Array(months).fill(0));
+      catTotals.get(cat)![i] = Number(g._sum.amount ?? 0);
+    }
+  });
+
+  const categories = [...catTotals.entries()]
+    .map(([category, totals]) => {
+      const latest = totals[totals.length - 1];
+      const prior = totals.slice(0, -1);
+      const priorAvg = prior.length ? prior.reduce((s, v) => s + v, 0) / prior.length : 0;
+      const deltaPct = priorAvg > 0 ? Math.round(((latest - priorAvg) / priorAvg) * 100) : null;
+      return {
+        category,
+        totals,
+        latest,
+        priorAvg: Math.round(priorAvg),
+        deltaPct,
+        total: totals.reduce((s, v) => s + v, 0),
+      };
+    })
+    .filter((c) => c.total > 0)
+    .sort((a, b) => b.latest - a.latest);
+
+  return { months: buckets.map((b) => b.label), categories };
 }

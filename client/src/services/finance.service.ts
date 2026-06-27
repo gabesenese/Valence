@@ -39,6 +39,18 @@ export interface ExpenseBreakdown {
   categories: { category: string; total: number; count: number }[];
 }
 
+export interface ExpenseTrend {
+  months: string[];
+  categories: {
+    category: string;
+    totals: number[];
+    latest: number;
+    priorAvg: number;
+    deltaPct: number | null;
+    total: number;
+  }[];
+}
+
 export interface RevenueRisk {
   leaseId: string;
   propertyId: string;
@@ -80,4 +92,7 @@ export const financeService = {
 
   getExpenseBreakdown: (params: { propertyId?: string; from?: string; to?: string } = {}): Promise<ExpenseBreakdown> =>
     api.get('/finance/expense-breakdown', { params }).then(extractData<ExpenseBreakdown>),
+
+  getExpenseTrend: (params: { propertyId?: string; months?: number } = {}): Promise<ExpenseTrend> =>
+    api.get('/finance/expense-trend', { params }).then(extractData<ExpenseTrend>),
 };
