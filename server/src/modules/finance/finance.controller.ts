@@ -1,6 +1,7 @@
 import type { Request, Response, NextFunction } from 'express';
 import * as service from './finance.service';
 import { getRevenueAtRisk } from './revenue-at-risk.service';
+import { getTenantProfitability } from './tenant-profitability.service';
 import { sendSuccess, sendPaginated } from '../../utils/response';
 
 export async function list(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -55,5 +56,11 @@ export async function expenseBreakdown(req: Request, res: Response, next: NextFu
 export async function expenseTrend(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     sendSuccess(res, await service.getExpenseTrend(req.query as never, req.user!.id));
+  } catch (err) { next(err); }
+}
+
+export async function tenantProfitability(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    sendSuccess(res, await getTenantProfitability(req.user!.id));
   } catch (err) { next(err); }
 }

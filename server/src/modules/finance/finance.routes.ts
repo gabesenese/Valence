@@ -24,6 +24,7 @@ router.get('/trend', validate(revenueTrendQuerySchema, 'query'), controller.tren
 router.get('/at-risk', controller.atRisk);
 router.get('/expense-breakdown', validate(expenseBreakdownQuerySchema, 'query'), controller.expenseBreakdown);
 router.get('/expense-trend', validate(expenseTrendQuerySchema, 'query'), controller.expenseTrend);
+router.get('/tenant-profitability', controller.tenantProfitability);
 router.get('/', validate(financeQuerySchema, 'query'), controller.list);
 router.get('/:id', requireOwner('financialRecord'), controller.show);
 router.post('/', authorize('ANALYST'), validate(createFinancialRecordSchema), controller.create);
