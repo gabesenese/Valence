@@ -78,6 +78,6 @@ export const integrationsService = {
   disconnect: (provider: string): Promise<unknown> =>
     api.delete(`/integrations/${provider}`).then(extractData),
 
-  sync: (provider: string): Promise<{ properties: number; leases: number; tenants: number }> =>
-    api.post(`/integrations/${provider}/sync`).then(extractData<{ properties: number; leases: number; tenants: number }>),
+  sync: (provider: string): Promise<{ runId: string; summary: SyncRun['summary'] }> =>
+    api.post(`/integrations/${provider}/sync`).then(extractData<{ runId: string; summary: SyncRun['summary'] }>),
 };
