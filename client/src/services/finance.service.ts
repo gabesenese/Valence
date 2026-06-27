@@ -67,6 +67,12 @@ export interface TenantProfitabilityReport {
   tenants: TenantProfitability[];
 }
 
+export interface NoiForecast {
+  monthlyExpense:     number;
+  projectedAnnualNet: number;
+  points: { month: string; revenue: number; expenses: number; net: number }[];
+}
+
 export interface RevenueRisk {
   leaseId: string;
   propertyId: string;
@@ -114,4 +120,7 @@ export const financeService = {
 
   getTenantProfitability: (): Promise<TenantProfitabilityReport> =>
     api.get('/finance/tenant-profitability').then(extractData<TenantProfitabilityReport>),
+
+  getNoiForecast: (params: { months?: number } = {}): Promise<NoiForecast> =>
+    api.get('/finance/forecast', { params }).then(extractData<NoiForecast>),
 };

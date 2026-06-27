@@ -64,3 +64,9 @@ export async function tenantProfitability(req: Request, res: Response, next: Nex
     sendSuccess(res, await getTenantProfitability(req.user!.id));
   } catch (err) { next(err); }
 }
+
+export async function forecast(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    sendSuccess(res, await service.getNoiForecast(req.query as never, req.user!.id));
+  } catch (err) { next(err); }
+}

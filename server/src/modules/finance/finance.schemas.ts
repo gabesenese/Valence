@@ -50,9 +50,14 @@ export const expenseTrendQuerySchema = z.object({
   months: z.coerce.number().int().min(2).max(24).default(6),
 });
 
+export const forecastQuerySchema = z.object({
+  months: z.coerce.number().int().min(1).max(24).default(6),
+});
+
 export type CreateFinancialRecordInput = z.infer<typeof createFinancialRecordSchema>;
 export type UpdateFinancialRecordInput = z.infer<typeof updateFinancialRecordSchema>;
 export type FinanceQuery = z.infer<typeof financeQuerySchema>;
 export type RevenueTrendQuery = z.infer<typeof revenueTrendQuerySchema>;
 export type ExpenseBreakdownQuery = z.infer<typeof expenseBreakdownQuerySchema>;
 export type ExpenseTrendQuery = z.infer<typeof expenseTrendQuerySchema>;
+export type ForecastQuery = z.infer<typeof forecastQuerySchema>;

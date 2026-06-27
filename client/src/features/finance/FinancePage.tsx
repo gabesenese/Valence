@@ -100,6 +100,11 @@ export default function FinancePage() {
     queryFn: () => financeService.getTenantProfitability(),
   });
 
+  const { data: forecast } = useQuery({
+    queryKey: ['finance', 'forecast'],
+    queryFn: () => financeService.getNoiForecast({ months: 6 }),
+  });
+
   if (summaryLoading) return <PageLoader />;
 
   const netIncomeColor = summary && summary.netIncome >= 0 ? 'text-success' : 'text-danger';
@@ -141,6 +146,38 @@ export default function FinancePage() {
       })()}
 
       <RevenueAtRisk />
+
+      {forecast && forecast.points.length > 0 && (
+        <Card>
+          <CardHeader>
+            <div className="flex flex-col gap-0.5">
+              <CardTitle>NOI Forecast</CardTitle>
+              <span className="text-[10px] text-slate-600">
+                Active-lease rent (steps down as leases expire) − {compactCurrency(forecast.monthlyExpense)}/mo average expenses
+              </span>
+            </div>
+            <div className="text-right">
+              <p className={`text-lg font-bold tabular-nums ${forecast.projectedAnnualNet >= 0 ? 'text-success' : 'text-danger'}`}>{compactCurrency(forecast.projectedAnnualNet)}</p>
+              <p className="text-[10px] text-slate-600 uppercase tracking-wider">Projected annual NOI</p>
+            </div>
+          </CardHeader>
+          <CardBody className="pt-2 pb-3 px-2">
+            <ResponsiveContainer width="100%" height={180}>
+              <BarChart data={forecast.points} margin={{ top: 5, right: 4, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke={c.grid} vertical={false} />
+                <XAxis dataKey="month" tick={{ fill: c.axis, fontSize: 10 }} tickLine={false} axisLine={false} />
+                <YAxis tick={{ fill: c.axis, fontSize: 10 }} tickLine={false} axisLine={false} tickFormatter={v => compactCurrency(v)} />
+                <Tooltip
+                  contentStyle={{ background: c.tooltipBg, border: `1px solid ${c.tooltipBorder}`, borderRadius: 8, fontSize: 11, color: c.tooltipText }}
+                  formatter={(v: number, name: string) => [formatCurrency(v), name]}
+                />
+                <Bar dataKey="revenue" name="Revenue" fill={c.brand} radius={[3, 3, 0, 0]} maxBarSize={28} fillOpacity={0.35} />
+                <Bar dataKey="net" name="Net (NOI)" fill={c.success} radius={[3, 3, 0, 0]} maxBarSize={28} />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardBody>
+        </Card>
+      )}
 
       <div className="grid grid-cols-1 xl:grid-cols-[1fr_320px] gap-4 items-start">
 
