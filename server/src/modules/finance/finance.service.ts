@@ -8,6 +8,7 @@ import type {
   UpdateFinancialRecordInput,
   FinanceQuery,
   RevenueTrendQuery,
+  ExpenseBreakdownQuery,
 } from './finance.schemas';
 
 export async function getFinancialRecords(query: FinanceQuery, userId: string) {
@@ -169,4 +170,41 @@ export async function getFinancialSummary(propertyId: string | undefined, userId
     flaggedRecords: flagged,
     pendingRecords: pending,
   };
+}
+
+export async function getExpenseBreakdown(query: ExpenseBreakdownQuery, userId: string) {
+  const { propertyId, from, to } = query;
+
+  const where: Prisma.FinancialRecordWhereInput = {
+    property: { ownerId: userId, deletedAt: null },
+    type: 'EXPENSE',
+    status: { not: 'VOID' },
+    ...(propertyId && { propertyId }),
+    ...((from || to) && {
+      periodStart: {
+        ...(from && { gte: parseISO(from) }),
+        ...(to && { lte: parseISO(to) }),
+      },
+    }),
+  };
+
+  const grouped = await prisma.financialRecord.groupBy({
+    by: ['category'],
+    where,
+    _sum: { amount: true },
+    _count: { _all: true },
+  });
+
+  const categories = grouped
+    .map((g) => ({
+      category: g.category ?? 'UNCATEGORIZED',
+      total: Number(g._sum.amount ?? 0),
+      count: g._count._all,
+    }))
+    .filter((c) => c.total > 0)
+    .sort((a, b) => b.total - a.total);
+
+  const totalExpenses = categories.reduce((sum, c) => sum + c.total, 0);
+
+  return { totalExpenses, categories };
 }

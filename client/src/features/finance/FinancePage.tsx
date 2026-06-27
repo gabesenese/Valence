@@ -85,6 +85,11 @@ export default function FinancePage() {
     placeholderData: (prev) => prev,
   });
 
+  const { data: breakdown } = useQuery({
+    queryKey: ['finance', 'expense-breakdown', from, to],
+    queryFn: () => financeService.getExpenseBreakdown({ from, to }),
+  });
+
   if (summaryLoading) return <PageLoader />;
 
   const netIncomeColor = summary && summary.netIncome >= 0 ? 'text-success' : 'text-danger';
@@ -267,6 +272,52 @@ export default function FinancePage() {
             </ResponsiveContainer>
           </CardBody>
         </Card>
+
+        {breakdown && breakdown.categories.length > 0 && (
+          <Card>
+            <CardHeader>
+              <div className="flex flex-col gap-0.5">
+                <CardTitle>Expenses by Category</CardTitle>
+                <span className="text-[10px] text-slate-600">Click a category to filter the records</span>
+              </div>
+              <span className="text-xs font-semibold tabular-nums text-slate-400">{compactCurrency(breakdown.totalExpenses)}</span>
+            </CardHeader>
+            <CardBody className="flex flex-col gap-2 pb-3">
+              {breakdown.categories.map((row) => {
+                const pct = breakdown.totalExpenses > 0 ? Math.round((row.total / breakdown.totalExpenses) * 100) : 0;
+                const active = category === row.category;
+                const filterable = row.category !== 'UNCATEGORIZED';
+                const inner = (
+                  <>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs text-slate-300">{categoryLabel(row.category)}</span>
+                      <span className="text-xs font-semibold tabular-nums text-slate-300">
+                        {compactCurrency(row.total)} <span className="text-slate-600">({pct}%)</span>
+                      </span>
+                    </div>
+                    <div className="h-1 rounded-full bg-surface-400/40 overflow-hidden">
+                      <div className="h-full rounded-full bg-danger/70" style={{ width: `${pct}%` }} />
+                    </div>
+                  </>
+                );
+                return filterable ? (
+                  <button
+                    key={row.category}
+                    onClick={() => patchParams({ category: active ? undefined : row.category })}
+                    className={`flex flex-col gap-1 rounded-lg px-2 py-1.5 -mx-2 text-left transition-colors hover:bg-surface-200/50 ${active ? 'bg-surface-200/60 ring-1 ring-brand-500/30' : ''}`}
+                    title={`Filter records by ${categoryLabel(row.category)}`}
+                  >
+                    {inner}
+                  </button>
+                ) : (
+                  <div key={row.category} className="flex flex-col gap-1 px-2 py-1.5 -mx-2">
+                    {inner}
+                  </div>
+                );
+              })}
+            </CardBody>
+          </Card>
+        )}
 
       </div>
     </div>
