@@ -42,12 +42,42 @@ export async function completeOAuth(provider: string, code: string, params: Reco
   return { ownerId: decoded.ownerId };
 }
 
+// Next run of the 12-hourly sync cron (00:00 / 12:00 UTC).
+function nextSyncTime(): Date {
+  const now = new Date();
+  const next = new Date(now);
+  next.setUTCMinutes(0, 0, 0);
+  if (now.getUTCHours() < 12) next.setUTCHours(12);
+  else { next.setUTCHours(0); next.setUTCDate(now.getUTCDate() + 1); }
+  return next;
+}
+
+async function computeHealth(ownerId: string, provider: string, lastSyncedAt: Date | null) {
+  const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+  const [runs, lastSuccess, refCounts] = await Promise.all([
+    prisma.syncRun.findMany({ where: { ownerId, provider, startedAt: { gte: since } }, select: { status: true } }),
+    prisma.syncRun.findFirst({ where: { ownerId, provider, status: { in: ['success', 'partial'] } }, orderBy: { startedAt: 'desc' }, select: { finishedAt: true } }),
+    prisma.externalRef.groupBy({ by: ['entityType'], where: { ownerId, provider }, _count: { _all: true } }),
+  ]);
+  const completed = runs.filter((r) => r.status !== 'running');
+  const successes = completed.filter((r) => r.status === 'success' || r.status === 'partial').length;
+  return {
+    lastSyncedAt,
+    lastSuccessAt: lastSuccess?.finishedAt ?? null,
+    nextSyncAt: nextSyncTime().toISOString(),
+    failures30d: completed.filter((r) => r.status === 'error').length,
+    successRatePct: completed.length ? Math.round((successes / completed.length) * 100) : null,
+    records: Object.fromEntries(refCounts.map((r) => [r.entityType, r._count._all])),
+  };
+}
+
 export async function listIntegrations(ownerId: string) {
   const connections = await prisma.integration.findMany({ where: { ownerId } });
   const byProvider = new Map(connections.map((c) => [c.provider, c]));
 
-  return CONNECTORS.map((c) => {
+  return Promise.all(CONNECTORS.map(async (c) => {
     const conn = byProvider.get(c.id);
+    const connected = conn?.status === 'CONNECTED';
     return {
       id: c.id,
       name: c.name,
@@ -59,8 +89,9 @@ export async function listIntegrations(ownerId: string) {
       connection: conn
         ? { status: conn.status, lastSyncedAt: conn.lastSyncedAt, requestedAt: conn.createdAt }
         : null,
+      health: connected ? await computeHealth(ownerId, c.id, conn!.lastSyncedAt) : null,
     };
-  });
+  }));
 }
 
 export async function connectIntegration(ownerId: string, plan: Plan, provider: string, config?: Record<string, unknown>) {

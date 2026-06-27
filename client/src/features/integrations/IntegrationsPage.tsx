@@ -242,6 +242,28 @@ function IntegrationCard({
 
         {connected && (
           <div className="border-t border-surface-400/20 pt-2">
+            {provider.health && (
+              <div className="mb-2 grid grid-cols-3 gap-x-3 gap-y-1.5 sm:grid-cols-5">
+                {[
+                  {
+                    label: 'Health',
+                    value: provider.health.successRatePct != null ? `${provider.health.successRatePct}%` : '—',
+                    color: provider.health.successRatePct == null ? 'text-slate-300'
+                      : provider.health.successRatePct >= 95 ? 'text-success'
+                      : provider.health.successRatePct >= 80 ? 'text-warning' : 'text-danger',
+                  },
+                  { label: 'Failures 30d', value: String(provider.health.failures30d), color: provider.health.failures30d > 0 ? 'text-danger' : 'text-slate-300' },
+                  { label: 'Last success', value: provider.health.lastSuccessAt ? formatRelative(provider.health.lastSuccessAt) : '—', color: 'text-slate-300' },
+                  { label: 'Next sync', value: formatRelative(provider.health.nextSyncAt), color: 'text-slate-300' },
+                  { label: 'Records', value: String(Object.values(provider.health.records).reduce((s, n) => s + n, 0)), color: 'text-slate-300' },
+                ].map((s) => (
+                  <div key={s.label}>
+                    <p className={`text-xs font-semibold tabular-nums ${s.color}`}>{s.value}</p>
+                    <p className="text-[10px] text-slate-600">{s.label}</p>
+                  </div>
+                ))}
+              </div>
+            )}
             <div className="flex items-center justify-between">
               <button
                 onClick={() => setShowHistory((v) => !v)}
