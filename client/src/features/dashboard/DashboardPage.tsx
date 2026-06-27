@@ -15,7 +15,7 @@ import { WhatChangedPanel } from '@/features/changes/WhatChangedPanel';
 import { TodayHub } from './TodayHub';
 import { Card, CardHeader, CardTitle, CardBody } from '@/components/ui/Card';
 import { PageLoader } from '@/components/ui/Spinner';
-import { formatCurrency, compactCurrency, daysUntil, formatDate } from '@/utils/format';
+import { formatCurrency, compactCurrency, daysUntil, formatDate, monthLabelToRange } from '@/utils/format';
 import { WelcomeScreen } from '@/features/onboarding/WelcomeScreen';
 import { OnboardingCard } from '@/features/onboarding/OnboardingCard';
 import { usePlan } from '@/hooks/usePlan';
@@ -75,6 +75,12 @@ export default function DashboardPage() {
   });
 
   const latestNOI = trend && trend.length > 0 ? trend[trend.length - 1].net : null;
+
+  function drillToFinanceMonth(label?: string) {
+    const range = label ? monthLabelToRange(label) : null;
+    if (!range) { navigate('/finance'); return; }
+    navigate(`/finance?period=${encodeURIComponent(range.period)}&from=${encodeURIComponent(range.from)}&to=${encodeURIComponent(range.to)}`);
+  }
 
   const kpis = summary ? [
     {
@@ -399,6 +405,7 @@ export default function DashboardPage() {
               <CardHeader>
                 <div className="flex flex-col gap-0.5">
                   <CardTitle>Revenue Trend</CardTitle>
+                  <span className="text-[10px] text-slate-600">Click a month to see its records</span>
                   <div className="flex items-center gap-3">
                     <span className="flex items-center gap-1 text-[10px] text-slate-500">
                       <span className="inline-block h-1.5 w-1.5 rounded-full bg-[#6366f1]" />Revenue
@@ -426,7 +433,7 @@ export default function DashboardPage() {
               </CardHeader>
               <CardBody className="pt-2 pb-3 px-3">
                 <ResponsiveContainer width="100%" height={180}>
-                  <AreaChart data={trend ?? []} margin={{ top: 8, right: 4, left: -20, bottom: 0 }}>
+                  <AreaChart data={trend ?? []} margin={{ top: 8, right: 4, left: -20, bottom: 0 }} className="cursor-pointer" onClick={(s) => drillToFinanceMonth(s?.activeLabel)}>
                     <defs>
                       <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="0%" stopColor={c.brand} stopOpacity={0.45} />

@@ -15,6 +15,13 @@ export const CHANGE_TYPE_LABEL: Record<ChangeType, string> = {
 // Newest first. User-facing release notes — keep the language plain and benefit-led.
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    date: 'June 26, 2026',
+    title: 'Drill into your revenue trends',
+    changes: [
+      { type: 'added', text: 'Click any month on the Revenue Trend (dashboard) or Net Income Trend (analytics) charts to jump straight to that month’s financial records.' },
+    ],
+  },
+  {
     date: 'June 25, 2026',
     title: 'Documents, late fees, and integrations',
     changes: [
