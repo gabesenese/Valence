@@ -3,7 +3,7 @@ import { prisma } from '../../infrastructure/database';
 import { PLAN_LIMITS } from '../plans/plans.service';
 import { syncLeaseRevenueSchedule } from '../finance/revenue-schedule.service';
 import { computeRenewalRisk } from '../leases/leases.service';
-import type { Plan, PropertyType, LeaseType } from '@prisma/client';
+import type { Plan, PropertyType, LeaseType, LateFeeType } from '@prisma/client';
 
 export interface ImportResult {
   created: number;
@@ -193,6 +193,45 @@ export async function importTenants(buffer: Buffer, userId: string, columnMap?: 
 
 
 const VALID_LEASE_TYPES = ['GROSS', 'NET', 'MODIFIED_GROSS', 'PERCENTAGE', 'GROUND'];
+const VALID_LATE_FEE_TYPES = ['NONE', 'FLAT', 'PERCENTAGE'];
+
+// Parse optional late-fee columns into lease fields, mirroring the per-lease late
+// fee feature's validation bounds. Returns {} when no late-fee data is present.
+function parseLateFee(row: Record<string, string>): {
+  lateFeeType?: LateFeeType;
+  lateFeeFlat?: number;
+  lateFeePercent?: number;
+  lateFeeGraceDays?: number;
+  lateFeeInterestPct?: number;
+} {
+  const out: ReturnType<typeof parseLateFee> = {};
+
+  if (row.lateFeeType?.trim()) {
+    const t = row.lateFeeType.toUpperCase().trim();
+    if (!VALID_LATE_FEE_TYPES.includes(t)) {
+      throw new Error(`lateFeeType must be one of: ${VALID_LATE_FEE_TYPES.join(', ')}`);
+    }
+    out.lateFeeType = t as LateFeeType;
+  }
+
+  const num = (val: string | undefined, lo: number, hi: number): number | undefined => {
+    if (!val?.trim()) return undefined;
+    const n = parseFloat(val);
+    if (!Number.isFinite(n)) return undefined;
+    return Math.min(hi, Math.max(lo, n));
+  };
+
+  const flat = num(row.lateFeeFlat, 0, Number.MAX_SAFE_INTEGER);
+  if (flat !== undefined) out.lateFeeFlat = flat;
+  const pct = num(row.lateFeePercent, 0, 100);
+  if (pct !== undefined) out.lateFeePercent = pct;
+  const grace = num(row.lateFeeGraceDays, 0, 90);
+  if (grace !== undefined) out.lateFeeGraceDays = Math.round(grace);
+  const interest = num(row.lateFeeInterestPct, 0, 100);
+  if (interest !== undefined) out.lateFeeInterestPct = interest;
+
+  return out;
+}
 
 async function resolveTenant(name: string, userId: string, email?: string): Promise<string> {
   if (email) {
@@ -267,6 +306,7 @@ export async function importLeases(buffer: Buffer, plan: Plan, userId: string, c
           ...(row.rentEscalation && { rentEscalation: parseFloat(row.rentEscalation) }),
           ...(row.securityDeposit && { securityDeposit: parseFloat(row.securityDeposit) }),
           ...(row.sqft && { sqft: parseFloat(row.sqft) }),
+          ...parseLateFee(row),
           ...(row.notes && { notes: row.notes.trim() }),
         },
       });

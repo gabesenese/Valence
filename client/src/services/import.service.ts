@@ -86,11 +86,11 @@ export const TEMPLATES = {
   leases: {
     filename: 'leases_template.csv',
     content: [
-      'propertyCode,tenantName,tenantEmail,leaseNumber,startDate,endDate,baseRent,type,unitNumber,rentEscalation,securityDeposit,sqft,notes',
-      'SUNSET01,Jane Smith,jane@example.com,LSE-001,2024-01-01,2025-12-31,2800,GROSS,101,0.03,5600,950,',
-      'DOWNTOWN1,Acme Corp,,LSE-002,2023-06-01,2026-05-31,12500,NET,,0.025,25000,12500,Triple net',
+      'propertyCode,tenantName,tenantEmail,leaseNumber,startDate,endDate,baseRent,type,unitNumber,rentEscalation,securityDeposit,sqft,lateFeeType,lateFeeFlat,lateFeePercent,lateFeeGraceDays,lateFeeInterestPct,notes',
+      'SUNSET01,Jane Smith,jane@example.com,LSE-001,2024-01-01,2025-12-31,2800,GROSS,101,0.03,5600,950,FLAT,75,,5,,',
+      'DOWNTOWN1,Acme Corp,,LSE-002,2023-06-01,2026-05-31,12500,NET,,0.025,25000,12500,PERCENTAGE,,5,3,1.5,Triple net',
     ].join('\n'),
-    hint: 'propertyCode must match an existing property; dates in YYYY-MM-DD; type: GROSS · NET · MODIFIED_GROSS · PERCENTAGE · GROUND',
+    hint: 'propertyCode must match an existing property; dates in YYYY-MM-DD; type: GROSS · NET · MODIFIED_GROSS · PERCENTAGE · GROUND; lateFeeType: NONE · FLAT · PERCENTAGE',
   },
 } as const;
 

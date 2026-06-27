@@ -15,6 +15,14 @@ export const CHANGE_TYPE_LABEL: Record<ChangeType, string> = {
 // Newest first. User-facing release notes — keep the language plain and benefit-led.
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    date: 'June 26, 2026',
+    title: 'Import late fees in bulk',
+    changes: [
+      { type: 'added', text: 'The lease import template now includes late fee rules — type (flat or % of rent), grace period, and monthly interest — so you can onboard your fee structure in bulk instead of editing each lease.' },
+      { type: 'improved', text: 'The import column mapper auto-detects common late-fee column names from your spreadsheet.' },
+    ],
+  },
+  {
     date: 'June 25, 2026',
     title: 'Documents, late fees, and integrations',
     changes: [

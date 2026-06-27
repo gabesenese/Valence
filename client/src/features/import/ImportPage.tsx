@@ -184,6 +184,13 @@ const FIELD_DEFS: Record<'properties' | 'leases', FieldDef[]> = {
     { value: 'rentEscalation',  label: 'Rent Escalation',  required: false, placeholder: 'e.g. 0.03 (= 3%)',              docFormat: 'Decimal rate',        docExample: '0.03',       hint: 'Annual rate e.g. 0.03 = 3%' },
     { value: 'securityDeposit', label: 'Security Deposit', required: false, placeholder: 'e.g. 7000',                      docFormat: 'Number (no commas)',  docExample: '7000' },
     { value: 'sqft',            label: 'Leased Sq Ft',     required: false, placeholder: 'e.g. 2400',                      docFormat: 'Number',              docExample: '2400' },
+    { value: 'lateFeeType',     label: 'Late Fee Type',    required: false, placeholder: 'e.g. PERCENTAGE',                docFormat: 'Enum (see values)',   docExample: 'PERCENTAGE',
+      enumValues: ['NONE', 'FLAT', 'PERCENTAGE'],
+      hint: 'NONE · FLAT (fixed $) · PERCENTAGE (% of rent)' },
+    { value: 'lateFeeFlat',     label: 'Late Fee (Flat)',  required: false, placeholder: 'e.g. 75',                        docFormat: 'Number (no commas)',  docExample: '75',         hint: 'Fixed dollar fee — used when Late Fee Type is FLAT' },
+    { value: 'lateFeePercent',  label: 'Late Fee (%)',     required: false, placeholder: 'e.g. 5',                         docFormat: 'Percent 0–100',       docExample: '5',          hint: '% of rent — used when Late Fee Type is PERCENTAGE' },
+    { value: 'lateFeeGraceDays',label: 'Grace Period (days)', required: false, placeholder: 'e.g. 5',                      docFormat: 'Integer 0–90',        docExample: '5' },
+    { value: 'lateFeeInterestPct', label: 'Monthly Interest (%)', required: false, placeholder: 'e.g. 1.5',               docFormat: 'Percent 0–100',       docExample: '1.5',        hint: 'Monthly interest on overdue balance' },
     { value: 'notes',           label: 'Notes',            required: false, placeholder: 'e.g. Month-to-month renewal',    docFormat: 'Any text',            docExample: 'Month-to-month renewal' },
   ],
 };
@@ -226,6 +233,11 @@ const LEASE_ALIASES: Record<string, string> = {
   rentescalation: 'rentEscalation', escalation: 'rentEscalation',
   securitydeposit: 'securityDeposit', deposit: 'securityDeposit',
   sqft: 'sqft', squarefeet: 'sqft', leasedarea: 'sqft',
+  latefeetype: 'lateFeeType', latefee: 'lateFeeType',
+  latefeeflat: 'lateFeeFlat', flatlatefee: 'lateFeeFlat', latefeeamount: 'lateFeeFlat',
+  latefeepercent: 'lateFeePercent', latefeepct: 'lateFeePercent',
+  latefeegracedays: 'lateFeeGraceDays', gracedays: 'lateFeeGraceDays', graceperiod: 'lateFeeGraceDays',
+  latefeeinterestpct: 'lateFeeInterestPct', interestrate: 'lateFeeInterestPct', interest: 'lateFeeInterestPct',
   notes: 'notes', comments: 'notes', remarks: 'notes',
 };
 
