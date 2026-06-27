@@ -16,16 +16,11 @@ export const CHANGE_TYPE_LABEL: Record<ChangeType, string> = {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: 'June 26, 2026',
-    title: 'Import late fees in bulk',
+    title: 'Finance intelligence and faster onboarding',
     changes: [
-      { type: 'added', text: 'The lease import template now includes late fee rules — type (flat or % of rent), grace period, and monthly interest — so you can onboard your fee structure in bulk instead of editing each lease.' },
-      { type: 'improved', text: 'The import column mapper auto-detects common late-fee column names from your spreadsheet.' },
-    ],
-  },
-  {
-    date: 'June 26, 2026',
-    title: 'Drill into your revenue trends',
-    changes: [
+      { type: 'added', text: 'Track expenses by category — filter and view financial records by Maintenance, Utilities, Insurance, Property Taxes, Capital Improvements, and more.' },
+      { type: 'added', text: 'Verify a signed lease against its record: from a lease’s Documents, upload the agreement and Valence reads the key terms and flags any rent, dates, deposit, or clause that differs.' },
+      { type: 'added', text: 'Bulk-import late fee rules alongside your leases (flat or % of rent, grace period, interest); the import column mapper auto-detects them.' },
       { type: 'added', text: 'Click any month on the Revenue Trend (dashboard) or Net Income Trend (analytics) charts to jump straight to that month’s financial records.' },
     ],
   },

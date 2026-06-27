@@ -11,13 +11,14 @@ import type {
 } from './finance.schemas';
 
 export async function getFinancialRecords(query: FinanceQuery, userId: string) {
-  const { page, limit, type, status, propertyId, leaseId, from, to } = query;
+  const { page, limit, type, status, category, propertyId, leaseId, from, to } = query;
   const skip = (page - 1) * limit;
 
   const where: Prisma.FinancialRecordWhereInput = {
     property: { ownerId: userId, deletedAt: null },
     ...(type && { type }),
     ...(status && { status }),
+    ...(category && { category }),
     ...(propertyId && { propertyId }),
     ...(leaseId && { leaseId }),
     ...((from || to) && {
