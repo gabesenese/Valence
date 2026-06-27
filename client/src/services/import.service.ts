@@ -61,6 +61,7 @@ export const importService = {
   properties: (file: File, columnMap?: Record<string, string>, defaults?: Record<string, string>) => postCsv('/import/properties', file, columnMap, defaults),
   tenants:    (file: File, columnMap?: Record<string, string>, defaults?: Record<string, string>) => postCsv('/import/tenants',    file, columnMap, defaults),
   leases:     (file: File, columnMap?: Record<string, string>, defaults?: Record<string, string>) => postCsv('/import/leases',     file, columnMap, defaults),
+  expenses:   (file: File, columnMap?: Record<string, string>, defaults?: Record<string, string>) => postCsv('/import/expenses',   file, columnMap, defaults),
 };
 
 
@@ -91,6 +92,15 @@ export const TEMPLATES = {
       'DOWNTOWN1,Acme Corp,,LSE-002,2023-06-01,2026-05-31,12500,NET,,0.025,25000,12500,PERCENTAGE,,5,3,1.5,Triple net',
     ].join('\n'),
     hint: 'propertyCode must match an existing property; dates in YYYY-MM-DD; type: GROSS · NET · MODIFIED_GROSS · PERCENTAGE · GROUND; lateFeeType: NONE · FLAT · PERCENTAGE',
+  },
+  expenses: {
+    filename: 'expenses_template.csv',
+    content: [
+      'propertyCode,date,amount,category,description,dueDate',
+      'SUNSET01,2026-01-15,1850,UTILITIES,January hydro & water,2026-02-01',
+      'DOWNTOWN1,2026-01-20,4200,MAINTENANCE,HVAC servicing,',
+    ].join('\n'),
+    hint: 'propertyCode must match an existing property; date YYYY-MM-DD; category: MAINTENANCE · REPAIRS · HVAC · UTILITIES · CLEANING · LANDSCAPING · INSURANCE · PROPERTY_TAX · CAPITAL_IMPROVEMENT · VENDOR · MANAGEMENT · OTHER',
   },
 } as const;
 
