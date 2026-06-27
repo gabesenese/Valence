@@ -1,7 +1,46 @@
 import { Prisma, type Plan } from '@prisma/client';
 import { prisma } from '../../infrastructure/database';
+import { env } from '../../config/env';
 import { NotFoundError, ForbiddenError, ValidationError } from '../../utils/errors';
 import { CONNECTORS, isKnownConnector, getConnector, planAllowsIntegrations, type Connector } from './connector';
+import { signOAuthState, verifyOAuthState } from './security';
+
+function providerRedirectUri(provider: string): string {
+  if (provider === 'quickbooks') {
+    if (!env.QBO_REDIRECT_URI) throw new ValidationError('QuickBooks redirect URI is not configured.');
+    return env.QBO_REDIRECT_URI;
+  }
+  throw new ValidationError('This integration has no OAuth redirect configured.');
+}
+
+export async function getAuthorizeUrl(ownerId: string, plan: Plan, provider: string): Promise<{ url: string }> {
+  if (!isKnownConnector(provider)) throw new NotFoundError('Integration');
+  const impl = getConnector(provider);
+  if (!impl?.getAuthUrl) throw new ValidationError("This integration isn't available yet.");
+  if (!planAllowsIntegrations(plan)) throw new ForbiddenError('Connecting an integration requires the Professional plan.');
+  const state = signOAuthState(ownerId, provider);
+  return { url: impl.getAuthUrl(ownerId, state, providerRedirectUri(provider)) };
+}
+
+export async function completeOAuth(provider: string, code: string, params: Record<string, string>): Promise<{ ownerId: string }> {
+  const decoded = verifyOAuthState(params.state ?? '');
+  if (decoded.provider !== provider) throw new ValidationError('OAuth state mismatch.');
+  const impl = getConnector(provider);
+  if (!impl) throw new ValidationError("This integration isn't available yet.");
+
+  const config = await impl.connect(decoded.ownerId, {
+    type: 'oauth_code',
+    code,
+    redirectUri: providerRedirectUri(provider),
+    params,
+  });
+  await prisma.integration.upsert({
+    where:  { ownerId_provider: { ownerId: decoded.ownerId, provider } },
+    create: { ownerId: decoded.ownerId, provider, status: 'CONNECTED', config: config as Prisma.InputJsonValue },
+    update: { status: 'CONNECTED', config: config as Prisma.InputJsonValue },
+  });
+  return { ownerId: decoded.ownerId };
+}
 
 export async function listIntegrations(ownerId: string) {
   const connections = await prisma.integration.findMany({ where: { ownerId } });
@@ -30,15 +69,16 @@ export async function connectIntegration(ownerId: string, plan: Plan, provider: 
   const impl = getConnector(provider);
   // Real connector → validate credentials and mark connected (Professional-gated).
   // Otherwise record the user's interest so we can prioritise the integration.
+  let storedConfig = config;
   if (impl) {
     if (!planAllowsIntegrations(plan)) {
       throw new ForbiddenError('Connecting an integration requires the Professional plan.');
     }
-    await impl.connect(ownerId, { type: 'api_key', credentials: (config ?? {}) as Record<string, string> });
+    storedConfig = await impl.connect(ownerId, { type: 'api_key', credentials: (config ?? {}) as Record<string, string> });
   }
 
   const status = impl ? 'CONNECTED' : 'REQUESTED';
-  const configValue = config ? { config: config as Prisma.InputJsonValue } : {};
+  const configValue = storedConfig ? { config: storedConfig as Prisma.InputJsonValue } : {};
   return prisma.integration.upsert({
     where:  { ownerId_provider: { ownerId, provider } },
     create: { ownerId, provider, status, ...configValue },

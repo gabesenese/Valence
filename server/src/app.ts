@@ -43,6 +43,8 @@ import { backupRouter } from './modules/backup/backup.routes';
 import { changesRouter } from './modules/changes/changes.routes';
 import { briefRouter } from './modules/brief/brief.routes';
 import { integrationsRouter } from './modules/integrations/integrations.routes';
+import { completeOAuth } from './modules/integrations/integrations.service';
+import { registerConnectors } from './modules/integrations/register';
 
 export const app = express();
 
@@ -116,7 +118,22 @@ app.use('/api/trash', trashRouter);
 app.use('/api/backups', backupRouter);
 app.use('/api/changes', changesRouter);
 app.use('/api/brief', briefRouter);
+// Public OAuth callback (the third-party redirect carries no auth header — the
+// owner is recovered from the signed state). Registered before the authed router.
+app.get('/api/integrations/:provider/callback', async (req, res) => {
+  const provider = req.params.provider;
+  try {
+    const { code, state, realmId } = req.query as Record<string, string | undefined>;
+    if (!code || !state) throw new Error('Missing code or state');
+    await completeOAuth(provider, code, { state, ...(realmId ? { realmId } : {}) });
+    res.redirect(`${env.CLIENT_URL}/integrations?connected=${provider}`);
+  } catch {
+    res.redirect(`${env.CLIENT_URL}/integrations?error=${encodeURIComponent(provider)}`);
+  }
+});
 app.use('/api/integrations', integrationsRouter);
+
+registerConnectors();
 
 Sentry.setupExpressErrorHandler(app);
 app.use(notFoundHandler);

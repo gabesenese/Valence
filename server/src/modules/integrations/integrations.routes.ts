@@ -16,6 +16,10 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
   try { sendSuccess(res, await service.listIntegrations(req.user!.id)); } catch (e) { next(e); }
 });
 
+router.get('/:provider/authorize', async (req: Request, res: Response, next: NextFunction) => {
+  try { sendSuccess(res, await service.getAuthorizeUrl(req.user!.id, effectivePlan(req), req.params.provider)); } catch (e) { next(e); }
+});
+
 router.post('/:provider/connect', async (req: Request, res: Response, next: NextFunction) => {
   try { sendSuccess(res, await service.connectIntegration(req.user!.id, effectivePlan(req), req.params.provider, req.body?.config)); } catch (e) { next(e); }
 });

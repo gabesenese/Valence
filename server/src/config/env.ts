@@ -28,6 +28,13 @@ const envSchema = z.object({
   APP_URL: z.string().url().default('http://localhost:5173'),
   PLATFORM_ADMIN_SECRET: z.string().optional(),
   OWNER_EMAIL: z.string().email().optional(),
+  // Integrations: AES-256-GCM key (32-byte hex/base64) for encrypting stored tokens.
+  INTEGRATIONS_ENC_KEY: z.string().optional(),
+  // QuickBooks Online (Intuit) — use Development (sandbox) keys first.
+  QBO_CLIENT_ID: z.string().optional(),
+  QBO_CLIENT_SECRET: z.string().optional(),
+  QBO_REDIRECT_URI: z.string().optional(),
+  QBO_ENVIRONMENT: z.enum(['sandbox', 'production']).default('sandbox'),
 });
 
 const parsed = envSchema.safeParse(process.env);

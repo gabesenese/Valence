@@ -34,13 +34,15 @@ export interface SyncSummary {
 
 export type ConnectInput =
   | { type: 'api_key';    credentials: Record<string, string> }
-  | { type: 'oauth_code'; code: string; redirectUri: string };
+  | { type: 'oauth_code'; code: string; redirectUri: string; params?: Record<string, string> };
 
-// The uniform lifecycle every provider implements.
+// The uniform lifecycle every provider implements. connect() validates/exchanges
+// credentials and returns the (provider-specific) config blob to persist on the
+// Integration record — the service owns persistence + connection status.
 export interface Connector {
   readonly info: ConnectorInfo;
   getAuthUrl?(ownerId: string, state: string, redirectUri: string): string;
-  connect(ownerId: string, input: ConnectInput): Promise<void>;
+  connect(ownerId: string, input: ConnectInput): Promise<Record<string, unknown>>;
   sync(ownerId: string): Promise<SyncSummary>;
   disconnect?(ownerId: string): Promise<void>;
 }

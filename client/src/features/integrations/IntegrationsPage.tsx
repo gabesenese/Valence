@@ -34,6 +34,22 @@ export default function IntegrationsPage() {
     },
   });
 
+  const authorize = useMutation({
+    mutationFn: (id: string) => integrationsService.authorize(id),
+    onSuccess: ({ url }) => { window.location.href = url; },
+  });
+
+  // OAuth connectors redirect to the provider's consent screen; everything else
+  // (api-key connect, or capturing interest in a planned connector) posts directly.
+  const handleConnect = (p: IntegrationProvider) => {
+    if (p.available && p.authType === 'oauth2') authorize.mutate(p.id);
+    else connect.mutate(p.id);
+  };
+
+  const params = new URLSearchParams(window.location.search);
+  const connectedReturn = params.get('connected');
+  const errorReturn = params.get('error');
+
   if (isLoading) return <PageLoader />;
 
   return (
@@ -42,6 +58,17 @@ export default function IntegrationsPage() {
         title="Integrations"
         description="Connect the property management and accounting software you already use."
       />
+
+      {connectedReturn && (
+        <div className="rounded-xl border border-success/20 bg-success/[0.06] px-5 py-3 text-sm text-success">
+          Connected {connectedReturn} successfully. Run a sync to pull your data.
+        </div>
+      )}
+      {errorReturn && (
+        <div className="rounded-xl border border-danger/20 bg-danger/[0.06] px-5 py-3 text-sm text-danger">
+          Couldn't connect {errorReturn}. Please try again.
+        </div>
+      )}
 
       <div className="rounded-xl border border-brand-500/20 bg-brand-600/[0.04] px-5 py-4">
         <p className="text-sm text-slate-300">
@@ -64,13 +91,14 @@ export default function IntegrationsPage() {
                 <IntegrationCard
                   key={p.id}
                   provider={p}
-                  onRequest={() => connect.mutate(p.id)}
+                  onRequest={() => handleConnect(p)}
                   onCancel={() => disconnect.mutate(p.id)}
                   onSync={() => sync.mutate(p.id)}
                   onDisconnect={() => disconnect.mutate(p.id)}
                   syncing={sync.isPending && sync.variables === p.id}
                   busy={
                     (connect.isPending && connect.variables === p.id) ||
+                    (authorize.isPending && authorize.variables === p.id) ||
                     (disconnect.isPending && disconnect.variables === p.id)
                   }
                 />
