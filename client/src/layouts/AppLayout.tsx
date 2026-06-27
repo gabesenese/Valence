@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import {
   LayoutDashboard, FileText, Building2, BarChart3, Bell, DollarSign,
   LogOut, ChevronLeft, Cpu, Users, Settings, Inbox, Layers,
-  Wand2, ClipboardList, Heart, FolderOpen, Zap, Lock, Upload, ScrollText, Download,
+  Wand2, ClipboardList, Heart, FolderOpen, Zap, Lock, Upload, ScrollText, Download, Plug,
   UserX, Sparkles, HelpCircle, Trash2, Database, Menu, X,
 } from 'lucide-react';
 import { cn } from '@/utils/cn';
@@ -68,6 +68,7 @@ const NAV_SECTIONS: NavSection[] = [
     items: [
       { to: '/documents', icon: FolderOpen,  label: 'Documents', feature: 'documents' },
       { to: '/import',    icon: Upload,      label: 'Import Data'                      },
+      { to: '/integrations', icon: Plug,     label: 'Integrations'                     },
       { to: '/audit',     icon: ScrollText,  label: 'Audit Log'                        },
       { to: '/organization', icon: Building2,   label: 'Organization'                   },
       { to: '/export',       icon: Download,   label: 'Export'                         },
