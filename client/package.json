@@ -26,6 +26,7 @@
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-router-dom": "^6.24.0",
+    "read-excel-file": "^9.2.0",
     "recharts": "^2.12.7",
     "tailwind-merge": "^2.3.0",
     "uuid": "14.0.0",

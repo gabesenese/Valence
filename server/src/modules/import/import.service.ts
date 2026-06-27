@@ -1,4 +1,5 @@
 import { parse } from 'csv-parse/sync';
+import { readSheet } from 'read-excel-file/node';
 import { prisma } from '../../infrastructure/database';
 import { PLAN_LIMITS } from '../plans/plans.service';
 import { syncLeaseRevenueSchedule } from '../finance/revenue-schedule.service';
@@ -33,12 +34,36 @@ function applyColumnMap(row: Record<string, string>, map: ColumnMap, defaults?: 
   return result;
 }
 
-function parseRows(buffer: Buffer): Record<string, string>[] {
-  return parse(buffer, {
+function detectDelimiter(text: string): string {
+  const firstLine = (text.split(/\r?\n/)[0] ?? '').replace(/^﻿/, '');
+  const counts: Record<string, number> = { ',': 0, '\t': 0, ';': 0, '|': 0 };
+  for (const ch of firstLine) if (ch in counts) counts[ch] += 1;
+  const best = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
+  return best && best[1] > 0 ? best[0] : ',';
+}
+
+// Accepts CSV, delimited text (TSV / semicolon / pipe — auto-detected), and
+// .xlsx workbooks (detected by the zip "PK" magic bytes). Returns rows keyed by
+// the header row, matching the column-mapping pipeline.
+async function parseRows(buffer: Buffer): Promise<Record<string, string>[]> {
+  if (buffer.length >= 2 && buffer[0] === 0x50 && buffer[1] === 0x4b) {
+    const sheet = await readSheet(buffer);
+    if (sheet.length < 1) return [];
+    const headers = sheet[0].map((c) => String(c ?? '').trim());
+    return sheet.slice(1).map((row) => {
+      const obj: Record<string, string> = {};
+      headers.forEach((h, i) => { if (h) obj[h] = row[i] == null ? '' : String(row[i]).trim(); });
+      return obj;
+    });
+  }
+
+  const text = buffer.toString('utf8');
+  return parse(text, {
     columns: true,
     skip_empty_lines: true,
     trim: true,
     bom: true,
+    delimiter: detectDelimiter(text),
   }) as Record<string, string>[];
 }
 
@@ -53,7 +78,7 @@ function toDate(val: string, field: string): string {
 const VALID_PROPERTY_TYPES = ['RESIDENTIAL', 'COMMERCIAL', 'MIXED_USE', 'INDUSTRIAL', 'RETAIL', 'OFFICE'];
 
 export async function importProperties(buffer: Buffer, plan: Plan, userId: string, columnMap?: ColumnMap, defaults?: FieldDefaults): Promise<ImportResult> {
-  const rows = parseRows(buffer);
+  const rows = await parseRows(buffer);
   const limit = PLAN_LIMITS[plan].properties;
   const startCount = await prisma.property.count({ where: { ownerId: userId } });
   const netNewAllowed = limit === Infinity ? Infinity : Math.max(0, limit - startCount);
@@ -144,7 +169,7 @@ export async function importProperties(buffer: Buffer, plan: Plan, userId: strin
 
 
 export async function importTenants(buffer: Buffer, userId: string, columnMap?: ColumnMap, defaults?: FieldDefaults): Promise<ImportResult> {
-  const rows = parseRows(buffer);
+  const rows = await parseRows(buffer);
   const result: ImportResult = { created: 0, updated: 0, skipped: 0, errors: [] };
 
   for (let i = 0; i < rows.length; i++) {
@@ -251,7 +276,7 @@ async function resolveTenant(name: string, userId: string, email?: string): Prom
 }
 
 export async function importLeases(buffer: Buffer, plan: Plan, userId: string, columnMap?: ColumnMap, defaults?: FieldDefaults): Promise<ImportResult> {
-  const rows = parseRows(buffer);
+  const rows = await parseRows(buffer);
   const result: ImportResult = { created: 0, updated: 0, skipped: 0, errors: [] };
   const limit = PLAN_LIMITS[plan].leases;
   const startCount = await prisma.lease.count({ where: { property: { ownerId: userId } } });
@@ -325,7 +350,7 @@ export async function importLeases(buffer: Buffer, plan: Plan, userId: string, c
 
 
 export async function importExpenses(buffer: Buffer, userId: string, columnMap?: ColumnMap, defaults?: FieldDefaults): Promise<ImportResult> {
-  const rows = parseRows(buffer);
+  const rows = await parseRows(buffer);
   const result: ImportResult = { created: 0, updated: 0, skipped: 0, errors: [] };
 
   for (let i = 0; i < rows.length; i++) {

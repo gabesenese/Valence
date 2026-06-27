@@ -756,11 +756,11 @@ function CsvStep({
           <Upload className="h-5 w-5 text-slate-400" />
         </div>
         <div className="text-center">
-          <p className="text-sm font-medium text-slate-300">Drop a CSV file here</p>
-          <p className="text-xs text-slate-600">or click to browse — columns are detected automatically</p>
+          <p className="text-sm font-medium text-slate-300">Drop a CSV, TXT, or Excel file here</p>
+          <p className="text-xs text-slate-600">or click to browse — CSV · TSV · .xlsx; columns are detected automatically</p>
         </div>
         <input
-          ref={inputRef} type="file" accept=".csv,text/csv" className="hidden"
+          ref={inputRef} type="file" accept=".csv,.txt,.tsv,.xlsx,text/csv" className="hidden"
           onChange={(e) => { const f = e.target.files?.[0]; if (f) void handleFile(f); }}
         />
       </div>
