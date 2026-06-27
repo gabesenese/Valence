@@ -120,6 +120,33 @@ export interface RevenueAtRisk {
   risks: RevenueRisk[];
 }
 
+export interface LateFeeForecastItem {
+  leaseId: string;
+  leaseNumber: string;
+  propertyName: string;
+  tenantName: string;
+  overdueAmount: number;
+  daysLate: number;
+  graceDays: number;
+  feeType: 'FLAT' | 'PERCENTAGE';
+  baseFee: number;
+  interest: number;
+  fee: number;
+  chargeable: boolean;
+}
+
+export interface LateFeeForecast {
+  overdueBalance: number;
+  overdueCount: number;
+  chargeableCount: number;
+  withinGraceCount: number;
+  unconfiguredCount: number;
+  expectedLateFees: number;
+  baseFees: number;
+  interestAccrued: number;
+  items: LateFeeForecastItem[];
+}
+
 export const financeService = {
   getRecords: (query: Record<string, unknown> = {}): Promise<PaginatedResult<FinancialRecord>> =>
     api.get('/finance', { params: query }).then(extractPaginated<FinancialRecord>),
@@ -147,6 +174,9 @@ export const financeService = {
 
   getNoiForecast: (params: { months?: number } = {}): Promise<NoiForecast> =>
     api.get('/finance/forecast', { params }).then(extractData<NoiForecast>),
+
+  getLateFeeForecast: (): Promise<LateFeeForecast> =>
+    api.get('/finance/late-fee-forecast').then(extractData<LateFeeForecast>),
 
   getBudgets: (): Promise<BudgetReport> =>
     api.get('/finance/budgets').then(extractData<BudgetReport>),
