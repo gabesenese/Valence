@@ -1,10 +1,11 @@
 import { useState, useRef, useCallback } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import {
-  Upload, AlertTriangle, Sparkles, CheckCircle2, XCircle, MinusCircle,
+  Upload, AlertTriangle, Sparkles, CheckCircle2, XCircle, MinusCircle, Wand2,
 } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
-import { aiService, type LeaseVerificationResult, type LeaseFieldStatus } from '@/services/ai.service';
+import { aiService, type LeaseVerificationResult, type LeaseFieldStatus, type ExtractedLease } from '@/services/ai.service';
 
 
 interface Props {
@@ -15,6 +16,17 @@ interface Props {
 
 type Stage = 'upload' | 'verifying' | 'result';
 
+const APPLICABLE: Record<string, keyof ExtractedLease> = {
+  unitNumber:      'unitNumber',
+  startDate:       'startDate',
+  endDate:         'endDate',
+  baseRent:        'baseRent',
+  rentEscalation:  'rentEscalation',
+  securityDeposit: 'securityDeposit',
+  sqft:            'sqft',
+  leaseType:       'leaseType',
+};
+
 const STATUS_META: Record<LeaseFieldStatus, { icon: typeof CheckCircle2; color: string; label: string }> = {
   match:               { icon: CheckCircle2, color: 'text-success', label: 'Match' },
   mismatch:            { icon: XCircle,      color: 'text-danger',  label: 'Differs' },
@@ -23,11 +35,15 @@ const STATUS_META: Record<LeaseFieldStatus, { icon: typeof CheckCircle2; color: 
 
 
 export default function LeaseVerifyModal({ open, onClose, leaseId }: Props) {
+  const qc = useQueryClient();
   const [stage, setStage]     = useState<Stage>('upload');
   const [dragging, setDragging] = useState(false);
   const [file, setFile]       = useState<File | null>(null);
   const [result, setResult]   = useState<LeaseVerificationResult | null>(null);
   const [error, setError]     = useState<string | null>(null);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [applying, setApplying] = useState(false);
+  const [appliedCount, setAppliedCount] = useState<number | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const reqId = useRef(0);
 
@@ -37,6 +53,42 @@ export default function LeaseVerifyModal({ open, onClose, leaseId }: Props) {
     setFile(null);
     setResult(null);
     setError(null);
+    setSelected(new Set());
+    setApplying(false);
+    setAppliedCount(null);
+  }
+
+  const fillable = (result?.comparisons ?? []).filter(
+    (c) => APPLICABLE[c.field] && c.extracted != null && c.status !== 'match',
+  );
+
+  function toggle(field: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(field)) next.delete(field);
+      else next.add(field);
+      return next;
+    });
+  }
+
+  async function applySelected() {
+    if (!result || selected.size === 0) return;
+    setApplying(true);
+    setError(null);
+    try {
+      const fields: Partial<ExtractedLease> = {};
+      for (const field of selected) {
+        const key = APPLICABLE[field];
+        (fields[key] as ExtractedLease[typeof key]) = result.extracted[key];
+      }
+      const res = await aiService.applyExtractedLease(leaseId, fields);
+      qc.invalidateQueries({ queryKey: ['leases'] });
+      setAppliedCount(res.applied.length);
+    } catch (e) {
+      setError((e as Error).message ?? 'Could not apply the changes. Please try again.');
+    } finally {
+      setApplying(false);
+    }
   }
 
   async function processFile(f: File) {
@@ -52,6 +104,12 @@ export default function LeaseVerifyModal({ open, onClose, leaseId }: Props) {
       const res = await aiService.verifyLeaseDocument(leaseId, f);
       if (reqId.current !== id) return; // closed/superseded — drop stale result
       setResult(res);
+      setAppliedCount(null);
+      setSelected(new Set(
+        res.comparisons
+          .filter((c) => APPLICABLE[c.field] && c.extracted != null && c.status === 'mismatch')
+          .map((c) => c.field),
+      ));
       setStage('result');
     } catch (e) {
       if (reqId.current !== id) return;
@@ -193,9 +251,49 @@ export default function LeaseVerifyModal({ open, onClose, leaseId }: Props) {
               </div>
             </div>
 
-            <p className="mt-3 text-xs text-slate-600">
-              Nothing was changed. Open the lease to update any values that should match the signed document.
-            </p>
+            {appliedCount != null ? (
+              <div className="mt-3 flex items-center gap-2 rounded-lg border border-success/20 bg-success/[0.07] px-3 py-2.5">
+                <CheckCircle2 className="h-4 w-4 shrink-0 text-success" />
+                <p className="text-xs text-success">
+                  Updated {appliedCount} field{appliedCount !== 1 ? 's' : ''} on the lease from the document.
+                </p>
+              </div>
+            ) : fillable.length > 0 ? (
+              <div className="mt-3 rounded-xl border border-brand-500/20 bg-brand-600/[0.04] px-4 py-3">
+                <div className="flex items-center gap-2">
+                  <Wand2 className="h-3.5 w-3.5 text-brand-400" />
+                  <p className="text-xs font-medium text-slate-300">Update the lease from the document</p>
+                </div>
+                <p className="mt-1 text-[11px] text-slate-500">
+                  Choose which values to copy from the signed document into this lease record.
+                </p>
+                <div className="mt-2.5 flex flex-col gap-1.5">
+                  {fillable.map((c) => (
+                    <label key={c.field} className="flex cursor-pointer items-center gap-2.5 text-xs">
+                      <input
+                        type="checkbox"
+                        checked={selected.has(c.field)}
+                        onChange={() => toggle(c.field)}
+                        className="h-3.5 w-3.5 rounded border-surface-400 bg-surface-200 accent-brand-500"
+                      />
+                      <span className="text-slate-400">{c.label}</span>
+                      <span className="text-slate-600">→</span>
+                      <span className="font-medium text-slate-200">{c.extracted}</span>
+                    </label>
+                  ))}
+                </div>
+                <div className="mt-3 flex justify-end">
+                  <Button size="sm" onClick={applySelected} loading={applying} disabled={selected.size === 0}>
+                    <Wand2 className="h-3.5 w-3.5" />
+                    Apply {selected.size > 0 ? selected.size : ''} to lease
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <p className="mt-3 text-xs text-slate-600">
+                Every value in the document already matches this lease — nothing to update.
+              </p>
+            )}
           </>
         )}
 

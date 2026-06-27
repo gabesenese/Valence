@@ -188,6 +188,9 @@ export const aiService = {
       .then(extractData<LeaseVerificationResult>);
   },
 
+  applyExtractedLease: (leaseId: string, fields: Partial<ExtractedLease>): Promise<{ applied: string[] }> =>
+    api.post(`/ai/leases/${leaseId}/apply-extracted`, { fields }).then(extractData<{ applied: string[] }>),
+
   extractProperty: (file: File): Promise<ExtractedProperty> => {
     const form = new FormData();
     form.append('file', file);
