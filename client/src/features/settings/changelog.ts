@@ -15,6 +15,15 @@ export const CHANGE_TYPE_LABEL: Record<ChangeType, string> = {
 // Newest first. User-facing release notes — keep the language plain and benefit-led.
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    date: 'June 27, 2026',
+    title: 'Smarter leases and late-fee revenue',
+    changes: [
+      { type: 'added', text: 'After Valence reads a signed lease, you can apply the extracted terms straight to the lease record — rent, dates, escalation, deposit, square footage and more — instead of retyping them.' },
+      { type: 'added', text: 'A Late Fee Forecast on the Finance page: see the late-fee revenue you can collect on overdue rent, based on each lease’s policy (flat or % of balance, plus interest past the grace period).' },
+      { type: 'improved', text: 'Overdue leases with no late-fee policy are flagged, so you can set one and start capturing that revenue.' },
+    ],
+  },
+  {
     date: 'June 26, 2026',
     title: 'Connect QuickBooks and sync your expenses automatically',
     changes: [
