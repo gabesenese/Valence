@@ -29,5 +29,6 @@ const EXPENSE_LABEL_BY_VALUE = new Map(EXPENSE_CATEGORIES.map((c) => [c.value, c
 export function categoryLabel(value: string | null | undefined): string {
   if (!value) return '—';
   if (value === 'RENT') return 'Rent';
+  if (value === 'UNCATEGORIZED') return 'Uncategorized';
   return EXPENSE_LABEL_BY_VALUE.get(value) ?? value;
 }

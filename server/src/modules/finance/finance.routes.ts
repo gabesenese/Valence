@@ -10,6 +10,7 @@ import {
   updateFinancialRecordSchema,
   financeQuerySchema,
   revenueTrendQuerySchema,
+  expenseBreakdownQuerySchema,
 } from './finance.schemas';
 
 const router = Router();
@@ -20,6 +21,7 @@ router.use(planGate('ESSENTIALS')); // Finance is a paid feature — FREE tier u
 router.get('/summary', controller.summary);
 router.get('/trend', validate(revenueTrendQuerySchema, 'query'), controller.trend);
 router.get('/at-risk', controller.atRisk);
+router.get('/expense-breakdown', validate(expenseBreakdownQuerySchema, 'query'), controller.expenseBreakdown);
 router.get('/', validate(financeQuerySchema, 'query'), controller.list);
 router.get('/:id', requireOwner('financialRecord'), controller.show);
 router.post('/', authorize('ANALYST'), validate(createFinancialRecordSchema), controller.create);

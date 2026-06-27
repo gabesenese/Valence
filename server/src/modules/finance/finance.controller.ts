@@ -45,3 +45,9 @@ export async function atRisk(req: Request, res: Response, next: NextFunction): P
     sendSuccess(res, await getRevenueAtRisk(req.user!.id));
   } catch (err) { next(err); }
 }
+
+export async function expenseBreakdown(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    sendSuccess(res, await service.getExpenseBreakdown(req.query as never, req.user!.id));
+  } catch (err) { next(err); }
+}

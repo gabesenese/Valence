@@ -34,6 +34,11 @@ export interface RevenueTrendPoint {
   net: number;
 }
 
+export interface ExpenseBreakdown {
+  totalExpenses: number;
+  categories: { category: string; total: number; count: number }[];
+}
+
 export interface RevenueRisk {
   leaseId: string;
   propertyId: string;
@@ -72,4 +77,7 @@ export const financeService = {
 
   getAtRisk: (): Promise<RevenueAtRisk> =>
     api.get('/finance/at-risk').then(extractData<RevenueAtRisk>),
+
+  getExpenseBreakdown: (params: { propertyId?: string; from?: string; to?: string } = {}): Promise<ExpenseBreakdown> =>
+    api.get('/finance/expense-breakdown', { params }).then(extractData<ExpenseBreakdown>),
 };
