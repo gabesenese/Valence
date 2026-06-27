@@ -1,6 +1,6 @@
 import { Prisma } from '@prisma/client';
 import { prisma } from '../../infrastructure/database';
-import { recordRef } from './external-ref.service';
+import { recordRef, resolveInternalId } from './external-ref.service';
 
 // Tags an external expense line carries that could identify a property.
 export interface SourceTags {
@@ -59,19 +59,25 @@ export async function materializeExpense(
   payload: ExpensePayload,
   propertyId: string,
 ): Promise<string> {
-  const created = await prisma.financialRecord.create({
-    data: {
-      propertyId,
-      type: 'EXPENSE',
-      status: 'RECONCILED',
-      amount: payload.amount,
-      periodStart: new Date(payload.periodStart),
-      periodEnd: new Date(payload.periodStart),
-      category: payload.category,
-      description: payload.description,
-      metadata: { source: payload.source, entity: payload.entity, qboId: payload.qboId } as Prisma.InputJsonValue,
-    },
-  });
+  const data = {
+    propertyId,
+    type: 'EXPENSE' as const,
+    status: 'RECONCILED' as const,
+    amount: payload.amount,
+    periodStart: new Date(payload.periodStart),
+    periodEnd: new Date(payload.periodStart),
+    category: payload.category,
+    description: payload.description,
+    metadata: { source: payload.source, entity: payload.entity, qboId: payload.qboId } as Prisma.InputJsonValue,
+  };
+
+  const existingId = await resolveInternalId(ownerId, provider, 'financial_record', externalId);
+  if (existingId) {
+    await prisma.financialRecord.update({ where: { id: existingId }, data });
+    return existingId;
+  }
+
+  const created = await prisma.financialRecord.create({ data });
   await recordRef(ownerId, provider, 'financial_record', externalId, created.id);
   return created.id;
 }
