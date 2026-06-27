@@ -46,6 +46,25 @@ export interface ExtractedLease {
   notes:           string | null;
 }
 
+export type LeaseFieldStatus = 'match' | 'mismatch' | 'missing_in_document';
+
+export interface LeaseFieldComparison {
+  field:     string;
+  label:     string;
+  stored:    string | null;
+  extracted: string | null;
+  status:    LeaseFieldStatus;
+}
+
+export interface LeaseVerificationResult {
+  leaseId:       string;
+  extracted:     ExtractedLease;
+  comparisons:   LeaseFieldComparison[];
+  matchCount:    number;
+  mismatchCount: number;
+  missingCount:  number;
+}
+
 
 export interface ExtractedProperty {
   name:          string | null;
@@ -159,6 +178,14 @@ export const aiService = {
     return api
       .post('/ai/extract-lease', form, { headers: { 'Content-Type': 'multipart/form-data' }, timeout: 120_000 })
       .then(extractData<ExtractedLease>);
+  },
+
+  verifyLeaseDocument: (leaseId: string, file: File): Promise<LeaseVerificationResult> => {
+    const form = new FormData();
+    form.append('file', file);
+    return api
+      .post(`/ai/leases/${leaseId}/verify-document`, form, { headers: { 'Content-Type': 'multipart/form-data' }, timeout: 120_000 })
+      .then(extractData<LeaseVerificationResult>);
   },
 
   extractProperty: (file: File): Promise<ExtractedProperty> => {
