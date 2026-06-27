@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from 'recharts';
-import { FileText } from 'lucide-react';
+import { FileText, Users } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { financeService } from '@/services/finance.service';
 import { RevenueAtRisk } from './RevenueAtRisk';
@@ -93,6 +93,11 @@ export default function FinancePage() {
   const { data: expenseTrend } = useQuery({
     queryKey: ['finance', 'expense-trend'],
     queryFn: () => financeService.getExpenseTrend({ months: 6 }),
+  });
+
+  const { data: tenantProfit } = useQuery({
+    queryKey: ['finance', 'tenant-profitability'],
+    queryFn: () => financeService.getTenantProfitability(),
   });
 
   if (summaryLoading) return <PageLoader />;
@@ -367,6 +372,46 @@ export default function FinancePage() {
         )}
 
       </div>
+
+      {tenantProfit && tenantProfit.tenants.length > 0 && (
+        <div className="rounded-xl border border-surface-400/30 overflow-hidden">
+          <div className="flex flex-col gap-1 border-b border-surface-400/40 px-5 py-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-2">
+              <Users className="h-3.5 w-3.5 text-brand-400" />
+              <span className="text-sm font-semibold text-fg">Tenant Profitability</span>
+            </div>
+            <span className="text-[10px] text-slate-600">
+              Operating costs allocated {tenantProfit.basis === 'sqft' ? 'by leased square-foot share' : tenantProfit.basis === 'equal' ? 'evenly across leases' : 'by square-foot share (evenly where sqft is missing)'} · {tenantProfit.monthsAveraged}-month average expenses
+            </span>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-surface-400/40">
+                  {['Tenant', 'Leases', 'Rent / mo', 'Allocated Cost / mo', 'Net / mo', 'Margin'].map((h) => (
+                    <th key={h} className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-surface-400/30">
+                {tenantProfit.tenants.map((t) => (
+                  <tr key={t.tenantId} className="hover:bg-surface-200/30 transition-colors">
+                    <td className="px-4 py-3 text-sm font-medium text-slate-200">{t.tenantName}</td>
+                    <td className="px-4 py-3 text-sm text-slate-500 tabular-nums">{t.leaseCount}</td>
+                    <td className="px-4 py-3 text-sm font-semibold tabular-nums text-success">{formatCurrency(t.monthlyRent)}</td>
+                    <td className="px-4 py-3 text-sm font-semibold tabular-nums text-danger/90">-{formatCurrency(t.allocatedCost)}</td>
+                    <td className={`px-4 py-3 text-sm font-bold tabular-nums ${t.net >= 0 ? 'text-success' : 'text-danger'}`}>{formatCurrency(t.net)}</td>
+                    <td className="px-4 py-3">
+                      <span className={`text-xs font-semibold tabular-nums ${t.marginPct >= 50 ? 'text-success' : t.marginPct >= 20 ? 'text-warning' : 'text-danger'}`}>{t.marginPct}%</span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

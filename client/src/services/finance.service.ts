@@ -51,6 +51,22 @@ export interface ExpenseTrend {
   }[];
 }
 
+export interface TenantProfitability {
+  tenantId:      string;
+  tenantName:    string;
+  leaseCount:    number;
+  monthlyRent:   number;
+  allocatedCost: number;
+  net:           number;
+  marginPct:     number;
+}
+
+export interface TenantProfitabilityReport {
+  basis: 'sqft' | 'equal' | 'mixed';
+  monthsAveraged: number;
+  tenants: TenantProfitability[];
+}
+
 export interface RevenueRisk {
   leaseId: string;
   propertyId: string;
@@ -95,4 +111,7 @@ export const financeService = {
 
   getExpenseTrend: (params: { propertyId?: string; months?: number } = {}): Promise<ExpenseTrend> =>
     api.get('/finance/expense-trend', { params }).then(extractData<ExpenseTrend>),
+
+  getTenantProfitability: (): Promise<TenantProfitabilityReport> =>
+    api.get('/finance/tenant-profitability').then(extractData<TenantProfitabilityReport>),
 };
