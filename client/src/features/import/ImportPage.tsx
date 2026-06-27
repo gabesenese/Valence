@@ -4,8 +4,9 @@ import { useQueryClient } from '@tanstack/react-query';
 import {
   Upload, Download, CheckCircle, CheckCircle2, XCircle, AlertCircle,
   Building2, FileText, Paperclip, Sparkles, ChevronRight, ArrowLeft,
-  Loader2, TrendingUp, BookOpen, ChevronDown, Info, Zap, ArrowRight,
+  Loader2, TrendingUp, BookOpen, ChevronDown, Info, Zap, ArrowRight, Wallet,
 } from 'lucide-react';
+import { EXPENSE_CATEGORIES } from '@valence/shared';
 import { importService, parseCsvPreview, downloadTemplate, TEMPLATES, type ImportResult, type CsvPreview } from '@/services/import.service';
 import { documentsService } from '@/services/documents.service';
 import { analyticsService } from '@/services/analytics.service';
@@ -17,10 +18,13 @@ import { PageHeader } from '@/components/ui/PageHeader';
 const STEPS = [
   { id: 'properties' as const,   label: 'Properties',   icon: Building2  },
   { id: 'leases' as const,       label: 'Leases',       icon: FileText   },
+  { id: 'expenses' as const,     label: 'Expenses',     icon: Wallet     },
   { id: 'documents' as const,    label: 'Documents',    icon: Paperclip  },
   { id: 'intelligence' as const, label: 'Intelligence', icon: Sparkles   },
 ];
 type StepId = typeof STEPS[number]['id'];
+
+type ImportTab = 'properties' | 'leases' | 'expenses';
 
 
 const SPLASH_KEY = 'valence-import-seen-v1';
@@ -150,7 +154,7 @@ interface FieldDef {
   docFormat?: string;      // shown in docs panel
 }
 
-const FIELD_DEFS: Record<'properties' | 'leases', FieldDef[]> = {
+const FIELD_DEFS: Record<ImportTab, FieldDef[]> = {
   properties: [
     { value: 'name',          label: 'Property Name',     required: true,  placeholder: 'e.g. Sunset Office Tower',       docFormat: 'Any text',           docExample: 'Sunset Office Tower' },
     { value: 'code',          label: 'Property Code',     required: true,  placeholder: 'e.g. APN-1234',                  docFormat: 'Unique text/number',  docExample: 'APN-1234', hint: 'Unique ID used to link leases (roll number, APN, PID)' },
@@ -192,6 +196,16 @@ const FIELD_DEFS: Record<'properties' | 'leases', FieldDef[]> = {
     { value: 'lateFeeGraceDays',label: 'Grace Period (days)', required: false, placeholder: 'e.g. 5',                      docFormat: 'Integer 0–90',        docExample: '5' },
     { value: 'lateFeeInterestPct', label: 'Monthly Interest (%)', required: false, placeholder: 'e.g. 1.5',               docFormat: 'Percent 0–100',       docExample: '1.5',        hint: 'Monthly interest on overdue balance' },
     { value: 'notes',           label: 'Notes',            required: false, placeholder: 'e.g. Month-to-month renewal',    docFormat: 'Any text',            docExample: 'Month-to-month renewal' },
+  ],
+  expenses: [
+    { value: 'propertyCode', label: 'Property Code', required: true,  placeholder: 'e.g. APN-1234',     docFormat: 'Must match existing property', docExample: 'APN-1234', hint: 'Must match an existing property code' },
+    { value: 'date',         label: 'Date',          required: true,  placeholder: 'e.g. 2026-01-15',   docFormat: 'YYYY-MM-DD',          docExample: '2026-01-15', hint: 'The expense date / period' },
+    { value: 'amount',       label: 'Amount',        required: true,  placeholder: 'e.g. 1200',         docFormat: 'Number (no commas)',  docExample: '1200' },
+    { value: 'category',     label: 'Category',      required: false, placeholder: 'e.g. UTILITIES',    docFormat: 'Enum (see values)',   docExample: 'UTILITIES',
+      enumValues: EXPENSE_CATEGORIES.map((c) => c.value),
+      hint: 'Defaults to OTHER if blank or unrecognized' },
+    { value: 'description',  label: 'Description',    required: false, placeholder: 'e.g. Q1 hydro bill', docFormat: 'Any text',           docExample: 'Q1 hydro bill' },
+    { value: 'dueDate',      label: 'Due Date',      required: false, placeholder: 'e.g. 2026-02-01',   docFormat: 'YYYY-MM-DD',          docExample: '2026-02-01' },
   ],
 };
 
@@ -241,9 +255,18 @@ const LEASE_ALIASES: Record<string, string> = {
   notes: 'notes', comments: 'notes', remarks: 'notes',
 };
 
-const TAB_ALIASES: Record<'properties' | 'leases', Record<string, string>> = { properties: PROP_ALIASES, leases: LEASE_ALIASES };
+const EXPENSE_ALIASES: Record<string, string> = {
+  propertycode: 'propertyCode', propcode: 'propertyCode', property: 'propertyCode',
+  date: 'date', expensedate: 'date', period: 'date', postingdate: 'date', transactiondate: 'date', paiddate: 'date',
+  amount: 'amount', cost: 'amount', total: 'amount', expense: 'amount', value: 'amount', paid: 'amount',
+  category: 'category', expensetype: 'category', glcode: 'category', account: 'category', expensecategory: 'category',
+  description: 'description', memo: 'description', details: 'description', vendor: 'description', payee: 'description',
+  duedate: 'dueDate', due: 'dueDate',
+};
 
-function autoSuggest(headers: string[], tab: 'properties' | 'leases'): Record<string, string> {
+const TAB_ALIASES: Record<ImportTab, Record<string, string>> = { properties: PROP_ALIASES, leases: LEASE_ALIASES, expenses: EXPENSE_ALIASES };
+
+function autoSuggest(headers: string[], tab: ImportTab): Record<string, string> {
   const aliases = TAB_ALIASES[tab];
   const fields  = FIELD_DEFS[tab];
   const mapping: Record<string, string> = {};
@@ -256,7 +279,7 @@ function autoSuggest(headers: string[], tab: 'properties' | 'leases'): Record<st
 }
 
 
-function DocsPanel({ tab }: { tab: 'properties' | 'leases' }) {
+function DocsPanel({ tab }: { tab: ImportTab }) {
   const [open, setOpen] = useState(false);
   const fields = FIELD_DEFS[tab];
 
@@ -398,7 +421,7 @@ function MissingFieldPrompt({ field, defaults, onDefaultsChange }: {
 function MappingView({
   tab, preview, mapping, defaults, autoMatched, onChange, onDefaultsChange, onBack, onImport, loading, error,
 }: {
-  tab: 'properties' | 'leases';
+  tab: ImportTab;
   preview: CsvPreview;
   mapping: Record<string, string>;
   defaults: Record<string, string>;
@@ -567,7 +590,7 @@ function CsvStep({
   result,
   onResult,
 }: {
-  tab: 'properties' | 'leases';
+  tab: ImportTab;
   result: ImportResult | null;
   onResult: (r: ImportResult) => void;
 }) {
@@ -966,12 +989,14 @@ function IntelligenceStep() {
 interface WizardState {
   properties: ImportResult | null;
   leases:     ImportResult | null;
+  expenses:   ImportResult | null;
   documents:  number;
 }
 
 const STEP_DESCRIPTIONS: Record<StepId, string> = {
   properties:   'Import your property portfolio from a CSV file',
   leases:       'Import lease agreements and link them to properties',
+  expenses:     'Import operating expenses and tag them by category',
   documents:    'Upload lease documents, insurance files, and permits',
   intelligence: 'Computing your portfolio health score and insights',
 };
@@ -980,7 +1005,7 @@ export default function ImportPage() {
   const hasSeen = localStorage.getItem(SPLASH_KEY) === '1';
   const [showWizard, setShowWizard] = useState(hasSeen);
   const [step,  setStep]  = useState(0);
-  const [state, setState] = useState<WizardState>({ properties: null, leases: null, documents: 0 });
+  const [state, setState] = useState<WizardState>({ properties: null, leases: null, expenses: null, documents: 0 });
 
   if (!showWizard) {
     return <SplashScreen onStart={() => setShowWizard(true)} />;
@@ -992,6 +1017,7 @@ export default function ImportPage() {
   const canContinue = (() => {
     if (current.id === 'properties') return state.properties !== null;
     if (current.id === 'leases')     return state.leases !== null;
+    if (current.id === 'expenses')   return state.expenses !== null;
     if (current.id === 'documents')  return true;
     return false;
   })();
@@ -1031,6 +1057,9 @@ export default function ImportPage() {
           )}
           {current.id === 'leases' && (
             <CsvStep tab="leases" result={state.leases} onResult={(r) => setState((s) => ({ ...s, leases: r }))} />
+          )}
+          {current.id === 'expenses' && (
+            <CsvStep tab="expenses" result={state.expenses} onResult={(r) => setState((s) => ({ ...s, expenses: r }))} />
           )}
           {current.id === 'documents' && (
             <DocumentsStep count={state.documents} onCount={(n) => setState((s) => ({ ...s, documents: n }))} />

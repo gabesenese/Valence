@@ -4,6 +4,7 @@ import { PLAN_LIMITS } from '../plans/plans.service';
 import { syncLeaseRevenueSchedule } from '../finance/revenue-schedule.service';
 import { computeRenewalRisk } from '../leases/leases.service';
 import type { Plan, PropertyType, LeaseType, LateFeeType } from '@prisma/client';
+import { EXPENSE_CATEGORY_VALUES } from '../finance/expense-categories';
 
 export interface ImportResult {
   created: number;
@@ -311,6 +312,55 @@ export async function importLeases(buffer: Buffer, plan: Plan, userId: string, c
         },
       });
       await syncLeaseRevenueSchedule(lease);
+
+      result.created++;
+    } catch (err) {
+      result.errors.push({ row: rowNum, message: err instanceof Error ? err.message : 'Unknown error' });
+      result.skipped++;
+    }
+  }
+
+  return result;
+}
+
+
+export async function importExpenses(buffer: Buffer, userId: string, columnMap?: ColumnMap, defaults?: FieldDefaults): Promise<ImportResult> {
+  const rows = parseRows(buffer);
+  const result: ImportResult = { created: 0, updated: 0, skipped: 0, errors: [] };
+
+  for (let i = 0; i < rows.length; i++) {
+    const rowNum = i + 2;
+    const row = (columnMap || defaults) ? applyColumnMap(rows[i], columnMap ?? {}, defaults) : rows[i];
+
+    try {
+      const { propertyCode, amount, date } = row;
+      if (!propertyCode) throw new Error('propertyCode is required');
+      if (!amount) throw new Error('amount is required');
+      if (!date) throw new Error('date is required (YYYY-MM-DD)');
+
+      const property = await prisma.property.findFirst({ where: { code: propertyCode.toUpperCase().trim(), ownerId: userId, deletedAt: null } });
+      if (!property) throw new Error(`Property with code "${propertyCode}" not found`);
+
+      const parsedAmount = parseFloat(amount);
+      if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) throw new Error('amount must be a positive number');
+
+      const periodStart = new Date(toDate(date, 'date'));
+      const rawCategory = row.category ? row.category.toUpperCase().trim().replace(/\s+/g, '_') : 'OTHER';
+      const category = EXPENSE_CATEGORY_VALUES.includes(rawCategory) ? rawCategory : 'OTHER';
+
+      await prisma.financialRecord.create({
+        data: {
+          propertyId: property.id,
+          type: 'EXPENSE',
+          status: 'PENDING',
+          amount: parsedAmount,
+          periodStart,
+          periodEnd: periodStart,
+          category,
+          ...(row.dueDate && { dueDate: new Date(toDate(row.dueDate, 'dueDate')) }),
+          ...(row.description && { description: row.description.trim() }),
+        },
+      });
 
       result.created++;
     } catch (err) {
