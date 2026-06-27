@@ -26,15 +26,20 @@ const STATUS_VARIANT: Record<string, 'success' | 'warning' | 'danger' | 'neutral
 const MONTH_ABBR = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 // Trend bars are labelled "MMM yyyy" (e.g. "Jun 2026"); map a clicked label to the
-// month's [from, to] range so the records table can filter by periodStart.
+// month's [from, to] range so the records table can filter by periodStart. The range
+// must be built on UTC month boundaries to match how the server buckets the trend
+// (date-fns startOfMonth/endOfMonth run in UTC on the server). Building it in browser-
+// local time shifts the window, dropping records dated to the month boundary — e.g. an
+// expense at 2026-01-01T00:00Z falls off the front of a UTC-5 "January" range, so it
+// shows in the chart's bar but vanishes from the filtered table.
 function monthLabelToRange(label: string): { from: string; to: string } | null {
   const [mon, yearStr] = label.split(' ');
   const m = MONTH_ABBR.indexOf(mon);
   const year = Number(yearStr);
   if (m < 0 || !Number.isFinite(year)) return null;
   return {
-    from: new Date(year, m, 1, 0, 0, 0, 0).toISOString(),
-    to: new Date(year, m + 1, 0, 23, 59, 59, 999).toISOString(),
+    from: new Date(Date.UTC(year, m, 1, 0, 0, 0, 0)).toISOString(),
+    to: new Date(Date.UTC(year, m + 1, 0, 23, 59, 59, 999)).toISOString(),
   };
 }
 
