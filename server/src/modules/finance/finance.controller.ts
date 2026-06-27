@@ -51,3 +51,9 @@ export async function expenseBreakdown(req: Request, res: Response, next: NextFu
     sendSuccess(res, await service.getExpenseBreakdown(req.query as never, req.user!.id));
   } catch (err) { next(err); }
 }
+
+export async function expenseTrend(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    sendSuccess(res, await service.getExpenseTrend(req.query as never, req.user!.id));
+  } catch (err) { next(err); }
+}
