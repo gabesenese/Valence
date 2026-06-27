@@ -7,7 +7,7 @@ import {
 import { analyticsService } from '@/services/analytics.service';
 import { Card, CardHeader, CardTitle, CardBody } from '@/components/ui/Card';
 import { PageLoader } from '@/components/ui/Spinner';
-import { compactCurrency, formatCurrency } from '@/utils/format';
+import { compactCurrency, formatCurrency, monthLabelToRange } from '@/utils/format';
 import { useChartColors } from '@/hooks/useChartColors';
 
 export default function AnalyticsPage() {
@@ -16,6 +16,11 @@ export default function AnalyticsPage() {
   const PIE_COLORS = [c.success, c.brand, c.warning, c.danger];
   const filterLeasesByStatus = (status: string) =>
     navigate(`/leases?status=${encodeURIComponent(status)}`);
+  const drillToFinanceMonth = (label?: string) => {
+    const range = label ? monthLabelToRange(label) : null;
+    if (!range) { navigate('/finance'); return; }
+    navigate(`/finance?period=${encodeURIComponent(range.period)}&from=${encodeURIComponent(range.from)}&to=${encodeURIComponent(range.to)}`);
+  };
   const { data: trend, isLoading } = useQuery({
     queryKey: ['analytics', 'revenue-trend', 12],
     queryFn: () => analyticsService.getRevenueTrend(12),
@@ -45,12 +50,15 @@ export default function AnalyticsPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Net Income Trend</CardTitle>
+              <div className="flex flex-col gap-0.5">
+                <CardTitle>Net Income Trend</CardTitle>
+                <span className="text-[10px] text-slate-600">Click a month to see its records</span>
+              </div>
               <span className="text-[10px] text-slate-500">12 months</span>
             </CardHeader>
             <CardBody className="pt-2 pb-3 px-3">
               <ResponsiveContainer width="100%" height={200}>
-                <AreaChart data={trend ?? []} margin={{ top: 5, right: 4, left: -20, bottom: 0 }}>
+                <AreaChart data={trend ?? []} margin={{ top: 5, right: 4, left: -20, bottom: 0 }} className="cursor-pointer" onClick={(s) => drillToFinanceMonth(s?.activeLabel)}>
                   <defs>
                     <linearGradient id="netGrad" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%"  stopColor={c.brand} stopOpacity={0.3} />
