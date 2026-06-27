@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { PageLoader } from '@/components/ui/Spinner';
 import { formatRelative } from '@/utils/format';
+import { MappingCenter } from './MappingCenter';
 
 export default function IntegrationsPage() {
   const qc = useQueryClient();
@@ -68,6 +69,10 @@ export default function IntegrationsPage() {
         <div className="rounded-xl border border-danger/20 bg-danger/[0.06] px-5 py-3 text-sm text-danger">
           Couldn't connect {errorReturn}. Please try again.
         </div>
+      )}
+
+      {providers?.some((p) => p.id === 'quickbooks' && p.connection?.status === 'CONNECTED') && (
+        <MappingCenter provider="quickbooks" />
       )}
 
       <div className="rounded-xl border border-brand-500/20 bg-brand-600/[0.04] px-5 py-4">
