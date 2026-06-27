@@ -46,6 +46,7 @@
     "pdf-parse": "^1.1.1",
     "pg": "^8.21.0",
     "qrcode": "^1.5.4",
+    "read-excel-file": "^9.2.0",
     "resend": "^6.12.4",
     "speakeasy": "^2.0.0",
     "stripe": "^22.2.0",

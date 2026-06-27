@@ -1,4 +1,12 @@
+import { readSheet } from 'read-excel-file/browser';
 import { api } from './api';
+
+function detectDelimiter(headerLine: string): string {
+  const counts: Record<string, number> = { ',': 0, '\t': 0, ';': 0, '|': 0 };
+  for (const ch of headerLine) if (ch in counts) counts[ch] += 1;
+  const best = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
+  return best && best[1] > 0 ? best[0] : ',';
+}
 
 export interface ImportResult {
   created: number;
@@ -15,6 +23,15 @@ export interface CsvPreview {
 }
 
 export async function parseCsvPreview(file: File): Promise<CsvPreview> {
+  if (file.name.toLowerCase().endsWith('.xlsx')) {
+    const rows = await readSheet(file);
+    const headers = (rows[0] ?? []).map((c) => String(c ?? '').trim()).filter(Boolean);
+    const first = rows[1] ?? [];
+    const sample: Record<string, string> = {};
+    headers.forEach((h, i) => { sample[h] = first[i] == null ? '' : String(first[i]); });
+    return { headers, sample };
+  }
+
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -22,13 +39,14 @@ export async function parseCsvPreview(file: File): Promise<CsvPreview> {
       const lines = text.split(/\r?\n/);
       const headerLine = (lines[0] ?? '').replace(/^﻿/, ''); // strip BOM
       const dataLine   = lines[1] ?? '';
+      const delim      = detectDelimiter(headerLine);
 
       const parseLine = (line: string): string[] => {
         const out: string[] = [];
         let cur = '', inQ = false;
         for (const ch of line) {
           if (ch === '"') { inQ = !inQ; }
-          else if (ch === ',' && !inQ) { out.push(cur.trim()); cur = ''; }
+          else if (ch === delim && !inQ) { out.push(cur.trim()); cur = ''; }
           else { cur += ch; }
         }
         out.push(cur.trim());

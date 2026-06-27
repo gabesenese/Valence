@@ -8,10 +8,11 @@ const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB
   fileFilter: (_req, file, cb) => {
-    if (file.mimetype === 'text/csv' || file.originalname.endsWith('.csv')) {
+    const name = file.originalname.toLowerCase();
+    if (/\.(csv|txt|tsv|xlsx)$/.test(name) || file.mimetype === 'text/csv') {
       cb(null, true);
     } else {
-      cb(new Error('Only CSV files are accepted'));
+      cb(new Error('Only CSV, TXT, or Excel (.xlsx) files are accepted'));
     }
   },
 });
