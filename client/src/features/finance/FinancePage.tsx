@@ -5,7 +5,7 @@ import {
 } from 'recharts';
 import { FileText, Users } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { financeService } from '@/services/finance.service';
+import { financeService, recordSourceLabel } from '@/services/finance.service';
 import { RevenueAtRisk } from './RevenueAtRisk';
 import { BudgetCard } from './BudgetCard';
 import { Card, CardHeader, CardTitle, CardBody } from '@/components/ui/Card';
@@ -25,13 +25,6 @@ const STATUS_VARIANT: Record<string, 'success' | 'warning' | 'danger' | 'neutral
 
 const MONTH_ABBR = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
-// Trend bars are labelled "MMM yyyy" (e.g. "Jun 2026"); map a clicked label to the
-// month's [from, to] range so the records table can filter by periodStart. The range
-// must be built on UTC month boundaries to match how the server buckets the trend
-// (date-fns startOfMonth/endOfMonth run in UTC on the server). Building it in browser-
-// local time shifts the window, dropping records dated to the month boundary — e.g. an
-// expense at 2026-01-01T00:00Z falls off the front of a UTC-5 "January" range, so it
-// shows in the chart's bar but vanishes from the filtered table.
 function monthLabelToRange(label: string): { from: string; to: string } | null {
   const [mon, yearStr] = label.split(' ');
   const m = MONTH_ABBR.indexOf(mon);
@@ -231,7 +224,16 @@ export default function FinancePage() {
                     <td className="px-4 py-3">
                       <Badge variant={r.type === 'REVENUE' ? 'success' : 'danger'}>{r.type}</Badge>
                     </td>
-                    <td className="px-4 py-3 text-sm text-slate-400">{categoryLabel(r.category)}</td>
+                    <td className="px-4 py-3 text-sm text-slate-400">
+                      <span className="inline-flex items-center gap-1.5">
+                        {categoryLabel(r.category)}
+                        {recordSourceLabel(r) && (
+                          <span className="rounded border border-brand-500/25 bg-brand-500/10 px-1.5 py-0.5 text-[10px] font-medium text-brand-300">
+                            {recordSourceLabel(r)}
+                          </span>
+                        )}
+                      </span>
+                    </td>
                     <td className="px-4 py-3 text-sm font-semibold tabular-nums">
                       <span className={r.type === 'EXPENSE' ? 'text-danger/90' : 'text-success'}>
                         {r.type === 'EXPENSE' ? '-' : '+'}{formatCurrency(r.amount)}
