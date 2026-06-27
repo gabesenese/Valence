@@ -4,6 +4,7 @@ import multer from 'multer';
 import { insightEngine, riskEvaluator } from './ai.service';
 import { extractLeaseFromPDF } from './lease-extractor.service';
 import { verifyLeaseDocument } from './lease-verification.service';
+import { applyExtractedLease } from './lease-apply.service';
 import { extractPropertyFromPDF } from './property-extractor.service';
 import { generateExecutiveBrief } from './executive-brief.service';
 import { computeHealthScore } from './health-score.service';
@@ -55,6 +56,13 @@ router.post('/leases/:id/verify-document', planGate('ESSENTIALS'), meterUsage('C
     if (!req.file) return next(new Error('No file uploaded'));
     const result = await verifyLeaseDocument(req.params.id, req.user!.id, req.file.buffer);
     sendSuccess(res, result);
+  } catch (e) { next(e); }
+});
+
+router.post('/leases/:id/apply-extracted', planGate('ESSENTIALS'), requireOwner('lease'), async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const fields = (req.body?.fields ?? {}) as Record<string, unknown>;
+    sendSuccess(res, await applyExtractedLease(req.params.id, req.user!.id, fields));
   } catch (e) { next(e); }
 });
 
