@@ -1,7 +1,7 @@
 import { Prisma, type Plan } from '@prisma/client';
 import { prisma } from '../../infrastructure/database';
 import { NotFoundError, ForbiddenError, ValidationError } from '../../utils/errors';
-import { CONNECTORS, isKnownConnector, getConnector, planAllowsIntegrations } from './connector';
+import { CONNECTORS, isKnownConnector, getConnector, planAllowsIntegrations, type Connector } from './connector';
 
 export async function listIntegrations(ownerId: string) {
   const connections = await prisma.integration.findMany({ where: { ownerId } });
@@ -65,7 +65,12 @@ export async function syncIntegration(ownerId: string, plan: Plan, provider: str
     throw new ForbiddenError('Syncing an integration requires the Professional plan.');
   }
 
-  // Every sync is recorded as a SyncRun so the UI can show a transparent timeline.
+  return runSync(ownerId, provider, impl);
+}
+
+// Core sync (used by manual sync and the scheduled cron). Every run is recorded
+// as a SyncRun so the UI can show a transparent timeline.
+async function runSync(ownerId: string, provider: string, impl: Connector) {
   const run = await prisma.syncRun.create({ data: { ownerId, provider, status: 'running' } });
   try {
     const summary = await impl.sync(ownerId);
@@ -86,6 +91,24 @@ export async function syncIntegration(ownerId: string, plan: Plan, provider: str
     });
     throw e;
   }
+}
+
+// Scheduled sync over all live connections whose provider has a registered
+// connector. Per-integration failures are isolated (recorded in the SyncRun).
+export async function runScheduledSyncs(): Promise<{ synced: number }> {
+  const connections = await prisma.integration.findMany({ where: { status: 'CONNECTED' } });
+  let synced = 0;
+  for (const conn of connections) {
+    const impl = getConnector(conn.provider);
+    if (!impl) continue;
+    try {
+      await runSync(conn.ownerId, conn.provider, impl);
+      synced += 1;
+    } catch {
+      /* failure already captured in its SyncRun */
+    }
+  }
+  return { synced };
 }
 
 export async function getSyncHistory(ownerId: string, provider: string, limit = 20) {
