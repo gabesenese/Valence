@@ -28,6 +28,7 @@ router.get('/expense-breakdown', validate(expenseBreakdownQuerySchema, 'query'),
 router.get('/expense-trend', validate(expenseTrendQuerySchema, 'query'), controller.expenseTrend);
 router.get('/tenant-profitability', controller.tenantProfitability);
 router.get('/forecast', validate(forecastQuerySchema, 'query'), controller.forecast);
+router.get('/late-fee-forecast', controller.lateFeeForecast);
 router.get('/budgets', controller.budgets);
 router.put('/budgets', authorize('ANALYST'), validate(upsertBudgetSchema), controller.setBudget);
 router.delete('/budgets/:id', authorize('ANALYST'), controller.removeBudget);

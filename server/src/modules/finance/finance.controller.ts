@@ -2,6 +2,7 @@ import type { Request, Response, NextFunction } from 'express';
 import * as service from './finance.service';
 import { getRevenueAtRisk } from './revenue-at-risk.service';
 import { getTenantProfitability } from './tenant-profitability.service';
+import { getLateFeeForecast } from './late-fee-forecast.service';
 import { getBudgets, upsertBudget, deleteBudget } from './budget.service';
 import { sendSuccess, sendPaginated } from '../../utils/response';
 
@@ -69,6 +70,12 @@ export async function tenantProfitability(req: Request, res: Response, next: Nex
 export async function forecast(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     sendSuccess(res, await service.getNoiForecast(req.query as never, req.user!.id));
+  } catch (err) { next(err); }
+}
+
+export async function lateFeeForecast(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    sendSuccess(res, await getLateFeeForecast(req.user!.id));
   } catch (err) { next(err); }
 }
 
