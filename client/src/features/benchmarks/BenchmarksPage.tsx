@@ -1,9 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { Trophy, AlertTriangle, ChevronRight } from 'lucide-react';
+import { Trophy, AlertTriangle, ChevronRight, Scale } from 'lucide-react';
 import { analyticsService, type PropertyScorecard } from '@/services/analytics.service';
 import { compactCurrency } from '@/utils/format';
 import { PageLoader } from '@/components/ui/Spinner';
+
+const marginPct = (noi: number, revenue: number) => (revenue > 0 ? Math.round((noi / revenue) * 100) : 0);
 
 type CardEntry = Pick<PropertyScorecard, 'id' | 'name' | 'code' | 'totalUnits'> & {
   metricLabel: string;
@@ -48,6 +50,11 @@ export default function PortfolioPerformancePage() {
   if (!data) return null;
 
   const { highlights, outliers, properties } = data;
+
+  const portfolioRevenue  = properties.reduce((s, p) => s + p.monthlyRevenue, 0);
+  const portfolioExpenses = properties.reduce((s, p) => s + p.monthlyExpenses, 0);
+  const portfolioNOI      = portfolioRevenue - portfolioExpenses;
+  const byNOI = [...properties].sort((a, b) => b.noi - a.noi);
 
   const topCandidates: (CardEntry | null)[] = [
     highlights.bestRevenue
@@ -128,6 +135,59 @@ export default function PortfolioPerformancePage() {
         </div>
 
       </div>
+
+      {properties.length > 0 && (
+        <div className="rounded-xl border border-surface-400/30 overflow-hidden">
+          <div className="flex items-center justify-between gap-2 px-4 py-3 border-b border-surface-400/40 bg-surface-200/30">
+            <div className="flex items-center gap-2">
+              <Scale className="h-3.5 w-3.5 text-brand-400" />
+              <span className="text-xs font-semibold text-fg">Profitability by Property</span>
+            </div>
+            <div className="flex items-center gap-4 text-right">
+              <div>
+                <p className="text-xs font-bold tabular-nums text-success">{compactCurrency(portfolioRevenue)}</p>
+                <p className="text-[10px] text-slate-600 uppercase tracking-wider">Revenue</p>
+              </div>
+              <div>
+                <p className="text-xs font-bold tabular-nums text-danger">{compactCurrency(portfolioExpenses)}</p>
+                <p className="text-[10px] text-slate-600 uppercase tracking-wider">Expenses</p>
+              </div>
+              <div>
+                <p className={`text-xs font-bold tabular-nums ${portfolioNOI >= 0 ? 'text-success' : 'text-danger'}`}>
+                  {compactCurrency(portfolioNOI)} <span className="text-slate-600">({marginPct(portfolioNOI, portfolioRevenue)}%)</span>
+                </p>
+                <p className="text-[10px] text-slate-600 uppercase tracking-wider">NOI · Margin</p>
+              </div>
+            </div>
+          </div>
+          <div className="divide-y divide-surface-400/30">
+            {byNOI.map((p, i) => (
+              <button
+                key={p.id}
+                onClick={() => navigate(`/properties/${p.id}`)}
+                className="flex w-full items-center gap-4 px-4 py-3 hover:bg-surface-200/40 transition-colors text-left group"
+              >
+                <span className="w-4 shrink-0 text-[11px] font-bold tabular-nums text-slate-600">#{i + 1}</span>
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-300 text-[10px] font-bold text-slate-400">
+                  {p.code.slice(0, 3)}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-slate-200 group-hover:text-brand-300 transition-colors truncate">{p.name}</p>
+                  <p className="text-xs text-slate-600 truncate">
+                    {compactCurrency(p.monthlyRevenue)} rev · {compactCurrency(p.monthlyExpenses)} exp
+                  </p>
+                </div>
+                <div className="text-right shrink-0">
+                  <p className={`text-sm font-bold tabular-nums ${p.noi >= 0 ? 'text-success' : 'text-danger'}`}>{compactCurrency(p.noi)}</p>
+                  <p className="text-[10px] text-slate-600 uppercase tracking-wider">{marginPct(p.noi, p.monthlyRevenue)}% margin</p>
+                </div>
+                <ChevronRight className="h-3.5 w-3.5 text-slate-700 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
