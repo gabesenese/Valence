@@ -15,6 +15,32 @@ export const CHANGE_TYPE_LABEL: Record<ChangeType, string> = {
 // Newest first. User-facing release notes — keep the language plain and benefit-led.
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    date: 'June 26, 2026',
+    title: 'Connect QuickBooks and sync your expenses automatically',
+    changes: [
+      { type: 'added', text: 'Connect QuickBooks and pull your expenses straight into Valence — no more re-typing them by hand.' },
+      { type: 'added', text: 'Every imported expense is matched to the right property automatically — by property code or name, or the Class, Location or Customer it carries in QuickBooks.' },
+      { type: 'added', text: "A Mapping Center for anything that can't be matched automatically. Map a QuickBooks tag to a property once and every future sync resolves it for you — no guessing." },
+      { type: 'added', text: 'Synced expenses are labelled with their source in Financial Records, so you always know what came from QuickBooks versus what you entered.' },
+      { type: 'added', text: 'A sync history and health view for each connection — success rate, last sync, next scheduled sync and records imported — so you can trust the numbers.' },
+      { type: 'improved', text: 'After a sync, Valence tells you exactly how many expenses still need a property and takes you straight to the Mapping Center.' },
+      { type: 'added', text: 'Integrations now has its own place in the sidebar, with QuickBooks ready to connect on the Professional plan.' },
+    ],
+  },
+  {
+    date: 'June 26, 2026',
+    title: 'See where every dollar goes',
+    changes: [
+      { type: 'added', text: 'Expenses by Category — a clear breakdown of where your money goes, with click-to-filter on the records below.' },
+      { type: 'added', text: 'Expense Trends — see which cost categories are rising or falling month over month.' },
+      { type: 'added', text: 'Tenant Profitability — rent against allocated operating costs per tenant, with margins, so you can see who is actually profitable.' },
+      { type: 'added', text: 'NOI Forecast — projected net operating income for the months ahead as leases roll off.' },
+      { type: 'added', text: 'Budgets — set a monthly budget per category and track actual against budget at a glance.' },
+      { type: 'added', text: 'Import expenses and financial data from Excel (.xlsx) and text files, not just CSV.' },
+      { type: 'fixed', text: "Clicking a month on the Revenue vs Expenses chart now shows that month's expenses as well as its revenue." },
+    ],
+  },
+  {
     date: 'June 25, 2026',
     title: 'Documents, late fees, and integrations',
     changes: [
