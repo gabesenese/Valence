@@ -74,6 +74,9 @@ export interface PropertyScorecard {
   noi:             number;
   revenuePerUnit:  number;
   noiPerUnit:      number;
+  totalSqft:       number;
+  costPerSqft:     number;
+  noiPerSqft:      number;
   revenueDeltaPct: number | null;
   openAlerts:      number;
   criticalAlerts:  number;

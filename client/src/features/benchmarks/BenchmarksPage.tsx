@@ -174,7 +174,7 @@ export default function PortfolioPerformancePage() {
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-slate-200 group-hover:text-brand-300 transition-colors truncate">{p.name}</p>
                   <p className="text-xs text-slate-600 truncate">
-                    {compactCurrency(p.monthlyRevenue)} rev · {compactCurrency(p.monthlyExpenses)} exp
+                    {compactCurrency(p.monthlyRevenue)} rev · {compactCurrency(p.monthlyExpenses)} exp{p.costPerSqft > 0 ? ` · $${p.costPerSqft.toFixed(2)}/ft² cost` : ''}
                   </p>
                 </div>
                 <div className="text-right shrink-0">
