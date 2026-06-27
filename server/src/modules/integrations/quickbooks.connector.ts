@@ -3,24 +3,29 @@ import { prisma } from '../../infrastructure/database';
 import { env } from '../../config/env';
 import { encryptSecret, decryptSecret } from './security';
 import { mapAccountNameToCategory } from '../finance/expense-categories';
-import { resolveInternalId, recordRef } from './external-ref.service';
+import { resolveInternalId } from './external-ref.service';
+import { loadAttributionContext, resolveProperty, materializeExpense, type ExpensePayload, type SourceTags } from './attribution.service';
 import type { Connector, ConnectInput, SyncSummary } from './connector';
 
 // Minimal shapes of the QBO entities we read.
+interface QboRef { name?: string; value?: string }
 interface QboLine {
   Id?: string;
   Amount?: number;
   DetailType?: string;
   Description?: string;
   AccountBasedExpenseLineDetail?: {
-    AccountRef?: { name?: string; value?: string };
-    ClassRef?: { name?: string; value?: string };
+    AccountRef?: QboRef;
+    ClassRef?: QboRef;
+    CustomerRef?: QboRef;
   };
 }
 interface QboTxn {
   Id: string;
   TxnDate?: string;
-  EntityRef?: { name?: string };
+  EntityRef?: QboRef;
+  ClassRef?: QboRef;
+  DepartmentRef?: QboRef;
   Line?: QboLine[];
 }
 
@@ -93,22 +98,11 @@ class QuickBooksConnector implements Connector {
 
   async sync(ownerId: string): Promise<SyncSummary> {
     const { accessToken, realmId } = await this.validAccessToken(ownerId);
+    const ctx = await loadAttributionContext(ownerId, 'quickbooks');
 
-    // Properties keyed by name + code so a QBO Class/Location can be matched to a
-    // Valence property (expenses are attributed to whichever they tag).
-    const properties = await prisma.property.findMany({
-      where: { ownerId, deletedAt: null },
-      select: { id: true, code: true, name: true },
-    });
-    const propertyByTag = new Map<string, string>();
-    for (const p of properties) {
-      propertyByTag.set(p.name.toLowerCase().trim(), p.id);
-      propertyByTag.set(p.code.toLowerCase().trim(), p.id);
-    }
-
-    const summary: SyncSummary = { entities: { financial_record: { created: 0, updated: 0, skipped: 0 } }, errors: [] };
+    const summary: SyncSummary = { entities: { financial_record: { created: 0, updated: 0, skipped: 0, unmapped: 0 } }, errors: [] };
     const counts = summary.entities.financial_record;
-    const unmatchedClasses = new Set<string>();
+    const unmappedTags = new Set<string>();
 
     for (const entity of ['Purchase', 'Bill'] as const) {
       const rows = await this.query(realmId, accessToken, `select * from ${entity} maxresults 1000`, entity);
@@ -116,47 +110,66 @@ class QuickBooksConnector implements Connector {
         const lines = (txn.Line ?? []).filter((l) => l.DetailType === 'AccountBasedExpenseLineDetail');
         for (const line of lines) {
           const detail = line.AccountBasedExpenseLineDetail;
-          const className = detail?.ClassRef?.name?.toLowerCase().trim();
-          const propertyId = className ? propertyByTag.get(className) : undefined;
-          if (!propertyId) {
-            counts.skipped += 1;
-            if (className) unmatchedClasses.add(detail!.ClassRef!.name!);
-            continue;
-          }
           const amount = Number(line.Amount ?? 0);
           if (!Number.isFinite(amount) || amount <= 0) { counts.skipped += 1; continue; }
 
           const externalId = `${entity}:${txn.Id}:${line.Id ?? '0'}`;
           const periodStart = txn.TxnDate ? new Date(txn.TxnDate) : new Date();
-          const data = {
-            propertyId,
-            type: 'EXPENSE' as const,
-            status: 'RECONCILED' as const,
+          const payload: ExpensePayload = {
             amount,
-            periodStart,
-            periodEnd: periodStart,
+            periodStart: periodStart.toISOString(),
             category: mapAccountNameToCategory(detail?.AccountRef?.name),
             description: line.Description?.trim() || txn.EntityRef?.name?.trim() || `QuickBooks ${entity}`,
-            metadata: { source: 'quickbooks', entity, qboId: txn.Id } as Prisma.InputJsonValue,
+            source: 'quickbooks',
+            entity,
+            qboId: txn.Id,
+          };
+          const tags: SourceTags = {
+            class: detail?.ClassRef?.name ?? txn.ClassRef?.name ?? null,
+            location: txn.DepartmentRef?.name ?? null,
+            customer: detail?.CustomerRef?.name ?? null,
           };
 
+          // External ID: already imported → update its fields (keeps its property).
           const existingId = await resolveInternalId(ownerId, 'quickbooks', 'financial_record', externalId);
           if (existingId) {
-            await prisma.financialRecord.update({ where: { id: existingId }, data });
+            await prisma.financialRecord.update({
+              where: { id: existingId },
+              data: {
+                amount: payload.amount,
+                periodStart,
+                periodEnd: periodStart,
+                category: payload.category,
+                description: payload.description,
+              },
+            });
             counts.updated += 1;
-          } else {
-            const created = await prisma.financialRecord.create({ data });
-            await recordRef(ownerId, 'quickbooks', 'financial_record', externalId, created.id);
+            continue;
+          }
+
+          const propertyId = resolveProperty(tags, ctx);
+          if (propertyId) {
+            await materializeExpense(ownerId, 'quickbooks', externalId, payload, propertyId);
             counts.created += 1;
+          } else {
+            // No confident property match → park in the Needs Mapping queue.
+            await prisma.pendingSyncRecord.upsert({
+              where:  { ownerId_provider_externalId: { ownerId, provider: 'quickbooks', externalId } },
+              create: { ownerId, provider: 'quickbooks', entityType: 'financial_record', externalId, payload: payload as unknown as Prisma.InputJsonValue, sourceTags: tags as unknown as Prisma.InputJsonValue },
+              update: { payload: payload as unknown as Prisma.InputJsonValue, sourceTags: tags as unknown as Prisma.InputJsonValue },
+            });
+            counts.unmapped += 1;
+            for (const t of [tags.class, tags.location, tags.customer]) if (t) unmappedTags.add(t);
           }
         }
       }
     }
 
-    if (unmatchedClasses.size > 0) {
+    if (counts.unmapped > 0) {
+      const tagList = [...unmappedTags].slice(0, 5).join(', ');
       summary.errors.push({
         entity: 'financial_record',
-        message: `${counts.skipped} expense line(s) skipped — no Valence property matches QuickBooks class/location: ${[...unmatchedClasses].slice(0, 5).join(', ')}`,
+        message: `${counts.unmapped} expense line(s) need property mapping${tagList ? ` (e.g. ${tagList})` : ' (no class/location/customer tag)'} — resolve them in the Mapping Center.`,
       });
     }
     return summary;
