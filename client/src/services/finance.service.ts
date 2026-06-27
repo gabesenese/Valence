@@ -15,8 +15,16 @@ export interface FinancialRecord {
   description?: string;
   category?: string;
   discrepancy?: number;
+  metadata?: { source?: string } | null;
   property: { id: string; name: string; code: string };
   lease?: { id: string; leaseNumber: string };
+}
+
+const SOURCE_LABEL: Record<string, string> = { quickbooks: 'QuickBooks' };
+
+export function recordSourceLabel(record: { metadata?: { source?: string } | null }): string | null {
+  const source = record.metadata?.source;
+  return source ? SOURCE_LABEL[source] ?? null : null;
 }
 
 export interface FinancialSummary {
