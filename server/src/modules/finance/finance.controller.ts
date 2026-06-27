@@ -2,6 +2,7 @@ import type { Request, Response, NextFunction } from 'express';
 import * as service from './finance.service';
 import { getRevenueAtRisk } from './revenue-at-risk.service';
 import { getTenantProfitability } from './tenant-profitability.service';
+import { getBudgets, upsertBudget, deleteBudget } from './budget.service';
 import { sendSuccess, sendPaginated } from '../../utils/response';
 
 export async function list(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -68,5 +69,23 @@ export async function tenantProfitability(req: Request, res: Response, next: Nex
 export async function forecast(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     sendSuccess(res, await service.getNoiForecast(req.query as never, req.user!.id));
+  } catch (err) { next(err); }
+}
+
+export async function budgets(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    sendSuccess(res, await getBudgets(req.user!.id));
+  } catch (err) { next(err); }
+}
+
+export async function setBudget(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    sendSuccess(res, await upsertBudget(req.user!.id, req.body));
+  } catch (err) { next(err); }
+}
+
+export async function removeBudget(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    sendSuccess(res, await deleteBudget(req.user!.id, req.params.id));
   } catch (err) { next(err); }
 }

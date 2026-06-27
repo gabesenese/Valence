@@ -7,6 +7,7 @@ import { FileText, Users } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { financeService } from '@/services/finance.service';
 import { RevenueAtRisk } from './RevenueAtRisk';
+import { BudgetCard } from './BudgetCard';
 import { Card, CardHeader, CardTitle, CardBody } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { PageLoader } from '@/components/ui/Spinner';
@@ -448,6 +449,8 @@ export default function FinancePage() {
           </div>
         </div>
       )}
+
+      <BudgetCard />
 
     </div>
   );
