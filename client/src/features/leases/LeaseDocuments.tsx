@@ -1,10 +1,11 @@
 import { useRef, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Upload, Trash2, FileText } from 'lucide-react';
+import { Upload, Trash2, FileText, ShieldCheck } from 'lucide-react';
 import { documentsService, type DocumentType } from '@/services/documents.service';
 import { Card, CardHeader, CardTitle, CardBody } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
+import LeaseVerifyModal from './LeaseVerifyModal';
 
 const DOC_TYPE_LABEL: Record<DocumentType, string> = {
   LEASE:      'Lease Agreement',
@@ -28,6 +29,7 @@ export function LeaseDocuments({ leaseId }: { leaseId: string }) {
   const qc = useQueryClient();
   const inputRef = useRef<HTMLInputElement>(null);
   const [docType, setDocType] = useState<DocumentType>('LEASE');
+  const [verifyOpen, setVerifyOpen] = useState(false);
 
   const { data: docs = [], isLoading } = useQuery({
     queryKey: ['documents', { leaseId }],
@@ -57,6 +59,9 @@ export function LeaseDocuments({ leaseId }: { leaseId: string }) {
       <CardHeader>
         <CardTitle>Documents</CardTitle>
         <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => setVerifyOpen(true)}>
+            <ShieldCheck className="h-3.5 w-3.5" /> Verify
+          </Button>
           <Select
             value={docType}
             onChange={(v) => setDocType(v as DocumentType)}
@@ -101,6 +106,7 @@ export function LeaseDocuments({ leaseId }: { leaseId: string }) {
         )}
         {upload.isError && <p className="mt-2 text-xs text-danger">Upload failed — files must be under 25 MB.</p>}
       </CardBody>
+      <LeaseVerifyModal open={verifyOpen} onClose={() => setVerifyOpen(false)} leaseId={leaseId} />
     </Card>
   );
 }
