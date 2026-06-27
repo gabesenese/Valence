@@ -935,3 +935,34 @@ model ExternalRef {
   @@index([ownerId, provider, entityType])
   @@map("external_refs")
 }
+
+model IntegrationMapping {
+  id          String   @id @default(uuid())
+  ownerId     String   @map("owner_id")
+  provider    String
+  sourceType  String   @map("source_type")
+  sourceValue String   @map("source_value")
+  propertyId  String   @map("property_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@unique([ownerId, provider, sourceType, sourceValue])
+  @@index([ownerId, provider])
+  @@map("integration_mappings")
+}
+
+model PendingSyncRecord {
+  id         String   @id @default(uuid())
+  ownerId    String   @map("owner_id")
+  provider   String
+  entityType String   @map("entity_type")
+  externalId String   @map("external_id")
+  payload    Json
+  sourceTags Json     @map("source_tags")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  @@unique([ownerId, provider, externalId])
+  @@index([ownerId, provider])
+  @@map("pending_sync_records")
+}

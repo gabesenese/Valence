@@ -133,7 +133,12 @@ function SyncHistory({ provider }: { provider: string }) {
         const meta = RUN_STATUS[run.status] ?? RUN_STATUS.running;
         const Icon = meta.icon;
         const counts = run.summary
-          ? Object.entries(run.summary.entities).map(([k, v]) => `${v.created + v.updated} ${k}`).join(' · ')
+          ? Object.values(run.summary.entities).map((v) => {
+              const parts = [`${v.created + v.updated} imported`];
+              if (v.unmapped) parts.push(`${v.unmapped} to map`);
+              if (v.skipped) parts.push(`${v.skipped} skipped`);
+              return parts.join(' · ');
+            }).join(' · ')
           : null;
         return (
           <div key={run.id} className="flex items-start gap-2.5 py-2">

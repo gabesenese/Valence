@@ -32,7 +32,7 @@ export interface SyncRun {
   startedAt: string;
   finishedAt: string | null;
   summary: {
-    entities: Record<string, { created: number; updated: number; skipped: number }>;
+    entities: Record<string, { created: number; updated: number; skipped: number; unmapped: number }>;
     errors: { entity?: string; message: string }[];
   } | null;
   error: string | null;

@@ -28,7 +28,7 @@ export interface ConnectorInfo {
 // Per-entity counts from a sync — generic so any category fits (PM: properties/
 // leases/tenants/payments; accounting: expenses/categories; etc.).
 export interface SyncSummary {
-  entities: Record<string, { created: number; updated: number; skipped: number }>;
+  entities: Record<string, { created: number; updated: number; skipped: number; unmapped: number }>;
   errors:   { entity?: string; message: string }[];
 }
 
