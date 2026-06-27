@@ -7,11 +7,18 @@ import { Button } from '@/components/ui/Button';
 
 const SOURCE_LABEL: Record<string, string> = { class: 'Class', location: 'Location', customer: 'Customer' };
 
+const SOURCE_HELP: Record<string, string> = {
+  class: 'A QuickBooks Class — often used to track a building or portfolio.',
+  location: 'A QuickBooks Location or Department — usually a building or site.',
+  customer: 'A QuickBooks Customer — usually the tenant or property the expense was billed to.',
+};
+
 function AssignRow({
-  label, sublabel, properties, action, busy, onSubmit,
+  label, sublabel, hint, properties, action, busy, onSubmit,
 }: {
   label: string;
   sublabel: string;
+  hint?: string;
   properties: MappingQueue['properties'];
   action: string;
   busy: boolean;
@@ -21,7 +28,7 @@ function AssignRow({
   return (
     <div className="flex flex-col gap-2 rounded-lg border border-surface-400/30 px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between">
       <div className="min-w-0">
-        <p className="text-sm text-slate-200 truncate">{label}</p>
+        <p className="text-sm text-slate-200 truncate" title={hint}>{label}</p>
         <p className="text-[11px] text-slate-500">{sublabel}</p>
       </div>
       <div className="flex items-center gap-2 shrink-0">
@@ -74,14 +81,20 @@ export function MappingCenter({ provider }: { provider: string }) {
         <span className="text-xs text-slate-500">{data.pendingTotal} expense{data.pendingTotal !== 1 ? 's' : ''} need a property</span>
       </CardHeader>
       <CardBody className="flex flex-col gap-2">
-        <p className="text-[11px] text-slate-600">
-          Map each QuickBooks tag to a Valence property. Mappings are saved, so future syncs resolve automatically.
-        </p>
+        <div className="rounded-lg border border-brand-500/15 bg-brand-600/[0.04] px-3 py-2.5">
+          <p className="text-xs leading-relaxed text-slate-300">
+            QuickBooks tags each expense with a <span className="font-medium text-slate-200">Class</span>,{' '}
+            <span className="font-medium text-slate-200">Location</span>, or{' '}
+            <span className="font-medium text-slate-200">Customer</span>. Tell Valence which property each tag
+            belongs to and we'll attribute that spend — then remember it, so every future sync maps automatically.
+          </p>
+        </div>
         {data.entities.map((e) => (
           <AssignRow
             key={`${e.sourceType}:${e.value}`}
             label={`${SOURCE_LABEL[e.sourceType] ?? e.sourceType}: ${e.value}`}
             sublabel={`${e.count} expense${e.count !== 1 ? 's' : ''}`}
+            hint={SOURCE_HELP[e.sourceType]}
             properties={data.properties}
             action="Map"
             busy={busy}
