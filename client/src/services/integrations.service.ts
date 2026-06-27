@@ -25,6 +25,13 @@ export interface IntegrationProvider {
   } | null;
 }
 
+export interface MappingQueue {
+  entities: { sourceType: string; value: string; count: number }[];
+  untaggedCount: number;
+  pendingTotal: number;
+  properties: { id: string; code: string; name: string }[];
+}
+
 export interface SyncRun {
   id: string;
   provider: string;
@@ -47,6 +54,15 @@ export const integrationsService = {
 
   authorize: (provider: string): Promise<{ url: string }> =>
     api.get(`/integrations/${provider}/authorize`).then(extractData<{ url: string }>),
+
+  mappingQueue: (provider: string): Promise<MappingQueue> =>
+    api.get(`/integrations/${provider}/mapping-queue`).then(extractData<MappingQueue>),
+
+  createMapping: (provider: string, body: { sourceType: string; sourceValue: string; propertyId: string }): Promise<{ resolved: number }> =>
+    api.post(`/integrations/${provider}/mappings`, body).then(extractData<{ resolved: number }>),
+
+  assignPending: (provider: string, body: { propertyId: string; untaggedOnly?: boolean; sourceType?: string; sourceValue?: string }): Promise<{ resolved: number }> =>
+    api.post(`/integrations/${provider}/assign`, body).then(extractData<{ resolved: number }>),
 
   connect: (provider: string): Promise<unknown> =>
     api.post(`/integrations/${provider}/connect`).then(extractData),
