@@ -1,7 +1,7 @@
 import { Prisma } from '@prisma/client';
 import { prisma } from '../../infrastructure/database';
 import { NotFoundError } from '../../utils/errors';
-import { subMonths, startOfMonth, endOfMonth, parseISO, format } from 'date-fns';
+import { subMonths, addMonths, startOfMonth, endOfMonth, parseISO, format } from 'date-fns';
 import { recordChange } from '../changes/changes.service';
 import type {
   CreateFinancialRecordInput,
@@ -10,6 +10,7 @@ import type {
   RevenueTrendQuery,
   ExpenseBreakdownQuery,
   ExpenseTrendQuery,
+  ForecastQuery,
 } from './finance.schemas';
 
 export async function getFinancialRecords(query: FinanceQuery, userId: string) {
@@ -263,4 +264,51 @@ export async function getExpenseTrend(query: ExpenseTrendQuery, userId: string) 
     .sort((a, b) => b.latest - a.latest);
 
   return { months: buckets.map((b) => b.label), categories };
+}
+
+// Forward NOI projection: each future month's revenue is the run-rate of active
+// leases still within term that month (so it steps down as leases expire),
+// minus a flat expense run-rate (trailing 3-month average).
+export async function getNoiForecast(query: ForecastQuery, userId: string) {
+  const months = query.months ?? 6;
+  const now = new Date();
+
+  const expStart = startOfMonth(subMonths(now, 2));
+  const expEnd = endOfMonth(now);
+
+  const [expAgg, leases] = await Promise.all([
+    prisma.financialRecord.aggregate({
+      where: {
+        property: { ownerId: userId, deletedAt: null },
+        type: 'EXPENSE',
+        status: { not: 'VOID' },
+        periodStart: { gte: expStart, lte: expEnd },
+      },
+      _sum: { amount: true },
+    }),
+    prisma.lease.findMany({
+      where: { status: 'ACTIVE', deletedAt: null, property: { ownerId: userId, deletedAt: null } },
+      select: { baseRent: true, endDate: true },
+    }),
+  ]);
+
+  const monthlyExpense = Math.round(Number(expAgg._sum.amount ?? 0) / 3);
+
+  const points = Array.from({ length: months }, (_, idx) => {
+    const monthDate = addMonths(now, idx + 1);
+    const monthStart = startOfMonth(monthDate);
+    const revenue = leases.reduce((sum, l) => sum + (l.endDate >= monthStart ? Number(l.baseRent) : 0), 0);
+    return {
+      month: format(monthDate, 'MMM yyyy'),
+      revenue: Math.round(revenue),
+      expenses: monthlyExpense,
+      net: Math.round(revenue - monthlyExpense),
+    };
+  });
+
+  const projectedAnnualNet = points.length
+    ? Math.round((points.reduce((s, p) => s + p.net, 0) / points.length) * 12)
+    : 0;
+
+  return { monthlyExpense, points, projectedAnnualNet };
 }
