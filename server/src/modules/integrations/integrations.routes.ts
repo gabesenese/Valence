@@ -24,6 +24,10 @@ router.post('/:provider/sync', async (req: Request, res: Response, next: NextFun
   try { sendSuccess(res, await service.syncIntegration(req.user!.id, effectivePlan(req), req.params.provider)); } catch (e) { next(e); }
 });
 
+router.get('/:provider/history', async (req: Request, res: Response, next: NextFunction) => {
+  try { sendSuccess(res, await service.getSyncHistory(req.user!.id, req.params.provider)); } catch (e) { next(e); }
+});
+
 router.delete('/:provider', async (req: Request, res: Response, next: NextFunction) => {
   try { sendSuccess(res, await service.disconnectIntegration(req.user!.id, req.params.provider)); } catch (e) { next(e); }
 });

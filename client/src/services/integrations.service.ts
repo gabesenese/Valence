@@ -25,9 +25,25 @@ export interface IntegrationProvider {
   } | null;
 }
 
+export interface SyncRun {
+  id: string;
+  provider: string;
+  status: 'running' | 'success' | 'partial' | 'error';
+  startedAt: string;
+  finishedAt: string | null;
+  summary: {
+    entities: Record<string, { created: number; updated: number; skipped: number }>;
+    errors: { entity?: string; message: string }[];
+  } | null;
+  error: string | null;
+}
+
 export const integrationsService = {
   list: (): Promise<IntegrationProvider[]> =>
     api.get('/integrations').then(extractData<IntegrationProvider[]>),
+
+  history: (provider: string): Promise<SyncRun[]> =>
+    api.get(`/integrations/${provider}/history`).then(extractData<SyncRun[]>),
 
   connect: (provider: string): Promise<unknown> =>
     api.post(`/integrations/${provider}/connect`).then(extractData),

@@ -65,10 +65,33 @@ export async function syncIntegration(ownerId: string, plan: Plan, provider: str
     throw new ForbiddenError('Syncing an integration requires the Professional plan.');
   }
 
-  const result = await impl.sync(ownerId);
-  await prisma.integration.update({
-    where: { ownerId_provider: { ownerId, provider } },
-    data:  { lastSyncedAt: new Date(), status: 'CONNECTED' },
+  // Every sync is recorded as a SyncRun so the UI can show a transparent timeline.
+  const run = await prisma.syncRun.create({ data: { ownerId, provider, status: 'running' } });
+  try {
+    const summary = await impl.sync(ownerId);
+    const status = summary.errors.length > 0 ? 'partial' : 'success';
+    await prisma.syncRun.update({
+      where: { id: run.id },
+      data: { status, finishedAt: new Date(), summary: summary as unknown as Prisma.InputJsonValue },
+    });
+    await prisma.integration.update({
+      where: { ownerId_provider: { ownerId, provider } },
+      data:  { lastSyncedAt: new Date(), status: 'CONNECTED' },
+    });
+    return { runId: run.id, summary };
+  } catch (e) {
+    await prisma.syncRun.update({
+      where: { id: run.id },
+      data: { status: 'error', finishedAt: new Date(), error: e instanceof Error ? e.message : 'Unknown error' },
+    });
+    throw e;
+  }
+}
+
+export async function getSyncHistory(ownerId: string, provider: string, limit = 20) {
+  return prisma.syncRun.findMany({
+    where: { ownerId, provider },
+    orderBy: { startedAt: 'desc' },
+    take: limit,
   });
-  return result;
 }

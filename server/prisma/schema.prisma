@@ -906,3 +906,32 @@ model Budget {
   @@index([ownerId])
   @@map("budgets")
 }
+
+model SyncRun {
+  id         String    @id @default(uuid())
+  ownerId    String    @map("owner_id")
+  provider   String
+  status     String
+  startedAt  DateTime  @default(now()) @map("started_at")
+  finishedAt DateTime? @map("finished_at")
+  summary    Json?
+  error      String?
+
+  @@index([ownerId, provider, startedAt])
+  @@map("sync_runs")
+}
+
+model ExternalRef {
+  id         String   @id @default(uuid())
+  ownerId    String   @map("owner_id")
+  provider   String
+  entityType String   @map("entity_type")
+  externalId String   @map("external_id")
+  internalId String   @map("internal_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  @@unique([ownerId, provider, entityType, externalId])
+  @@index([ownerId, provider, entityType])
+  @@map("external_refs")
+}
