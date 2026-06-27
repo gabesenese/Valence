@@ -27,13 +27,20 @@ export default function IntegrationsPage() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['integrations'] }),
   });
 
+  const [syncPrompt, setSyncPrompt] = useState<{ provider: string; unmapped: number } | null>(null);
+
   const sync = useMutation({
     mutationFn: (id: string) => integrationsService.sync(id),
-    onSuccess: (_d, id) => {
+    onSuccess: (result, id) => {
       qc.invalidateQueries({ queryKey: ['integrations'] });
       qc.invalidateQueries({ queryKey: ['integration-history', id] });
+      qc.invalidateQueries({ queryKey: ['mapping-queue', id] });
+      const unmapped = Object.values(result.summary?.entities ?? {}).reduce((sum, e) => sum + e.unmapped, 0);
+      setSyncPrompt(unmapped > 0 ? { provider: id, unmapped } : null);
     },
   });
+
+  const scrollToMapping = () => document.getElementById('mapping-center')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
   const authorize = useMutation({
     mutationFn: (id: string) => integrationsService.authorize(id),
@@ -71,8 +78,24 @@ export default function IntegrationsPage() {
         </div>
       )}
 
+      {syncPrompt && (
+        <div className="flex flex-col gap-2 rounded-xl border border-warning/25 bg-warning/[0.06] px-5 py-3 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-sm text-warning">
+            Sync complete — {syncPrompt.unmapped} expense{syncPrompt.unmapped !== 1 ? 's' : ''} need a property before they appear in Finance.
+          </p>
+          <button
+            onClick={scrollToMapping}
+            className="shrink-0 self-start rounded-lg bg-warning/15 px-3 py-1.5 text-xs font-semibold text-warning transition-colors hover:bg-warning/25 sm:self-auto"
+          >
+            Map them now ↑
+          </button>
+        </div>
+      )}
+
       {providers?.some((p) => p.id === 'quickbooks' && p.connection?.status === 'CONNECTED') && (
-        <MappingCenter provider="quickbooks" />
+        <div id="mapping-center" className="scroll-mt-4">
+          <MappingCenter provider="quickbooks" />
+        </div>
       )}
 
       <div className="rounded-xl border border-brand-500/20 bg-brand-600/[0.04] px-5 py-4">
