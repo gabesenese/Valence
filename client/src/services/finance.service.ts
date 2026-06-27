@@ -73,6 +73,22 @@ export interface NoiForecast {
   points: { month: string; revenue: number; expenses: number; net: number }[];
 }
 
+export interface BudgetVarianceItem {
+  id:          string;
+  category:    string;
+  propertyId:  string | null;
+  budget:      number;
+  actual:      number;
+  variance:    number;
+  variancePct: number | null;
+  status:      'over' | 'under' | 'on_track';
+}
+
+export interface BudgetReport {
+  month: string;
+  items: BudgetVarianceItem[];
+}
+
 export interface RevenueRisk {
   leaseId: string;
   propertyId: string;
@@ -123,4 +139,13 @@ export const financeService = {
 
   getNoiForecast: (params: { months?: number } = {}): Promise<NoiForecast> =>
     api.get('/finance/forecast', { params }).then(extractData<NoiForecast>),
+
+  getBudgets: (): Promise<BudgetReport> =>
+    api.get('/finance/budgets').then(extractData<BudgetReport>),
+
+  upsertBudget: (input: { category: string; propertyId?: string | null; monthlyAmount: number }): Promise<unknown> =>
+    api.put('/finance/budgets', input).then(extractData<unknown>),
+
+  deleteBudget: (id: string): Promise<unknown> =>
+    api.delete(`/finance/budgets/${id}`).then(extractData<unknown>),
 };

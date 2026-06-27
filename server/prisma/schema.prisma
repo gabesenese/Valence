@@ -892,3 +892,17 @@ model ChangeEvent {
   @@index([ownerUserId, createdAt])
   @@map("change_events")
 }
+
+model Budget {
+  id            String   @id @default(uuid())
+  ownerId       String   @map("owner_id")
+  propertyId    String?  @map("property_id")
+  category      String
+  monthlyAmount Decimal  @map("monthly_amount") @db.Decimal(15, 2)
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@unique([ownerId, propertyId, category])
+  @@index([ownerId])
+  @@map("budgets")
+}

@@ -54,6 +54,12 @@ export const forecastQuerySchema = z.object({
   months: z.coerce.number().int().min(1).max(24).default(6),
 });
 
+export const upsertBudgetSchema = z.object({
+  category: z.string().min(1),
+  propertyId: z.string().uuid().nullable().optional(),
+  monthlyAmount: z.number().nonnegative(),
+});
+
 export type CreateFinancialRecordInput = z.infer<typeof createFinancialRecordSchema>;
 export type UpdateFinancialRecordInput = z.infer<typeof updateFinancialRecordSchema>;
 export type FinanceQuery = z.infer<typeof financeQuerySchema>;

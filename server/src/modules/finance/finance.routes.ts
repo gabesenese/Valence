@@ -13,6 +13,7 @@ import {
   expenseBreakdownQuerySchema,
   expenseTrendQuerySchema,
   forecastQuerySchema,
+  upsertBudgetSchema,
 } from './finance.schemas';
 
 const router = Router();
@@ -27,6 +28,9 @@ router.get('/expense-breakdown', validate(expenseBreakdownQuerySchema, 'query'),
 router.get('/expense-trend', validate(expenseTrendQuerySchema, 'query'), controller.expenseTrend);
 router.get('/tenant-profitability', controller.tenantProfitability);
 router.get('/forecast', validate(forecastQuerySchema, 'query'), controller.forecast);
+router.get('/budgets', controller.budgets);
+router.put('/budgets', authorize('ANALYST'), validate(upsertBudgetSchema), controller.setBudget);
+router.delete('/budgets/:id', authorize('ANALYST'), controller.removeBudget);
 router.get('/', validate(financeQuerySchema, 'query'), controller.list);
 router.get('/:id', requireOwner('financialRecord'), controller.show);
 router.post('/', authorize('ANALYST'), validate(createFinancialRecordSchema), controller.create);
