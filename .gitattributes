@@ -1,0 +1,6 @@
+# Changelog entries are always prepended at the top of the CHANGELOG array,
+# so parallel feature branches always collide on those same lines. The default
+# 3-way merge interleaves the two insertions and produces broken TypeScript.
+# `merge=union` keeps BOTH sides' complete entry blocks instead, which stays
+# valid because each entry is a self-contained `{ ... },` object.
+client/src/features/settings/changelog.ts merge=union
