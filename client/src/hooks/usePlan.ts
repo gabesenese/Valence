@@ -33,6 +33,7 @@ const FEATURE_MIN_PLAN: Record<string, Plan> = {
   analytics:             'ESSENTIALS',
   alerts:                'ESSENTIALS',
   work_queue:            'PROFESSIONAL',
+  integrations:          'PROFESSIONAL',
   tasks:                 'PROFESSIONAL',
   crm:                   'PROFESSIONAL',
   documents:             'PROFESSIONAL',
