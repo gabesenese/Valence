@@ -27,6 +27,7 @@ export const financeQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(20),
   type: z.nativeEnum(FinancialRecordType).optional(),
   status: z.nativeEnum(FinancialRecordStatus).optional(),
+  category: z.string().optional(),
   propertyId: z.string().uuid().optional(),
   leaseId: z.string().uuid().optional(),
   from: z.string().datetime().optional(),

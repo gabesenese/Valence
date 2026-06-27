@@ -12,6 +12,7 @@ import { Badge } from '@/components/ui/Badge';
 import { PageLoader } from '@/components/ui/Spinner';
 import { formatCurrency, formatDate, compactCurrency } from '@/utils/format';
 import { useChartColors } from '@/hooks/useChartColors';
+import { EXPENSE_CATEGORIES, categoryLabel } from '@valence/shared';
 
 const STATUS_VARIANT: Record<string, 'success' | 'warning' | 'danger' | 'neutral' | 'info'> = {
   RECONCILED: 'success',
@@ -45,18 +46,27 @@ export default function FinancePage() {
   const periodLabel = searchParams.get('period') ?? undefined;
   const from = searchParams.get('from') ?? undefined;
   const to = searchParams.get('to') ?? undefined;
+  const category = searchParams.get('category') ?? undefined;
+
+  function patchParams(patch: Record<string, string | undefined>) {
+    setRecordsPage(1);
+    const next = new URLSearchParams(searchParams);
+    for (const [key, value] of Object.entries(patch)) {
+      if (value) next.set(key, value);
+      else next.delete(key);
+    }
+    setSearchParams(next);
+  }
 
   function selectMonth(label: string | undefined) {
     if (!label) return;
     const range = monthLabelToRange(label);
     if (!range) return;
-    setRecordsPage(1);
-    setSearchParams({ period: label, from: range.from, to: range.to });
+    patchParams({ period: label, from: range.from, to: range.to });
   }
 
   function clearPeriod() {
-    setRecordsPage(1);
-    setSearchParams({});
+    patchParams({ period: undefined, from: undefined, to: undefined });
   }
 
   const { data: summary, isLoading: summaryLoading } = useQuery({
@@ -70,8 +80,8 @@ export default function FinancePage() {
   });
 
   const { data: records } = useQuery({
-    queryKey: ['finance', 'records', recordsPage, from, to],
-    queryFn: () => financeService.getRecords({ limit: 20, page: recordsPage, from, to }),
+    queryKey: ['finance', 'records', recordsPage, from, to, category],
+    queryFn: () => financeService.getRecords({ limit: 20, page: recordsPage, from, to, category }),
     placeholderData: (prev) => prev,
   });
 
@@ -130,13 +140,26 @@ export default function FinancePage() {
                 </span>
               )}
             </div>
-            <span className="text-xs text-slate-600">{records?.meta.total ?? 0} total</span>
+            <div className="flex items-center gap-3">
+              <select
+                value={category ?? ''}
+                onChange={(e) => patchParams({ category: e.target.value || undefined })}
+                className="rounded-lg border border-surface-400/40 bg-surface-200 px-2.5 py-1 text-xs text-slate-300 outline-none focus:border-brand-500/50 cursor-pointer"
+                aria-label="Filter by expense category"
+              >
+                <option value="">All categories</option>
+                {EXPENSE_CATEGORIES.map((c) => (
+                  <option key={c.value} value={c.value}>{c.label}</option>
+                ))}
+              </select>
+              <span className="text-xs text-slate-600">{records?.meta.total ?? 0} total</span>
+            </div>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-surface-400/40">
-                  {['Property', 'Type', 'Amount', 'Period', 'Due Date', 'Status'].map(h => (
+                  {['Property', 'Type', 'Category', 'Amount', 'Period', 'Due Date', 'Status'].map(h => (
                     <th key={h} className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400">
                       {h}
                     </th>
@@ -150,6 +173,7 @@ export default function FinancePage() {
                     <td className="px-4 py-3">
                       <Badge variant={r.type === 'REVENUE' ? 'success' : 'danger'}>{r.type}</Badge>
                     </td>
+                    <td className="px-4 py-3 text-sm text-slate-400">{categoryLabel(r.category)}</td>
                     <td className="px-4 py-3 text-sm font-semibold tabular-nums">
                       <span className={r.type === 'EXPENSE' ? 'text-danger/90' : 'text-success'}>
                         {r.type === 'EXPENSE' ? '-' : '+'}{formatCurrency(r.amount)}
