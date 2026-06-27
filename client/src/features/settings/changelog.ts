@@ -16,6 +16,14 @@ export const CHANGE_TYPE_LABEL: Record<ChangeType, string> = {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: 'June 26, 2026',
+    title: 'Import late fees in bulk',
+    changes: [
+      { type: 'added', text: 'The lease import template now includes late fee rules — type (flat or % of rent), grace period, and monthly interest — so you can onboard your fee structure in bulk instead of editing each lease.' },
+      { type: 'improved', text: 'The import column mapper auto-detects common late-fee column names from your spreadsheet.' },
+    ],
+  },
+  {
+    date: 'June 26, 2026',
     title: 'Drill into your revenue trends',
     changes: [
       { type: 'added', text: 'Click any month on the Revenue Trend (dashboard) or Net Income Trend (analytics) charts to jump straight to that month’s financial records.' },
