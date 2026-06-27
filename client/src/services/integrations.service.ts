@@ -45,6 +45,9 @@ export const integrationsService = {
   history: (provider: string): Promise<SyncRun[]> =>
     api.get(`/integrations/${provider}/history`).then(extractData<SyncRun[]>),
 
+  authorize: (provider: string): Promise<{ url: string }> =>
+    api.get(`/integrations/${provider}/authorize`).then(extractData<{ url: string }>),
+
   connect: (provider: string): Promise<unknown> =>
     api.post(`/integrations/${provider}/connect`).then(extractData),
 
