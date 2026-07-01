@@ -231,8 +231,8 @@ function OrgSummary({ members }: { members: TeamMember[] }) {
 
   return (
     <Card>
-      <CardBody className="py-5">
-        <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+      <CardBody className="py-4">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-4">
             <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-brand-600/20 border border-brand-500/20">
               <Building2 className="h-6 w-6 text-brand-400" />
@@ -373,7 +373,7 @@ function InvitationsSection({ invites, canManage }: { invites: Invite[]; canMana
           const link = `${window.location.origin}/auth/invite/${invite.token}`;
           const cfg = ROLE_CONFIG[invite.role];
           return (
-            <div key={invite.id} className="flex items-center gap-3 border-b border-surface-400/20 px-5 py-3.5 last:border-0">
+            <div key={invite.id} className="flex items-center gap-3 border-b border-surface-400/20 px-5 py-3 last:border-0">
               <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-surface-300/60">
                 <Mail className="h-3.5 w-3.5 text-slate-400" />
               </div>
@@ -648,7 +648,7 @@ function MemberRow({ member, currentUserId, onOpen }: {
   return (
     <button
       onClick={onOpen}
-      className={`group flex w-full items-center gap-4 border-b border-surface-400/30 px-5 py-4 text-left transition-colors last:border-0 hover:bg-surface-200/30 ${!member.isActive ? 'opacity-50' : ''}`}
+      className={`group flex w-full items-center gap-4 border-b border-surface-400/30 px-5 py-3 text-left transition-colors last:border-0 hover:bg-surface-200/30 ${!member.isActive ? 'opacity-50' : ''}`}
     >
       <MemberAvatar member={member} />
       <div className="min-w-0 flex-1">
@@ -806,7 +806,7 @@ function BillingCard({ memberCount, canManage }: { memberCount: number; canManag
   };
 
   return (
-    <div className="max-w-2xl">
+    <div>
       <Card>
         <CardHeader>
           <div className="flex items-center gap-2">
@@ -1148,7 +1148,7 @@ function DangerZone({ members }: { members: TeamMember[] }) {
   };
 
   return (
-    <div className="max-w-2xl">
+    <div>
       <button
         onClick={() => setExpanded((v) => !v)}
         className="flex w-full items-center gap-2 rounded-xl border border-surface-400/40 bg-surface-100 px-4 py-3 text-left transition-colors hover:bg-surface-200/40"
@@ -1237,28 +1237,30 @@ export default function OrganizationPage() {
 
       <OrgSummary members={members} />
 
-      {canManage && (
-        <TodaysWork members={members} invites={invites} onOpenMember={setSelectedMemberId} />
-      )}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 lg:items-start">
+        <div className="flex flex-col gap-6 lg:col-span-2">
+          {canManage && (
+            <TodaysWork members={members} invites={invites} onOpenMember={setSelectedMemberId} />
+          )}
+          <InvitationsSection invites={invites} canManage={canManage} />
+          <TeamSection
+            members={members}
+            isLoading={isLoading}
+            currentUserId={currentUser?.id ?? ''}
+            canInvite={canManage}
+            onInvite={() => setShowInvite(true)}
+            onOpenMember={setSelectedMemberId}
+          />
+        </div>
 
-      <InvitationsSection invites={invites} canManage={canManage} />
-
-      <TeamSection
-        members={members}
-        isLoading={isLoading}
-        currentUserId={currentUser?.id ?? ''}
-        canInvite={canManage}
-        onInvite={() => setShowInvite(true)}
-        onOpenMember={setSelectedMemberId}
-      />
-
-      <RecentActivity />
-
-      {canManage && <BillingCard memberCount={activeCount} canManage={canManage} />}
+        <div className="flex flex-col gap-6">
+          <RecentActivity />
+          {canManage && <BillingCard memberCount={activeCount} canManage={canManage} />}
+          {isOwner && <DangerZone members={members} />}
+        </div>
+      </div>
 
       <OrgSettingsCard />
-
-      {isOwner && <DangerZone members={members} />}
 
       <MemberWorkspace
         member={selectedMember}
