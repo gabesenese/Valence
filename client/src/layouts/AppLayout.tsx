@@ -177,7 +177,7 @@ export function AppLayout() {
         )}
       >
         <div className={cn('flex h-14 items-center border-b border-surface-400/40 px-4', isCollapsed && 'justify-center px-0')}>
-          <div className="flex flex-1 items-center gap-2.5">
+          <div className={cn('flex items-center gap-2.5', !isCollapsed && 'flex-1')}>
             <Logo className="h-8 w-5 shrink-0" />
             {!isCollapsed && (
               <span className="text-sm font-bold tracking-tight text-fg">Valence</span>
