@@ -1,4 +1,5 @@
 import { startOfMonth, endOfMonth, subMonths } from 'date-fns';
+import { RenewalRisk } from '@prisma/client';
 import { prisma } from '../../infrastructure/database';
 
 export interface TenantProfitability {
@@ -9,6 +10,10 @@ export interface TenantProfitability {
   allocatedCost:  number;
   net:            number;
   marginPct:      number;
+  nextLeaseEnd:   string | null;
+  daysToExpiry:   number | null;
+  renewalRisk:    RenewalRisk | null;
+  leasedSqft:     number | null;
 }
 
 export interface TenantProfitabilityReport {
@@ -50,6 +55,8 @@ export async function getTenantProfitability(userId: string): Promise<TenantProf
         baseRent: true,
         sqft: true,
         propertyId: true,
+        endDate: true,
+        renewalRisk: true,
         tenant: { select: { id: true, name: true } },
       },
     }),
@@ -66,7 +73,10 @@ export async function getTenantProfitability(userId: string): Promise<TenantProf
     else leasesByProperty.set(lease.propertyId, [lease]);
   }
 
-  type Accum = { tenantId: string; tenantName: string; leaseCount: number; monthlyRent: number; allocatedCost: number };
+  type Accum = {
+    tenantId: string; tenantName: string; leaseCount: number; monthlyRent: number; allocatedCost: number;
+    nextLeaseEnd: Date | null; renewalRisk: RenewalRisk | null; leasedSqft: number;
+  };
   const perTenant = new Map<string, Accum>();
   const bases = new Set<'sqft' | 'equal'>();
 
@@ -81,11 +91,17 @@ export async function getTenantProfitability(userId: string): Promise<TenantProf
     propertyLeases.forEach((lease, i) => {
       const allocatedCost = totalWeight > 0 ? monthlyExpense * (weights[i] / totalWeight) : 0;
       const rent = Number(lease.baseRent);
+      const sqft = lease.sqft != null ? Number(lease.sqft) : 0;
       const existing = perTenant.get(lease.tenant.id);
       if (existing) {
         existing.leaseCount += 1;
         existing.monthlyRent += rent;
         existing.allocatedCost += allocatedCost;
+        existing.leasedSqft += sqft;
+        if (existing.nextLeaseEnd == null || lease.endDate < existing.nextLeaseEnd) {
+          existing.nextLeaseEnd = lease.endDate;
+          existing.renewalRisk = lease.renewalRisk;
+        }
       } else {
         perTenant.set(lease.tenant.id, {
           tenantId: lease.tenant.id,
@@ -93,6 +109,9 @@ export async function getTenantProfitability(userId: string): Promise<TenantProf
           leaseCount: 1,
           monthlyRent: rent,
           allocatedCost,
+          nextLeaseEnd: lease.endDate,
+          renewalRisk: lease.renewalRisk,
+          leasedSqft: sqft,
         });
       }
     });
@@ -102,6 +121,7 @@ export async function getTenantProfitability(userId: string): Promise<TenantProf
     .map((t) => {
       const allocatedCost = Math.round(t.allocatedCost);
       const net = Math.round(t.monthlyRent - t.allocatedCost);
+      const daysToExpiry = t.nextLeaseEnd ? Math.round((t.nextLeaseEnd.getTime() - now.getTime()) / 86400000) : null;
       return {
         tenantId: t.tenantId,
         tenantName: t.tenantName,
@@ -110,6 +130,10 @@ export async function getTenantProfitability(userId: string): Promise<TenantProf
         allocatedCost,
         net,
         marginPct: t.monthlyRent > 0 ? Math.round((net / t.monthlyRent) * 100) : 0,
+        nextLeaseEnd: t.nextLeaseEnd ? t.nextLeaseEnd.toISOString() : null,
+        daysToExpiry,
+        renewalRisk: t.renewalRisk,
+        leasedSqft: t.leasedSqft > 0 ? Math.round(t.leasedSqft) : null,
       };
     })
     .sort((a, b) => b.net - a.net);

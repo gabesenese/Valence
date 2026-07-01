@@ -15,6 +15,19 @@ export const CHANGE_TYPE_LABEL: Record<ChangeType, string> = {
 // Newest first. User-facing release notes — keep the language plain and benefit-led.
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    date: 'June 30, 2026',
+    title: 'Finance now tells you what to do, not just what happened',
+    changes: [
+      { type: 'added', text: 'A new Finance Overview that reads your portfolio for you: an executive health score, the risks that need attention, and a ranked list of what to do today — each with the dollars at stake.' },
+      { type: 'added', text: 'Finance is now organized around the question each page answers — Overview (how healthy am I?), Forecast (what’s about to happen?), Expenses (where is money leaking?), Profitability (who makes me money?), Ledger (what needs attention today?) and Budgets (what limits have I set?).' },
+      { type: 'added', text: 'A Forecast that shows where your NOI is heading if nothing changes, the leases driving it, and the exact renewals that protect it — apply an action and watch the projected outcome update live.' },
+      { type: 'added', text: 'Tenant Profitability with a Portfolio Dependence view: see who creates value, your margin leaders, and how much of your NOI rides on your top few tenants.' },
+      { type: 'added', text: 'Expense intelligence that surfaces your largest costs, flags categories running above their usual level, and quantifies how much you could save each year.' },
+      { type: 'added', text: 'Work gets done in place: renewals, collections, flagged transactions and late-fee policies each open a focused workspace with a recommendation already prepared — resolve it and the page updates itself.' },
+      { type: 'improved', text: 'Every metric now carries context and a way to drill in — trends versus last month, and one click from a portfolio number down to the leases, tenants and records behind it.' },
+    ],
+  },
+  {
     date: 'June 27, 2026',
     title: 'Smarter leases and late-fee revenue',
     changes: [

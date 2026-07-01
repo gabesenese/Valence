@@ -28,6 +28,7 @@ export const financeQuerySchema = z.object({
   type: z.nativeEnum(FinancialRecordType).optional(),
   status: z.nativeEnum(FinancialRecordStatus).optional(),
   category: z.string().optional(),
+  source: z.string().optional(),
   propertyId: z.string().uuid().optional(),
   leaseId: z.string().uuid().optional(),
   from: z.string().datetime().optional(),
@@ -52,6 +53,14 @@ export const expenseTrendQuerySchema = z.object({
 
 export const forecastQuerySchema = z.object({
   months: z.coerce.number().int().min(1).max(24).default(6),
+});
+
+export const applyLateFeePolicySchema = z.object({
+  feeType: z.enum(['PERCENTAGE', 'FLAT']),
+  percent: z.number().min(0).max(100).nullable().optional(),
+  flat: z.number().nonnegative().nullable().optional(),
+  graceDays: z.number().int().min(0).max(90),
+  leaseIds: z.array(z.string().uuid()).optional(),
 });
 
 export const upsertBudgetSchema = z.object({
