@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link, useNavigate } from 'react-router-dom';
 import { CheckCircle2, Circle, ChevronRight, X, Building2, FileText, Users } from 'lucide-react';
@@ -38,6 +38,12 @@ export function OnboardingCard() {
     queryFn: onboardingService.getProgress,
     staleTime: 30_000,
   });
+
+  useEffect(() => {
+    if (data?.allDone && localStorage.getItem(COMPLETE_KEY) !== '1') {
+      localStorage.setItem(COMPLETE_KEY, '1');
+    }
+  }, [data?.allDone, COMPLETE_KEY]);
 
   if (dismissed || completeSeen || !data) return null;
 

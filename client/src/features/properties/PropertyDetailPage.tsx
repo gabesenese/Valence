@@ -274,7 +274,13 @@ export default function PropertyDetailPage() {
                             onClick={() => {
                               progressMutation.mutate(alert.id);
                               const leaseId = alert.leaseId ?? alert.lease?.id;
-                              navigate(leaseId ? `/leases/${leaseId}` : '/alerts');
+                              navigate(
+                                leaseId
+                                  ? `/leases/${leaseId}`
+                                  : alert.propertyId
+                                    ? `/properties/${alert.propertyId}`
+                                    : '/alerts',
+                              );
                             }}
                             className="inline-flex items-center gap-1 rounded-full bg-brand-600/20 border border-brand-500/25 px-2.5 py-1 text-[11px] font-medium text-brand-300 hover:bg-brand-600/35 hover:border-brand-500/40 transition-all"
                           >
