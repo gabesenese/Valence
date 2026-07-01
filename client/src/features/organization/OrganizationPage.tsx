@@ -19,11 +19,11 @@ import { useAuthStore } from '@/state/auth.store';
 import { authService } from '@/services/auth.service';
 import { usePlan } from '@/hooks/usePlan';
 import { Card, CardHeader, CardTitle, CardBody } from '@/components/ui/Card';
-import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Select } from '@/components/ui/Select';
 import { WorkspaceShell, WorkspaceSection, type WorkspaceMeta } from '@/components/ui/WorkspaceShell';
+import { TodaysWork as WorkInbox, type WorkItem } from '@/components/ui/TodaysWork';
 
 
 const INDUSTRY_OPTIONS = [
@@ -231,7 +231,7 @@ function OrgSummary({ members }: { members: TeamMember[] }) {
 
   return (
     <Card>
-      <CardBody className="py-4">
+      <CardBody className="py-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-4">
             <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-brand-600/20 border border-brand-500/20">
@@ -257,8 +257,8 @@ function OrgSummary({ members }: { members: TeamMember[] }) {
           <div className="grid grid-cols-4 gap-5 sm:gap-6">
             {stats.map((s) => (
               <div key={s.label} className="text-center sm:text-right">
-                <p className="text-2xl font-bold tabular-nums text-fg">{s.value}</p>
-                <p className="mt-0.5 text-[11px] font-medium uppercase tracking-wide text-slate-500">{s.label}</p>
+                <p className="text-[28px] font-bold leading-none tabular-nums text-fg">{s.value}</p>
+                <p className="mt-1.5 text-[11px] font-medium uppercase tracking-wide text-slate-600">{s.label}</p>
               </div>
             ))}
           </div>
@@ -280,16 +280,18 @@ function TodaysWork({ members, invites, onOpenMember }: {
     staleTime: 60_000,
   });
 
-  type WorkItem = { key: string; tone: string; text: string; sub: string; onClick: () => void };
   const items: WorkItem[] = [];
 
   invites.slice(0, 3).forEach((inv) => {
     const days = daysUntil(inv.expiresAt);
     items.push({
       key: `invite-${inv.id}`,
-      tone: days <= 1 ? 'bg-danger' : 'bg-warning',
-      text: `Invitation to ${inv.email} awaiting acceptance`,
-      sub: days === 0 ? 'Expires today' : `${days}d left · ${ROLE_CONFIG[inv.role].label}`,
+      tone: days <= 1 ? 'danger' : 'warning',
+      title: `Invitation to ${inv.email} awaiting acceptance`,
+      detail: days === 0
+        ? `Expires today · invited as ${ROLE_CONFIG[inv.role].label}. Resend or revoke before it lapses.`
+        : `${days}d left · invited as ${ROLE_CONFIG[inv.role].label}. They can't access the workspace until they accept.`,
+      action: 'Review invitation',
       onClick: () => scrollToId('invitations'),
     });
   });
@@ -300,9 +302,10 @@ function TodaysWork({ members, invites, onOpenMember }: {
     .forEach((m) => {
       items.push({
         key: `nologin-${m.id}`,
-        tone: 'bg-warning',
-        text: `${m.firstName} ${m.lastName} hasn't logged in yet`,
-        sub: `Invited ${formatDate(m.createdAt)} · ${ROLE_CONFIG[m.role].label}`,
+        tone: 'warning',
+        title: `${m.firstName} ${m.lastName} hasn't logged in yet`,
+        detail: `Invited ${formatDate(m.createdAt)} as ${ROLE_CONFIG[m.role].label}. Their seat is active but unused.`,
+        action: 'View member',
         onClick: () => onOpenMember(m.id),
       });
     });
@@ -310,41 +313,19 @@ function TodaysWork({ members, invites, onOpenMember }: {
   if (org && !org.industry) {
     items.push({
       key: 'profile',
-      tone: 'bg-brand-500',
-      text: 'Complete your organization profile',
-      sub: 'Add your industry so reports are labelled correctly',
+      tone: 'info',
+      title: 'Complete your organization profile',
+      detail: "Industry hasn't been configured. Reports and benchmarks won't be categorized correctly.",
+      action: 'Complete profile',
       onClick: () => scrollToId('settings'),
     });
   }
 
-  if (items.length === 0) return null;
-
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center gap-2">
-          <AlertTriangle className="h-4 w-4 text-warning" />
-          <CardTitle>Today's Work</CardTitle>
-          <span className="text-xs text-slate-600">{items.length} {items.length === 1 ? 'item' : 'items'}</span>
-        </div>
-      </CardHeader>
-      <div>
-        {items.map((it) => (
-          <button
-            key={it.key}
-            onClick={it.onClick}
-            className="group flex w-full items-center gap-3 border-b border-surface-400/20 px-5 py-3 text-left transition-colors last:border-0 hover:bg-surface-200/30"
-          >
-            <span className={`h-2 w-2 shrink-0 rounded-full ${it.tone}`} />
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium text-slate-200">{it.text}</p>
-              <p className="truncate text-xs text-slate-500">{it.sub}</p>
-            </div>
-            <ChevronRight className="h-4 w-4 shrink-0 text-slate-600 transition-transform group-hover:translate-x-0.5 group-hover:text-brand-300" />
-          </button>
-        ))}
-      </div>
-    </Card>
+    <WorkInbox
+      items={items}
+      emptyMessage="Your organization is fully configured. Nothing needs your attention."
+    />
   );
 }
 
@@ -373,7 +354,7 @@ function InvitationsSection({ invites, canManage }: { invites: Invite[]; canMana
           const link = `${window.location.origin}/auth/invite/${invite.token}`;
           const cfg = ROLE_CONFIG[invite.role];
           return (
-            <div key={invite.id} className="flex items-center gap-3 border-b border-surface-400/20 px-5 py-3 last:border-0">
+            <div key={invite.id} className="flex items-center gap-3 border-b border-surface-400/20 px-5 py-3.5 last:border-0">
               <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-surface-300/60">
                 <Mail className="h-3.5 w-3.5 text-slate-400" />
               </div>
@@ -517,7 +498,7 @@ function MemberWorkspace({ member, currentUser, onClose }: {
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['users'] }); onClose(); },
   });
 
-  if (!member) return <WorkspaceShell open={false} onClose={onClose} eyebrow="Team Member" title="">{null}</WorkspaceShell>;
+  if (!member) return <WorkspaceShell open={false} onClose={onClose} eyebrow="Manage Member" title="">{null}</WorkspaceShell>;
 
   const currentRole = (currentUser?.role as UserRole) ?? 'VIEWER';
   const isMe = member.id === currentUser?.id;
@@ -533,7 +514,13 @@ function MemberWorkspace({ member, currentUser, onClose }: {
   ];
 
   const footer = canManage ? (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-2.5">
+      <p className="text-[11px] font-medium uppercase tracking-wider text-slate-500">Member Actions</p>
+      <p className="text-xs leading-relaxed text-slate-500">
+        {member.isActive
+          ? "They'll immediately lose access to Valence. History and audit records will be preserved."
+          : 'Restores their access with the same role. Nothing from their history was removed.'}
+      </p>
       <button
         type="button"
         onClick={() => activeMutation.mutate(!member.isActive)}
@@ -546,11 +533,6 @@ function MemberWorkspace({ member, currentUser, onClose }: {
       >
         {activeMutation.isPending ? 'Working…' : member.isActive ? 'Deactivate member' : 'Reactivate member'}
       </button>
-      {member.isActive && (
-        <p className="text-center text-[11px] text-slate-600">
-          Deactivating preserves their history and can be undone. Permanent removal isn't available yet.
-        </p>
-      )}
     </div>
   ) : undefined;
 
@@ -558,20 +540,30 @@ function MemberWorkspace({ member, currentUser, onClose }: {
     <WorkspaceShell
       open={open}
       onClose={onClose}
-      eyebrow="Team Member"
+      eyebrow="Manage Member"
       title={`${member.firstName} ${member.lastName}${isMe ? ' (you)' : ''}`}
       subtitle={member.email}
       meta={meta}
       footer={footer}
     >
-      <WorkspaceSection label="Profile">
-        <p className="text-sm text-slate-300">{member.email}</p>
-        <p className="mt-0.5 text-xs text-slate-500">
-          Joined {formatDate(member.createdAt)} · Last active {timeAgo(member.lastLoginAt)}
-        </p>
+      <WorkspaceSection label="Details">
+        <dl className="grid grid-cols-2 gap-x-4 gap-y-3">
+          <div>
+            <dt className="text-[11px] text-slate-500">Member since</dt>
+            <dd className="mt-0.5 text-sm text-slate-200">{formatDate(member.createdAt)}</dd>
+          </div>
+          <div>
+            <dt className="text-[11px] text-slate-500">Open tasks</dt>
+            <dd className="mt-0.5 text-sm text-slate-200 tabular-nums">{tasks.length}</dd>
+          </div>
+          <div className="col-span-2">
+            <dt className="text-[11px] text-slate-500">Email</dt>
+            <dd className="mt-0.5 truncate text-sm text-slate-200">{member.email}</dd>
+          </div>
+        </dl>
       </WorkspaceSection>
 
-      <WorkspaceSection label="Role">
+      <WorkspaceSection label="Workspace Role">
         {canManage ? (
           <RolePicker member={member} currentUserRole={currentRole} onSelect={(r) => roleMutation.mutate(r)} busy={roleMutation.isPending} />
         ) : (
@@ -648,7 +640,7 @@ function MemberRow({ member, currentUserId, onOpen }: {
   return (
     <button
       onClick={onOpen}
-      className={`group flex w-full items-center gap-4 border-b border-surface-400/30 px-5 py-3 text-left transition-colors last:border-0 hover:bg-surface-200/30 ${!member.isActive ? 'opacity-50' : ''}`}
+      className={`group flex w-full items-center gap-4 border-b border-l-2 border-surface-400/30 border-l-transparent px-5 py-3.5 text-left transition-all duration-150 last:border-b-0 hover:border-l-brand-500/50 hover:bg-surface-200/40 ${!member.isActive ? 'opacity-50' : ''}`}
     >
       <MemberAvatar member={member} />
       <div className="min-w-0 flex-1">
@@ -662,13 +654,13 @@ function MemberRow({ member, currentUserId, onOpen }: {
         <cfg.icon className="h-3.5 w-3.5" />
         {cfg.label}
       </div>
-      <span className="hidden w-24 shrink-0 text-right text-xs text-slate-500 tabular-nums md:block">
-        {timeAgo(member.lastLoginAt)}
-      </span>
-      <div className="hidden shrink-0 sm:block">
-        <Badge variant={member.isActive ? 'success' : 'neutral'}>
-          {member.isActive ? 'Active' : 'Inactive'}
-        </Badge>
+      <div className="hidden w-24 shrink-0 text-right md:block">
+        <p className="text-[10px] font-medium uppercase tracking-wide text-slate-600">Last active</p>
+        <p className="text-xs text-slate-300 tabular-nums">{timeAgo(member.lastLoginAt)}</p>
+      </div>
+      <div className="hidden w-20 shrink-0 items-center gap-1.5 sm:flex">
+        <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${member.isActive ? 'bg-success' : 'bg-slate-600'}`} />
+        <span className="text-xs text-slate-500">{member.isActive ? 'Active' : 'Inactive'}</span>
       </div>
       <ChevronRight className="h-4 w-4 shrink-0 text-slate-600 transition-transform group-hover:translate-x-0.5 group-hover:text-brand-300" />
     </button>
@@ -690,7 +682,7 @@ function TeamSection({ members, isLoading, currentUserId, canInvite, onInvite, o
     <Card>
       <CardHeader>
         <div className="flex items-center gap-2">
-          <Users className="h-4 w-4 text-brand-400" />
+          <Users className="h-4 w-4 text-slate-500" />
           <CardTitle>Team Members</CardTitle>
           <span className="text-xs text-slate-600">{activeCount} active</span>
         </div>
@@ -759,23 +751,21 @@ function RecentActivity() {
                 const actor = entry.user;
                 const avatarColor = actor ? colors[actor.firstName.charCodeAt(0) % colors.length] : 'bg-surface-400';
                 return (
-                  <div key={entry.id} className="flex items-center gap-3 border-b border-surface-400/20 px-5 py-3 last:border-0">
+                  <div key={entry.id} className="flex items-center gap-2.5 border-b border-surface-400/20 px-5 py-2.5 last:border-0">
                     {actor ? (
-                      <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${avatarColor} text-[10px] font-bold text-fg`}>
+                      <div className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${avatarColor} text-[9px] font-bold text-fg`}>
                         {actor.firstName[0]}{actor.lastName[0]}
                       </div>
                     ) : (
-                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-surface-300">
-                        <Cpu className="h-3.5 w-3.5 text-slate-500" />
+                      <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-surface-200">
+                        <Cpu className="h-3 w-3 text-slate-500" />
                       </div>
                     )}
                     <p className="min-w-0 flex-1 truncate text-xs text-slate-400">
-                      <span className="font-medium text-slate-200">
-                        {actor ? `${actor.firstName} ${actor.lastName}` : 'System'}
-                      </span>
+                      <span className="font-medium text-slate-200">{actor ? actor.firstName : 'System'}</span>
                       {' '}{describeActivity(entry)}
                     </p>
-                    <span className="shrink-0 text-xs text-slate-600 tabular-nums">{timeAgo(entry.createdAt)}</span>
+                    <span className="shrink-0 text-[11px] text-slate-600 tabular-nums">{timeAgo(entry.createdAt)}</span>
                   </div>
                 );
               })}
@@ -977,7 +967,7 @@ function OrgSettingsCard() {
             <CardTitle>Organization Settings</CardTitle>
           </div>
           {canEdit && !editing && (
-            <Button size="sm" variant="ghost" onClick={() => setEditing(true)}>Edit</Button>
+            <Button size="sm" variant="ghost" onClick={() => setEditing(true)}>Edit organization →</Button>
           )}
         </CardHeader>
 
@@ -1235,8 +1225,8 @@ export default function OrganizationPage() {
 
       <OrgSummary members={members} />
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 lg:items-start">
-        <div className="flex flex-col gap-6 lg:col-span-2">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-4 lg:items-start">
+        <div className="flex flex-col gap-6 lg:col-span-3">
           {canManage && (
             <TodaysWork members={members} invites={invites} onOpenMember={setSelectedMemberId} />
           )}
