@@ -258,12 +258,7 @@ export default function DocumentsPage() {
         }
         emptyIcon={FolderOpen}
         emptyTitle="No documents yet"
-        emptyAction={
-          <Button size="sm" onClick={() => setShowUpload(true)}>
-            <Upload className="h-4 w-4" />
-            Upload your first document
-          </Button>
-        }
+        emptyDescription="Use the Upload button above to add your first document."
       />
 
       {showUpload && <UploadModal onClose={() => setShowUpload(false)} />}
