@@ -969,7 +969,7 @@ function OrgSettingsCard() {
   if (isLoading) return null;
 
   return (
-    <div id="settings" className="max-w-2xl scroll-mt-4">
+    <div id="settings" className="scroll-mt-4">
       <Card>
         <CardHeader>
           <div className="flex items-center gap-2">
@@ -983,17 +983,17 @@ function OrgSettingsCard() {
 
         {!editing ? (
           <CardBody>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 sm:gap-5">
-              <div>
-                <p className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-slate-500">Name</p>
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center justify-between gap-4">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Name</p>
                 <p className="text-sm text-slate-200">{org?.name || '—'}</p>
               </div>
-              <div>
-                <p className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-slate-500">Industry</p>
+              <div className="flex items-center justify-between gap-4 border-t border-surface-400/20 pt-3">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Industry</p>
                 <p className="text-sm text-slate-200">{org?.industry || '—'}</p>
               </div>
-              <div>
-                <p className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-slate-500">Currency · Timezone</p>
+              <div className="flex items-center justify-between gap-4 border-t border-surface-400/20 pt-3">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Currency · Timezone</p>
                 <p className="text-sm text-slate-200">{org?.currency || '—'} · {org?.timezone?.split('/')[1]?.replace(/_/g, ' ') ?? org?.timezone ?? '—'}</p>
               </div>
             </div>
@@ -1016,15 +1016,13 @@ function OrgSettingsCard() {
                 className="h-9 w-full rounded-lg border border-surface-400 bg-surface-200 px-3 text-sm text-slate-100 placeholder:text-slate-600 focus:border-brand-500/60 focus:outline-none focus:ring-1 focus:ring-brand-500/30"
               />
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium uppercase tracking-wider text-slate-400">Industry</label>
-                <Select value={industry} onChange={setIndustry} options={INDUSTRY_OPTIONS} />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium uppercase tracking-wider text-slate-400">Currency</label>
-                <Select value={currency} onChange={setCurrency} options={CURRENCY_OPTIONS} />
-              </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-medium uppercase tracking-wider text-slate-400">Industry</label>
+              <Select value={industry} onChange={setIndustry} options={INDUSTRY_OPTIONS} />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-medium uppercase tracking-wider text-slate-400">Currency</label>
+              <Select value={currency} onChange={setCurrency} options={CURRENCY_OPTIONS} />
             </div>
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-medium uppercase tracking-wider text-slate-400">Timezone</label>
@@ -1256,11 +1254,10 @@ export default function OrganizationPage() {
         <div className="flex flex-col gap-6">
           <RecentActivity />
           {canManage && <BillingCard memberCount={activeCount} canManage={canManage} />}
+          <OrgSettingsCard />
           {isOwner && <DangerZone members={members} />}
         </div>
       </div>
-
-      <OrgSettingsCard />
 
       <MemberWorkspace
         member={selectedMember}
