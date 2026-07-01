@@ -18,6 +18,6 @@ export interface AuditLogResponse {
 }
 
 export const auditService = {
-  list: (params?: { entity?: string; action?: string; page?: number; limit?: number }): Promise<AuditLogResponse> =>
+  list: (params?: { entity?: string; userId?: string; action?: string; page?: number; limit?: number }): Promise<AuditLogResponse> =>
     api.get('/audit', { params }).then((r) => r.data as AuditLogResponse),
 };
