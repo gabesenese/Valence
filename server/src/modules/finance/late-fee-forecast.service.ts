@@ -15,15 +15,25 @@ export interface LateFeeForecastItem {
   chargeable: boolean;
 }
 
+export interface TopOverdueLease {
+  leaseId: string;
+  tenantName: string;
+  propertyName: string;
+  daysLate: number;
+  overdueAmount: number;
+}
+
 export interface LateFeeForecast {
   overdueBalance: number;
   overdueCount: number;
   chargeableCount: number;
   withinGraceCount: number;
   unconfiguredCount: number;
+  firstUnconfiguredLeaseId: string | null;
   expectedLateFees: number;
   baseFees: number;
   interestAccrued: number;
+  topOverdue: TopOverdueLease | null;
   items: LateFeeForecastItem[];
 }
 
@@ -65,6 +75,8 @@ export async function getLateFeeForecast(userId: string): Promise<LateFeeForecas
   let chargeableCount = 0;
   let withinGraceCount = 0;
   let unconfiguredCount = 0;
+  let firstUnconfiguredLeaseId: string | null = null;
+  let topOverdue: TopOverdueLease | null = null;
   const items: LateFeeForecastItem[] = [];
 
   for (const rec of overdue) {
@@ -74,12 +86,17 @@ export async function getLateFeeForecast(userId: string): Promise<LateFeeForecas
     const overdueAmount = Number(rec.amount);
     overdueBalance += overdueAmount;
 
+    const daysLate = Math.floor((now.getTime() - rec.dueDate.getTime()) / DAY);
+    if (!topOverdue || overdueAmount > topOverdue.overdueAmount) {
+      topOverdue = { leaseId: lease.id, tenantName: lease.tenant.name, propertyName: rec.property.name, daysLate, overdueAmount: round2(overdueAmount) };
+    }
+
     if (lease.lateFeeType === 'NONE') {
       unconfiguredCount += 1;
+      if (!firstUnconfiguredLeaseId) firstUnconfiguredLeaseId = lease.id;
       continue;
     }
 
-    const daysLate = Math.floor((now.getTime() - rec.dueDate.getTime()) / DAY);
     const graceDays = lease.lateFeeGraceDays ?? 0;
     const chargeable = daysLate > graceDays;
 
@@ -127,9 +144,11 @@ export async function getLateFeeForecast(userId: string): Promise<LateFeeForecas
     chargeableCount,
     withinGraceCount,
     unconfiguredCount,
+    firstUnconfiguredLeaseId,
     expectedLateFees: round2(expectedLateFees),
     baseFees: round2(baseFees),
     interestAccrued: round2(interestAccrued),
+    topOverdue,
     items: items.slice(0, 10),
   };
 }

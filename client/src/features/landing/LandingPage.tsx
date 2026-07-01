@@ -367,7 +367,7 @@ export default function LandingPage() {
                 eyebrow: 'Mission & Story',
                 heading: 'Why we built Valence',
                 body: 'Revenue slips through the cracks when no one has a clear picture. Valence exists to give operators the one answer that matters: what to do today.',
-                href: '/about/mission',
+                href: '/mission',
                 linkLabel: 'Read our story',
               },
               {
@@ -377,7 +377,7 @@ export default function LandingPage() {
                 eyebrow: 'Privacy & Terms',
                 heading: 'How we handle your data',
                 body: 'We collect only what we need to run the product, never sell it, and give you clear rights to access, export, or delete it at any time.',
-                href: '/about/privacy',
+                href: '/privacy',
                 linkLabel: 'Read privacy terms',
               },
               {
@@ -387,7 +387,7 @@ export default function LandingPage() {
                 eyebrow: 'Data Controls',
                 heading: 'You control your data',
                 body: 'Export everything in one click, set retention policies, and manage team access. Your portfolio data belongs to you — not us.',
-                href: '/about/data-controls',
+                href: '/data-controls',
                 linkLabel: 'View data controls',
               },
             ].map((card) => (

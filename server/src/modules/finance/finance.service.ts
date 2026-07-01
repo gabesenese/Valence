@@ -3,6 +3,7 @@ import { prisma } from '../../infrastructure/database';
 import { NotFoundError } from '../../utils/errors';
 import { subMonths, addMonths, startOfMonth, endOfMonth, parseISO, format } from 'date-fns';
 import { recordChange } from '../changes/changes.service';
+import { toActivityEvent, rankPulse } from './finance-activity';
 import type {
   CreateFinancialRecordInput,
   UpdateFinancialRecordInput,
@@ -13,8 +14,13 @@ import type {
   ForecastQuery,
 } from './finance.schemas';
 
+const ACTIVITY_INCLUDE = {
+  property: { select: { id: true, name: true, code: true } },
+  lease: { select: { id: true, tenant: { select: { id: true, name: true } } } },
+} satisfies Prisma.FinancialRecordInclude;
+
 export async function getFinancialRecords(query: FinanceQuery, userId: string) {
-  const { page, limit, type, status, category, propertyId, leaseId, from, to } = query;
+  const { page, limit, type, status, category, source, propertyId, leaseId, from, to } = query;
   const skip = (page - 1) * limit;
 
   const where: Prisma.FinancialRecordWhereInput = {
@@ -22,6 +28,7 @@ export async function getFinancialRecords(query: FinanceQuery, userId: string) {
     ...(type && { type }),
     ...(status && { status }),
     ...(category && { category }),
+    ...(source && { metadata: { path: ['source'], equals: source } }),
     ...(propertyId && { propertyId }),
     ...(leaseId && { leaseId }),
     ...((from || to) && {
@@ -38,15 +45,28 @@ export async function getFinancialRecords(query: FinanceQuery, userId: string) {
       skip,
       take: limit,
       orderBy: { periodStart: 'desc' },
-      include: {
-        property: { select: { id: true, name: true, code: true } },
-        lease: { select: { id: true, leaseNumber: true } },
-      },
+      include: ACTIVITY_INCLUDE,
     }),
     prisma.financialRecord.count({ where }),
   ]);
 
-  return { records, total };
+  const now = new Date();
+  return { records: records.map((record) => toActivityEvent(record, now)), total };
+}
+
+export async function getFinancialPulse(userId: string, limit = 5) {
+  const records = await prisma.financialRecord.findMany({
+    where: { property: { ownerId: userId, deletedAt: null }, status: { not: 'VOID' } },
+    orderBy: { periodStart: 'desc' },
+    take: 40,
+    include: ACTIVITY_INCLUDE,
+  });
+
+  const now = new Date();
+  return records
+    .map((record) => toActivityEvent(record, now))
+    .sort(rankPulse)
+    .slice(0, limit);
 }
 
 export async function getFinancialRecordById(id: string) {
@@ -155,11 +175,13 @@ export async function getFinancialSummary(propertyId: string | undefined, userId
     status: { not: 'VOID' },
   };
 
-  const [revenue, expenses, flagged, pending] = await Promise.all([
+  const [revenue, expenses, flagged, pending, reconciled, totalEvents] = await Promise.all([
     prisma.financialRecord.aggregate({ where: { ...where, type: 'REVENUE' }, _sum: { amount: true } }),
     prisma.financialRecord.aggregate({ where: { ...where, type: 'EXPENSE' }, _sum: { amount: true } }),
     prisma.financialRecord.count({ where: { ...where, status: 'FLAGGED' } }),
     prisma.financialRecord.count({ where: { ...where, status: 'PENDING' } }),
+    prisma.financialRecord.count({ where: { ...where, status: 'RECONCILED' } }),
+    prisma.financialRecord.count({ where }),
   ]);
 
   const totalRevenue = Number(revenue._sum.amount ?? 0);
@@ -171,6 +193,8 @@ export async function getFinancialSummary(propertyId: string | undefined, userId
     netIncome: totalRevenue - totalExpenses,
     flaggedRecords: flagged,
     pendingRecords: pending,
+    reconciledRecords: reconciled,
+    totalEvents,
   };
 }
 
@@ -211,13 +235,21 @@ export async function getExpenseBreakdown(query: ExpenseBreakdownQuery, userId: 
   return { totalExpenses, categories };
 }
 
+const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
 export async function getExpenseTrend(query: ExpenseTrendQuery, userId: string) {
   const { propertyId, months } = query;
   const now = new Date();
+  const nowY = now.getUTCFullYear();
+  const nowM = now.getUTCMonth();
 
+  // Bucket in explicit UTC — periodStart is stored at UTC midnight, so local-time
+  // date-fns boundaries drop month-edge records into the wrong bucket.
   const buckets = Array.from({ length: months }, (_, idx) => {
-    const d = subMonths(now, months - 1 - idx);
-    return { label: format(d, 'MMM yyyy'), start: startOfMonth(d), end: endOfMonth(d) };
+    const offset = months - 1 - idx;
+    const start = new Date(Date.UTC(nowY, nowM - offset, 1, 0, 0, 0, 0));
+    const end = new Date(Date.UTC(nowY, nowM - offset + 1, 1, 0, 0, 0, 0) - 1);
+    return { label: `${MONTH_LABELS[start.getUTCMonth()]} ${start.getUTCFullYear()}`, start, end };
   });
 
   const perBucket = await Promise.all(
@@ -245,18 +277,27 @@ export async function getExpenseTrend(query: ExpenseTrendQuery, userId: string) 
     }
   });
 
+  // The final bucket is the current, still-in-progress month. Comparing it to a
+  // full-month average reads as a false collapse (e.g. a quarterly cost shows -100%
+  // simply because this month hasn't posted yet), so the "what changed" comparison
+  // uses the last fully-elapsed month and averages prior months that actually had spend.
+  const latestIdx = months - 1 > 0 ? months - 2 : months - 1;
+
   const categories = [...catTotals.entries()]
     .map(([category, totals]) => {
-      const latest = totals[totals.length - 1];
-      const prior = totals.slice(0, -1);
-      const priorAvg = prior.length ? prior.reduce((s, v) => s + v, 0) / prior.length : 0;
-      const deltaPct = priorAvg > 0 ? Math.round(((latest - priorAvg) / priorAvg) * 100) : null;
+      const latest = totals[latestIdx] ?? 0;
+      const prior = totals.slice(0, latestIdx);
+      const priorWithData = prior.filter((v) => v > 0);
+      const priorAvg = priorWithData.length ? priorWithData.reduce((s, v) => s + v, 0) / priorWithData.length : 0;
+      const comparable = priorWithData.length >= 2 && latest > 0 && priorAvg > 0;
+      const deltaPct = comparable ? Math.round(((latest - priorAvg) / priorAvg) * 100) : null;
       return {
         category,
         totals,
         latest,
         priorAvg: Math.round(priorAvg),
         deltaPct,
+        comparable,
         total: totals.reduce((s, v) => s + v, 0),
       };
     })

@@ -3,7 +3,7 @@ import { Outlet, NavLink, Link, useLocation, useNavigate } from 'react-router-do
 import { useQuery } from '@tanstack/react-query';
 import {
   LayoutDashboard, FileText, Building2, BarChart3, Bell, DollarSign,
-  LogOut, ChevronLeft, Cpu, Users, Settings, Inbox, Layers,
+  LogOut, ChevronLeft, Users, Settings, Inbox, Layers,
   Wand2, ClipboardList, Heart, FolderOpen, Zap, Lock, Upload, ScrollText, Download, Plug,
   UserX, Sparkles, HelpCircle, Trash2, Database, Menu, X,
 } from 'lucide-react';
@@ -327,8 +327,6 @@ export function AppLayout() {
             >
               <Menu className="h-5 w-5" />
             </button>
-            <Cpu className="h-4 w-4 text-brand-400" />
-            <span className="hidden text-xs text-slate-600 sm:inline">Operational Intelligence Platform</span>
           </div>
           <div className="flex items-center gap-3">
             <ThemeToggle />

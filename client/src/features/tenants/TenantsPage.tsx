@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { User, Building2, Star, Plus } from 'lucide-react';
 import { tenantsService } from '@/services/tenants.service';
@@ -100,7 +101,8 @@ const COLUMNS: Column<Tenant>[] = [
 ];
 
 export default function TenantsPage() {
-  const [search, setSearch] = useState('');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [search, setSearch] = useState(searchParams.get('search') ?? '');
   const [page, setPage] = useState(1);
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<Tenant | undefined>(undefined);
@@ -113,6 +115,20 @@ export default function TenantsPage() {
 
   const openAdd = () => { setEditing(undefined); setFormOpen(true); };
   const openEdit = (t: Tenant) => { setEditing(t); setFormOpen(true); };
+
+  const [handledOpen, setHandledOpen] = useState(false);
+  const openId = searchParams.get('open');
+  useEffect(() => {
+    if (!openId || handledOpen || !data) return;
+    const match = data.data.find((t) => t.id === openId);
+    if (!match) return;
+    setEditing(match);
+    setFormOpen(true);
+    setHandledOpen(true);
+    const next = new URLSearchParams(searchParams);
+    next.delete('open');
+    setSearchParams(next, { replace: true });
+  }, [openId, data, handledOpen, searchParams, setSearchParams]);
 
   return (
     <div className="flex flex-col gap-4 p-4 animate-fade-in sm:gap-6 sm:p-6">

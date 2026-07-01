@@ -15,7 +15,7 @@ export function TodayHub() {
   if (!data) return null;
 
   const sections = [
-    { key: 'risk', label: 'Revenue at risk', items: data.atRisk, href: '/finance', icon: AlertTriangle, tone: 'text-danger' },
+    { key: 'risk', label: 'Revenue at risk', items: data.atRisk, href: '/finance?tab=forecast', icon: AlertTriangle, tone: 'text-danger' },
     { key: 'tasks', label: 'Due today', items: data.dueTasks, href: '/tasks', icon: ListTodo, tone: 'text-info' },
     { key: 'alerts', label: 'New alerts', items: data.newAlerts, href: '/alerts', icon: Bell, tone: 'text-warning' },
   ].filter((s) => s.items.length > 0);

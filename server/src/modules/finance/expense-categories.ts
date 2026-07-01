@@ -16,8 +16,28 @@ export const EXPENSE_CATEGORY_VALUES: string[] = [
   'OTHER',
 ];
 
-// Best-effort mapping of an external accounting "expense account" name (e.g. from
-// QuickBooks) to a Valence expense category. Falls back to OTHER.
+const EXPENSE_CATEGORY_LABEL: Record<string, string> = {
+  MAINTENANCE:         'Maintenance',
+  REPAIRS:             'Repairs',
+  HVAC:                'HVAC',
+  UTILITIES:           'Utilities',
+  CLEANING:            'Cleaning',
+  LANDSCAPING:         'Landscaping',
+  INSURANCE:           'Insurance',
+  PROPERTY_TAX:        'Property Taxes',
+  CAPITAL_IMPROVEMENT: 'Capital Improvement',
+  VENDOR:              'Vendor Invoice',
+  MANAGEMENT:          'Management Fees',
+  OTHER:               'Other',
+};
+
+export function categoryLabel(value: string | null | undefined): string {
+  if (!value) return '—';
+  if (value === 'RENT') return 'Rent';
+  if (value === 'UNCATEGORIZED') return 'Uncategorized';
+  return EXPENSE_CATEGORY_LABEL[value] ?? value;
+}
+
 export function mapAccountNameToCategory(accountName: string | undefined | null): string {
   const n = (accountName ?? '').toLowerCase();
   if (!n) return 'OTHER';

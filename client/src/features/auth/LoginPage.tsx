@@ -76,7 +76,6 @@ export default function LoginPage() {
           <Logo className="h-16 w-10" />
           <div className="text-center">
             <h1 className="text-xl font-bold text-fg tracking-tight">Valence</h1>
-            <p className="mt-0.5 text-xs text-slate-500">Operational Intelligence Platform</p>
           </div>
         </div>
 
