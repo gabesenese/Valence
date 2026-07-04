@@ -36,13 +36,23 @@ export async function createDocument(data: {
   return prisma.document.create({ data, select: docSelect });
 }
 
-export async function getDocuments(filter: {
-  propertyId?: string;
-  leaseId?: string;
-  tenantId?: string;
-  type?: DocumentType;
-}) {
-  const where: Record<string, unknown> = {};
+export async function getDocuments(
+  filter: {
+    propertyId?: string;
+    leaseId?: string;
+    tenantId?: string;
+    type?: DocumentType;
+  },
+  userId: string,
+) {
+  const where: Record<string, unknown> = {
+    OR: [
+      { uploadedById: userId },
+      { property: { ownerId: userId } },
+      { lease: { property: { ownerId: userId } } },
+      { tenant: { ownerId: userId } },
+    ],
+  };
   if (filter.propertyId) where.propertyId = filter.propertyId;
   if (filter.leaseId)    where.leaseId    = filter.leaseId;
   if (filter.tenantId)   where.tenantId   = filter.tenantId;

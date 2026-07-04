@@ -43,7 +43,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
       leaseId,
       tenantId,
       type: type as DocumentType | undefined,
-    });
+    }, req.user!.id);
     sendSuccess(res, docs);
   } catch (e) { next(e); }
 });
