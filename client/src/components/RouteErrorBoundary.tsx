@@ -1,4 +1,5 @@
 import { Component, type ReactNode } from 'react';
+import { Sentry } from '@/lib/sentry';
 import { ErrorState } from './ui/ErrorState';
 
 interface Props {
@@ -14,6 +15,10 @@ export class RouteErrorBoundary extends Component<Props, State> {
 
   static getDerivedStateFromError(): State {
     return { hasError: true };
+  }
+
+  componentDidCatch(error: unknown) {
+    Sentry.captureException(error);
   }
 
   reset = () => this.setState({ hasError: false });
