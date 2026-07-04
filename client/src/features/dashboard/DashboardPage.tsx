@@ -15,6 +15,7 @@ import { WhatChangedPanel } from '@/features/changes/WhatChangedPanel';
 import { TodayHub } from './TodayHub';
 import { Card, CardHeader, CardTitle, CardBody } from '@/components/ui/Card';
 import { PageLoader } from '@/components/ui/Spinner';
+import { ErrorState } from '@/components/ui/ErrorState';
 import { formatCurrency, compactCurrency, daysUntil, formatDate, monthLabelToRange } from '@/utils/format';
 import { WelcomeScreen } from '@/features/onboarding/WelcomeScreen';
 import { OnboardingCard } from '@/features/onboarding/OnboardingCard';
@@ -43,7 +44,7 @@ export default function DashboardPage() {
   const c = useChartColors();
   const [trendMonths, setTrendMonths] = useState(12);
 
-  const { data: summary, isLoading: summaryLoading } = useQuery({
+  const { data: summary, isLoading: summaryLoading, isError: summaryError, refetch: refetchSummary } = useQuery({
     queryKey: ['analytics', 'summary'],
     queryFn: analyticsService.getSummary,
   });
@@ -194,6 +195,7 @@ export default function DashboardPage() {
   const totalRiskLeases = distribution?.byRisk.reduce((s, r) => s + r._count, 0) ?? 0;
 
   if (summaryLoading) return <PageLoader />;
+  if (summaryError) return <ErrorState onRetry={() => refetchSummary()} />;
 
   const isEmpty = summary && summary.properties.total === 0 && summary.leases.active === 0;
 

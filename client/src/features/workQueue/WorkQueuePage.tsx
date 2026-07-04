@@ -21,6 +21,7 @@ import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { PageLoader } from '@/components/ui/Spinner';
+import { ErrorState } from '@/components/ui/ErrorState';
 import { OnboardingCard } from '@/features/onboarding/OnboardingCard';
 
 
@@ -350,7 +351,7 @@ export default function WorkQueuePage() {
     other:    true,
   });
 
-  const { data, isLoading, isFetching } = useQuery({
+  const { data, isLoading, isError, refetch, isFetching } = useQuery({
     queryKey: ['work-queue', false],
     queryFn: () => workQueueService.getQueue(false),
   });
@@ -426,6 +427,8 @@ export default function WorkQueuePage() {
 
       {isLoading ? (
         <PageLoader />
+      ) : isError ? (
+        <ErrorState onRetry={() => refetch()} />
       ) : (
         <div className="flex flex-col gap-4">
           <Card className="overflow-hidden">

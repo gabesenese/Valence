@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { DataTable, type Column } from '@/components/ui/DataTable';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { ErrorState } from '@/components/ui/ErrorState';
 import { formatDate } from '@/utils/format';
 import TenantFormModal from './TenantFormModal';
 
@@ -107,7 +108,7 @@ export default function TenantsPage() {
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<Tenant | undefined>(undefined);
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['tenants', { search, page }],
     queryFn: () => tenantsService.getTenants({ search: search || undefined, page, limit: 20 }),
     placeholderData: (prev) => prev,
@@ -129,6 +130,8 @@ export default function TenantsPage() {
     next.delete('open');
     setSearchParams(next, { replace: true });
   }, [openId, data, handledOpen, searchParams, setSearchParams]);
+
+  if (isError && !data) return <ErrorState onRetry={() => refetch()} />;
 
   return (
     <div className="flex flex-col gap-4 p-4 animate-fade-in sm:gap-6 sm:p-6">

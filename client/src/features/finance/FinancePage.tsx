@@ -10,6 +10,7 @@ import { LedgerWorkspace } from './LedgerWorkspace';
 import { WhatChangedPanel } from '../changes/WhatChangedPanel';
 import { BudgetCard } from './BudgetCard';
 import { PageLoader } from '@/components/ui/Spinner';
+import { ErrorState } from '@/components/ui/ErrorState';
 import { compactCurrency } from '@/utils/format';
 
 type TabId = 'overview' | 'forecast' | 'ledger' | 'expenses' | 'profitability' | 'budgets';
@@ -48,7 +49,7 @@ export default function FinancePage() {
     setSearchParams(next);
   }
 
-  const { data: summary, isLoading: summaryLoading } = useQuery({
+  const { data: summary, isLoading: summaryLoading, isError: summaryError, refetch: refetchSummary } = useQuery({
     queryKey: ['finance', 'summary'],
     queryFn: () => financeService.getSummary(),
   });
@@ -64,6 +65,7 @@ export default function FinancePage() {
   });
 
   if (summaryLoading) return <PageLoader />;
+  if (summaryError) return <ErrorState onRetry={() => refetchSummary()} />;
 
   const metricByKey = new Map((intelligence?.metrics ?? []).map((m) => [m.key, m]));
   const netIncomeColor = summary && summary.netIncome >= 0 ? 'text-success' : 'text-danger';
