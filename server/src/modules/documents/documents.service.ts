@@ -1,7 +1,6 @@
 import { prisma } from '../../infrastructure/database';
-import { unlink } from 'fs/promises';
-import path from 'path';
 import type { DocumentType } from '@prisma/client';
+import { removeDocument } from './storage';
 
 const docSelect = {
   id: true,
@@ -10,7 +9,6 @@ const docSelect = {
   type: true,
   mimeType: true,
   size: true,
-  path: true,
   propertyId: true,
   leaseId: true,
   tenantId: true,
@@ -69,13 +67,16 @@ export async function getDocument(id: string) {
   return prisma.document.findUniqueOrThrow({ where: { id }, select: docSelect });
 }
 
+export async function getDocumentFile(id: string) {
+  return prisma.document.findUniqueOrThrow({
+    where: { id },
+    select: { path: true, mimeType: true, originalName: true },
+  });
+}
+
 export async function deleteDocument(id: string) {
-  const doc = await prisma.document.findUniqueOrThrow({ where: { id } });
+  const doc = await prisma.document.findUniqueOrThrow({ where: { id }, select: { path: true } });
   await prisma.document.delete({ where: { id } });
-
-  try {
-    await unlink(path.resolve(doc.path));
-  } catch { /* ignore */ }
-
+  await removeDocument(doc.path);
   return { deleted: true };
 }

@@ -1,32 +1,23 @@
 import { Router } from 'express';
 import type { Request, Response, NextFunction } from 'express';
 import multer from 'multer';
-import path from 'path';
-import { v4 as uuid } from 'uuid';
 import { authenticate } from '../../middleware/authenticate';
 import { authorize } from '../../middleware/authorize';
 import { requireOwner } from '../../middleware/ownership';
 import { assertPropertyOwner, assertLeaseOwner, assertTenantOwner } from '../../utils/ownership';
-import { unlink } from 'fs/promises';
 import { sendSuccess } from '../../utils/response';
 import {
   createDocument,
   getDocuments,
   getDocument,
+  getDocumentFile,
   deleteDocument,
 } from './documents.service';
+import { putDocument, readDocument } from './storage';
 import type { DocumentType } from '@prisma/client';
 
 
-const UPLOAD_DIR = path.resolve('uploads/documents');
-
-const storage = multer.diskStorage({
-  destination: (_req, _file, cb) => cb(null, UPLOAD_DIR),
-  filename: (_req, file, cb) => {
-    const ext = path.extname(file.originalname);
-    cb(null, `${uuid()}${ext}`);
-  },
-});
+const storage = multer.memoryStorage();
 
 const MAX_FILE_BYTES = 25 * 1024 * 1024;
 
@@ -113,13 +104,15 @@ router.post(
       ];
       const docType = validTypes.includes(type as DocumentType) ? (type as DocumentType) : 'OTHER';
 
+      const ref = await putDocument(req.file.originalname, req.file.buffer, req.file.mimetype);
+
       const doc = await createDocument({
         name: name?.trim() || req.file.originalname,
         originalName: req.file.originalname,
         type: docType,
         mimeType: req.file.mimetype,
         size: req.file.size,
-        path: req.file.path,
+        path: ref,
         propertyId,
         leaseId,
         tenantId,
@@ -127,10 +120,7 @@ router.post(
       });
 
       res.status(201).json({ success: true, data: doc });
-    } catch (e) {
-      if (req.file) void unlink(req.file.path).catch(() => {});
-      next(e);
-    }
+    } catch (e) { next(e); }
   },
 );
 
@@ -138,6 +128,17 @@ router.get('/:id', requireOwner('document'), async (req: Request, res: Response,
   try {
     const doc = await getDocument(req.params.id);
     sendSuccess(res, doc);
+  } catch (e) { next(e); }
+});
+
+router.get('/:id/download', requireOwner('document'), async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const file = await getDocumentFile(req.params.id);
+    const { stream, contentType } = await readDocument(file.path);
+    res.setHeader('Content-Type', contentType ?? file.mimeType);
+    res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(file.originalName)}"`);
+    stream.on('error', next);
+    stream.pipe(res);
   } catch (e) { next(e); }
 });
 
