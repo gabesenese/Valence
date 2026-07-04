@@ -6,6 +6,8 @@ import { v4 as uuid } from 'uuid';
 import { authenticate } from '../../middleware/authenticate';
 import { authorize } from '../../middleware/authorize';
 import { requireOwner } from '../../middleware/ownership';
+import { assertPropertyOwner, assertLeaseOwner, assertTenantOwner } from '../../utils/ownership';
+import { unlink } from 'fs/promises';
 import { sendSuccess } from '../../utils/response';
 import {
   createDocument,
@@ -101,6 +103,10 @@ router.post(
         name?: string;
       };
 
+      if (propertyId) await assertPropertyOwner(propertyId, req.user!.id);
+      if (leaseId) await assertLeaseOwner(leaseId, req.user!.id);
+      if (tenantId) await assertTenantOwner(tenantId, req.user!.id);
+
       const validTypes: DocumentType[] = [
         'LEASE', 'INSURANCE', 'INSPECTION', 'PERMIT',
         'AMENDMENT', 'NOTICE', 'FINANCIAL', 'OTHER',
@@ -121,7 +127,10 @@ router.post(
       });
 
       res.status(201).json({ success: true, data: doc });
-    } catch (e) { next(e); }
+    } catch (e) {
+      if (req.file) void unlink(req.file.path).catch(() => {});
+      next(e);
+    }
   },
 );
 
