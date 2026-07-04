@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { LeaseStatus, LeaseType, RenewalRisk, RenewalStage, LateFeeType } from '@prisma/client';
 
-export const createLeaseSchema = z.object({
+const leaseObject = z.object({
   propertyId: z.string().uuid(),
   tenantId: z.string().uuid(),
   unitNumber: z.string().optional(),
@@ -22,7 +22,12 @@ export const createLeaseSchema = z.object({
   notes: z.string().optional(),
 });
 
-export const updateLeaseSchema = createLeaseSchema.partial().extend({
+export const createLeaseSchema = leaseObject.refine(
+  (d) => new Date(d.endDate) > new Date(d.startDate),
+  { message: 'End date must be after the start date.', path: ['endDate'] },
+);
+
+export const updateLeaseSchema = leaseObject.partial().extend({
   status: z.nativeEnum(LeaseStatus).optional(),
   renewalRisk: z.nativeEnum(RenewalRisk).optional(),
   renewalStage: z.nativeEnum(RenewalStage).optional(),
@@ -32,7 +37,10 @@ export const updateLeaseSchema = createLeaseSchema.partial().extend({
   securityDeposit: z.number().positive().nullable().optional(),
   sqft: z.number().positive().nullable().optional(),
   notes: z.string().nullable().optional(),
-});
+}).refine(
+  (d) => !d.startDate || !d.endDate || new Date(d.endDate) > new Date(d.startDate),
+  { message: 'End date must be after the start date.', path: ['endDate'] },
+);
 
 export const leaseQuerySchema = z.object({
   page: z.coerce.number().int().positive().default(1),
