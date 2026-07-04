@@ -11,10 +11,9 @@ auditRouter.use(authorize('ADMIN'));
 
 auditRouter.get('/', async (req, res, next) => {
   try {
-    const { entity, userId, action, page, limit } = req.query as Record<string, string>;
-    const { logs, total } = await getAuditLogs({
+    const { entity, action, page, limit } = req.query as Record<string, string>;
+    const { logs, total } = await getAuditLogs(req.user!.id, {
       entity,
-      userId,
       action,
       page: page ? parseInt(page) : 1,
       limit: limit ? parseInt(limit) : 50,
