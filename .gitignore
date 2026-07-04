@@ -95,3 +95,7 @@ mockups/
 
 ## Miscellaneous
 test_acc.md
+
+## Local document uploads (dev only; production uses object storage — see #150)
+/server/uploads/documents/*
+!/server/uploads/documents/.gitkeep
