@@ -17,7 +17,6 @@ export interface Document {
   type: DocumentType;
   mimeType: string;
   size: number;
-  path: string;
   propertyId: string | null;
   leaseId: string | null;
   tenantId: string | null;
