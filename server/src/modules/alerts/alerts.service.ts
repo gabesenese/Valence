@@ -225,43 +225,48 @@ export async function getAlertSummary(userId: string) {
 }
 
 export async function generateLeaseExpirationAlerts(): Promise<number> {
-  const thresholds = [
-    { days: 30, severity: 'CRITICAL' as AlertSeverity },
-    { days: 60, severity: 'WARNING' as AlertSeverity },
-    { days: 90, severity: 'INFO' as AlertSeverity },
-  ];
-
+  const now = new Date();
   let created = 0;
 
-  for (const { days, severity } of thresholds) {
-    const expiringLeases = await prisma.lease.findMany({
-      where: {
-        status: 'ACTIVE',
-        endDate: { lte: addDays(new Date(), days), gte: new Date() },
-        alerts: {
-          none: {
-            type: 'LEASE_EXPIRATION',
-            status: { in: ['OPEN', 'IN_PROGRESS', 'ACKNOWLEDGED'] },
-            createdAt: { gte: addDays(new Date(), -1) },
-          },
+  const leases = await prisma.lease.findMany({
+    where: {
+      status: 'ACTIVE',
+      endDate: { gte: now, lte: addDays(now, 90) },
+    },
+    include: {
+      property: true,
+      tenant: true,
+      alerts: {
+        where: {
+          type: 'LEASE_EXPIRATION',
+          status: { in: ['OPEN', 'IN_PROGRESS', 'ACKNOWLEDGED'] },
         },
+        orderBy: { createdAt: 'desc' },
+        take: 1,
       },
-      include: { property: true, tenant: true },
-    });
+    },
+  });
 
-    for (const lease of expiringLeases) {
-      const risk = computeRenewalRisk(lease.endDate);
-      const daysLeft = Math.ceil((lease.endDate.getTime() - Date.now()) / 86400000);
+  for (const lease of leases) {
+    const daysLeft = Math.ceil((lease.endDate.getTime() - now.getTime()) / 86400000);
+    const severity: AlertSeverity = daysLeft <= 30 ? 'CRITICAL' : daysLeft <= 60 ? 'WARNING' : 'INFO';
+    const risk = computeRenewalRisk(lease.endDate);
+    const title = `Lease expiring in ${daysLeft} days`;
+    const description = `Lease ${lease.leaseNumber} for ${lease.tenant.name} at ${lease.property.name} expires in ${daysLeft} days.`;
+    const metadata = { leaseNumber: lease.leaseNumber, daysLeft, renewalRisk: risk };
 
+    const existing = lease.alerts[0];
+
+    if (!existing) {
       const alert = await prisma.alert.create({
         data: {
           type: 'LEASE_EXPIRATION',
           severity,
-          title: `Lease expiring in ${daysLeft} days`,
-          description: `Lease ${lease.leaseNumber} for ${lease.tenant.name} at ${lease.property.name} expires in ${daysLeft} days.`,
+          title,
+          description,
           propertyId: lease.propertyId,
           leaseId: lease.id,
-          metadata: { leaseNumber: lease.leaseNumber, daysLeft, renewalRisk: risk },
+          metadata,
         },
       });
       await logAlertActivity(alert.id, 'SCAN_CREATED', undefined, { source: 'anomaly_scan', daysLeft });
@@ -276,6 +281,24 @@ export async function generateLeaseExpirationAlerts(): Promise<number> {
         propertyId: lease.propertyId,
       });
       created++;
+      continue;
+    }
+
+    const prevDaysLeft = (existing.metadata as { daysLeft?: number } | null)?.daysLeft;
+    const severityChanged = existing.severity !== severity;
+    if (severityChanged || prevDaysLeft !== daysLeft) {
+      await prisma.alert.update({
+        where: { id: existing.id },
+        data: { severity, title, description, metadata },
+      });
+      if (severityChanged) {
+        await logAlertActivity(existing.id, 'SCAN_ESCALATED', undefined, {
+          source: 'anomaly_scan',
+          daysLeft,
+          from: existing.severity,
+          to: severity,
+        });
+      }
     }
   }
 
