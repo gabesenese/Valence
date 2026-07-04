@@ -20,6 +20,7 @@ import { TrialBanner } from '@/components/ui/TrialBanner';
 import { NotificationBell } from '@/components/ui/NotificationBell';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { EmailVerificationBanner } from '@/components/ui/EmailVerificationBanner';
+import { RouteErrorBoundary } from '@/components/RouteErrorBoundary';
 
 type NavItem = {
   to: string;
@@ -378,7 +379,9 @@ export function AppLayout() {
         <TrialBanner />
 
         <div className="flex-1 overflow-y-auto">
-          <Outlet />
+          <RouteErrorBoundary key={location.pathname}>
+            <Outlet />
+          </RouteErrorBoundary>
         </div>
       </main>
     </div>

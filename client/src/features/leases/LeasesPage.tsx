@@ -12,6 +12,7 @@ import { authService } from '@/services/auth.service';
 import { Button } from '@/components/ui/Button';
 import { PageLoader } from '@/components/ui/Spinner';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { ErrorState } from '@/components/ui/ErrorState';
 import { StatusBadge, type StatusEntry } from '@/components/ui/StatusBadge';
 import { formatCurrency, formatDate, daysUntil } from '@/utils/format';
 import LeaseDrawer from './LeaseDrawer';
@@ -396,7 +397,7 @@ export default function LeasesPage() {
     sortOrder,
   }), [search, statusFilter, riskFilter, stageFilter, propertyId, expiryFilter, hasAlertsFilter, page, sortBy, sortOrder]);
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['leases', queryParams],
     queryFn: () => leasesService.getLeases(queryParams),
     placeholderData: (prev) => prev,
@@ -419,6 +420,8 @@ export default function LeasesPage() {
 
   const leaseIds = data?.data.map((l) => l.id) ?? [];
   const allSelected = leaseIds.length > 0 && leaseIds.every((id) => selectedIds.has(id));
+
+  if (isError && !data) return <ErrorState onRetry={() => refetch()} />;
 
   return (
     <div className="flex flex-col gap-4 p-4 animate-fade-in pb-24 sm:gap-6 sm:p-6">

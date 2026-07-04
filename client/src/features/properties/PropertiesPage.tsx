@@ -8,6 +8,7 @@ import { Card, CardBody } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { PageLoader } from '@/components/ui/Spinner';
+import { ErrorState } from '@/components/ui/ErrorState';
 import { PageHeader } from '@/components/ui/PageHeader';
 import PropertyFormModal from './PropertyFormModal';
 import PropertyImportModal from './PropertyImportModal';
@@ -83,7 +84,7 @@ export default function PropertiesPage() {
 
   const cancelConfirm = (e: React.MouseEvent) => { e.stopPropagation(); setConfirmId(null); };
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['properties', { search, type, status, vacant }],
     queryFn: () => propertiesService.getProperties({
       search: search || undefined,
@@ -94,6 +95,7 @@ export default function PropertiesPage() {
   });
 
   if (isLoading) return <PageLoader />;
+  if (isError) return <ErrorState onRetry={() => refetch()} />;
 
   return (
     <div className="flex flex-col gap-4 p-4 animate-fade-in sm:gap-6 sm:p-6">
