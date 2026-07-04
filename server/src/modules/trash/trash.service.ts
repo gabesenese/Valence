@@ -1,5 +1,7 @@
+import { Prisma } from '@prisma/client';
 import { prisma } from '../../infrastructure/database';
 import { logAudit } from '../audit/audit.service';
+import { ConflictError } from '../../utils/errors';
 
 const PURGE_AFTER_DAYS = 30;
 
@@ -54,7 +56,15 @@ export async function restoreItem(type: 'property' | 'lease' | 'tenant' | 'task'
     case 'property': {
       const item = await prisma.property.findFirst({ where: { id, ownerId: userId, deletedAt: { not: null } } });
       if (!item) throw new Error('Item not found in trash');
-      const result = await prisma.property.update({ where: { id }, data: { deletedAt: null } });
+      let result;
+      try {
+        result = await prisma.property.update({ where: { id }, data: { deletedAt: null } });
+      } catch (e) {
+        if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {
+          throw new ConflictError(`Can't restore — property code "${item.code}" is now in use. Rename the active property first.`);
+        }
+        throw e;
+      }
       void logAudit({ userId, action: 'RESTORE', entity: 'property', entityId: id, entityName: item.name });
       return result;
     }
