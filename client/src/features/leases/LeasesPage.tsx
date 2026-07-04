@@ -644,8 +644,13 @@ export default function LeasesPage() {
                       <FileText className="h-9 w-9 text-slate-700 mb-3" />
                       <p className="text-sm font-semibold text-slate-300">No leases yet</p>
                       <p className="text-xs text-slate-500 mt-1.5 max-w-xs leading-relaxed">
-                        Import leases from a CSV or add them individually once you have properties set up.
+                        Import your leases to unlock:
                       </p>
+                      <ul className="mt-2 flex flex-col items-center gap-1 text-xs text-slate-400">
+                        <li>Renewal forecasting</li>
+                        <li>Revenue-at-risk</li>
+                        <li>Lease intelligence</li>
+                      </ul>
                       <div className="flex items-center gap-2 mt-5">
                         <button
                           onClick={() => setImportOpen(true)}

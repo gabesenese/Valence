@@ -33,14 +33,21 @@ const RISK_WEIGHT: Record<string, number> = {
   LOW: 0,
 };
 
-const STAGE_MULTIPLIER: Record<string, number> = {
-  NOT_STARTED: 1.5,
-  CONTACTED: 1.2,
-  NEGOTIATING: 1.0,
-  DRAFT_SENT: 0.8,
-  LEGAL_REVIEW: 0.65,
-  SCHEDULED_RENEWAL: 0.5,
-  SIGNED: 0.1,
+const RISK_RANK: Record<string, number> = {
+  CRITICAL: 3,
+  HIGH: 2,
+  MEDIUM: 1,
+  LOW: 0,
+};
+
+const STAGE_SCORE: Record<string, number> = {
+  NOT_STARTED: 300,
+  CONTACTED: 150,
+  NEGOTIATING: 80,
+  DRAFT_SENT: 40,
+  LEGAL_REVIEW: 20,
+  SCHEDULED_RENEWAL: 10,
+  SIGNED: 0,
 };
 
 interface PriorityInput {
@@ -55,15 +62,15 @@ interface PriorityInput {
 
 export function computePriorityScore(input: PriorityInput): { score: number; why: string } {
   const daysToExpiry = differenceInDays(input.endDate, new Date());
-  const urgencyScore = Math.max(0, Math.min(1000, (180 - Math.max(0, daysToExpiry)) * (1000 / 180)));
-  const noRenewalMultiplier = !input.renewalDate && !input.renewalScheduledAt ? 2.0 : 1.0;
-  const stageMultiplier = STAGE_MULTIPLIER[input.renewalStage] ?? 1.0;
   const riskScore = RISK_WEIGHT[input.renewalRisk] ?? 0;
+  const urgencyScore = Math.max(0, Math.min(1000, (180 - Math.max(0, daysToExpiry)) * (1000 / 180)));
+  const stageScore = STAGE_SCORE[input.renewalStage] ?? 0;
+  const noRenewalScore = !input.renewalDate && !input.renewalScheduledAt ? 150 : 0;
   const rentScore = Math.min(200, (Number(input.baseRent) / 50000) * 200);
   const alertScore = input.openAlertCount * 100;
 
   const score = Math.round(
-    urgencyScore * noRenewalMultiplier * stageMultiplier + riskScore + rentScore + alertScore,
+    riskScore + urgencyScore + stageScore + noRenewalScore + rentScore + alertScore,
   );
 
   const reasons: string[] = [];
@@ -192,7 +199,10 @@ export async function getPriorityQueue(userId: string) {
       });
       return { ...lease, priorityScore: score, whyThisIsHere: why };
     })
-    .sort((a, b) => b.priorityScore - a.priorityScore)
+    .sort((a, b) => {
+      const tier = (RISK_RANK[b.renewalRisk] ?? 0) - (RISK_RANK[a.renewalRisk] ?? 0);
+      return tier !== 0 ? tier : b.priorityScore - a.priorityScore;
+    })
     .slice(0, 10);
 }
 

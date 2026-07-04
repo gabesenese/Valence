@@ -194,12 +194,14 @@ model User {
   lastName         String    @map("last_name")
   role             UserRole  @default(ANALYST)
   plan             Plan      @default(FREE)
+  addons           String[]  @default([])
   trialEndsAt      DateTime? @map("trial_ends_at")
   emailVerifiedAt  DateTime? @map("email_verified_at")
   mfaSecret        String?   @map("mfa_secret")
   mfaEnabled       Boolean   @default(false) @map("mfa_enabled")
   isActive         Boolean   @default(true) @map("is_active")
   isDemo           Boolean   @default(false) @map("is_demo")
+  seenTips         String[]  @default([]) @map("seen_tips")
   lastLoginAt      DateTime? @map("last_login_at")
   lastChangesSeenAt DateTime? @map("last_changes_seen_at")
   lastBriefSentAt   DateTime? @map("last_brief_sent_at")
@@ -228,6 +230,7 @@ model User {
   uploadedDocuments  Document[]      @relation("DocumentUploader")
   createdRules       AutomationRule[] @relation("RuleCreatedBy")
   usageRecords       UsageRecord[]
+  aiUsageLogs        AiUsageLog[]
   auditLogs          AuditLog[]
   ownedProperties    Property[]      @relation("PropertyOwner")
   ownedTenants       Tenant[]        @relation("TenantOwner")
@@ -238,6 +241,23 @@ model User {
   @@index([email])
   @@index([role])
   @@map("users")
+}
+
+model AiUsageLog {
+  id               String   @id @default(uuid())
+  userId           String   @map("user_id")
+  feature          String
+  provider         String
+  model            String
+  promptTokens     Int      @default(0) @map("prompt_tokens")
+  completionTokens Int      @default(0) @map("completion_tokens")
+  costUsd          Decimal  @default(0) @db.Decimal(12, 6) @map("cost_usd")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("ai_usage_logs")
 }
 
 enum IntegrationStatus {

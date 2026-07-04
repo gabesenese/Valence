@@ -60,6 +60,11 @@ export function usePlan() {
   const effectivePlan: Plan =
     trialActive && PLAN_ORDER[plan] < PLAN_ORDER['PROFESSIONAL'] ? 'PROFESSIONAL' : plan;
 
+  const addons = user?.addons ?? [];
+  function hasAddon(key: string): boolean {
+    return addons.includes(key);
+  }
+
   function canAccess(feature: string): boolean {
     const required = FEATURE_MIN_PLAN[feature];
     if (!required) return true;
@@ -79,6 +84,8 @@ export function usePlan() {
     label:   PLAN_LABELS[plan],
     price:   PLAN_PRICES[plan],
     limits:  PLAN_LIMITS[effectivePlan],
+    addons,
+    hasAddon,
     canAccess,
     requiredPlan,
     isFree:         plan === 'FREE',

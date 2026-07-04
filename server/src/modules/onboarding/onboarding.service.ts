@@ -90,3 +90,54 @@ export async function getOnboardingProgress(userId: string): Promise<OnboardingP
     counts: { properties: propertyCount, leases: leaseCount, invites: inviteCount },
   };
 }
+
+export async function getSeenTips(userId: string): Promise<string[]> {
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: { seenTips: true } });
+  return user?.seenTips ?? [];
+}
+
+export interface OnboardingSignals {
+  hasRealData: boolean;
+  repeatedWork: boolean;
+}
+
+export interface TipState {
+  seenTips: string[];
+  signals: OnboardingSignals;
+}
+
+export async function getTipState(userId: string): Promise<TipState> {
+  const [user, propertyCount, leaseCount, completedTasks] = await Promise.all([
+    prisma.user.findUnique({ where: { id: userId }, select: { seenTips: true, isDemo: true } }),
+    prisma.property.count({ where: { ownerId: userId, deletedAt: null } }),
+    prisma.lease.count({ where: { property: { ownerId: userId }, deletedAt: null } }),
+    prisma.task.count({
+      where: {
+        completedAt: { not: null },
+        deletedAt: null,
+        OR: [
+          { createdById: userId },
+          { assigneeUserId: userId },
+          { property: { ownerId: userId } },
+        ],
+      },
+    }),
+  ]);
+
+  return {
+    seenTips: user?.seenTips ?? [],
+    signals: {
+      hasRealData: !(user?.isDemo ?? false) && (propertyCount > 0 || leaseCount > 0),
+      repeatedWork: completedTasks >= 2,
+    },
+  };
+}
+
+export async function markTipSeen(userId: string, key: string): Promise<string[]> {
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: { seenTips: true } });
+  const current = user?.seenTips ?? [];
+  if (current.includes(key)) return current;
+  const next = [...current, key];
+  await prisma.user.update({ where: { id: userId }, data: { seenTips: next } });
+  return next;
+}

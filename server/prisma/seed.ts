@@ -70,6 +70,21 @@ async function main() {
     },
   });
 
+  const testerHash = await bcrypt.hash('ValenceTester!2026', 12);
+  await prisma.user.upsert({
+    where: { email: 'tester@valence.dev' },
+    update: { role: 'ADMIN', plan: 'EXECUTIVE', isActive: true, emailVerifiedAt: new Date() },
+    create: {
+      email: 'tester@valence.dev',
+      passwordHash: testerHash,
+      firstName: 'Tester',
+      lastName: 'Account',
+      role: 'ADMIN',
+      plan: 'EXECUTIVE',
+      emailVerifiedAt: new Date(),
+    },
+  });
+
   // Upgrade owner account if it exists
   await prisma.user.updateMany({
     where: { email: 'sd7y5zfq9m@privaterelay.appleid.com' },

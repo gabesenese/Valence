@@ -12,6 +12,7 @@
     "db:migrate": "prisma migrate dev",
     "db:migrate:deploy": "prisma migrate deploy",
     "db:seed": "tsx prisma/seed.ts",
+    "db:seed-tester": "tsx src/scripts/seed-tester.ts",
     "db:backfill-revenue": "tsx src/scripts/backfill-revenue.ts",
     "db:reconcile-orphan-leases": "tsx src/scripts/reconcile-orphan-leases.ts",
     "db:reconcile-orphan-tasks": "tsx src/scripts/reconcile-orphan-tasks.ts",

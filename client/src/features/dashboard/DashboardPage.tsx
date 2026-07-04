@@ -1,6 +1,6 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from 'recharts';
@@ -17,7 +17,9 @@ import { Card, CardHeader, CardTitle, CardBody } from '@/components/ui/Card';
 import { PageLoader } from '@/components/ui/Spinner';
 import { formatCurrency, compactCurrency, daysUntil, formatDate, monthLabelToRange } from '@/utils/format';
 import { WelcomeScreen } from '@/features/onboarding/WelcomeScreen';
-import { OnboardingCard } from '@/features/onboarding/OnboardingCard';
+import { ActivationPrompt } from '@/features/onboarding/ActivationPrompt';
+import { ActivationArrival } from '@/features/onboarding/ActivationArrival';
+import { PageTip } from '@/features/onboarding/PageTip';
 import { usePlan } from '@/hooks/usePlan';
 import { useChartColors } from '@/hooks/useChartColors';
 
@@ -39,6 +41,10 @@ type FeedItem = {
 
 export default function DashboardPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const activation = (location.state as { activation?: { seconds: number } } | null)?.activation;
+  const [showArrival, setShowArrival] = useState(true);
+  const todayHubRef = useRef<HTMLDivElement>(null);
   const { canAccess } = usePlan();
   const c = useChartColors();
   const [trendMonths, setTrendMonths] = useState(12);
@@ -199,13 +205,30 @@ export default function DashboardPage() {
 
   return (
     <div className="flex flex-col gap-4 p-4 animate-fade-in sm:p-5">
-      <OnboardingCard />
+      {activation && showArrival && !isEmpty && (
+        <ActivationArrival seconds={activation.seconds} onDismiss={() => setShowArrival(false)} />
+      )}
 
       {isEmpty && <WelcomeScreen />}
 
+      {!isEmpty && (
+        <ActivationPrompt
+          hasProperties={(summary?.properties.total ?? 0) > 0}
+          hasLeases={(summary?.leases.active ?? 0) > 0}
+        />
+      )}
+
       {!isEmpty && <WhatChangedPanel />}
 
-      {!isEmpty && <TodayHub />}
+      {!isEmpty && !(activation && showArrival) && (
+        <PageTip tipKey="dashboard" anchorRef={todayHubRef} beakSide="bottom" />
+      )}
+
+      {!isEmpty && (
+        <div ref={todayHubRef}>
+          <TodayHub />
+        </div>
+      )}
 
       {!isEmpty && canAccess('executive_brief') && <ExecutiveBriefCard />}
 

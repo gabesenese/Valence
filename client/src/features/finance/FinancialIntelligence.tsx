@@ -66,13 +66,20 @@ function priorityHeadline(rec: Recommendation): string {
   return rec.title;
 }
 
-function PriorityItem({ rec, navigate }: { rec: Recommendation; navigate: (to: string) => void }) {
+function PriorityItem({ rec, isTop, navigate }: { rec: Recommendation; isTop: boolean; navigate: (to: string) => void }) {
   const headline = priorityHeadline(rec);
   const hasMoney = Boolean(rec.impact);
   return (
     <div className="flex items-center justify-between gap-4 px-5 py-3">
       <div className="min-w-0">
-        <p className={`text-base font-bold tabular-nums ${SEVERITY_TEXT[rec.severity]}`}>{headline}</p>
+        <div className="flex items-center gap-2">
+          <p className={`text-base font-bold tabular-nums ${SEVERITY_TEXT[rec.severity]}`}>{headline}</p>
+          {isTop && (
+            <span className="shrink-0 rounded-full border border-brand-500/30 bg-brand-500/[0.08] px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-brand-300">
+              Highest impact
+            </span>
+          )}
+        </div>
         {hasMoney && <p className="mt-0.5 text-sm font-medium text-slate-200">{rec.title}</p>}
         <p className="mt-0.5 text-xs text-slate-500">{rec.description}</p>
       </div>
@@ -104,6 +111,7 @@ export function FinancialIntelligence() {
   const groups = CATEGORY_ORDER
     .map((label) => ({ label, recs: data.recommendations.filter((r) => CATEGORY[r.action] === label) }))
     .filter((g) => g.recs.length > 0);
+  const topRecId = data.recommendations[0]?.id;
 
   const totalAnnual = data.recommendations.reduce(
     (s, r) => s + (r.impact?.unit === 'PER_MONTH' ? r.impact.value * 12 : r.impact?.unit === 'ONCE' ? r.impact.value : 0),
@@ -174,7 +182,7 @@ export function FinancialIntelligence() {
                   <span className="ml-1.5 text-[10px] text-slate-600">· {group.recs.length} item{group.recs.length !== 1 ? 's' : ''}</span>
                 </div>
                 {group.recs.map((rec) => (
-                  <PriorityItem key={rec.id} rec={rec} navigate={navigate} />
+                  <PriorityItem key={rec.id} rec={rec} isTop={rec.id === topRecId} navigate={navigate} />
                 ))}
               </div>
             ))}
@@ -230,7 +238,7 @@ export function FinancialIntelligence() {
       </div>
 
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 px-1 text-[11px] text-slate-600">
-        <span className="font-medium uppercase tracking-wider text-slate-500">Confidence</span>
+        <span className="font-medium uppercase tracking-wider text-slate-500">Data confidence</span>
         {confItems.map((c) => (
           <span key={c.label} title={c.conf!.basis}>
             {c.label} <span className={`font-semibold ${CONF_COLOR[c.conf!.level]}`}>{titleCase(c.conf!.level)}</span>

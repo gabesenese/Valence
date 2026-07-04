@@ -21,7 +21,6 @@ import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { PageLoader } from '@/components/ui/Spinner';
-import { OnboardingCard } from '@/features/onboarding/OnboardingCard';
 
 
 function formatDollars(n: number) {
@@ -413,7 +412,6 @@ export default function WorkQueuePage() {
 
   return (
     <div className="flex flex-col gap-4 p-4 animate-fade-in sm:gap-6 sm:p-6">
-      <OnboardingCard />
       <QueueHero
         user={user}
         summary={data?.summary}

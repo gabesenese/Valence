@@ -9,6 +9,8 @@ export type FunnelEventType =
   | 'team_invited'
   | 'upgrade_clicked'
   | 'upgraded'
+  | 'addon_checkout_clicked'
+  | 'addon_purchased'
   | 'return_visit';
 
 const FUNNEL_STEPS: FunnelEventType[] = [

@@ -10,6 +10,7 @@ import { logAudit } from '../audit/audit.service';
 import { sendPasswordResetEmail, sendVerificationEmail } from '../../lib/email';
 import { DemoPortfolioFactory } from '../demo/demo.factory';
 import { trackEvent, trackReturnVisit } from '../analytics/funnel.service';
+import { isTesterEmail } from '../../config/testers';
 import type { RegisterInput, LoginInput } from './auth.schemas';
 import type { UserRole, Plan } from '@prisma/client';
 
@@ -25,6 +26,7 @@ interface AuthUser {
   lastName: string;
   role: UserRole;
   plan: Plan;
+  addons: string[];
   trialEndsAt: Date | null;
   emailVerifiedAt: Date | null;
   mfaEnabled: boolean;
@@ -38,7 +40,7 @@ interface SessionMeta {
 
 const USER_SELECT = {
   id: true, email: true, firstName: true, lastName: true,
-  role: true, plan: true, trialEndsAt: true,
+  role: true, plan: true, addons: true, trialEndsAt: true,
   emailVerifiedAt: true, mfaEnabled: true, isDemo: true,
 } as const;
 
@@ -116,6 +118,12 @@ export async function login(
     }
     const ok = speakeasy.totp.verify({ token: input.totp, secret: user.mfaSecret, encoding: 'base32', window: 1 });
     if (!ok) throw new UnauthorizedError('Invalid authenticator code');
+  }
+
+  if (isTesterEmail(user.email)) {
+    await new DemoPortfolioFactory().reset(user.id);
+    await prisma.user.update({ where: { id: user.id }, data: { plan: 'EXECUTIVE', seenTips: [] } });
+    user.plan = 'EXECUTIVE';
   }
 
   const isReturn = !!user.lastLoginAt;
