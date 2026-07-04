@@ -26,10 +26,44 @@ const storage = multer.diskStorage({
   },
 });
 
+const MAX_FILE_BYTES = 25 * 1024 * 1024;
+
+const ALLOWED_MIME = new Set([
+  'application/pdf',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.ms-excel',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'text/plain',
+  'text/csv',
+  'image/png',
+  'image/jpeg',
+  'image/webp',
+]);
+
 const upload = multer({
   storage,
-  limits: { fileSize: 25 * 1024 * 1024 }, // 25 MB
+  limits: { fileSize: MAX_FILE_BYTES },
+  fileFilter: (_req, file, cb) => {
+    if (ALLOWED_MIME.has(file.mimetype)) cb(null, true);
+    else cb(new Error(`Unsupported file type "${file.mimetype}". Allowed: PDF, Word, Excel, CSV, text, or images.`));
+  },
 });
+
+function uploadSingle(req: Request, res: Response, next: NextFunction): void {
+  upload.single('file')(req, res, (err: unknown) => {
+    if (err instanceof multer.MulterError) {
+      const message = err.code === 'LIMIT_FILE_SIZE' ? 'File exceeds the 25 MB limit.' : 'Upload failed.';
+      res.status(400).json({ success: false, message });
+      return;
+    }
+    if (err) {
+      res.status(400).json({ success: false, message: (err as Error).message });
+      return;
+    }
+    next();
+  });
+}
 
 
 const router = Router();
@@ -51,7 +85,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
 router.post(
   '/',
   authorize('ANALYST'),
-  upload.single('file'),
+  uploadSingle,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       if (!req.file) {
