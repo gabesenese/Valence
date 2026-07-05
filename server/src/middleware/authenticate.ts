@@ -13,6 +13,7 @@ interface JwtPayload {
   trialEndsAt: string | null;
   firstName: string;
   lastName: string;
+  impersonatedBy?: string;
   iat: number;
   exp: number;
 }
@@ -26,6 +27,7 @@ export function tryAuthenticate(req: Request, _res: Response, next: NextFunction
         id: payload.sub, email: payload.email, role: payload.role,
         plan: payload.plan ?? 'ESSENTIALS', trialEndsAt: payload.trialEndsAt ?? null,
         firstName: payload.firstName, lastName: payload.lastName,
+        impersonatedBy: payload.impersonatedBy,
       };
     } catch { /* ignore — treat as unauthenticated */ }
   }
@@ -67,6 +69,7 @@ export async function authenticate(req: Request, _res: Response, next: NextFunct
       trialEndsAt: user.trialEndsAt?.toISOString() ?? null,
       firstName: payload.firstName,
       lastName: payload.lastName,
+      impersonatedBy: payload.impersonatedBy,
     };
     next();
   } catch (err) {

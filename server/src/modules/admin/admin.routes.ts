@@ -12,6 +12,7 @@ import { sendSuccess } from '../../utils/response';
 import { ForbiddenError, NotFoundError } from '../../utils/errors';
 import * as authService from '../auth/auth.service';
 import { getFunnelStats, getUserJourney } from '../analytics/funnel.service';
+import { logAudit } from '../audit/audit.service';
 import { deleteProperty } from '../properties/properties.service';
 import { deleteLease } from '../leases/leases.service';
 import { deleteTenant } from '../tenants/tenants.service';
@@ -469,6 +470,7 @@ router.post('/users/:id/impersonate', async (req: Request, res: Response, next: 
       { expiresIn: '2h' },
     );
 
+    void logAudit({ userId: req.user!.id, action: 'IMPERSONATE', entity: 'user', entityId: target.id, entityName: target.email });
     sendSuccess(res, { token, user: target });
   } catch (err) { next(err); }
 });
