@@ -16,38 +16,20 @@ export const CHANGE_TYPE_LABEL: Record<ChangeType, string> = {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: 'July 5, 2026',
-    title: 'A guided start that teaches you the ropes',
+    title: 'A smoother start, a clearer Finance, and a sturdier platform',
     changes: [
       { type: 'added', text: 'A guided first run for new accounts — get your portfolio in and see what Valence flags for you, without sitting through a long tour.' },
       { type: 'added', text: 'Contextual tips that teach one operating habit per page — how to think about your portfolio, not where the buttons are. Each shows once and stays gone once you dismiss it.' },
       { type: 'added', text: 'Once your real data is in, a gentle prompt to invite a teammate so your team shares the same view.' },
-    ],
-  },
-  {
-    date: 'July 5, 2026',
-    title: 'A clearer Finance Overview',
-    changes: [
       { type: 'improved', text: 'Every panel on the Finance Overview now answers one question — Priorities (what to do), Health (what’s driving your score) and Outlook (what’s coming) — so the same numbers aren’t repeated across the page and what needs doing stands out.' },
       { type: 'improved', text: 'Your portfolio health score now reflects how much data it’s based on: when data is still thin it reads as a provisional estimate instead of a falsely perfect 100.' },
-    ],
-  },
-  {
-    date: 'July 4, 2026',
-    title: 'More reliable, and your data stays yours',
-    changes: [
+      { type: 'improved', text: 'The Organization page is rebuilt as a calm administration workspace — a Today’s Work inbox surfaces what needs attention (pending invites, unused seats, an incomplete profile), with a clearer team roster and a focused panel to manage each member’s role and access in place.' },
+      { type: 'improved', text: 'A calmer sidebar: Organization and Integrations now live inside Account, so the navigation stays focused on daily work.' },
+      { type: 'improved', text: 'Behind the scenes: your audit log and documents are strictly scoped to your own account, uploads are checked for safe file types, and rate limits are per-user so normal work is never throttled.' },
       { type: 'fixed', text: 'If something fails to load, the page now offers a “Try again” instead of going blank.' },
       { type: 'fixed', text: 'Lease-expiration reminders no longer pile up as duplicates — you get one clear alert per lease.' },
       { type: 'fixed', text: 'Leases can no longer be saved with an end date that falls before the start date.' },
       { type: 'fixed', text: 'Property codes are kept unique within your account, even when two are added at the same moment.' },
-      { type: 'improved', text: 'Behind the scenes: your audit log and documents are strictly scoped to your own account, uploads are checked for safe file types, and rate limits are per-user so normal work is never throttled.' },
-    ],
-  },
-  {
-    date: 'July 1, 2026',
-    title: 'Organization is now an administration workspace',
-    changes: [
-      { type: 'improved', text: 'The Organization page is rebuilt as a calm administration workspace — a Today’s Work inbox surfaces what needs attention (pending invites, unused seats, an incomplete profile), with a clearer team roster and a focused panel to manage each member’s role and access in place.' },
-      { type: 'improved', text: 'A calmer sidebar: Organization and Integrations now live inside Account, so the navigation stays focused on daily work.' },
     ],
   },
   {
