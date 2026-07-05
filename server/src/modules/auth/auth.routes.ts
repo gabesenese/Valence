@@ -4,6 +4,7 @@ import * as controller from './auth.controller';
 import { validate } from '../../middleware/validate';
 import { authenticate } from '../../middleware/authenticate';
 import { authorize } from '../../middleware/authorize';
+import { blockWhileImpersonating } from '../../middleware/impersonation';
 import { registerSchema, loginSchema, refreshSchema } from './auth.schemas';
 
 const router = Router();
@@ -27,12 +28,12 @@ router.get( '/verify-email',                                             control
 router.get(   '/me',                      authenticate, controller.getMe);
 router.post(  '/claim-trial',             authenticate, controller.claimTrial);
 router.patch( '/me',                      authenticate, controller.updateProfile);
-router.patch( '/me/email',                authenticate, controller.changeEmail);
-router.patch( '/me/password',             authenticate, controller.changePassword);
+router.patch( '/me/email',                authenticate, blockWhileImpersonating, controller.changeEmail);
+router.patch( '/me/password',             authenticate, blockWhileImpersonating, controller.changePassword);
 router.post(  '/me/resend-verification',  authenticate, controller.resendVerification);
-router.post(  '/mfa/setup',               authenticate, controller.setupMfa);
-router.post(  '/mfa/enable',              authenticate, controller.enableMfa);
-router.post(  '/mfa/disable',             authenticate, controller.disableMfa);
+router.post(  '/mfa/setup',               authenticate, blockWhileImpersonating, controller.setupMfa);
+router.post(  '/mfa/enable',              authenticate, blockWhileImpersonating, controller.enableMfa);
+router.post(  '/mfa/disable',             authenticate, blockWhileImpersonating, controller.disableMfa);
 router.get(   '/sessions',                authenticate, controller.listSessions);
 router.delete('/sessions/all',            authenticate, controller.revokeAllSessions);
 router.delete('/sessions/:id',            authenticate, controller.revokeSession);

@@ -11,6 +11,7 @@ declare global {
         trialEndsAt: string | null;
         firstName: string;
         lastName: string;
+        impersonatedBy?: string;
       };
     }
   }
