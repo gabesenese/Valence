@@ -115,18 +115,3 @@ export async function getUsageSummary(userId: string): Promise<{
 export async function setPlan(userId: string, plan: Plan): Promise<void> {
   await prisma.user.update({ where: { id: userId }, data: { plan } });
 }
-
-
-export async function getAddons(userId: string): Promise<string[]> {
-  const user = await prisma.user.findUnique({ where: { id: userId }, select: { addons: true } });
-  return user?.addons ?? [];
-}
-
-export async function hasAddon(userId: string, key: string): Promise<boolean> {
-  const addons = await getAddons(userId);
-  return addons.includes(key);
-}
-
-export async function setAddons(userId: string, addons: string[]): Promise<void> {
-  await prisma.user.update({ where: { id: userId }, data: { addons: [...new Set(addons)] } });
-}
