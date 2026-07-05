@@ -115,8 +115,33 @@ export async function restoreBackup(id: string, userId: string) {
   const restored = { properties: 0, tenants: 0, leases: 0, financialRecords: 0 };
 
   await prisma.$transaction(async (tx) => {
+    /*
+     * A backup snapshot is user-editable JSON, so its ids and FKs are untrusted.
+     * Never touch a row that already belongs to another account, and never
+     * attach a lease/record to a property/tenant/lease the caller doesn't own —
+     * otherwise a tampered snapshot could re-parent or overwrite another
+     * tenant's data by id.
+     */
+    const [xProps, xTenants, xLeases, xRecords, ownProps, ownTenants, ownLeases] = await Promise.all([
+      tx.property.findMany({ where: { id: { in: properties.map((p) => p.id) } }, select: { id: true, ownerId: true } }),
+      tx.tenant.findMany({ where: { id: { in: tenants.map((t) => t.id) } }, select: { id: true, ownerId: true } }),
+      tx.lease.findMany({ where: { id: { in: leases.map((l) => l.id) } }, select: { id: true, property: { select: { ownerId: true } } } }),
+      tx.financialRecord.findMany({ where: { id: { in: financialRecords.map((f) => f.id) } }, select: { id: true, property: { select: { ownerId: true } } } }),
+      tx.property.findMany({ where: { ownerId: userId }, select: { id: true } }),
+      tx.tenant.findMany({ where: { ownerId: userId }, select: { id: true } }),
+      tx.lease.findMany({ where: { property: { ownerId: userId } }, select: { id: true } }),
+    ]);
+    const foreignProp = new Set(xProps.filter((r) => r.ownerId !== userId).map((r) => r.id));
+    const foreignTenant = new Set(xTenants.filter((r) => r.ownerId !== userId).map((r) => r.id));
+    const foreignLease = new Set(xLeases.filter((r) => r.property?.ownerId !== userId).map((r) => r.id));
+    const foreignRecord = new Set(xRecords.filter((r) => r.property?.ownerId !== userId).map((r) => r.id));
+    const callerPropIds = new Set([...ownProps.map((p) => p.id), ...properties.filter((p) => !foreignProp.has(p.id)).map((p) => p.id)]);
+    const callerTenantIds = new Set([...ownTenants.map((t) => t.id), ...tenants.filter((t) => !foreignTenant.has(t.id)).map((t) => t.id)]);
+    const callerLeaseIds = new Set([...ownLeases.map((l) => l.id), ...leases.filter((l) => !foreignLease.has(l.id) && callerPropIds.has(l.propertyId) && callerTenantIds.has(l.tenantId)).map((l) => l.id)]);
+
     await Promise.all([
       ...properties.map(async (p) => {
+        if (foreignProp.has(p.id)) return;
         await tx.property.upsert({
           where: { id: p.id },
           create: {
@@ -153,6 +178,7 @@ export async function restoreBackup(id: string, userId: string) {
         restored.properties++;
       }),
       ...tenants.map(async (t) => {
+        if (foreignTenant.has(t.id)) return;
         await tx.tenant.upsert({
           where: { id: t.id },
           create: {
@@ -177,6 +203,7 @@ export async function restoreBackup(id: string, userId: string) {
     ]);
 
     await Promise.all(leases.map(async (l) => {
+      if (foreignLease.has(l.id) || !callerPropIds.has(l.propertyId) || !callerTenantIds.has(l.tenantId)) return;
       await tx.lease.upsert({
         where: { id: l.id },
         create: {
@@ -212,6 +239,7 @@ export async function restoreBackup(id: string, userId: string) {
     }));
 
     await Promise.all(financialRecords.map(async (f) => {
+      if (foreignRecord.has(f.id) || !callerPropIds.has(f.propertyId) || (f.leaseId && !callerLeaseIds.has(f.leaseId))) return;
       await tx.financialRecord.upsert({
         where: { id: f.id },
         create: {

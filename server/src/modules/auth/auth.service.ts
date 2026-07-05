@@ -187,11 +187,15 @@ export async function updateUserRole(
 }
 
 export async function setUserActive(targetUserId: string, isActive: boolean) {
-  return prisma.user.update({
+  const user = await prisma.user.update({
     where: { id: targetUserId },
     data: { isActive },
     select: { id: true, email: true, firstName: true, lastName: true, role: true, isActive: true },
   });
+  if (!isActive) {
+    await prisma.refreshToken.deleteMany({ where: { userId: targetUserId } });
+  }
+  return user;
 }
 
 export async function setPlan(targetUserId: string, plan: Plan, actorId?: string) {
