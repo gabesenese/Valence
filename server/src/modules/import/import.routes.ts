@@ -2,6 +2,7 @@ import { Router } from 'express';
 import multer from 'multer';
 import { authenticate } from '../../middleware/authenticate';
 import { authorize } from '../../middleware/authorize';
+import { uploadLimiter } from '../../middleware/rateLimits';
 import { importPropertiesHandler, importTenantsHandler, importLeasesHandler, importExpensesHandler } from './import.controller';
 
 const upload = multer({
@@ -20,6 +21,7 @@ const upload = multer({
 export const importRouter = Router();
 
 importRouter.use(authenticate);
+importRouter.use(uploadLimiter);
 
 importRouter.post('/properties', authorize('ANALYST'), upload.single('csv'), importPropertiesHandler);
 importRouter.post('/tenants',    authorize('ANALYST'), upload.single('csv'), importTenantsHandler);

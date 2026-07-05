@@ -12,7 +12,8 @@ import {
   createContactLog,
   deleteContactLog,
 } from './crm.service';
-import type { CrmStatus, ContactLogType } from '@prisma/client';
+import { CrmStatus } from '@prisma/client';
+import type { ContactLogType } from '@prisma/client';
 
 const router = Router();
 router.use(authenticate);
@@ -47,6 +48,22 @@ router.patch('/tenants/:id', authorize('ANALYST'), requireOwner('tenant'), async
       assignedManagerId?: string | null;
       notes?: string;
     };
+    if (crmStatus !== undefined && !Object.values(CrmStatus).includes(crmStatus)) {
+      res.status(400).json({ success: false, message: 'Invalid crmStatus' });
+      return;
+    }
+    if (renewalProbability != null && (!Number.isFinite(renewalProbability) || renewalProbability < 0 || renewalProbability > 100)) {
+      res.status(400).json({ success: false, message: 'renewalProbability must be between 0 and 100' });
+      return;
+    }
+    if (assignedManagerId != null && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(assignedManagerId)) {
+      res.status(400).json({ success: false, message: 'Invalid assignedManagerId' });
+      return;
+    }
+    if (notes && notes.length > 5000) {
+      res.status(400).json({ success: false, message: 'notes too long (max 5000)' });
+      return;
+    }
     const updated = await updateTenantCrm(req.params.id, {
       crmStatus,
       renewalProbability,
@@ -79,6 +96,10 @@ router.post('/tenants/:id/contacts', authorize('ANALYST'), requireOwner('tenant'
     }
     if (!body?.trim()) {
       res.status(400).json({ success: false, message: 'body is required' });
+      return;
+    }
+    if (body.length > 5000) {
+      res.status(400).json({ success: false, message: 'body too long (max 5000)' });
       return;
     }
 

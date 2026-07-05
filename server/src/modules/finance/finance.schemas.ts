@@ -5,16 +5,16 @@ export const createFinancialRecordSchema = z.object({
   propertyId: z.string().uuid(),
   leaseId: z.string().uuid().optional(),
   type: z.nativeEnum(FinancialRecordType),
-  amount: z.number(),
+  amount: z.number().finite(),
   currency: z.string().length(3).default('USD'),
   periodStart: z.string().datetime(),
   periodEnd: z.string().datetime(),
   dueDate: z.string().datetime().optional(),
   paidDate: z.string().datetime().optional(),
-  description: z.string().optional(),
-  category: z.string().optional(),
-  referenceId: z.string().optional(),
-  notes: z.string().optional(),
+  description: z.string().max(2000).optional(),
+  category: z.string().max(120).optional(),
+  referenceId: z.string().max(200).optional(),
+  notes: z.string().max(5000).optional(),
 });
 
 export const updateFinancialRecordSchema = createFinancialRecordSchema.partial().extend({
