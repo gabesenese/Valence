@@ -2,6 +2,7 @@ import { Router } from 'express';
 import type { Request, Response, NextFunction } from 'express';
 import { authenticate } from '../../middleware/authenticate';
 import { authorize } from '../../middleware/authorize';
+import { blockDemo } from '../../middleware/blockDemo';
 import { sendSuccess } from '../../utils/response';
 import { trackEvent } from '../analytics/funnel.service';
 import * as teamService from './team.service';
@@ -32,7 +33,7 @@ router.get('/invites', authorize('ADMIN', 'SUPER_ADMIN'), async (_req: Request, 
   } catch (e) { next(e); }
 });
 
-router.post('/invites', authorize('ADMIN', 'SUPER_ADMIN'), async (req: Request, res: Response, next: NextFunction) => {
+router.post('/invites', authorize('ADMIN', 'SUPER_ADMIN'), blockDemo, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { email, role } = req.body as { email: string; role: UserRole };
     const invite = await teamService.createInvite(email, role, req.user!.id);

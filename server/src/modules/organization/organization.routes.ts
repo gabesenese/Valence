@@ -14,7 +14,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
   } catch (e) { next(e); }
 });
 
-router.patch('/', authorize('ADMIN', 'SUPER_ADMIN'), async (req: Request, res: Response, next: NextFunction) => {
+router.patch('/', authorize('ANALYST'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { name, industry, timezone, currency } = req.body as {
       name?: string;

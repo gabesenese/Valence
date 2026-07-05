@@ -913,7 +913,7 @@ function InviteModal({ onClose }: { onClose: () => void }) {
 function OrgSettingsCard() {
   const qc = useQueryClient();
   const currentUser = useAuthStore((s) => s.user);
-  const canEdit = currentUser?.role === 'ADMIN' || currentUser?.role === 'SUPER_ADMIN';
+  const canEdit = currentUser?.role === 'ANALYST' || currentUser?.role === 'ADMIN' || currentUser?.role === 'SUPER_ADMIN';
   const [editing, setEditing] = useState(false);
 
   const { data: org, isLoading } = useQuery({

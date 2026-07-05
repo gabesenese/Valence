@@ -500,7 +500,7 @@ function RuleCard({ rule, canEdit }: { rule: AutomationRule; canEdit: boolean })
 
 export default function AutomationPage() {
   const user = useAuthStore((s) => s.user);
-  const canEdit = user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
+  const canEdit = user?.role === 'ANALYST' || user?.role === 'ADMIN' || user?.role === 'SUPER_ADMIN';
   const [showCreate, setShowCreate] = useState(false);
 
   const { data: rules = [], isLoading } = useQuery({

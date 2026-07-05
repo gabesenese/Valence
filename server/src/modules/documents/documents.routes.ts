@@ -142,7 +142,7 @@ router.get('/:id/download', requireOwner('document'), async (req: Request, res: 
   } catch (e) { next(e); }
 });
 
-router.delete('/:id', authorize('ADMIN'), requireOwner('document'), async (req: Request, res: Response, next: NextFunction) => {
+router.delete('/:id', authorize('ANALYST'), requireOwner('document'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const result = await deleteDocument(req.params.id);
     sendSuccess(res, result);

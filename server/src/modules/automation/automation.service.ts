@@ -1,6 +1,20 @@
 import { prisma } from '../../infrastructure/database';
 import { differenceInDays } from 'date-fns';
-import type { AutomationTrigger, AutomationAction } from '@prisma/client';
+import type { AutomationTrigger, AutomationAction, UserRole } from '@prisma/client';
+import { NotFoundError } from '../../utils/errors';
+
+export type RuleViewer = { id: string; role: UserRole };
+
+function ruleOwnerScope(viewer: RuleViewer) {
+  return viewer.role === 'SUPER_ADMIN' ? {} : { createdById: viewer.id };
+}
+
+async function assertRuleOwner(id: string, viewer: RuleViewer): Promise<void> {
+  const rule = await prisma.automationRule.findUnique({ where: { id }, select: { createdById: true } });
+  if (!rule || (viewer.role !== 'SUPER_ADMIN' && rule.createdById !== viewer.id)) {
+    throw new NotFoundError('Automation rule');
+  }
+}
 
 
 export interface RuleConditions {
@@ -322,8 +336,9 @@ async function evaluateRule(
 }
 
 
-export async function getRules() {
+export async function getRules(viewer: RuleViewer) {
   return prisma.automationRule.findMany({
+    where: ruleOwnerScope(viewer),
     orderBy: [{ isActive: 'desc' }, { createdAt: 'asc' }],
     select: {
       id: true,
@@ -373,7 +388,9 @@ export async function updateRule(
     conditions?: RuleConditions;
     actionConfig?: ActionConfig;
   },
+  viewer: RuleViewer,
 ) {
+  await assertRuleOwner(id, viewer);
   return prisma.automationRule.update({
     where: { id },
     data: {
@@ -384,14 +401,16 @@ export async function updateRule(
   });
 }
 
-export async function deleteRule(id: string) {
+export async function deleteRule(id: string, viewer: RuleViewer) {
+  await assertRuleOwner(id, viewer);
   return prisma.automationRule.delete({ where: { id } });
 }
 
-export async function runRule(ruleId: string): Promise<{
+export async function runRule(ruleId: string, viewer: RuleViewer): Promise<{
   tasksCreated: number;
   details: Record<string, unknown>;
 }> {
+  await assertRuleOwner(ruleId, viewer);
   const rule = await prisma.automationRule.findUniqueOrThrow({ where: { id: ruleId } });
 
   const result = await evaluateRule(
@@ -465,9 +484,12 @@ export async function runAllRules(): Promise<{ total: number; tasksCreated: numb
   return { total: rules.length, tasksCreated: totalTasks };
 }
 
-export async function getAutomationLogs(ruleId?: string) {
+export async function getAutomationLogs(viewer: RuleViewer, ruleId?: string) {
   return prisma.automationLog.findMany({
-    where: ruleId ? { ruleId } : undefined,
+    where: {
+      ...(ruleId ? { ruleId } : {}),
+      ...(viewer.role === 'SUPER_ADMIN' ? {} : { rule: { createdById: viewer.id } }),
+    },
     orderBy: { triggeredAt: 'desc' },
     take: 50,
     select: {
