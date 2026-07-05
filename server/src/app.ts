@@ -1,6 +1,6 @@
 import './config/env';
 import './lib/sentry';
-import express from 'express';
+import express, { type Request } from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
 import compression from 'compression';
@@ -11,6 +11,7 @@ import cookieParser from 'cookie-parser';
 import { env } from './config/env';
 import { logger } from './utils/logger';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
+import { tryAuthenticate } from './middleware/authenticate';
 import { Sentry } from './lib/sentry';
 
 import { authRouter } from './modules/auth/auth.routes';
@@ -66,9 +67,17 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'x-admin-secret'],
 }));
 
+function rateLimitKey(req: Request): string {
+  if (req.user) return `user:${req.user.id}`;
+  const ip = req.ip ?? req.socket?.remoteAddress ?? 'unknown';
+  return ip.includes(':') ? `ip6:${ip.split(':').slice(0, 4).join(':')}` : `ip:${ip}`;
+}
+
+app.use(tryAuthenticate);
 app.use(rateLimit({
   windowMs: env.RATE_LIMIT_WINDOW_MS,
-  max: env.RATE_LIMIT_MAX_REQUESTS,
+  max: (req: Request) => (req.user ? env.RATE_LIMIT_AUTHED_MAX : env.RATE_LIMIT_MAX_REQUESTS),
+  keyGenerator: rateLimitKey,
   standardHeaders: true,
   legacyHeaders: false,
   message: { success: false, message: 'Too many requests' },

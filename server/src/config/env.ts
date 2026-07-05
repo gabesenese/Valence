@@ -28,6 +28,8 @@ const envSchema = z.object({
   LOG_LEVEL: z.enum(['error', 'warn', 'info', 'debug']).default('info'),
   RATE_LIMIT_WINDOW_MS: z.coerce.number().default(900000),
   RATE_LIMIT_MAX_REQUESTS: z.coerce.number().default(1000),
+  RATE_LIMIT_AUTHED_MAX: z.coerce.number().default(3000),
+  BLOB_READ_WRITE_TOKEN: z.string().optional(),
   RESEND_API_KEY: z.string().optional(),
   FROM_EMAIL: z.string().email().default('noreply@valenceos.ca'),
   APP_URL: z.string().url().default('http://localhost:5173'),

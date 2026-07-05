@@ -21,6 +21,7 @@ import { NotificationBell } from '@/components/ui/NotificationBell';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { EmailVerificationBanner } from '@/components/ui/EmailVerificationBanner';
 import { PageTip } from '@/features/onboarding/PageTip';
+import { RouteErrorBoundary } from '@/components/RouteErrorBoundary';
 
 const ROUTE_TIP: Record<string, string> = {
   '/queue': 'work-queue',
@@ -396,7 +397,9 @@ export function AppLayout() {
               <PageTip tipKey={ROUTE_TIP[location.pathname]} beakSide="bottom" />
             </div>
           )}
-          <Outlet />
+          <RouteErrorBoundary key={location.pathname}>
+            <Outlet />
+          </RouteErrorBoundary>
         </div>
       </main>
     </div>

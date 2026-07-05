@@ -4,6 +4,10 @@ import { NotFoundError, ConflictError } from '../../utils/errors';
 import { trackIfFirstTime } from '../analytics/funnel.service';
 import type { CreatePropertyInput, UpdatePropertyInput, PropertyQuery } from './properties.schemas';
 
+function isDuplicateCode(e: unknown): boolean {
+  return e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002';
+}
+
 export async function getProperties(query: PropertyQuery, userId: string) {
   const { page, limit, status, type, search, vacant } = query;
   const skip = (page - 1) * limit;
@@ -64,17 +68,22 @@ export async function createProperty(input: CreatePropertyInput, userId: string)
   const existing = await prisma.property.findFirst({ where: { code: input.code, ownerId: userId, deletedAt: null } });
   if (existing) throw new ConflictError(`Property code "${input.code}" already exists`);
 
-  const property = await prisma.property.create({
-    data: {
-      ...input,
-      ownerId: userId,
-      totalSqft: input.totalSqft,
-      purchasePrice: input.purchasePrice,
-      currentValue: input.currentValue,
-    },
-  });
-  void trackIfFirstTime('data_imported', userId, { source: 'manual', entity: 'property' });
-  return property;
+  try {
+    const property = await prisma.property.create({
+      data: {
+        ...input,
+        ownerId: userId,
+        totalSqft: input.totalSqft,
+        purchasePrice: input.purchasePrice,
+        currentValue: input.currentValue,
+      },
+    });
+    void trackIfFirstTime('data_imported', userId, { source: 'manual', entity: 'property' });
+    return property;
+  } catch (e) {
+    if (isDuplicateCode(e)) throw new ConflictError(`Property code "${input.code}" already exists`);
+    throw e;
+  }
 }
 
 export async function updateProperty(id: string, input: UpdatePropertyInput, userId: string) {
@@ -85,7 +94,12 @@ export async function updateProperty(id: string, input: UpdatePropertyInput, use
     if (conflict) throw new ConflictError(`Property code "${input.code}" already exists`);
   }
 
-  return prisma.property.update({ where: { id }, data: input });
+  try {
+    return await prisma.property.update({ where: { id }, data: input });
+  } catch (e) {
+    if (isDuplicateCode(e)) throw new ConflictError(`Property code "${input.code}" already exists`);
+    throw e;
+  }
 }
 
 export async function deleteProperty(id: string) {

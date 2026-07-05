@@ -34,20 +34,22 @@ export async function getEntityActivity(entity: string, entityId: string) {
   });
 }
 
-export async function getAuditLogs(query: {
-  entity?: string;
-  userId?: string;
-  action?: string;
-  page?: number;
-  limit?: number;
-}) {
+export async function getAuditLogs(
+  accountUserId: string,
+  query: {
+    entity?: string;
+    action?: string;
+    page?: number;
+    limit?: number;
+  },
+) {
   const page = query.page ?? 1;
   const limit = Math.min(query.limit ?? 50, 100);
   const skip = (page - 1) * limit;
 
   const where = {
+    userId: accountUserId,
     ...(query.entity && { entity: query.entity }),
-    ...(query.userId && { userId: query.userId }),
     ...(query.action && { action: query.action }),
   };
 
