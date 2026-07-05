@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, Check, AlertTriangle } from 'lucide-react';
@@ -7,7 +6,6 @@ import {
   type HealthBand,
   type Recommendation,
   type RecommendationAction,
-  type FinancialIntelligence as FinancialIntelligenceData,
 } from '@/services/finance.service';
 import { formatCurrency, compactCurrency } from '@/utils/format';
 
@@ -18,6 +16,12 @@ const BAND_META: Record<HealthBand, { label: string; text: string; outlook: stri
 };
 
 const SEVERITY_TEXT: Record<Recommendation['severity'], string> = { HIGH: 'text-danger', MEDIUM: 'text-warning', LOW: 'text-slate-300' };
+
+const FACTOR_STATUS: Record<'ok' | 'warn' | 'bad', { word: string; text: string; good: boolean }> = {
+  ok:   { word: 'Healthy',   text: 'text-success', good: true },
+  warn: { word: 'Watch',     text: 'text-warning', good: false },
+  bad:  { word: 'Attention', text: 'text-danger',  good: false },
+};
 
 const CATEGORY: Record<RecommendationAction, string> = {
   RENEW_LEASE: 'Revenue',
@@ -36,26 +40,6 @@ const ACTION_CTA: Record<RecommendationAction, string> = {
 
 const CONF_COLOR: Record<string, string> = { HIGH: 'text-success/80', MEDIUM: 'text-warning/80', LOW: 'text-slate-500' };
 const titleCase = (s: string) => s.charAt(0) + s.slice(1).toLowerCase();
-
-interface Driver { positive: boolean; label: string; to?: string; }
-
-function buildDrivers(data: FinancialIntelligenceData): Driver[] {
-  const drivers: Driver[] = [];
-  const factor = (k: string) => data.health.factors.find((f) => f.key === k);
-  if (factor('revenue')?.status === 'ok') drivers.push({ positive: true, label: 'Revenue stable' });
-  if (factor('expenses')?.status === 'ok') drivers.push({ positive: true, label: 'Expenses within budget' });
-  if (factor('cashFlow')?.status === 'ok') drivers.push({ positive: true, label: 'Cash flow healthy' });
-
-  const atRisk = data.highlights.find((h) => h.kind === 'REVENUE_AT_RISK');
-  if (atRisk) drivers.push({ positive: false, label: `${atRisk.count} lease${atRisk.count !== 1 ? 's' : ''} nearing renewal`, to: '/finance?tab=forecast' });
-  const collect = data.recommendations.find((r) => r.action === 'COLLECT');
-  if (collect?.impact) drivers.push({ positive: false, label: `${formatCurrency(collect.impact.value)} overdue rent`, to: '/finance?tab=ledger' });
-  const policy = data.recommendations.find((r) => r.action === 'SET_LATE_FEE_POLICY');
-  if (policy) drivers.push({ positive: false, label: 'No late-fee policy on overdue lease', to: '/finance?tab=ledger' });
-  if (factor('dataQuality')?.status !== 'ok') drivers.push({ positive: false, label: `Data confidence ${data.health.confidence.level.toLowerCase()}`, to: '/finance?tab=ledger' });
-
-  return drivers;
-}
 
 function priorityHeadline(rec: Recommendation): string {
   const i = rec.impact;
@@ -97,17 +81,13 @@ function PriorityItem({ rec, isTop, navigate }: { rec: Recommendation; isTop: bo
 
 export function FinancialIntelligence() {
   const navigate = useNavigate();
-  const [showHealthy, setShowHealthy] = useState(false);
   const { data } = useQuery({ queryKey: ['finance', 'intelligence'], queryFn: () => financeService.getIntelligence() });
   const { data: outlook } = useQuery({ queryKey: ['finance', 'forecast-outlook'], queryFn: () => financeService.getForecastOutlook() });
 
   if (!data) return null;
 
   const band = BAND_META[data.health.band];
-  // Exceptions first, and assume the working items — they read quieter (and collapse).
-  const drivers = buildDrivers(data).sort((a, b) => Number(a.positive) - Number(b.positive));
-  const negatives = drivers.filter((d) => !d.positive);
-  const positives = drivers.filter((d) => d.positive);
+  const factors = data.health.factors;
   const groups = CATEGORY_ORDER
     .map((label) => ({ label, recs: data.recommendations.filter((r) => CATEGORY[r.action] === label) }))
     .filter((g) => g.recs.length > 0);
@@ -119,20 +99,14 @@ export function FinancialIntelligence() {
   );
 
   const nearTerm = outlook ? outlook.timeline.slice(0, 2).reduce((s, m) => s + m.revenueAtRisk, 0) : 0;
-  const collectRec = data.recommendations.find((r) => r.action === 'COLLECT');
-  const policyRec = data.recommendations.find((r) => r.action === 'SET_LATE_FEE_POLICY');
   const atRiskHighlight = data.highlights.find((h) => h.kind === 'REVENUE_AT_RISK');
 
-  const oppText = collectRec?.impact
-    ? `Collect ${formatCurrency(collectRec.impact.value)} overdue rent`
-    : policyRec ? 'Enable late-fee collection on overdue leases' : 'Portfolio is fully optimized today';
   const riskText = nearTerm > 0
     ? `Renewals over the next 60 days may reduce annual NOI by ${compactCurrency(nearTerm * 12)}.`
     : atRiskHighlight ? `${atRiskHighlight.count} lease${atRiskHighlight.count !== 1 ? 's are' : ' is'} approaching renewal.` : 'No material financial risks on the horizon.';
   const aheadText = nearTerm > 0 ? 'Revenue expected to soften over the next quarter.' : 'Revenue expected to hold steady over the next quarter.';
   const outlookSections = [
-    { label: 'Best opportunity today', value: oppText },
-    { label: 'Biggest financial risk', value: riskText },
+    { label: 'Biggest risk ahead', value: riskText },
     { label: 'Looking ahead', value: aheadText },
   ];
 
@@ -155,7 +129,7 @@ export function FinancialIntelligence() {
             {band.outlook}
           </span>
         </div>
-        <div className="mt-3 grid grid-cols-1 gap-4 border-t border-surface-400/30 pt-3 sm:grid-cols-3">
+        <div className="mt-3 grid grid-cols-1 gap-4 border-t border-surface-400/30 pt-3 sm:grid-cols-2">
           {outlookSections.map((s) => (
             <div key={s.label}>
               <p className="text-[11px] font-medium text-slate-500">{s.label}</p>
@@ -199,42 +173,23 @@ export function FinancialIntelligence() {
             <span className={`text-sm font-semibold ${band.text}`}>{band.label}</span>
           </div>
         </div>
-        <div className="mt-3 grid grid-cols-1 gap-x-6 gap-y-1.5 border-t border-surface-400/30 pt-3 sm:grid-cols-2">
-          {negatives.length === 0 && !showHealthy && (
-            <div className="flex items-center gap-2">
-              <Check className="h-3.5 w-3.5 shrink-0 text-success" />
-              <span className="text-xs text-slate-300">All clear — nothing needs attention</span>
-            </div>
-          )}
-          {(showHealthy ? drivers : negatives).map((d) =>
-            d.to ? (
-              <button
-                key={d.label}
-                type="button"
-                onClick={() => navigate(d.to!)}
-                className="group flex items-center gap-2 text-left transition-colors"
-              >
-                <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-warning" />
-                <span className="text-xs text-slate-200 group-hover:text-brand-300">{d.label}</span>
-                <ArrowRight className="ml-auto h-3 w-3 shrink-0 text-slate-600 transition-colors group-hover:text-brand-300" />
-              </button>
-            ) : (
-              <div key={d.label} className="flex items-center gap-2">
-                <Check className="h-3.5 w-3.5 shrink-0 text-slate-600" />
-                <span className="text-xs text-slate-500">{d.label}</span>
+        <p className="mt-2 text-[11px] text-slate-500">What’s driving the score</p>
+        <div className="mt-2 grid grid-cols-1 gap-x-6 gap-y-2 border-t border-surface-400/30 pt-3 sm:grid-cols-2">
+          {factors.map((f) => {
+            const meta = FACTOR_STATUS[f.status];
+            return (
+              <div key={f.key} className="flex items-center justify-between gap-2">
+                <span className="text-xs text-slate-300">{f.label}</span>
+                <span className={`flex items-center gap-1 text-[11px] font-semibold ${meta.text}`}>
+                  {meta.good
+                    ? <Check className="h-3 w-3 shrink-0" />
+                    : <AlertTriangle className="h-3 w-3 shrink-0" />}
+                  {meta.word}
+                </span>
               </div>
-            ),
-          )}
+            );
+          })}
         </div>
-        {positives.length > 0 && (
-          <button
-            type="button"
-            onClick={() => setShowHealthy((v) => !v)}
-            className="mt-2.5 text-[11px] font-medium text-slate-500 transition-colors hover:text-slate-300"
-          >
-            {showHealthy ? 'Hide healthy' : `Show ${positives.length} healthy`}
-          </button>
-        )}
       </div>
 
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 px-1 text-[11px] text-slate-600">
