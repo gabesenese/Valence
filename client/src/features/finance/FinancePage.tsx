@@ -117,10 +117,10 @@ export default function FinancePage() {
             const fStatus = (k: string): 'ok' | 'warn' | 'bad' => intelligence?.health.factors.find((f) => f.key === k)?.status ?? 'ok';
             type KStatus = 'ok' | 'warn' | 'bad';
             const metrics: { label: string; value: string; color: string; status: KStatus; delta?: MetricDelta; sub?: string; to: TabId; action: string }[] = [
-              { label: 'Net Income',      value: compactCurrency(summary.netIncome),            color: netIncomeColor, status: summary.netIncome >= 0 ? 'ok' : 'bad', delta: metricByKey.get('netIncome'),  to: 'forecast', action: 'View forecast' },
+              { label: 'Net Income',      value: compactCurrency(summary.netIncome),            color: netIncomeColor, status: summary.netIncome >= 0 ? 'ok' : 'bad', delta: metricByKey.get('netIncome'),  sub: summary.revenueBasis === 'contract' ? 'contracted, no expenses yet' : undefined, to: 'forecast', action: 'View forecast' },
               { label: 'Revenue at Risk', value: compactCurrency(atRiskHighlight?.amount ?? 0), color: 'text-warning', status: fStatus('renewals'), sub: `${atRiskCount} lease${atRiskCount !== 1 ? 's' : ''}`, to: 'forecast', action: 'Review renewals' },
               { label: 'Cash Flow',       value: compactCurrency(overdue),                      color: overdue > 0 ? 'text-warning' : 'text-success', status: fStatus('cashFlow'), sub: overdue > 0 ? 'overdue' : 'on track', to: 'ledger', action: overdue > 0 ? 'Review collections' : 'View ledger' },
-              { label: 'Revenue',         value: compactCurrency(summary.totalRevenue),         color: 'text-success', status: fStatus('revenue'),  delta: metricByKey.get('revenue'),   to: 'forecast', action: 'View forecast' },
+              { label: 'Revenue',         value: compactCurrency(summary.totalRevenue),         color: 'text-success', status: fStatus('revenue'),  delta: summary.revenueBasis === 'contract' ? undefined : metricByKey.get('revenue'),   sub: summary.revenueBasis === 'contract' ? 'contracted' : undefined, to: 'forecast', action: 'View forecast' },
               { label: 'Data Issues',     value: String(reviewCount),                           color: reviewCount > 0 ? 'text-info' : 'text-slate-300', status: reviewCount > 0 ? 'warn' : 'ok', sub: reviewCount > 0 ? 'to review' : undefined, to: 'ledger', action: 'Open ledger' },
             ];
             return (

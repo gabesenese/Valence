@@ -54,7 +54,8 @@ export default function PortfolioPerformancePage() {
   const portfolioRevenue  = properties.reduce((s, p) => s + p.monthlyRevenue, 0);
   const portfolioExpenses = properties.reduce((s, p) => s + p.monthlyExpenses, 0);
   const portfolioNOI      = portfolioRevenue - portfolioExpenses;
-  const byNOI = [...properties].sort((a, b) => b.noi - a.noi);
+  const hasExpenses       = portfolioExpenses > 0;
+  const byNOI = hasExpenses ? [...properties].sort((a, b) => b.noi - a.noi) : [...properties].sort((a, b) => b.monthlyRevenue - a.monthlyRevenue);
 
   const topCandidates: (CardEntry | null)[] = [
     highlights.bestRevenue
@@ -149,12 +150,14 @@ export default function PortfolioPerformancePage() {
                 <p className="text-[10px] text-slate-600 uppercase tracking-wider">Revenue</p>
               </div>
               <div>
-                <p className="text-xs font-bold tabular-nums text-danger">{compactCurrency(portfolioExpenses)}</p>
+                <p className={`text-xs font-bold tabular-nums ${hasExpenses ? 'text-danger' : 'text-slate-600'}`}>{hasExpenses ? compactCurrency(portfolioExpenses) : '—'}</p>
                 <p className="text-[10px] text-slate-600 uppercase tracking-wider">Expenses</p>
               </div>
               <div>
-                <p className={`text-xs font-bold tabular-nums ${portfolioNOI >= 0 ? 'text-success' : 'text-danger'}`}>
-                  {compactCurrency(portfolioNOI)} <span className="text-slate-600">({marginPct(portfolioNOI, portfolioRevenue)}%)</span>
+                <p className={`text-xs font-bold tabular-nums ${!hasExpenses ? 'text-slate-600' : portfolioNOI >= 0 ? 'text-success' : 'text-danger'}`}>
+                  {hasExpenses
+                    ? <>{compactCurrency(portfolioNOI)} <span className="text-slate-600">({marginPct(portfolioNOI, portfolioRevenue)}%)</span></>
+                    : '—'}
                 </p>
                 <p className="text-[10px] text-slate-600 uppercase tracking-wider">NOI · Margin</p>
               </div>
@@ -174,17 +177,32 @@ export default function PortfolioPerformancePage() {
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-slate-200 group-hover:text-brand-300 transition-colors truncate">{p.name}</p>
                   <p className="text-xs text-slate-600 truncate">
-                    {compactCurrency(p.monthlyRevenue)} rev · {compactCurrency(p.monthlyExpenses)} exp{p.costPerSqft > 0 ? ` · $${p.costPerSqft.toFixed(2)}/ft² cost` : ''}
+                    {hasExpenses
+                      ? `${compactCurrency(p.monthlyRevenue)} rev · ${compactCurrency(p.monthlyExpenses)} exp${p.costPerSqft > 0 ? ` · $${p.costPerSqft.toFixed(2)}/ft² cost` : ''}`
+                      : `${p.activeLeases} lease${p.activeLeases !== 1 ? 's' : ''} · contracted rent`}
                   </p>
                 </div>
                 <div className="text-right shrink-0">
-                  <p className={`text-sm font-bold tabular-nums ${p.noi >= 0 ? 'text-success' : 'text-danger'}`}>{compactCurrency(p.noi)}</p>
-                  <p className="text-[10px] text-slate-600 uppercase tracking-wider">{marginPct(p.noi, p.monthlyRevenue)}% margin</p>
+                  <p className={`text-sm font-bold tabular-nums ${hasExpenses ? (p.noi >= 0 ? 'text-success' : 'text-danger') : 'text-success'}`}>
+                    {compactCurrency(hasExpenses ? p.noi : p.monthlyRevenue)}
+                  </p>
+                  <p className="text-[10px] text-slate-600 uppercase tracking-wider">{hasExpenses ? `${marginPct(p.noi, p.monthlyRevenue)}% margin` : 'per month'}</p>
                 </div>
                 <ChevronRight className="h-3.5 w-3.5 text-slate-700 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
               </button>
             ))}
           </div>
+          {!hasExpenses && (
+            <button
+              type="button"
+              onClick={() => navigate('/integrations')}
+              className="group flex w-full items-center gap-2 border-t border-surface-400/30 bg-surface-200/20 px-4 py-2.5 text-left transition-colors hover:bg-brand-600/10"
+            >
+              <Scale className="h-3.5 w-3.5 shrink-0 text-slate-600" />
+              <span className="text-[11px] text-slate-500">Connect QuickBooks or import expenses to see NOI &amp; margins.</span>
+              <ChevronRight className="ml-auto h-3.5 w-3.5 shrink-0 text-slate-700 transition-colors group-hover:text-brand-300" />
+            </button>
+          )}
         </div>
       )}
 

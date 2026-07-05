@@ -139,6 +139,15 @@ export async function getBenchmarks(userId: string): Promise<BenchmarkReport> {
     };
   }
 
+  const contractRevenueByProperty = await prisma.lease.groupBy({
+    by: ['propertyId'],
+    where: { status: 'ACTIVE', deletedAt: null, property: { ownerId: userId } },
+    _sum: { baseRent: true },
+  });
+  const contractRevenueById = new Map(
+    contractRevenueByProperty.map((l) => [l.propertyId, Number(l._sum.baseRent ?? 0)]),
+  );
+
   const scorecards = await Promise.all(
     rawProperties.map(async (p) => {
       const [rev, prevRev, exp, alerts, expiringSoon, highRiskLeases] = await Promise.all([
@@ -167,13 +176,14 @@ export async function getBenchmarks(userId: string): Promise<BenchmarkReport> {
         }),
       ]);
 
-      const monthlyRevenue  = Number(rev._sum.amount ?? 0);
+      const monthlyRevenue  = contractRevenueById.get(p.id) ?? 0;
+      const recordedRevenue = Number(rev._sum.amount ?? 0);
       const prevRevenue     = Number(prevRev._sum.amount ?? 0);
       const monthlyExpenses = Number(exp._sum.amount ?? 0);
       const noi             = monthlyRevenue - monthlyExpenses;
       const sqft            = Number(p.totalSqft ?? 0);
       const occupancyRate   = p.totalUnits > 0 ? (p._count.leases / p.totalUnits) * 100 : 0;
-      const revenueDeltaPct = prevRevenue > 0 ? Number((((monthlyRevenue - prevRevenue) / prevRevenue) * 100).toFixed(1)) : null;
+      const revenueDeltaPct = prevRevenue > 0 ? Number((((recordedRevenue - prevRevenue) / prevRevenue) * 100).toFixed(1)) : null;
 
       const openAlerts     = alerts.reduce((s, a) => s + a._count, 0);
       const criticalAlerts = alerts.find(a => a.severity === 'CRITICAL')?._count ?? 0;

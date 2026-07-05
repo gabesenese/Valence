@@ -142,7 +142,7 @@ export function FinancialIntelligence() {
         </div>
       </div>
 
-      {groups.length > 0 && (
+      {groups.length > 0 ? (
         <div className="rounded-2xl border border-surface-400/60 bg-surface-100 overflow-hidden">
           <div className="flex items-baseline justify-between gap-3 px-5 py-3 border-b border-surface-400/30">
             <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">Today’s Priorities</span>
@@ -163,6 +163,41 @@ export function FinancialIntelligence() {
                 ))}
               </div>
             ))}
+          </div>
+        </div>
+      ) : (
+        <div className="rounded-2xl border border-surface-400/60 bg-surface-100 overflow-hidden">
+          <div className="px-5 py-3 border-b border-surface-400/30">
+            <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">Today’s Priorities</span>
+          </div>
+          <div className="px-5 py-4">
+            <p className="text-sm font-medium text-slate-200">No urgent actions right now.</p>
+            {provisional ? (
+              <>
+                <p className="mt-0.5 text-[11px] text-slate-500">Add a little more to sharpen your intelligence:</p>
+                <div className="mt-3 flex flex-col gap-2">
+                  {[
+                    { label: 'Import your expenses', desc: 'Unlock profitability & margins', to: '/import' },
+                    { label: 'Connect QuickBooks', desc: 'Auto-sync operating costs', to: '/integrations' },
+                  ].map((s) => (
+                    <button
+                      key={s.to}
+                      type="button"
+                      onClick={() => navigate(s.to)}
+                      className="group flex items-center gap-3 rounded-xl border border-surface-400/40 bg-surface-200/40 px-4 py-2.5 text-left transition-colors hover:border-brand-500/40 hover:bg-brand-600/10"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-medium text-slate-200">{s.label}</p>
+                        <p className="text-[11px] text-slate-500">{s.desc}</p>
+                      </div>
+                      <ArrowRight className="h-3.5 w-3.5 shrink-0 text-slate-600 transition-colors group-hover:text-brand-300" />
+                    </button>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <p className="mt-0.5 text-[11px] text-slate-500">You’re on top of it — nothing needs attention today.</p>
+            )}
           </div>
         </div>
       )}

@@ -101,6 +101,7 @@ export interface PortfolioHealthScore {
   delta:      number;
   trend:      'up' | 'down' | 'stable';
   band:       'critical' | 'at_risk' | 'stable' | 'healthy';
+  provisional: boolean;
   components: HealthScoreComponent[];
   drivers: {
     positive: ScoreDriver[];

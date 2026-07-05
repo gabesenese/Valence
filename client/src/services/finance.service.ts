@@ -57,6 +57,7 @@ export interface FinancialSummary {
   totalRevenue: number;
   totalExpenses: number;
   netIncome: number;
+  revenueBasis: 'recorded' | 'contract';
   flaggedRecords: number;
   pendingRecords: number;
   reconciledRecords: number;
