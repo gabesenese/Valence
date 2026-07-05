@@ -106,7 +106,18 @@ export function computeHealthScore(input: HealthInput): HealthScore {
     },
   ];
 
-  const finalScore = clamp(score);
+  // A perfect score can't be claimed on data we don't trust. Cap the ceiling by
+  // confidence so the score never contradicts a flagged Data Quality factor (a
+  // clean-but-thin portfolio reads "provisional", not falsely perfect).
+  const confidenceCap = input.confidence.level === 'HIGH' ? 100 : input.confidence.level === 'MEDIUM' ? 95 : 85;
+  if (score > confidenceCap) {
+    reasons.push(
+      input.confidence.level === 'LOW'
+        ? 'Limited data — health is a provisional estimate'
+        : 'Some data still syncing — health is an estimate',
+    );
+  }
+  const finalScore = clamp(Math.min(score, confidenceCap));
 
   return {
     score: finalScore,
