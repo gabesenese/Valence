@@ -15,6 +15,7 @@ import {
   deleteDocument,
 } from './documents.service';
 import { putDocument, readDocument } from './storage';
+import { contentMatchesMime } from './mime';
 import type { DocumentType } from '@prisma/client';
 
 
@@ -85,6 +86,10 @@ router.post(
     try {
       if (!req.file) {
         res.status(400).json({ success: false, message: 'No file uploaded' });
+        return;
+      }
+      if (!contentMatchesMime(req.file.buffer, req.file.mimetype)) {
+        res.status(400).json({ success: false, message: 'File content does not match its declared type.' });
         return;
       }
 
