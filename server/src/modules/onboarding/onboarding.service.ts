@@ -99,6 +99,7 @@ export async function getSeenTips(userId: string): Promise<string[]> {
 export interface OnboardingSignals {
   hasRealData: boolean;
   repeatedWork: boolean;
+  hasInvitedTeammate: boolean;
 }
 
 export interface TipState {
@@ -107,7 +108,7 @@ export interface TipState {
 }
 
 export async function getTipState(userId: string): Promise<TipState> {
-  const [user, propertyCount, leaseCount, completedTasks] = await Promise.all([
+  const [user, propertyCount, leaseCount, completedTasks, inviteCount] = await Promise.all([
     prisma.user.findUnique({ where: { id: userId }, select: { seenTips: true, isDemo: true } }),
     prisma.property.count({ where: { ownerId: userId, deletedAt: null } }),
     prisma.lease.count({ where: { property: { ownerId: userId }, deletedAt: null } }),
@@ -122,6 +123,7 @@ export async function getTipState(userId: string): Promise<TipState> {
         ],
       },
     }),
+    prisma.invite.count({ where: { invitedById: userId } }),
   ]);
 
   return {
@@ -129,6 +131,7 @@ export async function getTipState(userId: string): Promise<TipState> {
     signals: {
       hasRealData: !(user?.isDemo ?? false) && (propertyCount > 0 || leaseCount > 0),
       repeatedWork: completedTasks >= 2,
+      hasInvitedTeammate: inviteCount > 0,
     },
   };
 }

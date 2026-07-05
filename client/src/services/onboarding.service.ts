@@ -26,6 +26,7 @@ export interface OnboardingProgress {
 export interface OnboardingSignals {
   hasRealData: boolean;
   repeatedWork: boolean;
+  hasInvitedTeammate: boolean;
 }
 
 export interface TipState {

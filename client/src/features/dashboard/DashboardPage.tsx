@@ -19,6 +19,7 @@ import { ErrorState } from '@/components/ui/ErrorState';
 import { formatCurrency, compactCurrency, daysUntil, formatDate, monthLabelToRange } from '@/utils/format';
 import { WelcomeScreen } from '@/features/onboarding/WelcomeScreen';
 import { ActivationPrompt } from '@/features/onboarding/ActivationPrompt';
+import { InviteTeammatePrompt } from '@/features/onboarding/InviteTeammatePrompt';
 import { ActivationArrival } from '@/features/onboarding/ActivationArrival';
 import { PageTip } from '@/features/onboarding/PageTip';
 import { usePlan } from '@/hooks/usePlan';
@@ -219,6 +220,8 @@ export default function DashboardPage() {
           hasLeases={(summary?.leases.active ?? 0) > 0}
         />
       )}
+
+      {!isEmpty && <InviteTeammatePrompt />}
 
       {!isEmpty && <WhatChangedPanel />}
 
