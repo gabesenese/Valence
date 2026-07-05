@@ -88,6 +88,9 @@ export function FinancialIntelligence() {
 
   const band = BAND_META[data.health.band];
   const factors = data.health.factors;
+  const conf = data.health.confidence;
+  const provisional = conf.level !== 'HIGH';
+  const basisLower = conf.basis ? conf.basis.charAt(0).toLowerCase() + conf.basis.slice(1) : '';
   const groups = CATEGORY_ORDER
     .map((label) => ({ label, recs: data.recommendations.filter((r) => CATEGORY[r.action] === label) }))
     .filter((g) => g.recs.length > 0);
@@ -173,6 +176,17 @@ export function FinancialIntelligence() {
             <span className={`text-sm font-semibold ${band.text}`}>{band.label}</span>
           </div>
         </div>
+        {provisional && (
+          <button
+            type="button"
+            onClick={() => navigate('/import')}
+            className="group mt-1.5 flex w-full items-center gap-1.5 text-left text-[11px] text-slate-500 transition-colors hover:text-brand-300"
+          >
+            <AlertTriangle className="h-3 w-3 shrink-0 text-warning" />
+            <span>Provisional{basisLower ? ` — ${basisLower}` : ''}. Add your data to sharpen it.</span>
+            <ArrowRight className="ml-auto h-3 w-3 shrink-0 opacity-0 transition-opacity group-hover:opacity-100" />
+          </button>
+        )}
         <p className="mt-2 text-[11px] text-slate-500">What’s driving the score</p>
         <div className="mt-2 grid grid-cols-1 gap-x-6 gap-y-2 border-t border-surface-400/30 pt-3 sm:grid-cols-2">
           {factors.map((f) => {
