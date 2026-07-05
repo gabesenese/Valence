@@ -48,7 +48,9 @@ const STAGE_ORDER: RenewalStage[] = [
 
 type ActionCfg = {
   Icon: React.FC<{ className?: string }>;
+  iconFor?: (meta: Record<string, unknown> | null) => React.FC<{ className?: string }>;
   dot: string;
+  dotFor?: (meta: Record<string, unknown> | null) => string;
   label: (meta: Record<string, unknown> | null) => string;
   detail?: (meta: Record<string, unknown>) => string | null;
 };
@@ -56,9 +58,17 @@ type ActionCfg = {
 const fmtStage = (s: string) =>
   s.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 
+const stageDirection = (meta: Record<string, unknown> | null): number => {
+  const from = STAGE_ORDER.indexOf(String(meta?.previousStage) as RenewalStage);
+  const to = STAGE_ORDER.indexOf(String(meta?.newStage) as RenewalStage);
+  return from >= 0 && to >= 0 ? Math.sign(to - from) : 0;
+};
+
 const ACTION_CONFIG: Record<string, ActionCfg> = {
   RENEWAL_STARTED:      { Icon: RefreshCw,     dot: 'bg-brand-500',    label: () => 'Renewal started' },
-  STAGE_ADVANCED:       { Icon: ArrowRight,    dot: 'bg-brand-400',    label: () => 'Stage advanced',
+  STAGE_ADVANCED:       { Icon: ArrowRight,    dot: 'bg-brand-400',    label: (m) => stageDirection(m) < 0 ? 'Stage moved back' : 'Stage advanced',
+                          iconFor: (m) => stageDirection(m) < 0 ? ArrowLeft : ArrowRight,
+                          dotFor: (m) => stageDirection(m) < 0 ? 'bg-slate-500' : 'bg-brand-400',
                           detail: (m) => m.previousStage && m.newStage ? `${fmtStage(String(m.previousStage))} → ${fmtStage(String(m.newStage))}` : null },
   TENANT_CONTACTED:     { Icon: Phone,         dot: 'bg-blue-400',     label: () => 'Tenant contacted' },
   OWNER_ASSIGNED:       { Icon: User,          dot: 'bg-violet-400',   label: (m) => m?.ownerName ? `Assigned to ${String(m.ownerName)}` : 'Owner assigned' },
@@ -745,9 +755,9 @@ export default function LeaseDetailPage() {
 
                         const act = entry.data;
                         const cfg = ACTION_CONFIG[act.actionType];
-                        const Icon = cfg?.Icon ?? Clock;
-                        const dotColor = cfg?.dot ?? 'bg-slate-500';
                         const meta = act.metadata as Record<string, unknown> | null;
+                        const Icon = cfg?.iconFor?.(meta) ?? cfg?.Icon ?? Clock;
+                        const dotColor = cfg?.dotFor?.(meta) ?? cfg?.dot ?? 'bg-slate-500';
                         const label = cfg
                           ? cfg.label(meta)
                           : act.actionType.replace(/_/g, ' ').toLowerCase();
