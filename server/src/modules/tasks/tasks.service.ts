@@ -23,13 +23,24 @@ const taskSelect = {
   property:    { select: { id: true, name: true, code: true } },
 } as const;
 
+function ownedTaskOR(userId: string) {
+  return [
+    { createdById: userId },
+    { assigneeUserId: userId },
+    { property: { ownerId: userId } },
+    { lease: { property: { ownerId: userId } } },
+    { alert: { property: { ownerId: userId } } },
+    { alert: { lease: { property: { ownerId: userId } } } },
+  ];
+}
+
 export async function getTasksForItem(filter: {
   alertId?: string;
   leaseId?: string;
   propertyId?: string;
-}) {
+}, userId: string) {
   return prisma.task.findMany({
-    where: { ...filter, deletedAt: null },
+    where: { ...filter, deletedAt: null, OR: ownedTaskOR(userId) },
     select: taskSelect,
     orderBy: { createdAt: 'asc' },
   });
@@ -41,10 +52,10 @@ export async function listAllTasks(filter: {
   propertyId?: string;
   leaseId?: string;
   unassigned?: boolean;
-}) {
+}, userId: string) {
   const { status, assigneeUserId, propertyId, leaseId, unassigned } = filter;
 
-  const where: Record<string, unknown> = { deletedAt: null };
+  const where: Record<string, unknown> = { deletedAt: null, OR: ownedTaskOR(userId) };
   if (status) {
     where.status = Array.isArray(status) ? { in: status } : status;
   }

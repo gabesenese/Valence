@@ -485,9 +485,15 @@ export async function deleteLeaseNote(leaseId: string, noteId: string, userId: s
 export async function bulkAction(input: BulkActionInput, userId: string) {
   const { ids, action, ownerUserId, note } = input;
 
+  const owned = await prisma.lease.findMany({
+    where: { id: { in: ids }, property: { ownerId: userId } },
+    select: { id: true },
+  });
+  const scopedIds = owned.map((l) => l.id);
+
   if (action === 'exportCsv') {
     const leases = await prisma.lease.findMany({
-      where: { id: { in: ids } },
+      where: { id: { in: scopedIds } },
       include: {
         property: { select: { name: true } },
         tenant: { select: { name: true } },
@@ -511,7 +517,7 @@ export async function bulkAction(input: BulkActionInput, userId: string) {
   }
 
   const results: Array<{ id: string; success: boolean }> = [];
-  for (const id of ids) {
+  for (const id of scopedIds) {
     try {
       if (action === 'assignOwner' && ownerUserId) {
         await assignOwner(id, userId, ownerUserId);

@@ -1,5 +1,6 @@
 import type { Request, Response, NextFunction } from 'express';
 import * as service from './finance.service';
+import { assertPropertyOwner, assertLeaseOwner } from '../../utils/ownership';
 import { getRevenueAtRisk } from './revenue-at-risk.service';
 import { getTenantProfitability } from './tenant-profitability.service';
 import { getLateFeeForecast } from './late-fee-forecast.service';
@@ -32,12 +33,18 @@ export async function show(req: Request, res: Response, next: NextFunction): Pro
 
 export async function create(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
+    const { propertyId, leaseId } = req.body as { propertyId?: string; leaseId?: string };
+    if (propertyId) await assertPropertyOwner(propertyId, req.user!.id);
+    if (leaseId)    await assertLeaseOwner(leaseId, req.user!.id);
     sendSuccess(res, await service.createFinancialRecord(req.body), 201);
   } catch (err) { next(err); }
 }
 
 export async function update(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
+    const { propertyId, leaseId } = req.body as { propertyId?: string; leaseId?: string };
+    if (propertyId) await assertPropertyOwner(propertyId, req.user!.id);
+    if (leaseId)    await assertLeaseOwner(leaseId, req.user!.id);
     sendSuccess(res, await service.updateFinancialRecord(req.params.id, req.body));
   } catch (err) { next(err); }
 }
