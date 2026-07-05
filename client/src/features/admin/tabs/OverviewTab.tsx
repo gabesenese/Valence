@@ -14,9 +14,9 @@ const PLAN_COLORS: Record<string, string> = {
 const STEP_LABELS: Record<string, string> = {
   visitor:        'Visitor',
   signup:         'Sign Up',
-  demo_started:   'Demo Started',
   setup_complete: 'Setup Complete',
   data_imported:  'Data Imported',
+  first_insight:  'First Insight',
   team_invited:   'Team Invited',
   upgrade_clicked:'Upgrade Clicked',
   upgraded:       'Upgraded',

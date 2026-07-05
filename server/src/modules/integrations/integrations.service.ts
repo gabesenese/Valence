@@ -4,6 +4,7 @@ import { env } from '../../config/env';
 import { NotFoundError, ForbiddenError, ValidationError } from '../../utils/errors';
 import { CONNECTORS, isKnownConnector, getConnector, planAllowsIntegrations, type Connector } from './connector';
 import { signOAuthState, verifyOAuthState } from './security';
+import { trackEvent } from '../analytics/funnel.service';
 
 function providerRedirectUri(provider: string): string {
   if (provider === 'quickbooks') {
@@ -154,6 +155,10 @@ async function runSync(ownerId: string, provider: string, impl: Connector) {
       where: { ownerId_provider: { ownerId, provider } },
       data:  { lastSyncedAt: new Date(), status: 'CONNECTED' },
     });
+    const created = Object.values(summary.entities).reduce((n, e) => n + e.created, 0);
+    if (created > 0) {
+      void trackEvent('data_imported', ownerId, { source: provider, entity: Object.keys(summary.entities).join(','), count: created });
+    }
     return { runId: run.id, summary };
   } catch (e) {
     await prisma.syncRun.update({
