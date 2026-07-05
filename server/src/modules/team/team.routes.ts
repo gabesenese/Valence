@@ -27,9 +27,9 @@ router.post('/invites/accept/:token', async (req: Request, res: Response, next: 
 
 router.use(authenticate);
 
-router.get('/invites', authorize('ADMIN', 'SUPER_ADMIN'), async (_req: Request, res: Response, next: NextFunction) => {
+router.get('/invites', authorize('ADMIN', 'SUPER_ADMIN'), async (req: Request, res: Response, next: NextFunction) => {
   try {
-    sendSuccess(res, await teamService.listInvites());
+    sendSuccess(res, await teamService.listInvites(req.user!.id));
   } catch (e) { next(e); }
 });
 
@@ -44,7 +44,7 @@ router.post('/invites', authorize('ADMIN', 'SUPER_ADMIN'), blockDemo, async (req
 
 router.delete('/invites/:id', authorize('ADMIN', 'SUPER_ADMIN'), async (req: Request, res: Response, next: NextFunction) => {
   try {
-    await teamService.revokeInvite(req.params.id);
+    await teamService.revokeInvite(req.params.id, req.user!.id);
     sendSuccess(res, { message: 'Invite revoked' });
   } catch (e) { next(e); }
 });
