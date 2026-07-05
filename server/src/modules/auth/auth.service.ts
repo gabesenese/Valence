@@ -11,7 +11,6 @@ import { sendPasswordResetEmail, sendVerificationEmail } from '../../lib/email';
 import { DemoPortfolioFactory } from '../demo/demo.factory';
 import { trackEvent, trackReturnVisit } from '../analytics/funnel.service';
 import { isTesterEmail } from '../../config/testers';
-import { VALENCE_COPILOT } from '../plans/addons';
 import type { RegisterInput, LoginInput } from './auth.schemas';
 import type { UserRole, Plan } from '@prisma/client';
 
@@ -123,9 +122,8 @@ export async function login(
 
   if (isTesterEmail(user.email)) {
     await new DemoPortfolioFactory().reset(user.id);
-    await prisma.user.update({ where: { id: user.id }, data: { plan: 'EXECUTIVE', seenTips: [], addons: [VALENCE_COPILOT] } });
+    await prisma.user.update({ where: { id: user.id }, data: { plan: 'EXECUTIVE', seenTips: [] } });
     user.plan = 'EXECUTIVE';
-    user.addons = [VALENCE_COPILOT];
   }
 
   const isReturn = !!user.lastLoginAt;

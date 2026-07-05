@@ -1,8 +1,7 @@
 import Stripe from 'stripe';
 import type { Plan } from '@prisma/client';
-import { VALENCE_COPILOT, type AddonKey } from '../plans/addons';
 import { env } from '../../config/env';
-import { setPlan, getAddons, setAddons } from '../plans/plans.service';
+import { setPlan } from '../plans/plans.service';
 import { trackEvent } from '../analytics/funnel.service';
 
 
@@ -32,34 +31,14 @@ function planForPriceId(priceId: string): Plan | undefined {
   return undefined;
 }
 
-function priceIdForAddon(addon: AddonKey): string {
-  const id: string | undefined = { valence_copilot: env.STRIPE_PRICE_AI_COPILOT }[addon];
-  if (!id) throw new Error(`No Stripe price configured for add-on: ${addon}`);
-  return id;
-}
-
-function addonForPriceId(priceId: string): AddonKey | undefined {
-  if (priceId === env.STRIPE_PRICE_AI_COPILOT) return VALENCE_COPILOT;
-  return undefined;
-}
-
 /**
- * Reconcile a user's plan + add-ons from the price ids on a Stripe subscription.
- * `active` = subscription is live (add/upgrade); false = it was removed (downgrade to FREE / drop add-on).
- * Plan is only touched when a tier price is present, so an add-on-only subscription never resets the tier.
+ * Reconcile a user's plan from the price ids on a Stripe subscription.
+ * `active` = subscription is live (add/upgrade); false = it was removed (downgrade to FREE).
+ * Plan is only touched when a tier price is present.
  */
 async function applySubscriptionItems(userId: string, priceIds: string[], active: boolean): Promise<void> {
   const tier = priceIds.map(planForPriceId).find((p): p is Plan => Boolean(p));
   if (tier) await setPlan(userId, active ? tier : 'FREE');
-
-  const addonsInSub = priceIds.map(addonForPriceId).filter((a): a is AddonKey => Boolean(a));
-  if (addonsInSub.length > 0) {
-    const current = await getAddons(userId);
-    const next = active
-      ? [...current, ...addonsInSub]
-      : current.filter((a) => !addonsInSub.includes(a as AddonKey));
-    await setAddons(userId, next);
-  }
 }
 
 
@@ -106,30 +85,6 @@ export async function createCheckoutSession(
   return session.url!;
 }
 
-export async function createAddonCheckout(
-  user: UserInfo,
-  addon: AddonKey,
-  successUrl: string,
-  cancelUrl: string,
-): Promise<string> {
-  const stripe = getStripe();
-  const customer = await getOrCreateCustomer(stripe, user);
-
-  const session = await stripe.checkout.sessions.create({
-    customer: customer.id,
-    mode: 'subscription',
-    payment_method_types: ['card'],
-    line_items: [{ price: priceIdForAddon(addon), quantity: 1 }],
-    success_url: successUrl,
-    cancel_url: cancelUrl,
-    client_reference_id: user.id,
-    metadata: { userId: user.id, addon },
-    subscription_data: { metadata: { userId: user.id, addon } },
-  });
-
-  return session.url!;
-}
-
 export async function createPortalSession(user: UserInfo, returnUrl: string): Promise<string> {
   const stripe = getStripe();
   const customer = await getOrCreateCustomer(stripe, user);
@@ -153,13 +108,7 @@ export async function handleWebhookEvent(payload: Buffer, sig: string): Promise<
     case 'checkout.session.completed': {
       const userId: string | undefined = obj.metadata?.userId;
       const plan = obj.metadata?.plan as Plan | undefined;
-      const addon = obj.metadata?.addon as AddonKey | undefined;
       if (userId && plan) { await setPlan(userId, plan); void trackEvent('upgraded', userId, { plan }); }
-      if (userId && addon) {
-        const current = await getAddons(userId);
-        await setAddons(userId, [...current, addon]);
-        void trackEvent('addon_purchased', userId, { addon });
-      }
       break;
     }
 
