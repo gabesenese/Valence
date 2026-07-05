@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
-import { TrendingUp, TrendingDown, Minus, Activity, ShieldAlert, CheckCircle2 } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { TrendingUp, TrendingDown, Minus, Activity, ShieldAlert, CheckCircle2, AlertTriangle, ArrowRight } from 'lucide-react';
 import { aiService, type PortfolioHealthScore } from '@/services/ai.service';
 import { useChartColors } from '@/hooks/useChartColors';
 
@@ -91,6 +92,17 @@ export default function HealthScoreCard() {
           <span>{data.delta >= 0 ? '+' : ''}{data.delta} this month</span>
         </div>
       </div>
+
+      {data.provisional && (
+        <Link
+          to="/import"
+          className="group flex items-center gap-1.5 border-b border-surface-400/30 bg-surface-200/20 px-5 py-2 text-[11px] text-slate-500 transition-colors hover:text-brand-300"
+        >
+          <AlertTriangle className="h-3 w-3 shrink-0 text-warning" />
+          <span>Provisional — based on leases alone. Add expenses or connect QuickBooks to sharpen it.</span>
+          <ArrowRight className="ml-auto h-3 w-3 shrink-0 opacity-0 transition-opacity group-hover:opacity-100" />
+        </Link>
+      )}
 
       <div className="flex items-center gap-6 px-5 py-5">
         <ScoreGauge score={data.score} band={data.band} />

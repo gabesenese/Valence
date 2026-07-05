@@ -175,22 +175,31 @@ export async function getFinancialSummary(propertyId: string | undefined, userId
     status: { not: 'VOID' },
   };
 
-  const [revenue, expenses, flagged, pending, reconciled, totalEvents] = await Promise.all([
+  const [revenue, expenses, flagged, pending, reconciled, totalEvents, contractRent] = await Promise.all([
     prisma.financialRecord.aggregate({ where: { ...where, type: 'REVENUE' }, _sum: { amount: true } }),
     prisma.financialRecord.aggregate({ where: { ...where, type: 'EXPENSE' }, _sum: { amount: true } }),
     prisma.financialRecord.count({ where: { ...where, status: 'FLAGGED' } }),
     prisma.financialRecord.count({ where: { ...where, status: 'PENDING' } }),
     prisma.financialRecord.count({ where: { ...where, status: 'RECONCILED' } }),
     prisma.financialRecord.count({ where }),
+    prisma.lease.aggregate({
+      where: { status: 'ACTIVE', deletedAt: null, property: { ownerId: userId, deletedAt: null }, ...(propertyId && { propertyId }) },
+      _sum: { baseRent: true },
+    }),
   ]);
 
-  const totalRevenue = Number(revenue._sum.amount ?? 0);
+  const recordedRevenue = Number(revenue._sum.amount ?? 0);
+  const contractRevenue = Number(contractRent._sum.baseRent ?? 0);
   const totalExpenses = Number(expenses._sum.amount ?? 0);
+
+  const revenueBasis: 'recorded' | 'contract' = recordedRevenue === 0 && contractRevenue > 0 ? 'contract' : 'recorded';
+  const totalRevenue = revenueBasis === 'contract' ? contractRevenue : recordedRevenue;
 
   return {
     totalRevenue,
     totalExpenses,
     netIncome: totalRevenue - totalExpenses,
+    revenueBasis,
     flaggedRecords: flagged,
     pendingRecords: pending,
     reconciledRecords: reconciled,

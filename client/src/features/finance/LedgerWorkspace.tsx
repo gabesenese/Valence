@@ -258,34 +258,43 @@ export function LedgerWorkspace() {
           <Activity className="h-3.5 w-3.5" />
           <span className="text-[11px] font-semibold uppercase tracking-widest">Financial Summary</span>
         </div>
-        <p className={`mt-4 text-2xl font-bold leading-snug ${actionCount > 0 ? 'text-warning' : 'text-success'}`}>{verdict}</p>
-        <div className="mt-6 flex flex-col gap-2.5">
-          <div className="flex items-center gap-3">
-            <span className="w-9 shrink-0 text-[11px] font-medium uppercase tracking-wider text-slate-500">In</span>
-            <div className="h-2 flex-1 overflow-hidden rounded-full bg-surface-300/60">
-              <div className="h-full rounded-full bg-success transition-[width] duration-500 ease-out" style={{ width: inWidth }} />
-            </div>
-            <Counter value={summary.totalRevenue} format={(n) => `+${compactCurrency(n)}`} className="w-16 shrink-0 text-right text-sm font-semibold tabular-nums text-success" />
+        {summary.totalEvents === 0 ? (
+          <div className="mt-4">
+            <p className="text-2xl font-bold leading-snug text-fg">No transactions yet</p>
+            <p className="mt-2 text-sm leading-relaxed text-slate-400">Import a CSV or connect QuickBooks to track cash in and out.</p>
           </div>
-          <div className="flex items-center gap-3">
-            <span className="w-9 shrink-0 text-[11px] font-medium uppercase tracking-wider text-slate-500">Out</span>
-            <div className="h-2 flex-1 overflow-hidden rounded-full bg-surface-300/60">
-              <div className="h-full rounded-full bg-danger transition-[width] duration-500 ease-out" style={{ width: outWidth }} />
+        ) : (
+          <>
+            <p className={`mt-4 text-2xl font-bold leading-snug ${actionCount > 0 ? 'text-warning' : 'text-success'}`}>{verdict}</p>
+            <div className="mt-6 flex flex-col gap-2.5">
+              <div className="flex items-center gap-3">
+                <span className="w-9 shrink-0 text-[11px] font-medium uppercase tracking-wider text-slate-500">In</span>
+                <div className="h-2 flex-1 overflow-hidden rounded-full bg-surface-300/60">
+                  <div className="h-full rounded-full bg-success transition-[width] duration-500 ease-out" style={{ width: inWidth }} />
+                </div>
+                <Counter value={summary.totalRevenue} format={(n) => `+${compactCurrency(n)}`} className="w-16 shrink-0 text-right text-sm font-semibold tabular-nums text-success" />
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="w-9 shrink-0 text-[11px] font-medium uppercase tracking-wider text-slate-500">Out</span>
+                <div className="h-2 flex-1 overflow-hidden rounded-full bg-surface-300/60">
+                  <div className="h-full rounded-full bg-danger transition-[width] duration-500 ease-out" style={{ width: outWidth }} />
+                </div>
+                <Counter value={summary.totalExpenses} format={(n) => `−${compactCurrency(n)}`} className="w-16 shrink-0 text-right text-sm font-semibold tabular-nums text-danger" />
+              </div>
             </div>
-            <Counter value={summary.totalExpenses} format={(n) => `−${compactCurrency(n)}`} className="w-16 shrink-0 text-right text-sm font-semibold tabular-nums text-danger" />
-          </div>
-        </div>
-        <div className="mt-4 flex items-center justify-between border-t border-surface-400/30 pt-4">
-          <span className="text-[11px] font-medium uppercase tracking-wider text-slate-500">Net cash</span>
-          <span className={`flex items-center gap-1 text-xl font-bold tabular-nums ${netPositive ? 'text-success' : 'text-danger'}`}>
-            {netPositive ? <ArrowUpRight className="h-4 w-4" /> : <ArrowDownRight className="h-4 w-4" />}
-            <Counter value={Math.abs(summary.netIncome)} format={(n) => `${netPositive ? '+' : '−'}${compactCurrency(n)}`} />
-          </span>
-        </div>
-        <p className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-slate-500">
-          <span>{summary.reconciledRecords}/{summary.totalEvents} reconciled</span>
-          {hasQuickBooks && <><span className="text-slate-700">·</span><span className="flex items-center gap-1"><Check className="h-3 w-3 text-success" />QuickBooks synced</span></>}
-        </p>
+            <div className="mt-4 flex items-center justify-between border-t border-surface-400/30 pt-4">
+              <span className="text-[11px] font-medium uppercase tracking-wider text-slate-500">Net cash</span>
+              <span className={`flex items-center gap-1 text-xl font-bold tabular-nums ${netPositive ? 'text-success' : 'text-danger'}`}>
+                {netPositive ? <ArrowUpRight className="h-4 w-4" /> : <ArrowDownRight className="h-4 w-4" />}
+                <Counter value={Math.abs(summary.netIncome)} format={(n) => `${netPositive ? '+' : '−'}${compactCurrency(n)}`} />
+              </span>
+            </div>
+            <p className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-slate-500">
+              <span>{summary.reconciledRecords}/{summary.totalEvents} reconciled</span>
+              {hasQuickBooks && <><span className="text-slate-700">·</span><span className="flex items-center gap-1"><Check className="h-3 w-3 text-success" />QuickBooks synced</span></>}
+            </p>
+          </>
+        )}
       </section>
 
       <section className="rounded-xl border border-surface-400/50 bg-surface-100 overflow-hidden">

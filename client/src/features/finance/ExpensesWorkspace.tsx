@@ -102,11 +102,20 @@ export function ExpensesWorkspace() {
               <Receipt className="h-3.5 w-3.5" />
               <span className="text-[11px] font-semibold uppercase tracking-widest">Expenses</span>
             </div>
-            <CountUp value={total} className="mt-6 block text-6xl font-bold tabular-nums text-fg" />
-            <p className="mt-2 text-sm text-slate-500">in operating expenses to date</p>
-            <p className="mt-3 text-sm leading-relaxed text-slate-300">
-              {rich ? `${categoryLabel(largest.category)} is your largest cost at ${largestPct}% of spend.` : 'All spending is currently categorized as Operations.'}
-            </p>
+            {total > 0 ? (
+              <>
+                <CountUp value={total} className="mt-6 block text-6xl font-bold tabular-nums text-fg" />
+                <p className="mt-2 text-sm text-slate-500">in operating expenses to date</p>
+                <p className="mt-3 text-sm leading-relaxed text-slate-300">
+                  {rich ? `${categoryLabel(largest.category)} is your largest cost at ${largestPct}% of spend.` : 'All spending is currently categorized as Operations.'}
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="mt-6 text-2xl font-bold text-fg">No expenses tracked yet</p>
+                <p className="mt-2 text-sm leading-relaxed text-slate-400">Import a CSV or connect QuickBooks to see where your money goes — and unlock profitability &amp; margins.</p>
+              </>
+            )}
             <div className="mt-7 grid grid-cols-3 gap-2.5">
               <div className="rounded-xl bg-surface-200/30 px-3 py-3.5 text-center">
                 <p className="text-2xl font-bold tabular-nums text-fg">{catCount}</p>

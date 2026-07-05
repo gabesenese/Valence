@@ -22,6 +22,7 @@ export interface PortfolioHealthScore {
   delta:      number;
   trend:      'up' | 'down' | 'stable';
   band:       'critical' | 'at_risk' | 'stable' | 'healthy';
+  provisional: boolean;
   components: HealthScoreComponent[];
   drivers: {
     positive: ScoreDriver[];
@@ -203,7 +204,7 @@ async function computeLastMonthComponents(
 export async function computeHealthScore(userId: string): Promise<PortfolioHealthScore> {
   const now = new Date();
 
-  const [properties, activeLeaseAgg] = await Promise.all([
+  const [properties, activeLeaseAgg, financialRecordCount] = await Promise.all([
     prisma.property.findMany({
       where: { status: 'ACTIVE', ownerId: userId },
       select: {
@@ -213,6 +214,7 @@ export async function computeHealthScore(userId: string): Promise<PortfolioHealt
       },
     }),
     prisma.lease.aggregate({ where: { status: 'ACTIVE', property: { ownerId: userId } }, _sum: { baseRent: true } }),
+    prisma.financialRecord.count({ where: { property: { ownerId: userId }, status: { not: 'VOID' } } }),
   ]);
 
   const propertyIds   = properties.map(p => p.id);
@@ -280,6 +282,7 @@ export async function computeHealthScore(userId: string): Promise<PortfolioHealt
     delta,
     trend:      delta > 1 ? 'up' : delta < -1 ? 'down' : 'stable',
     band:       band(score),
+    provisional: financialRecordCount === 0,
     components,
     drivers,
     computedAt: now.toISOString(),
