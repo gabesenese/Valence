@@ -8,6 +8,7 @@ import { getCollectionsContext, recordPayment, sendReminder, applyLateFee } from
 import { getBudgets, upsertBudget, deleteBudget } from './budget.service';
 import { getFinanceIntelligence } from './intelligence/finance-intelligence.service';
 import { getForecastOutlook } from './intelligence/forecast-outlook.service';
+import { trackFirstInsight } from '../analytics/funnel.service';
 import { sendSuccess, sendPaginated } from '../../utils/response';
 
 export async function list(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -62,6 +63,7 @@ export async function atRisk(req: Request, res: Response, next: NextFunction): P
 export async function intelligence(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     sendSuccess(res, await getFinanceIntelligence(req.user!.id));
+    void trackFirstInsight(req.user!.id);
   } catch (err) { next(err); }
 }
 
