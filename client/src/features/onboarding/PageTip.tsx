@@ -76,10 +76,15 @@ const TIPS: Record<string, { title: string; body: string }> = {
     title: 'Documents tell the story',
     body: 'Keep leases and contracts organized so every decision has evidence behind it.',
   },
+  copilot: {
+    title: 'Ask, don’t dig',
+    body: 'Your portfolio’s loaded — now Copilot can answer questions about it in plain English.',
+  },
 };
 
 const TIP_GATE: Record<string, { signal?: keyof OnboardingSignals; afterTip?: string }> = {
   automation: { signal: 'repeatedWork' },
+  copilot: { signal: 'hasRealData', afterTip: 'finance' },
 };
 
 const ALIGN_BEAK: Record<'start' | 'center' | 'end', string> = {

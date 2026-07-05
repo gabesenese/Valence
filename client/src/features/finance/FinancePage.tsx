@@ -4,6 +4,10 @@ import { ArrowRight } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { financeService, type MetricDelta } from '@/services/finance.service';
 import { FinancialIntelligence } from './FinancialIntelligence';
+import { CopilotStrip } from './CopilotStrip';
+import { VALENCE_COPILOT } from '@valence/shared';
+import { FINANCE_COPILOT_ENABLED } from '@/config/flags';
+import { usePlan } from '@/hooks/usePlan';
 import { ForecastWorkspace } from './ForecastWorkspace';
 import { ExpensesWorkspace } from './ExpensesWorkspace';
 import { ProfitabilityWorkspace } from './ProfitabilityWorkspace';
@@ -51,6 +55,9 @@ function DeltaChip({ delta }: { delta?: MetricDelta }) {
 export default function FinancePage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTabRef = useRef<HTMLButtonElement>(null);
+  const copilotRef = useRef<HTMLDivElement>(null);
+  const { hasAddon } = usePlan();
+  const ownsCopilot = FINANCE_COPILOT_ENABLED && hasAddon(VALENCE_COPILOT);
 
   const tab = (searchParams.get('tab') as TabId) ?? 'overview';
 
@@ -158,6 +165,11 @@ export default function FinancePage() {
           })()}
 
           <WhatChangedPanel />
+
+          {ownsCopilot && <PageTip tipKey="copilot" anchorRef={copilotRef} beakSide="bottom" />}
+          <div ref={copilotRef}>
+            <CopilotStrip />
+          </div>
         </>
       )}
 
