@@ -26,6 +26,7 @@ import { workQueueRouter } from './modules/workQueue/work-queue.routes';
 import { tasksRouter } from './modules/tasks/tasks.routes';
 import { crmRouter } from './modules/crm/crm.routes';
 import { documentsRouter } from './modules/documents/documents.routes';
+import { storageStatus } from './modules/documents/storage';
 import { automationRouter } from './modules/automation/automation.routes';
 import { importRouter } from './modules/import/import.routes';
 import { auditRouter } from './modules/audit/audit.routes';
@@ -94,7 +95,9 @@ app.use(morgan(env.NODE_ENV === 'production' ? 'combined' : 'dev', {
 }));
 
 app.get('/health', (_req, res) => {
-  res.json({ status: 'ok', version: '0.1.0', timestamp: new Date().toISOString() });
+  const storage = storageStatus();
+  const status = env.NODE_ENV === 'production' && !storage.durable ? 'degraded' : 'ok';
+  res.json({ status, version: '0.1.0', storage, timestamp: new Date().toISOString() });
 });
 
 

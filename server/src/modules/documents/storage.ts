@@ -23,12 +23,16 @@ function isRemote(ref: string): boolean {
   return /^https?:\/\//i.test(ref);
 }
 
+export function storageStatus(): { durable: boolean; driver: 'blob' | 'disk' } {
+  return useBlob ? { durable: true, driver: 'blob' } : { durable: false, driver: 'disk' };
+}
+
 export async function putDocument(originalName: string, buffer: Buffer, contentType: string): Promise<string> {
   const ext = path.extname(originalName);
   if (useBlob) {
     const { put } = await import('@vercel/blob');
     const { url } = await put(`documents/${uuid()}${ext}`, buffer, {
-      access: 'public',
+      access: 'private',
       contentType,
       addRandomSuffix: false,
       token: env.BLOB_READ_WRITE_TOKEN,
@@ -54,11 +58,12 @@ export async function removeDocument(ref: string): Promise<void> {
 
 export async function readDocument(ref: string): Promise<{ stream: Readable; contentType?: string }> {
   if (isRemote(ref)) {
-    const res = await fetch(ref);
-    if (!res.ok || !res.body) throw new Error('File not found in storage');
+    const { get } = await import('@vercel/blob');
+    const result = await get(ref, { access: 'private', token: env.BLOB_READ_WRITE_TOKEN });
+    if (!result || result.statusCode !== 200) throw new Error('File not found in storage');
     return {
-      stream: Readable.fromWeb(res.body as Parameters<typeof Readable.fromWeb>[0]),
-      contentType: res.headers.get('content-type') ?? undefined,
+      stream: Readable.fromWeb(result.stream as Parameters<typeof Readable.fromWeb>[0]),
+      contentType: result.blob.contentType ?? undefined,
     };
   }
   return { stream: createReadStream(path.resolve(ref)) };
