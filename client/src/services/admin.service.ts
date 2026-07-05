@@ -105,6 +105,8 @@ export const adminService = {
     api.get<{ data: DataSummary }>(`/admin/users/${id}/data-summary`, h(s)).then((r) => r.data.data),
   getUserRecords: (s: string, id: string) =>
     api.get<{ data: UserRecords }>(`/admin/users/${id}/records`, h(s)).then((r) => r.data.data),
+  getUserJourney: (s: string, id: string) =>
+    api.get<{ data: UserJourney }>(`/admin/users/${id}/journey`, h(s)).then((r) => r.data.data),
   deleteData: (s: string, type: string, id: string) =>
     api.delete(`/admin/data/${type}/${id}`, h(s)).then((r) => r.data),
   wipeUserData: (s: string, id: string) =>
@@ -174,4 +176,22 @@ export interface DataSummary {
 export interface UserRecords {
   properties: { id: string; name: string; code: string }[];
   tenants: { id: string; name: string }[];
+}
+
+export interface JourneyEvent {
+  event: string;
+  meta: Record<string, unknown>;
+  createdAt: string;
+}
+
+export interface UserJourney {
+  events: JourneyEvent[];
+  metrics: {
+    signupAt: string | null;
+    firstInsightAt: string | null;
+    reachedFirstInsight: boolean;
+    timeToFirstInsightMs: number | null;
+    returnVisits: number;
+    lastEventAt: string | null;
+  };
 }

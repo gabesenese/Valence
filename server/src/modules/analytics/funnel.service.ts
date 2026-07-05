@@ -113,6 +113,35 @@ export async function getFunnelStats(days = 30) {
   });
 }
 
+/**
+ * A single user's activation journey — the chronological FunnelEvent sequence
+ * plus derived metrics — so a trial can be watched individually (signup → first
+ * import → first insight → return visits → where they dropped off). Admin-only.
+ */
+export async function getUserJourney(userId: string) {
+  const events = await prisma.funnelEvent.findMany({
+    where: { userId },
+    select: { event: true, meta: true, createdAt: true },
+    orderBy: { createdAt: 'asc' },
+  });
+
+  const firstAt = (e: FunnelEventType) => events.find((ev) => ev.event === e)?.createdAt ?? null;
+  const signupAt = firstAt('signup');
+  const firstInsightAt = firstAt('first_insight');
+
+  return {
+    events,
+    metrics: {
+      signupAt,
+      firstInsightAt,
+      reachedFirstInsight: firstInsightAt != null,
+      timeToFirstInsightMs: signupAt && firstInsightAt ? firstInsightAt.getTime() - signupAt.getTime() : null,
+      returnVisits: events.filter((e) => e.event === 'return_visit').length,
+      lastEventAt: events.length ? events[events.length - 1].createdAt : null,
+    },
+  };
+}
+
 export async function getDemoFunnelStats(days = 30) {
   const since = new Date(Date.now() - days * 86400000);
   const rows = await prisma.funnelEvent.groupBy({

@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Search, MoreHorizontal, ChevronLeft, ChevronRight, Loader2,
-  KeyRound, Power, PowerOff, Trash2, UserCheck, CalendarDays,
+  KeyRound, Power, PowerOff, Trash2, UserCheck, CalendarDays, Activity, X,
 } from 'lucide-react';
 import { adminService, type AdminUser } from '@/services/admin.service';
 import { useAuthStore } from '@/state/auth.store';
@@ -29,9 +29,118 @@ function timeAgo(iso: string | null): string {
   return m < 12 ? `${m}mo ago` : `${Math.floor(m / 12)}y ago`;
 }
 
+const JOURNEY_EVENTS: Record<string, { label: string; dot: string }> = {
+  visitor:         { label: 'Visited',           dot: 'bg-slate-500' },
+  signup:          { label: 'Signed up',         dot: 'bg-brand-500' },
+  demo_started:    { label: 'Started demo',      dot: 'bg-violet-400' },
+  setup_complete:  { label: 'Completed setup',   dot: 'bg-blue-400' },
+  data_imported:   { label: 'Imported data',     dot: 'bg-teal-400' },
+  first_insight:   { label: 'Reached first insight', dot: 'bg-success' },
+  team_invited:    { label: 'Invited a teammate',   dot: 'bg-amber-400' },
+  upgrade_clicked: { label: 'Clicked upgrade',   dot: 'bg-amber-500' },
+  upgraded:        { label: 'Upgraded',          dot: 'bg-success' },
+  return_visit:    { label: 'Returned',          dot: 'bg-slate-400' },
+};
+
+function formatDuration(ms: number): string {
+  const mins = Math.round(ms / 60000);
+  if (mins < 60) return `${mins}m`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ${mins % 60}m`;
+  const days = Math.floor(hrs / 24);
+  return `${days}d ${hrs % 24}h`;
+}
+
+function fmtDateTime(iso: string): string {
+  return new Date(iso).toLocaleString('en-CA', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+}
+
+function eventDetail(event: string, meta: Record<string, unknown>): string | null {
+  if (event === 'data_imported') {
+    const source = typeof meta.source === 'string' ? meta.source : null;
+    const count = typeof meta.count === 'number' ? meta.count : null;
+    const entity = typeof meta.entity === 'string' ? meta.entity : null;
+    const parts = [source, count != null ? `${count} ${entity ?? 'rows'}` : entity].filter(Boolean);
+    return parts.length ? parts.join(' · ') : null;
+  }
+  return null;
+}
+
+function JourneyModal({ user, secret, onClose }: { user: AdminUser; secret: string; onClose: () => void }) {
+  const { data, isLoading } = useQuery({
+    queryKey: ['admin', 'journey', user.id, secret],
+    queryFn: () => adminService.getUserJourney(secret, user.id),
+    enabled: !!secret,
+  });
+
+  return createPortal(
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="fixed inset-0 bg-black/50" onClick={onClose} />
+      <div className="relative z-10 w-full max-w-md rounded-2xl border border-surface-400/60 bg-surface-100 shadow-card max-h-[80vh] overflow-hidden flex flex-col">
+        <div className="flex items-start justify-between border-b border-surface-400/30 px-5 py-4">
+          <div>
+            <div className="flex items-center gap-2">
+              <Activity className="h-4 w-4 text-brand-400" />
+              <h3 className="text-sm font-bold text-fg">Activation journey</h3>
+            </div>
+            <p className="mt-0.5 text-xs text-slate-500 font-mono">{user.email}</p>
+          </div>
+          <button onClick={onClose} className="text-slate-500 hover:text-slate-300"><X className="h-4 w-4" /></button>
+        </div>
+
+        {isLoading ? (
+          <div className="py-16 text-center text-xs text-slate-500"><Loader2 className="inline h-4 w-4 animate-spin mr-2" />Loading…</div>
+        ) : !data || data.events.length === 0 ? (
+          <div className="py-16 text-center text-xs text-slate-500">No activity recorded yet.</div>
+        ) : (
+          <>
+            <div className="grid grid-cols-3 gap-px bg-surface-400/20 border-b border-surface-400/30">
+              <div className="bg-surface-100 px-4 py-3">
+                <p className="text-[10px] uppercase tracking-wider text-slate-600">Time to insight</p>
+                <p className="mt-0.5 text-sm font-semibold text-fg tabular-nums">
+                  {data.metrics.timeToFirstInsightMs != null ? formatDuration(data.metrics.timeToFirstInsightMs) : '—'}
+                </p>
+              </div>
+              <div className="bg-surface-100 px-4 py-3">
+                <p className="text-[10px] uppercase tracking-wider text-slate-600">Return visits</p>
+                <p className="mt-0.5 text-sm font-semibold text-fg tabular-nums">{data.metrics.returnVisits}</p>
+              </div>
+              <div className="bg-surface-100 px-4 py-3">
+                <p className="text-[10px] uppercase tracking-wider text-slate-600">Activated</p>
+                <p className={cn('mt-0.5 text-sm font-semibold', data.metrics.reachedFirstInsight ? 'text-success' : 'text-slate-500')}>
+                  {data.metrics.reachedFirstInsight ? 'Yes' : 'Not yet'}
+                </p>
+              </div>
+            </div>
+
+            <div className="overflow-y-auto px-5 py-4">
+              <ol className="relative border-l border-surface-400/40 ml-1.5">
+                {data.events.map((e, i) => {
+                  const cfg = JOURNEY_EVENTS[e.event] ?? { label: e.event, dot: 'bg-slate-500' };
+                  const detail = eventDetail(e.event, e.meta);
+                  return (
+                    <li key={i} className="mb-4 ml-4 last:mb-0">
+                      <span className={cn('absolute -left-1.5 mt-1 h-3 w-3 rounded-full ring-4 ring-surface-100', cfg.dot)} />
+                      <p className="text-xs font-medium text-slate-200">{cfg.label}</p>
+                      {detail && <p className="text-[11px] text-slate-500">{detail}</p>}
+                      <p className="text-[10px] text-slate-600">{fmtDateTime(e.createdAt)}</p>
+                    </li>
+                  );
+                })}
+              </ol>
+            </div>
+          </>
+        )}
+      </div>
+    </div>,
+    document.body,
+  );
+}
+
 function UserActions({ user, secret, onDone }: { user: AdminUser; secret: string; onDone: () => void }) {
   const [open, setOpen]     = useState(false);
   const [confirm, setConfirm] = useState<'delete' | null>(null);
+  const [showJourney, setShowJourney] = useState(false);
   const [trialEdit, setTrialEdit] = useState(false);
   const [trialDate, setTrialDate] = useState('');
   const [pos, setPos]       = useState({ top: 0, right: 0 });
@@ -128,6 +237,11 @@ function UserActions({ user, secret, onDone }: { user: AdminUser; secret: string
             </div>
 
             <div className="flex flex-col">
+              <button onClick={() => { setShowJourney(true); setOpen(false); }}
+                className="flex items-center gap-2 px-3 py-2 text-xs text-slate-400 hover:bg-surface-300 hover:text-slate-200 transition-colors">
+                <Activity className="h-3.5 w-3.5" />
+                View activation journey
+              </button>
               <button onClick={() => { impMut.mutate(); setOpen(false); }} disabled={impMut.isPending}
                 className="flex items-center gap-2 px-3 py-2 text-xs text-brand-400 hover:bg-brand-600/10 transition-colors">
                 <UserCheck className="h-3.5 w-3.5" />
@@ -158,6 +272,8 @@ function UserActions({ user, secret, onDone }: { user: AdminUser; secret: string
         </>,
         document.body,
       )}
+
+      {showJourney && <JourneyModal user={user} secret={secret} onClose={() => setShowJourney(false)} />}
     </div>
   );
 }

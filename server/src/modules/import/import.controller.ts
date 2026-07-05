@@ -26,7 +26,7 @@ export async function importPropertiesHandler(req: Request, res: Response, next:
     void createBackup(req.user!.id, snapshotLabel('Properties'), 'import');
     const result = await importProperties(req.file.buffer, getPlan(req), req.user!.id, readJson<ColumnMap>(req, 'columnMap'), readJson<FieldDefaults>(req, 'defaults'));
     void logAudit({ userId: req.user?.id, action: 'IMPORT', entity: 'property', meta: { created: result.created, skipped: result.skipped, errors: result.errors.length } });
-    void trackEvent('data_imported', req.user?.id, { entity: 'property' });
+    void trackEvent('data_imported', req.user?.id, { source: 'csv', entity: 'property', count: result.created });
     sendSuccess(res, result);
   } catch (err) { next(err); }
 }
@@ -37,7 +37,7 @@ export async function importTenantsHandler(req: Request, res: Response, next: Ne
     void createBackup(req.user!.id, snapshotLabel('Tenants'), 'import');
     const result = await importTenants(req.file.buffer, req.user!.id, readJson<ColumnMap>(req, 'columnMap'), readJson<FieldDefaults>(req, 'defaults'));
     void logAudit({ userId: req.user?.id, action: 'IMPORT', entity: 'tenant', meta: { created: result.created, skipped: result.skipped, errors: result.errors.length } });
-    void trackEvent('data_imported', req.user?.id, { entity: 'tenant' });
+    void trackEvent('data_imported', req.user?.id, { source: 'csv', entity: 'tenant', count: result.created });
     sendSuccess(res, result);
   } catch (err) { next(err); }
 }
@@ -48,7 +48,7 @@ export async function importLeasesHandler(req: Request, res: Response, next: Nex
     void createBackup(req.user!.id, snapshotLabel('Leases'), 'import');
     const result = await importLeases(req.file.buffer, getPlan(req), req.user!.id, readJson<ColumnMap>(req, 'columnMap'), readJson<FieldDefaults>(req, 'defaults'));
     void logAudit({ userId: req.user?.id, action: 'IMPORT', entity: 'lease', meta: { created: result.created, skipped: result.skipped, errors: result.errors.length } });
-    void trackEvent('data_imported', req.user?.id, { entity: 'lease' });
+    void trackEvent('data_imported', req.user?.id, { source: 'csv', entity: 'lease', count: result.created });
     sendSuccess(res, result);
   } catch (err) { next(err); }
 }
@@ -59,7 +59,7 @@ export async function importExpensesHandler(req: Request, res: Response, next: N
     void createBackup(req.user!.id, snapshotLabel('Expenses'), 'import');
     const result = await importExpenses(req.file.buffer, req.user!.id, readJson<ColumnMap>(req, 'columnMap'), readJson<FieldDefaults>(req, 'defaults'));
     void logAudit({ userId: req.user?.id, action: 'IMPORT', entity: 'financialRecord', meta: { created: result.created, skipped: result.skipped, errors: result.errors.length } });
-    void trackEvent('data_imported', req.user?.id, { entity: 'expense' });
+    void trackEvent('data_imported', req.user?.id, { source: 'csv', entity: 'expense', count: result.created });
     sendSuccess(res, result);
   } catch (err) { next(err); }
 }

@@ -11,7 +11,7 @@ import { env } from '../../config/env';
 import { sendSuccess } from '../../utils/response';
 import { ForbiddenError, NotFoundError } from '../../utils/errors';
 import * as authService from '../auth/auth.service';
-import { getFunnelStats } from '../analytics/funnel.service';
+import { getFunnelStats, getUserJourney } from '../analytics/funnel.service';
 import { deleteProperty } from '../properties/properties.service';
 import { deleteLease } from '../leases/leases.service';
 import { deleteTenant } from '../tenants/tenants.service';
@@ -531,6 +531,12 @@ router.get('/users/:id/data-summary', async (req: Request, res: Response, next: 
       prisma.financialRecord.count({ where: { property: { ownerId: id } } }),
     ]);
     sendSuccess(res, { properties, leases, tenants, tasks, openAlerts, financialRecords });
+  } catch (err) { next(err); }
+});
+
+router.get('/users/:id/journey', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    sendSuccess(res, await getUserJourney(req.params.id));
   } catch (err) { next(err); }
 });
 
