@@ -9,6 +9,10 @@
  *
  * Idempotent: upserts the user and wipes their existing portfolio before seeding.
  * Login: thin@valence.dev / (TESTER_PASSWORD env, default below).
+ *
+ * Do NOT add thin@valence.dev to TESTER_EMAILS — login resets a tester's
+ * portfolio (see auth.service login), which would wipe this fixture on sign-in.
+ * It's already kept out of MRR via the @valence.dev domain in admin analytics.
  */
 import bcrypt from 'bcryptjs';
 import { prisma } from '../infrastructure/database';
