@@ -11,6 +11,7 @@ import { computeHealthScore } from './health-score.service';
 import { runSimulation, getActiveTenantsForSimulator } from './scenario-simulator.service';
 import { authenticate } from '../../middleware/authenticate';
 import { requireOwner } from '../../middleware/ownership';
+import { aiLimiter } from '../../middleware/rateLimits';
 import { planGate, resolveEffectivePlan } from '../../middleware/planGate';
 import { trackUsage, enforceUsageLimit } from '../plans/plans.service';
 import { sendSuccess } from '../../utils/response';
@@ -18,6 +19,7 @@ import type { UsageType } from '@prisma/client';
 
 const router = Router();
 router.use(authenticate);
+router.use(aiLimiter);
 
 
 const upload = multer({

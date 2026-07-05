@@ -19,7 +19,7 @@ router.post('/login',            loginLimiter, validate(loginSchema),    control
 router.post('/refresh',          validate(refreshSchema),                controller.refresh);
 router.post('/logout',           validate(refreshSchema),                controller.logout);
 router.post('/forgot-password',  forgotLimiter,                          controller.forgotPassword);
-router.post('/reset-password',                                           controller.resetPassword);
+router.post('/reset-password',   forgotLimiter,                          controller.resetPassword);
 router.post('/mfa/verify',       loginLimiter,                           controller.verifyMfaChallenge);
 router.get( '/verify-email',                                             controller.verifyEmail);
 

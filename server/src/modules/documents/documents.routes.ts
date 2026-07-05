@@ -4,6 +4,7 @@ import multer from 'multer';
 import { authenticate } from '../../middleware/authenticate';
 import { authorize } from '../../middleware/authorize';
 import { requireOwner } from '../../middleware/ownership';
+import { uploadLimiter } from '../../middleware/rateLimits';
 import { assertPropertyOwner, assertLeaseOwner, assertTenantOwner } from '../../utils/ownership';
 import { sendSuccess } from '../../utils/response';
 import {
@@ -77,6 +78,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
 
 router.post(
   '/',
+  uploadLimiter,
   authorize('ANALYST'),
   uploadSingle,
   async (req: Request, res: Response, next: NextFunction) => {

@@ -59,6 +59,10 @@ router.post('/', authorize('ANALYST'), async (req: Request, res: Response, next:
       res.status(400).json({ success: false, message: 'title is required' });
       return;
     }
+    if (title.trim().length > 200 || (description && description.length > 5000)) {
+      res.status(400).json({ success: false, message: 'title (max 200) or description (max 5000) too long' });
+      return;
+    }
 
     if (propertyId) await assertPropertyOwner(propertyId, req.user!.id);
     if (leaseId)    await assertLeaseOwner(leaseId, req.user!.id);
@@ -88,6 +92,11 @@ router.patch('/:id', authorize('ANALYST'), requireOwner('task'), async (req: Req
       dueAt?: string | null;
     };
 
+    if ((title && title.trim().length > 200) || (description && description.length > 5000)) {
+      res.status(400).json({ success: false, message: 'title (max 200) or description (max 5000) too long' });
+      return;
+    }
+
     const task = await updateTask(req.params.id, {
       title,
       description,
@@ -108,6 +117,10 @@ router.patch('/:id/status', authorize('ANALYST'), requireOwner('task'), async (r
     const valid: TaskStatus[] = ['OPEN', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'];
     if (!valid.includes(status)) {
       res.status(400).json({ success: false, message: 'Invalid status' });
+      return;
+    }
+    if (completionNote && completionNote.length > 2000) {
+      res.status(400).json({ success: false, message: 'completionNote too long (max 2000)' });
       return;
     }
 
