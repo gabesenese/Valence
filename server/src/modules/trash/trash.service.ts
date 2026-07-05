@@ -83,7 +83,7 @@ export async function restoreItem(type: 'property' | 'lease' | 'tenant' | 'task'
       return result;
     }
     case 'task': {
-      const item = await prisma.task.findFirst({ where: { id, deletedAt: { not: null } } });
+      const item = await prisma.task.findFirst({ where: { id, createdById: userId, deletedAt: { not: null } } });
       if (!item) throw new Error('Item not found in trash');
       const result = await prisma.task.update({ where: { id }, data: { deletedAt: null } });
       void logAudit({ userId, action: 'RESTORE', entity: 'task', entityId: id, entityName: item.title });
@@ -110,7 +110,7 @@ export async function permanentlyDelete(type: 'property' | 'lease' | 'tenant' | 
       return prisma.tenant.delete({ where: { id } });
     }
     case 'task': {
-      const item = await prisma.task.findFirst({ where: { id, deletedAt: { not: null } } });
+      const item = await prisma.task.findFirst({ where: { id, createdById: userId, deletedAt: { not: null } } });
       if (!item) throw new Error('Item not found in trash');
       return prisma.task.delete({ where: { id } });
     }

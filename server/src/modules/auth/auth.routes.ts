@@ -39,8 +39,8 @@ router.delete('/sessions/:id',            authenticate, controller.revokeSession
 
 
 router.get(   '/users',          authenticate,                              controller.listUsers);
-router.patch( '/users/:id/role', authenticate, authorize('ADMIN', 'SUPER_ADMIN'), controller.updateUserRole);
-router.patch( '/users/:id/active', authenticate, authorize('ADMIN', 'SUPER_ADMIN'), controller.setUserActive);
+router.patch( '/users/:id/role', authenticate, authorize('SUPER_ADMIN'), controller.updateUserRole);
+router.patch( '/users/:id/active', authenticate, authorize('SUPER_ADMIN'), controller.setUserActive);
 router.patch( '/users/:id/plan', authenticate, authorize('SUPER_ADMIN'),   controller.setUserPlan);
 
 export { router as authRouter };

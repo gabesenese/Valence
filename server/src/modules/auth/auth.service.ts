@@ -165,8 +165,11 @@ export async function getMe(userId: string): Promise<AuthUser> {
   return user;
 }
 
-export async function listUsers(): Promise<(AuthUser & { isActive: boolean; lastLoginAt: Date | null; createdAt: Date })[]> {
+export async function listUsers(
+  viewer: { id: string; role: UserRole },
+): Promise<(AuthUser & { isActive: boolean; lastLoginAt: Date | null; createdAt: Date })[]> {
   return prisma.user.findMany({
+    where: viewer.role === 'SUPER_ADMIN' ? {} : { id: viewer.id },
     select: { ...USER_SELECT, isActive: true, lastLoginAt: true, createdAt: true },
     orderBy: [{ firstName: 'asc' }, { lastName: 'asc' }],
   });
@@ -405,7 +408,7 @@ export async function demoLogin(meta?: SessionMeta): Promise<{ user: AuthUser; t
       firstName: 'Demo',
       lastName: 'User',
       plan: 'PROFESSIONAL',
-      role: 'ADMIN',
+      role: 'ANALYST',
       isDemo: true,
       emailVerifiedAt: new Date(),
       lastLoginAt: new Date(),

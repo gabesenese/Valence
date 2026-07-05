@@ -16,14 +16,14 @@ import type { AutomationTrigger, AutomationAction } from '@prisma/client';
 const router = Router();
 router.use(authenticate);
 
-router.get('/rules', async (_req: Request, res: Response, next: NextFunction) => {
+router.get('/rules', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const rules = await getRules();
+    const rules = await getRules({ id: req.user!.id, role: req.user!.role });
     sendSuccess(res, rules);
   } catch (e) { next(e); }
 });
 
-router.post('/rules', authorize('ADMIN', 'SUPER_ADMIN'), async (req: Request, res: Response, next: NextFunction) => {
+router.post('/rules', authorize('ANALYST'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { name, description, trigger, conditions, action, actionConfig } = req.body as {
       name: string;
@@ -53,23 +53,23 @@ router.post('/rules', authorize('ADMIN', 'SUPER_ADMIN'), async (req: Request, re
   } catch (e) { next(e); }
 });
 
-router.patch('/rules/:id', authorize('ADMIN', 'SUPER_ADMIN'), async (req: Request, res: Response, next: NextFunction) => {
+router.patch('/rules/:id', authorize('ANALYST'), async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const rule = await updateRule(req.params.id, req.body);
+    const rule = await updateRule(req.params.id, req.body, { id: req.user!.id, role: req.user!.role });
     sendSuccess(res, rule);
   } catch (e) { next(e); }
 });
 
-router.delete('/rules/:id', authorize('ADMIN', 'SUPER_ADMIN'), async (req: Request, res: Response, next: NextFunction) => {
+router.delete('/rules/:id', authorize('ANALYST'), async (req: Request, res: Response, next: NextFunction) => {
   try {
-    await deleteRule(req.params.id);
+    await deleteRule(req.params.id, { id: req.user!.id, role: req.user!.role });
     sendSuccess(res, { deleted: true });
   } catch (e) { next(e); }
 });
 
-router.post('/rules/:id/run', authorize('ADMIN', 'SUPER_ADMIN'), async (req: Request, res: Response, next: NextFunction) => {
+router.post('/rules/:id/run', authorize('ANALYST'), async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const result = await runRule(req.params.id);
+    const result = await runRule(req.params.id, { id: req.user!.id, role: req.user!.role });
     sendSuccess(res, result);
   } catch (e) { next(e); }
 });
@@ -77,7 +77,7 @@ router.post('/rules/:id/run', authorize('ADMIN', 'SUPER_ADMIN'), async (req: Req
 router.get('/logs', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { ruleId } = req.query as { ruleId?: string };
-    const logs = await getAutomationLogs(ruleId);
+    const logs = await getAutomationLogs({ id: req.user!.id, role: req.user!.role }, ruleId);
     sendSuccess(res, logs);
   } catch (e) { next(e); }
 });

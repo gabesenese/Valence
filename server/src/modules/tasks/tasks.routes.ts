@@ -3,6 +3,7 @@ import type { Request, Response, NextFunction } from 'express';
 import { authenticate } from '../../middleware/authenticate';
 import { authorize } from '../../middleware/authorize';
 import { requireOwner } from '../../middleware/ownership';
+import { assertPropertyOwner, assertLeaseOwner, assertAlertOwner } from '../../utils/ownership';
 import { sendSuccess } from '../../utils/response';
 import {
   getTasksForItem,
@@ -27,7 +28,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
         ...(alertId    ? { alertId }    : {}),
         ...(leaseId    ? { leaseId }    : {}),
         ...(propertyId ? { propertyId } : {}),
-      });
+      }, req.user!.id);
       return sendSuccess(res, tasks);
     }
 
@@ -37,7 +38,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
       propertyId,
       leaseId,
       unassigned: unassigned === 'true',
-    });
+    }, req.user!.id);
     return sendSuccess(res, tasks);
   } catch (e) { next(e); }
 });
@@ -58,6 +59,10 @@ router.post('/', authorize('ANALYST'), async (req: Request, res: Response, next:
       res.status(400).json({ success: false, message: 'title is required' });
       return;
     }
+
+    if (propertyId) await assertPropertyOwner(propertyId, req.user!.id);
+    if (leaseId)    await assertLeaseOwner(leaseId, req.user!.id);
+    if (alertId)    await assertAlertOwner(alertId, req.user!.id);
 
     const task = await createTask({
       title: title.trim(),

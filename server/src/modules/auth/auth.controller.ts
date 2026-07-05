@@ -1,6 +1,7 @@
 import type { Request, Response, NextFunction } from 'express';
 import * as authService from './auth.service';
 import { sendSuccess } from '../../utils/response';
+import { ForbiddenError } from '../../utils/errors';
 
 function sessionMeta(req: Request) {
   return {
@@ -54,9 +55,9 @@ export async function getMe(req: Request, res: Response, next: NextFunction): Pr
   }
 }
 
-export async function listUsers(_req: Request, res: Response, next: NextFunction): Promise<void> {
+export async function listUsers(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    sendSuccess(res, await authService.listUsers());
+    sendSuccess(res, await authService.listUsers({ id: req.user!.id, role: req.user!.role }));
   } catch (err) {
     next(err);
   }
@@ -65,6 +66,9 @@ export async function listUsers(_req: Request, res: Response, next: NextFunction
 export async function updateUserRole(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const { role } = req.body as { role: string };
+    if (role === 'SUPER_ADMIN' && req.user!.role !== 'SUPER_ADMIN') {
+      throw new ForbiddenError('Only a platform owner can grant Super Admin.');
+    }
     const user = await authService.updateUserRole(
       req.params.id,
       role as import('@prisma/client').UserRole,
