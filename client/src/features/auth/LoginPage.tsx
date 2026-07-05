@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { isTesterEmail } from '@valence/shared';
 import { useAuthStore } from '@/state/auth.store';
 import { authService } from '@/services/auth.service';
 import { Button } from '@/components/ui/Button';
@@ -36,7 +37,7 @@ export default function LoginPage() {
       setAuth(result.user, result.tokens.accessToken, result.tokens.refreshToken);
       localStorage.setItem('valence-remember-me', rememberMe ? '1' : '0');
       if (!rememberMe) sessionStorage.setItem('valence-session-active', '1');
-      navigate(from, { replace: true });
+      navigate(isTesterEmail(result.user.email) ? '/setup' : from, { replace: true });
     } catch (err: unknown) {
       const msg = (err as Error)?.message;
       setError(msg === 'Invalid credentials'
@@ -55,7 +56,7 @@ export default function LoginPage() {
     try {
       const result = await authService.verifyMfa(mfaToken, totp);
       setAuth(result.user, result.tokens.accessToken, result.tokens.refreshToken);
-      navigate(from, { replace: true });
+      navigate(isTesterEmail(result.user.email) ? '/setup' : from, { replace: true });
     } catch (err: unknown) {
       const msg = (err as Error)?.message;
       setError(msg || 'Invalid code');

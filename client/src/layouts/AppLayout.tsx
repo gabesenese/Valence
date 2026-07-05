@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import {
   LayoutDashboard, FileText, Building2, BarChart3, Bell, DollarSign,
   LogOut, ChevronLeft, Users, Settings, Inbox, Layers,
-  Wand2, ClipboardList, Heart, FolderOpen, Zap, Lock, Upload, ScrollText, Download, Plug,
+  Wand2, ClipboardList, Heart, FolderOpen, Zap, Lock, Upload, ScrollText, Download,
   UserX, Sparkles, HelpCircle, Trash2, Database, Menu, X,
 } from 'lucide-react';
 import { cn } from '@/utils/cn';
@@ -20,7 +20,22 @@ import { TrialBanner } from '@/components/ui/TrialBanner';
 import { NotificationBell } from '@/components/ui/NotificationBell';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { EmailVerificationBanner } from '@/components/ui/EmailVerificationBanner';
+import { PageTip } from '@/features/onboarding/PageTip';
 import { RouteErrorBoundary } from '@/components/RouteErrorBoundary';
+
+const ROUTE_TIP: Record<string, string> = {
+  '/queue': 'work-queue',
+  '/properties': 'properties',
+  '/leases': 'leases',
+  '/tenants': 'tenants',
+  '/tasks': 'tasks',
+  '/crm': 'crm',
+  '/analytics': 'analytics',
+  '/performance': 'performance',
+  '/automation': 'automation',
+  '/alerts': 'alerts',
+  '/documents': 'documents',
+};
 
 type NavItem = {
   to: string;
@@ -69,9 +84,7 @@ const NAV_SECTIONS: NavSection[] = [
     items: [
       { to: '/documents', icon: FolderOpen,  label: 'Documents', feature: 'documents' },
       { to: '/import',    icon: Upload,      label: 'Import Data'                      },
-      { to: '/integrations', icon: Plug,     label: 'Integrations'                     },
       { to: '/audit',     icon: ScrollText,  label: 'Audit Log'                        },
-      { to: '/organization', icon: Building2,   label: 'Organization'                   },
       { to: '/export',       icon: Download,   label: 'Export'                         },
       { to: '/trash',        icon: Trash2,     label: 'Trash'                          },
       { to: '/backups',      icon: Database,   label: 'Backups'                        },
@@ -379,6 +392,11 @@ export function AppLayout() {
         <TrialBanner />
 
         <div className="flex-1 overflow-y-auto">
+          {ROUTE_TIP[location.pathname] && (
+            <div className="px-4 pt-4 sm:px-5">
+              <PageTip tipKey={ROUTE_TIP[location.pathname]} beakSide="bottom" />
+            </div>
+          )}
           <RouteErrorBoundary key={location.pathname}>
             <Outlet />
           </RouteErrorBoundary>

@@ -1,7 +1,5 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { Building2, FileText, TrendingUp, AlertTriangle, Loader2, Play, Upload } from 'lucide-react';
-import { demoService } from '@/services/demo.service';
+import { Building2, FileText, TrendingUp, AlertTriangle, Zap, Upload } from 'lucide-react';
 
 const HIGHLIGHTS = [
   { icon: Building2,     label: 'Portfolio Health',  description: 'Real-time risk scoring'        },
@@ -12,12 +10,6 @@ const HIGHLIGHTS = [
 
 export function WelcomeScreen() {
   const navigate = useNavigate();
-  const qc = useQueryClient();
-
-  const load = useMutation({
-    mutationFn: demoService.loadDemo,
-    onSuccess: () => void qc.invalidateQueries(),
-  });
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[62vh] px-6 py-12 text-center animate-fade-in">
@@ -43,29 +35,23 @@ export function WelcomeScreen() {
 
       <div className="flex flex-col sm:flex-row items-center gap-3">
         <button
-          onClick={() => load.mutate()}
-          disabled={load.isPending}
-          className="inline-flex items-center justify-center gap-2 rounded-xl bg-brand-600 hover:bg-brand-500 disabled:opacity-50 px-7 py-3 text-sm font-semibold text-white transition-colors min-w-[210px]"
+          onClick={() => navigate('/setup', { state: { autoStart: 'demo' } })}
+          className="inline-flex items-center justify-center gap-2 rounded-xl bg-brand-600 hover:bg-brand-500 px-7 py-3 text-sm font-semibold text-white transition-colors min-w-[210px]"
         >
-          {load.isPending
-            ? <><Loader2 className="h-4 w-4 animate-spin" /> Loading demo…</>
-            : <><Play className="h-4 w-4" /> Load Demo Portfolio</>}
+          <Zap className="h-4 w-4" />
+          Explore a sample portfolio
         </button>
         <button
           onClick={() => navigate('/import')}
           className="inline-flex items-center justify-center gap-2 rounded-xl border border-surface-400/40 bg-surface-200/50 hover:bg-surface-200 px-7 py-3 text-sm font-semibold text-slate-300 transition-colors min-w-[210px]"
         >
           <Upload className="h-4 w-4" />
-          Import My Data
+          Connect my portfolio
         </button>
       </div>
 
-      {load.isError && (
-        <p className="mt-4 text-xs text-danger">Failed to load demo portfolio. Please try again.</p>
-      )}
-
       <p className="mt-6 text-xs text-slate-600">
-        Demo data can be reset at any time · 3 properties · 15 leases · 10 tenants
+        See how Valence works in under two minutes · 3 properties · 15 leases · 10 tenants
       </p>
     </div>
   );

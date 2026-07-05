@@ -1,19 +1,34 @@
+import { useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowRight } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { financeService, type MetricDelta } from '@/services/finance.service';
 import { FinancialIntelligence } from './FinancialIntelligence';
+import { CopilotStrip } from './CopilotStrip';
+import { VALENCE_COPILOT } from '@valence/shared';
+import { FINANCE_COPILOT_ENABLED } from '@/config/flags';
+import { usePlan } from '@/hooks/usePlan';
 import { ForecastWorkspace } from './ForecastWorkspace';
 import { ExpensesWorkspace } from './ExpensesWorkspace';
 import { ProfitabilityWorkspace } from './ProfitabilityWorkspace';
 import { LedgerWorkspace } from './LedgerWorkspace';
 import { WhatChangedPanel } from '../changes/WhatChangedPanel';
 import { BudgetCard } from './BudgetCard';
+import { PageTip } from '../onboarding/PageTip';
 import { PageLoader } from '@/components/ui/Spinner';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { compactCurrency } from '@/utils/format';
 
 type TabId = 'overview' | 'forecast' | 'ledger' | 'expenses' | 'profitability' | 'budgets';
+
+const TAB_TIP: Partial<Record<TabId, string>> = {
+  overview: 'finance',
+  forecast: 'forecast',
+  expenses: 'expenses',
+  profitability: 'profitability',
+  ledger: 'ledger',
+  budgets: 'budgets',
+};
 const TABS: { id: TabId; label: string }[] = [
   { id: 'overview', label: 'Overview' },
   { id: 'forecast', label: 'Forecast' },
@@ -39,6 +54,10 @@ function DeltaChip({ delta }: { delta?: MetricDelta }) {
 
 export default function FinancePage() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const activeTabRef = useRef<HTMLButtonElement>(null);
+  const copilotRef = useRef<HTMLDivElement>(null);
+  const { hasAddon } = usePlan();
+  const ownsCopilot = FINANCE_COPILOT_ENABLED && hasAddon(VALENCE_COPILOT);
 
   const tab = (searchParams.get('tab') as TabId) ?? 'overview';
 
@@ -77,6 +96,7 @@ export default function FinancePage() {
         {TABS.map((t) => (
           <button
             key={t.id}
+            ref={tab === t.id ? activeTabRef : undefined}
             type="button"
             onClick={() => setTab(t.id)}
             className={`-mb-px shrink-0 border-b-2 px-3.5 py-2 text-sm font-medium transition-colors ${
@@ -89,6 +109,8 @@ export default function FinancePage() {
           </button>
         ))}
       </div>
+
+      {TAB_TIP[tab] && <PageTip key={tab} tipKey={TAB_TIP[tab]!} anchorRef={activeTabRef} />}
 
       {tab === 'overview' && (
         <>
@@ -109,7 +131,8 @@ export default function FinancePage() {
               { label: 'Data Issues',     value: String(reviewCount),                           color: reviewCount > 0 ? 'text-info' : 'text-slate-300', status: reviewCount > 0 ? 'warn' : 'ok', sub: reviewCount > 0 ? 'to review' : undefined, to: 'ledger', action: 'Open ledger' },
             ];
             return (
-              <>
+              <div className="flex flex-col gap-2">
+                <span className="px-1 text-[11px] font-semibold uppercase tracking-widest text-slate-500">Portfolio Signals</span>
                 <div className="grid grid-cols-2 gap-2 sm:hidden">
                   {metrics.map((m) => (
                     <button key={m.label} type="button" onClick={() => setTab(m.to)} className="group rounded-xl border border-surface-400/50 bg-surface-100 px-4 py-3 text-left transition-colors hover:border-brand-600/40">
@@ -137,11 +160,16 @@ export default function FinancePage() {
                     </button>
                   ))}
                 </div>
-              </>
+              </div>
             );
           })()}
 
           <WhatChangedPanel />
+
+          {ownsCopilot && <PageTip tipKey="copilot" anchorRef={copilotRef} beakSide="bottom" />}
+          <div ref={copilotRef}>
+            <CopilotStrip />
+          </div>
         </>
       )}
 

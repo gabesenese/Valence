@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Zap, ArrowRight, ArrowDown, ChevronDown, Loader2, AlertCircle } from 'lucide-react';
+import { Zap, ArrowRight, ArrowDown, ChevronDown, Loader2, AlertCircle, Sparkles, Check } from 'lucide-react';
 import { billingService } from '@/services/billing.service';
 import { authService } from '@/services/auth.service';
 import { useAuthStore } from '@/state/auth.store';
 import type { Plan } from '@/state/auth.store';
-import { PLAN_LIMITS, formatAllowance, type PlanUsageLimits } from '@valence/shared';
+import { usePlan } from '@/hooks/usePlan';
+import { PLAN_LIMITS, formatAllowance, ADDONS, VALENCE_COPILOT, type PlanUsageLimits } from '@valence/shared';
+import { FINANCE_COPILOT_ENABLED } from '@/config/flags';
 
 
 interface Tier {
@@ -69,7 +71,7 @@ const TIERS: Tier[] = [
     transformation: 'Lead With Confidence',
     outcome: 'See what\'s coming before everyone else.',
     description: 'Forecast revenue, evaluate risk, and understand the future of your portfolio before you act.',
-    includes: 'Revenue Forecasting · Portfolio Intelligence · AI Analyst',
+    includes: 'Revenue Forecasting · Portfolio Intelligence · Scenario Modeling',
     limitNote: 'Unlimited properties',
     plan: null,
     price: 1499,
@@ -145,9 +147,27 @@ export default function PricingPage() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const user = useAuthStore((s) => s.user);
   const setAuth = useAuthStore((s) => s.setAuth);
+  const { hasAddon } = usePlan();
   const [checkoutLoading, setCheckoutLoading] = useState<Plan | null>(null);
+  const [addonLoading, setAddonLoading] = useState(false);
   const [trialClaiming, setTrialClaiming] = useState(false);
   const [trialError, setTrialError] = useState<string | null>(null);
+  const [compareOpen, setCompareOpen] = useState(false);
+
+  const copilot = ADDONS[VALENCE_COPILOT];
+  const ownsCopilot = hasAddon(VALENCE_COPILOT);
+
+  const handleAddon = async () => {
+    if (!isAuthenticated) { navigate('/auth/register'); return; }
+    if (ownsCopilot) return;
+    setAddonLoading(true);
+    try {
+      const url = await billingService.createAddonCheckout(VALENCE_COPILOT);
+      window.location.href = url;
+    } catch {
+      setAddonLoading(false);
+    }
+  };
 
   const handleSelect = async (tier: Tier) => {
     if (!isAuthenticated) { navigate('/auth/register'); return; }
@@ -244,17 +264,65 @@ export default function PricingPage() {
           ))}
         </div>
 
+        {/* Valence Copilot — hidden behind FINANCE_COPILOT_ENABLED; under development, not released */}
+        {FINANCE_COPILOT_ENABLED && (
+        <div className="mb-12">
+          <div className="mb-5 text-center">
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Add to any plan</p>
+            <h2 className="mt-2 text-2xl font-bold tracking-tight text-fg">{copilot.name}</h2>
+          </div>
+          <div className="relative overflow-hidden rounded-2xl border border-brand-500/30 bg-gradient-to-br from-brand-600/8 to-surface-100 p-6 sm:p-8">
+            <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+              <div className="max-w-xl">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="h-5 w-5 text-brand-400" />
+                  <h3 className="text-lg font-bold text-fg">Your portfolio analyst</h3>
+                </div>
+                <p className="mt-2 text-sm text-slate-400 leading-relaxed">{copilot.blurb}</p>
+                <ul className="mt-4 grid gap-2 sm:grid-cols-2">
+                  {copilot.features.map((f) => (
+                    <li key={f} className="flex items-start gap-2 text-xs text-slate-300">
+                      <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-success" />
+                      {f}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div className="shrink-0 text-center sm:text-right">
+                <div className="flex items-baseline justify-center gap-1.5 sm:justify-end">
+                  <span className="text-3xl font-bold text-fg tabular-nums">${copilot.price}</span>
+                  <span className="text-sm text-slate-500">/ month</span>
+                </div>
+                <button
+                  onClick={handleAddon}
+                  disabled={addonLoading || ownsCopilot}
+                  className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-brand-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-brand-500 disabled:opacity-60 sm:w-auto"
+                >
+                  {addonLoading && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                  {ownsCopilot ? 'Included in your plan' : `Add ${copilot.name}`}
+                </button>
+                <p className="mt-2 text-[11px] text-slate-500">Optional · cancel anytime</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        )}
+
         <div className="text-center mb-16">
-          <a
-            href="#compare"
+          <button
+            type="button"
+            onClick={() => setCompareOpen(open => !open)}
+            aria-expanded={compareOpen}
+            aria-controls="compare"
             className="inline-flex items-center gap-1.5 text-sm font-medium text-brand-400 hover:text-brand-300 transition-colors"
           >
-            Compare every feature
-            <ChevronDown className="h-4 w-4" />
-          </a>
+            {compareOpen ? 'Hide feature comparison' : 'Compare every feature'}
+            <ChevronDown className={`h-4 w-4 transition-transform ${compareOpen ? 'rotate-180' : ''}`} />
+          </button>
         </div>
 
-        <div id="compare" className="scroll-mt-8 rounded-2xl border border-surface-400/40 bg-surface-100 overflow-hidden mb-16">
+        {compareOpen && (
+        <div id="compare" className="rounded-2xl border border-surface-400/40 bg-surface-100 overflow-hidden mb-16">
           <div className="px-6 py-5 border-b border-surface-400/30">
             <h2 className="text-sm font-semibold text-fg">What's included in every plan</h2>
             <p className="mt-1 text-xs text-slate-500">
@@ -286,6 +354,7 @@ export default function PricingPage() {
             </table>
           </div>
         </div>
+        )}
 
         {/* Trial CTA */}
         <div className="rounded-2xl border border-brand-500/20 bg-gradient-to-br from-brand-600/5 to-surface-100 p-8 text-center">
