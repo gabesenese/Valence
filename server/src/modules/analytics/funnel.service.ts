@@ -6,11 +6,10 @@ export type FunnelEventType =
   | 'demo_started'
   | 'setup_complete'
   | 'data_imported'
+  | 'first_insight'
   | 'team_invited'
   | 'upgrade_clicked'
   | 'upgraded'
-  | 'addon_checkout_clicked'
-  | 'addon_purchased'
   | 'return_visit';
 
 const FUNNEL_STEPS: FunnelEventType[] = [
@@ -18,6 +17,7 @@ const FUNNEL_STEPS: FunnelEventType[] = [
   'signup',
   'setup_complete',
   'data_imported',
+  'first_insight',
   'team_invited',
   'upgrade_clicked',
   'upgraded',
@@ -58,6 +58,31 @@ export async function trackReturnVisit(userId: string): Promise<void> {
       select: { id: true },
     });
     if (!already) await prisma.funnelEvent.create({ data: { event: 'return_visit', userId, meta: {} as object } });
+  } catch { /* non-blocking */ }
+}
+
+/**
+ * Records the activation moment — the first time a real (non-demo) account views
+ * its Finance Overview with actual data behind it. This is the metric that matters
+ * for trials: signup → first_insight = time-to-first-insight. Fired from the
+ * intelligence endpoint; the early dedup check keeps it to one cheap query per view
+ * after it has fired once.
+ */
+export async function trackFirstInsight(userId: string): Promise<void> {
+  try {
+    const already = await prisma.funnelEvent.findFirst({
+      where: { event: 'first_insight', userId },
+      select: { id: true },
+    });
+    if (already) return;
+
+    const user = await prisma.user.findUnique({ where: { id: userId }, select: { isDemo: true } });
+    if (user?.isDemo) return;
+
+    const leaseCount = await prisma.lease.count({ where: { property: { ownerId: userId }, deletedAt: null } });
+    if (leaseCount === 0) return;
+
+    await prisma.funnelEvent.create({ data: { event: 'first_insight', userId, meta: {} as object } });
   } catch { /* non-blocking */ }
 }
 
