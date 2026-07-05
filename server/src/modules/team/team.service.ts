@@ -28,16 +28,16 @@ export async function createInvite(email: string, role: UserRole, invitedById: s
   });
 }
 
-export async function listInvites() {
+export async function listInvites(invitedById: string) {
   return prisma.invite.findMany({
-    where: { acceptedAt: null },
+    where: { acceptedAt: null, invitedById },
     include: { invitedBy: { select: { firstName: true, lastName: true } } },
     orderBy: { createdAt: 'desc' },
   });
 }
 
-export async function revokeInvite(id: string) {
-  const invite = await prisma.invite.findUnique({ where: { id } });
+export async function revokeInvite(id: string, invitedById: string) {
+  const invite = await prisma.invite.findFirst({ where: { id, invitedById } });
   if (!invite) throw new NotFoundError('Invite');
   await prisma.invite.delete({ where: { id } });
 }
