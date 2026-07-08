@@ -301,12 +301,7 @@ router.get('/revenue', async (_req: Request, res: Response, next: NextFunction) 
     const mrr = planMix.reduce((s, p) => s + p.mrr, 0);
     const payingAccounts = planMix.reduce((s, p) => s + (p.price > 0 ? p.count : 0), 0);
 
-    // Estimated monthly infrastructure cost. Replace with real billing data when wired.
-    const costs = { vercel: 190, neon: 95, resend: 45, aiGateway: 135 };
-    const totalCost = costs.vercel + costs.neon + costs.resend + costs.aiGateway;
-    const netProfit = mrr - totalCost;
     const arpu = payingAccounts > 0 ? Math.round(mrr / payingAccounts) : 0;
-    const margin = mrr > 0 ? Math.round((netProfit / mrr) * 1000) / 10 : 0;
 
     const [withTrial, activeTrials] = await Promise.all([
       prisma.user.count({ where: { ...realAccount, trialEndsAt: { not: null } } }),
@@ -315,9 +310,9 @@ router.get('/revenue', async (_req: Request, res: Response, next: NextFunction) 
     const trialConvRate = withTrial > 0 ? Math.round((payingAccounts / withTrial) * 100) : 0;
 
     sendSuccess(res, {
-      mrr, arr: mrr * 12, netProfit, margin, arpu,
+      mrr, arr: mrr * 12, arpu,
       payingAccounts, activeTrials, trialConvRate,
-      costs, totalCost, costEstimated: true,
+      costEstimated: true,
       planMix,
     });
   } catch (err) { next(err); }

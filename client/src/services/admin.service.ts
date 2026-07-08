@@ -152,14 +152,10 @@ export interface CustomerHealth {
 export interface RevenueData {
   mrr: number;
   arr: number;
-  netProfit: number;
-  margin: number;
   arpu: number;
   payingAccounts: number;
   activeTrials: number;
   trialConvRate: number;
-  costs: { vercel: number; neon: number; resend: number; aiGateway: number };
-  totalCost: number;
   costEstimated: boolean;
   planMix: { plan: string; count: number; price: number; mrr: number }[];
 }
