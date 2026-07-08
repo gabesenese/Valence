@@ -143,7 +143,7 @@ function UserActions({ user, secret, onDone }: { user: AdminUser; secret: string
   const [showJourney, setShowJourney] = useState(false);
   const [trialEdit, setTrialEdit] = useState(false);
   const [trialDate, setTrialDate] = useState('');
-  const [pos, setPos]       = useState({ top: 0, right: 0 });
+  const [pos, setPos]       = useState<{ top?: number; bottom?: number; right: number }>({ top: 0, right: 0 });
   const btnRef              = useRef<HTMLButtonElement>(null);
   const qc                  = useQueryClient();
   const navigate            = useNavigate();
@@ -165,10 +165,18 @@ function UserActions({ user, secret, onDone }: { user: AdminUser; secret: string
   });
   const deleteMut  = useMutation({ mutationFn: () => adminService.deleteUser(secret, user.id), onSuccess: invalidate });
 
+  const MENU_HEIGHT_ESTIMATE = 340;
+
   function handleOpen() {
     if (btnRef.current) {
       const r = btnRef.current.getBoundingClientRect();
-      setPos({ top: r.bottom + 4, right: window.innerWidth - r.right });
+      const right = window.innerWidth - r.right;
+      const spaceBelow = window.innerHeight - r.bottom;
+      if (spaceBelow < MENU_HEIGHT_ESTIMATE + 8) {
+        setPos({ bottom: window.innerHeight - r.top + 4, right });
+      } else {
+        setPos({ top: r.bottom + 4, right });
+      }
     }
     setOpen(true);
   }

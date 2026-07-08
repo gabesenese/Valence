@@ -21,17 +21,16 @@ export function RevenueTab({ secret }: { secret: string }) {
   }
 
   const maxMrr = Math.max(1, ...data.planMix.map((p) => p.mrr));
-  const netColor = data.netProfit >= 0 ? 'text-success' : 'text-danger';
 
   return (
     <div className="space-y-6">
-      {/* P&L hero */}
+      {/* Revenue hero */}
       <div className="rounded-2xl border border-surface-400/40 bg-surface-100 overflow-hidden">
         <div className="flex flex-col gap-1 border-b border-surface-400/30 bg-surface-200/30 px-5 py-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-500">Net profit / month</p>
-            <p className={`text-4xl font-extrabold tabular-nums tracking-tight ${netColor}`}>{compactCurrency(data.netProfit)}<span className="text-lg font-semibold text-slate-500">/mo</span></p>
-            <p className="mt-1 text-xs text-slate-500">MRR {compactCurrency(data.mrr)} · ARR {compactCurrency(data.arr)} · margin {data.margin}%</p>
+            <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-500">Gross MRR</p>
+            <p className="text-4xl font-extrabold tabular-nums tracking-tight text-success">{compactCurrency(data.mrr)}<span className="text-lg font-semibold text-slate-500">/mo</span></p>
+            <p className="mt-1 text-xs text-slate-500">ARR {compactCurrency(data.arr)}</p>
           </div>
           <div className="text-right">
             <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-500">Paying accounts</p>
@@ -47,26 +46,20 @@ export function RevenueTab({ secret }: { secret: string }) {
             <div className="flex items-center justify-between py-1.5 text-sm"><span className="text-slate-500">AI add-on</span><span className="text-xs text-slate-600">not yet billed</span></div>
             <div className="mt-1 flex items-center justify-between border-t border-surface-400/30 py-1.5 text-sm"><span className="text-slate-400">Gross MRR</span><span className="font-bold tabular-nums text-fg">{formatCurrency(data.mrr)}</span></div>
           </div>
-          <div className="p-5">
-            <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-slate-500">Costs out · est. infra</p>
-            <div className="flex items-center justify-between py-1.5 text-sm"><span className="text-slate-300">Vercel</span><span className="tabular-nums text-danger/90">−{formatCurrency(data.costs.vercel)}</span></div>
-            <div className="flex items-center justify-between py-1.5 text-sm"><span className="text-slate-300">Neon Postgres</span><span className="tabular-nums text-danger/90">−{formatCurrency(data.costs.neon)}</span></div>
-            <div className="flex items-center justify-between py-1.5 text-sm"><span className="text-slate-300">AI Gateway · Resend</span><span className="tabular-nums text-danger/90">−{formatCurrency(data.costs.aiGateway + data.costs.resend)}</span></div>
-            <div className="mt-1 flex items-center justify-between border-t border-surface-400/30 py-1.5 text-sm"><span className="text-slate-400">Total cost</span><span className="font-bold tabular-nums text-danger">−{formatCurrency(data.totalCost)}</span></div>
+          <div className="p-5 flex flex-col justify-center gap-2">
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Infrastructure costs</p>
+            <p className="text-xs text-slate-600">Billing not yet connected.</p>
+            <p className="text-[11px] text-slate-700">Wire Vercel, Neon, and Resend billing APIs to track real costs and compute net profit.</p>
           </div>
         </div>
-        {data.costEstimated && (
-          <p className="border-t border-surface-400/30 px-5 py-2 text-[11px] text-slate-600">Infrastructure costs are an estimate — wire real Vercel/Neon/Resend billing to make net profit exact.</p>
-        )}
       </div>
 
       {/* KPI strip */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         {[
           { label: 'ARPU / mo', value: formatCurrency(data.arpu) },
           { label: 'ARR', value: compactCurrency(data.arr) },
           { label: 'Trial → paid', value: `${data.trialConvRate}%` },
-          { label: 'Margin', value: `${data.margin}%` },
         ].map((k) => (
           <div key={k.label} className="rounded-xl border border-surface-400/40 bg-surface-100 p-4">
             <p className="text-lg font-bold tabular-nums text-fg">{k.value}</p>
