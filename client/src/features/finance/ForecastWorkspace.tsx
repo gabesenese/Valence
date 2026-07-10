@@ -113,7 +113,7 @@ export function ForecastWorkspace() {
               <>
                 <p className="mt-6 text-[11px] font-medium uppercase tracking-wider text-slate-500">{appliedProtection > 0 ? 'Remaining at risk' : 'Without intervention'}</p>
                 <CountUp value={remainingLoss} className={`mt-1 block text-6xl font-bold tabular-nums ${fullyProtected ? 'text-success' : 'text-danger'}`} />
-                <p className="mt-2 text-xs text-slate-500">Annual NOI {fullyProtected ? 'protected' : 'at risk'} · next {outlook.horizonMonths} months</p>
+                <p className="mt-2 text-xs text-slate-500">Annual revenue {fullyProtected ? 'protected' : 'at risk'} · next {outlook.horizonMonths} months</p>
                 {appliedProtection > 0 && !fullyProtected && (
                   <p className="mt-3 text-sm font-medium text-success">✓ {compactCurrency(appliedProtection)} protected in your plan</p>
                 )}
@@ -203,7 +203,7 @@ export function ForecastWorkspace() {
                     <div className={last ? '' : 'pb-7'}>
                       <p className="text-sm font-bold tabular-nums text-slate-300">{days} days</p>
                       <p className="text-sm font-medium text-slate-200 group-hover:text-brand-300">{l.tenantName}</p>
-                      <p className="text-xs font-semibold tabular-nums text-danger">−{compactCurrency(l.monthlyRent * 12)} <span className="font-normal text-slate-600">annual NOI</span></p>
+                      <p className="text-xs font-semibold tabular-nums text-danger">−{compactCurrency(l.monthlyRent * 12)} <span className="font-normal text-slate-600">annual revenue</span></p>
                     </div>
                   </button>
                 );

@@ -45,7 +45,7 @@ export function RenewalWorkspace({ open, leaseId, onClose }: { open: boolean; le
   const meta: WorkspaceMeta[] = lease ? [
     { label: 'Expires', value: `${days} ${days === 1 ? 'day' : 'days'}`, tone: days <= 30 ? 'text-danger' : days <= 60 ? 'text-warning' : 'text-slate-200' },
     { label: 'Current rent', value: `${formatCurrency(lease.baseRent)}/mo` },
-    { label: 'NOI at risk', value: compactCurrency(lease.baseRent * 12), tone: 'text-warning' },
+    { label: 'Revenue at risk', value: compactCurrency(lease.baseRent * 12), tone: 'text-warning' },
   ] : [];
 
   const recLine = notStarted ? 'Start the renewal conversation' : stage === 'CONTACTED' ? 'Schedule a follow-up to keep momentum' : 'Keep the renewal moving';
@@ -91,7 +91,7 @@ export function RenewalWorkspace({ open, leaseId, onClose }: { open: boolean; le
             <p className="mt-0.5 text-xs text-slate-500">Connect market data or enter it on the lease to compare.</p>
           </WorkspaceSection>
 
-          <WorkspaceRecommendation lines={[recLine]} note={`Expires in ${days} ${days === 1 ? 'day' : 'days'} · ${compactCurrency(lease.baseRent * 12)} annual NOI at risk.`} />
+          <WorkspaceRecommendation lines={[recLine]} note={`Expires in ${days} ${days === 1 ? 'day' : 'days'} · ${compactCurrency(lease.baseRent * 12)} annual revenue at risk.`} />
 
           <WorkspaceSection label="Actions">
             <div className="flex flex-col">
