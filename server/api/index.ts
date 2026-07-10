@@ -52,10 +52,41 @@ async function ensureSchema() {
   logger.info('Startup schema patch complete');
 }
 
+/*
+ * Drift repair: an early migration replaced the global lease_number unique with a
+ * (lease_number, property_id) compound, but used DROP CONSTRAINT on an object
+ * created via CREATE UNIQUE INDEX — a silent no-op — so the global index lingered
+ * and blocked any lease import whose number already existed under another owner.
+ * The prod build only runs `prisma generate`, so this self-heals on cold start:
+ * ensure the compound exists, then drop the stale global index. Idempotent, and
+ * the cheap existence check makes it a no-op once repaired.
+ */
+async function ensureLeaseNumberIndex() {
+  try {
+    const [row] = await prisma.$queryRaw<{ exists: boolean }[]>`
+      SELECT EXISTS (
+        SELECT 1 FROM pg_indexes
+        WHERE tablename = 'leases' AND indexname = 'leases_lease_number_key'
+      ) AS exists
+    `;
+    if (!row?.exists) return;
+
+    logger.info('Repairing lease_number uniqueness (dropping stale global index)');
+    await prisma.$executeRawUnsafe(
+      'CREATE UNIQUE INDEX IF NOT EXISTS "leases_lease_number_property_id_key" ON "leases"("lease_number","property_id")'
+    );
+    await prisma.$executeRawUnsafe('DROP INDEX IF EXISTS "leases_lease_number_key"');
+    logger.info('lease_number uniqueness repaired');
+  } catch (err) {
+    logger.error('Failed to repair lease_number index', { error: (err as Error).message });
+  }
+}
+
 export default async function handler(req: any, res: any) {
   if (!initialized) {
     await connectDatabase();
     await ensureSchema();
+    await ensureLeaseNumberIndex();
     initialized = true;
   }
   return app(req, res);
