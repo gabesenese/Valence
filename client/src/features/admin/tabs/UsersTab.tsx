@@ -218,7 +218,7 @@ function UserActions({ user, secret, onDone }: { user: AdminUser; secret: string
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
           <div className="fixed z-50 w-56 rounded-xl border border-surface-400/60 bg-surface-200 shadow-card overflow-hidden"
-            style={{ top: pos.top, right: pos.right }}>
+            style={{ top: pos.top, bottom: pos.bottom, right: pos.right }}>
 
             <div className="px-3 py-2 border-b border-surface-400/30">
               <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-600 mb-1">Plan</p>

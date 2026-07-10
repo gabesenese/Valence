@@ -38,25 +38,7 @@ export interface WorkQueueResult {
   summary: WorkQueueSummary;
 }
 
-export interface MorningBrief {
-  greeting: string;
-  headline: string;
-  stats: {
-    critical: number;
-    warning: number;
-    total: number;
-    totalMonthlyRisk: number;
-    urgentLeases: number;
-    overduePayments: number;
-  };
-  topItems: WorkItem[];
-  generatedAt: string;
-}
-
 export const workQueueService = {
   getQueue: (myWork = false): Promise<WorkQueueResult> =>
     api.get('/work-queue', { params: { myWork } }).then(extractData<WorkQueueResult>),
-
-  getBrief: (): Promise<MorningBrief> =>
-    api.get('/work-queue/brief').then(extractData<MorningBrief>),
 };

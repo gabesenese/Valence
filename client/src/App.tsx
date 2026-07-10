@@ -13,7 +13,6 @@ const ForgotPasswordPage = lazy(() => import('@/features/auth/ForgotPasswordPage
 const ResetPasswordPage = lazy(() => import('@/features/auth/ResetPasswordPage'));
 const VerifyEmailPage = lazy(() => import('@/features/auth/VerifyEmailPage'));
 const ExportPage = lazy(() => import('@/features/export/ExportPage'));
-const DashboardPage = lazy(() => import('@/features/dashboard/DashboardPage'));
 const LeasesPage = lazy(() => import('@/features/leases/LeasesPage'));
 const LeaseDetailPage = lazy(() => import('@/features/leases/LeaseDetailPage'));
 const PropertiesPage = lazy(() => import('@/features/properties/PropertiesPage'));
@@ -24,7 +23,6 @@ const AlertsPage = lazy(() => import('@/features/alerts/AlertsPage'));
 const TenantsPage = lazy(() => import('@/features/tenants/TenantsPage'));
 const SettingsPage = lazy(() => import('@/features/settings/SettingsPage'));
 const IntegrationsPage = lazy(() => import('@/features/integrations/IntegrationsPage'));
-const SetupPage = lazy(() => import('@/features/setup/SetupPage'));
 const WorkQueuePage = lazy(() => import('@/features/workQueue/WorkQueuePage'));
 const BenchmarksPage = lazy(() => import('@/features/benchmarks/BenchmarksPage'));
 const SimulatorPage = lazy(() => import('@/features/simulator/SimulatorPage'));
@@ -47,6 +45,7 @@ const DataControlsPage = lazy(() => import('@/features/about/DataControlsPage'))
 const SecurityPage = lazy(() => import('@/features/about/SecurityPage'));
 const TrashPage = lazy(() => import('@/features/trash/TrashPage'));
 const BackupPage = lazy(() => import('@/features/backup/BackupPage'));
+const ActivationPage = lazy(() => import('@/features/activation/ActivationPage'));
 
 export default function App() {
   useApplyTheme();
@@ -70,13 +69,13 @@ export default function App() {
         <Route path="/auth/verify-email" element={<VerifyEmailPage />} />
 
         <Route element={<ProtectedRoute />}>
-          <Route path="setup" element={<SetupPage />} />
+          <Route path="activate" element={<ActivationPage />} />
         </Route>
 
         <Route element={<ProtectedRoute />}>
           <Route element={<AppLayout />}>
             <Route path="queue" element={<UpgradeGate feature="work_queue"><WorkQueuePage /></UpgradeGate>} />
-            <Route path="dashboard" element={<DashboardPage />} />
+            <Route path="dashboard" element={<Navigate to="/queue" replace />} />
             <Route path="leases" element={<LeasesPage />} />
             <Route path="leases/:id" element={<LeaseDetailPage />} />
             <Route path="properties" element={<PropertiesPage />} />

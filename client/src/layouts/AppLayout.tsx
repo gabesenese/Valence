@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Outlet, NavLink, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
-  LayoutDashboard, FileText, Building2, BarChart3, Bell, DollarSign,
+  FileText, Building2, BarChart3, Bell, DollarSign,
   LogOut, ChevronLeft, Users, Settings, Inbox, Layers,
   Wand2, ClipboardList, Heart, FolderOpen, Zap, Lock, Upload, ScrollText, Download,
   UserX, Sparkles, HelpCircle, Trash2, Database, Menu, X,
@@ -65,7 +65,6 @@ const NAV_SECTIONS: NavSection[] = [
   {
     label: 'Intelligence',
     items: [
-      { to: '/dashboard',  icon: LayoutDashboard, label: 'Dashboard'                                          },
       { to: '/finance',    icon: DollarSign,      label: 'Finance',     feature: 'finance'                     },
       { to: '/analytics',  icon: BarChart3,       label: 'Analytics',   feature: 'analytics'                   },
       { to: '/benchmarks', icon: Layers,          label: 'Performance', feature: 'performance'                },
@@ -134,18 +133,21 @@ export function AppLayout() {
 
   // New / wiped accounts (no portfolio yet) land on the onboarding screen
   // (import-your-data vs demo portfolio) instead of the empty work queue.
-  const { data: portfolioSummary } = useQuery({
+  const { data: portfolioSummary, isFetching: summaryFetching } = useQuery({
     queryKey: ['analytics', 'summary'],
     queryFn: analyticsService.getSummary,
     staleTime: 60_000,
   });
   useEffect(() => {
-    if (!portfolioSummary) return;
+    // Wait for a settled read — a just-completed activation invalidates this
+    // query, so acting on the stale (empty) cache would bounce the user back to
+    // /activate before the fresh, now-non-empty summary lands.
+    if (!portfolioSummary || summaryFetching) return;
     const empty = portfolioSummary.properties.total === 0 && portfolioSummary.leases.active === 0;
     if (empty && location.pathname === '/queue') {
-      navigate('/setup', { replace: true });
+      navigate('/activate', { replace: true });
     }
-  }, [portfolioSummary, location.pathname, navigate]);
+  }, [portfolioSummary, summaryFetching, location.pathname, navigate]);
 
   useEffect(() => {
     setMobileNavOpen(false);

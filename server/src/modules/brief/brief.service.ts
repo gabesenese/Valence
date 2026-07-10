@@ -4,6 +4,7 @@ import { sendDailyBriefEmail } from '../../lib/email';
 import { getRevenueAtRisk } from '../finance/revenue-at-risk.service';
 
 export interface BriefItem {
+  id?: string;
   kind: 'risk' | 'task' | 'alert';
   title: string;
   detail: string;
@@ -36,6 +37,7 @@ export async function buildDailyBrief(userId: string): Promise<DailyBrief> {
 
   const atRiskData = await getRevenueAtRisk(userId);
   const atRisk: BriefItem[] = atRiskData.risks.slice(0, 5).map((r) => ({
+    id: r.leaseId,
     kind: 'risk',
     severity: r.renewalRisk,
     title: `${r.tenantName} — ${r.propertyName}`,
@@ -54,6 +56,7 @@ export async function buildDailyBrief(userId: string): Promise<DailyBrief> {
     take: 8,
   });
   const dueTasks: BriefItem[] = dueTaskRows.map((t) => ({
+    id: t.id,
     kind: 'task',
     title: t.title,
     detail: t.lease?.tenant?.name ?? 'Due today',
@@ -70,7 +73,7 @@ export async function buildDailyBrief(userId: string): Promise<DailyBrief> {
     orderBy: { createdAt: 'desc' },
     take: 5,
   });
-  const newAlerts: BriefItem[] = alertRows.map((a) => ({ kind: 'alert', title: a.title, detail: a.description ?? '' }));
+  const newAlerts: BriefItem[] = alertRows.map((a) => ({ id: a.id, kind: 'alert', title: a.title, detail: a.description ?? '' }));
 
   const isEmpty = atRisk.length === 0 && dueTasks.length === 0 && newAlerts.length === 0;
 

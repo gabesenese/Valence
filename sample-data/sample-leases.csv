@@ -1,0 +1,7 @@
+propertyCode,tenantName,tenantEmail,leaseNumber,unitNumber,type,startDate,endDate,baseRent,sqft
+OAK,Northline Bookkeeping,hello@northline.ca,OAK-101,Unit 1,GROSS,2025-05-01,2028-05-01,3200,1500
+OAK,Beacon Dental,front@beacondental.ca,OAK-102,Unit 2,GROSS,2024-11-01,2026-11-01,4100,1700
+OAK,Clover Yoga Studio,studio@cloveryoga.ca,OAK-103,Unit 3,GROSS,2023-10-15,2026-08-26,2900,1400
+DUN,Rosa & Sons Grocery,orders@rosasons.ca,DUN-A,Store A,NET,2022-09-01,2026-08-08,6800,2100
+DUN,Maple Leaf Printing,jobs@mapleleafprint.ca,DUN-B,Store B,GROSS,2025-10-01,2028-10-01,5400,1800
+DUN,Harbour Coffee Co.,hi@harbourcoffee.ca,DUN-C,Store C,GROSS,2026-01-01,2028-07-01,4600,1300

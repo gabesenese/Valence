@@ -27,7 +27,7 @@ export default function RegisterPage() {
     try {
       const result = await authService.register(form);
       setAuth(result.user, result.tokens.accessToken, result.tokens.refreshToken);
-      navigate(result.user.role === 'SUPER_ADMIN' ? '/admin' : '/setup');
+      navigate(result.user.role === 'SUPER_ADMIN' ? '/admin' : '/activate');
     } catch (err: unknown) {
       const data = (err as { response?: { data?: { message?: string; error?: string } } })?.response?.data;
       if (data?.message === 'Validation failed' && data?.error) {

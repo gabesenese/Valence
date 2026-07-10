@@ -37,7 +37,7 @@ export default function LoginPage() {
       setAuth(result.user, result.tokens.accessToken, result.tokens.refreshToken);
       localStorage.setItem('valence-remember-me', rememberMe ? '1' : '0');
       if (!rememberMe) sessionStorage.setItem('valence-session-active', '1');
-      navigate(isTesterEmail(result.user.email) ? '/setup' : from, { replace: true });
+      navigate(isTesterEmail(result.user.email) ? '/activate' : from, { replace: true });
     } catch (err: unknown) {
       const msg = (err as Error)?.message;
       setError(msg === 'Invalid credentials'
@@ -56,7 +56,7 @@ export default function LoginPage() {
     try {
       const result = await authService.verifyMfa(mfaToken, totp);
       setAuth(result.user, result.tokens.accessToken, result.tokens.refreshToken);
-      navigate(isTesterEmail(result.user.email) ? '/setup' : from, { replace: true });
+      navigate(isTesterEmail(result.user.email) ? '/activate' : from, { replace: true });
     } catch (err: unknown) {
       const msg = (err as Error)?.message;
       setError(msg || 'Invalid code');

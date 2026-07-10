@@ -280,6 +280,8 @@ export async function importLeases(buffer: Buffer, plan: Plan, userId: string, c
   const result: ImportResult = { created: 0, updated: 0, skipped: 0, errors: [] };
   const limit = PLAN_LIMITS[plan].leases;
   const startCount = await prisma.lease.count({ where: { property: { ownerId: userId } } });
+  const propLimit = PLAN_LIMITS[plan].properties;
+  let propCount = await prisma.property.count({ where: { ownerId: userId, deletedAt: null } });
 
   for (let i = 0; i < rows.length; i++) {
     const rowNum = i + 2;
@@ -300,8 +302,30 @@ export async function importLeases(buffer: Buffer, plan: Plan, userId: string, c
       if (!endDate) throw new Error('endDate is required (YYYY-MM-DD)');
       if (!baseRent) throw new Error('baseRent is required');
 
-      const property = await prisma.property.findFirst({ where: { code: propertyCode.toUpperCase().trim(), ownerId: userId, deletedAt: null } });
-      if (!property) throw new Error(`Property with code "${propertyCode}" not found`);
+      const normalPropCode = propertyCode.toUpperCase().trim();
+      let property = await prisma.property.findFirst({ where: { code: normalPropCode, ownerId: userId, deletedAt: null } });
+      if (!property) {
+        if (propLimit !== Infinity && propCount >= propLimit) {
+          throw new Error(`Your ${plan} plan includes up to ${propLimit} properties and you've reached the limit — upgrade your plan to import more`);
+        }
+        property = await prisma.property.create({
+          data: {
+            ownerId: userId,
+            name: normalPropCode,
+            code: normalPropCode,
+            type: 'RESIDENTIAL' as PropertyType,
+            address: '',
+            city: '',
+            state: '',
+            zipCode: '',
+            country: 'CA',
+            totalUnits: 1,
+            totalSqft: 0,
+            metadata: { autoCreated: true, needsDetails: true },
+          },
+        });
+        propCount++;
+      }
 
       const existingLease = await prisma.lease.findUnique({ where: { leaseNumber_propertyId: { leaseNumber: leaseNumber.trim(), propertyId: property.id } } });
       if (existingLease) {

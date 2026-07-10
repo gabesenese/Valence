@@ -16,6 +16,8 @@ import {
 import { workQueueService, type WorkItem } from '@/services/workQueue.service';
 import { TaskPanel } from './TaskPanel';
 import { alertsService } from '@/services/alerts.service';
+import { analyticsService } from '@/services/analytics.service';
+import { ActivationPrompt } from '@/features/onboarding/ActivationPrompt';
 import { useAuthStore } from '@/state/auth.store';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
@@ -343,6 +345,12 @@ export default function WorkQueuePage() {
   const user = useAuthStore((s) => s.user);
   const qc = useQueryClient();
   const [busyId, setBusyId] = useState<string | null>(null);
+
+  const { data: summary } = useQuery({
+    queryKey: ['analytics', 'summary'],
+    queryFn: analyticsService.getSummary,
+    staleTime: 60_000,
+  });
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({
     critical: true,
     assigned: true,
@@ -413,6 +421,13 @@ export default function WorkQueuePage() {
 
   return (
     <div className="flex flex-col gap-4 p-4 animate-fade-in sm:gap-6 sm:p-6">
+      {summary && (
+        <ActivationPrompt
+          hasProperties={summary.properties.total > 0}
+          hasLeases={summary.leases.active > 0}
+        />
+      )}
+
       <QueueHero
         user={user}
         summary={data?.summary}
