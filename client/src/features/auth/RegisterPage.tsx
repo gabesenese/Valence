@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Logo } from '@/components/ui/Logo';
 
-export default function RegisterPage() {
+export default function RegisterPage({ trial = false }: { trial?: boolean }) {
   const [form, setForm] = useState({ email: '', password: '', firstName: '', lastName: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -27,6 +27,10 @@ export default function RegisterPage() {
     try {
       const result = await authService.register(form);
       setAuth(result.user, result.tokens.accessToken, result.tokens.refreshToken);
+      if (trial && result.user.role !== 'SUPER_ADMIN') {
+        const claimed = await authService.claimTrial().catch(() => null);
+        if (claimed) setAuth(claimed.user, claimed.tokens.accessToken, claimed.tokens.refreshToken);
+      }
       navigate(result.user.role === 'SUPER_ADMIN' ? '/admin' : '/activate');
     } catch (err: unknown) {
       const data = (err as { response?: { data?: { message?: string; error?: string } } })?.response?.data;
@@ -55,7 +59,7 @@ export default function RegisterPage() {
           <Logo className="h-16 w-10" />
           <div className="text-center">
             <h1 className="text-xl font-bold text-fg tracking-tight">Valence</h1>
-            <p className="mt-0.5 text-xs text-slate-500">Create your account</p>
+            <p className="mt-0.5 text-xs text-slate-500">{trial ? 'Start your 7-day free trial' : 'Create your account'}</p>
           </div>
         </div>
 
@@ -80,7 +84,10 @@ export default function RegisterPage() {
               </div>
             )}
 
-            <Button type="submit" loading={loading} className="mt-1 w-full">Create account</Button>
+            <Button type="submit" loading={loading} className="mt-1 w-full">{trial ? 'Start free trial' : 'Create account'}</Button>
+            {trial && (
+              <p className="text-center text-[11px] text-slate-600">Full access for 7 days. No credit card required.</p>
+            )}
           </form>
           <p className="mt-4 text-center text-xs text-slate-600">
             Already have an account?{' '}
