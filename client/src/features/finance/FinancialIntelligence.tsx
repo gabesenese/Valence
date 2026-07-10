@@ -44,7 +44,7 @@ const titleCase = (s: string) => s.charAt(0) + s.slice(1).toLowerCase();
 function priorityHeadline(rec: Recommendation): string {
   const i = rec.impact;
   if (!i) return rec.title;
-  if (i.unit === 'PER_MONTH') return `${formatCurrency(i.value * 12)} annual NOI at risk`;
+  if (i.unit === 'PER_MONTH') return `${formatCurrency(i.value * 12)} annual revenue at risk`;
   if (i.unit === 'ONCE') return `${formatCurrency(i.value)} overdue`;
   if (i.unit === 'PERCENT') return `${i.value >= 0 ? '+' : ''}${i.value}% over budget`;
   return rec.title;
@@ -105,7 +105,7 @@ export function FinancialIntelligence() {
   const atRiskHighlight = data.highlights.find((h) => h.kind === 'REVENUE_AT_RISK');
 
   const riskText = nearTerm > 0
-    ? `Renewals over the next 60 days may reduce annual NOI by ${compactCurrency(nearTerm * 12)}.`
+    ? `Renewals over the next 60 days may reduce annual revenue by ${compactCurrency(nearTerm * 12)}.`
     : atRiskHighlight ? `${atRiskHighlight.count} lease${atRiskHighlight.count !== 1 ? 's are' : ' is'} approaching renewal.` : 'No material financial risks on the horizon.';
   const aheadText = nearTerm > 0 ? 'Revenue expected to soften over the next quarter.' : 'Revenue expected to hold steady over the next quarter.';
   const outlookSections = [

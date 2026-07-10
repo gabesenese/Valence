@@ -127,6 +127,7 @@ async function calcOccupancyDrop(
 }
 
 async function calcTenantDeparture(params: TenantDepartureParams, userId: string) {
+  if (!params.tenantId) return { revChange: 0, expChange: 0, newOccupancyDelta: 0, tenantName: 'Unknown' };
   const lease = await prisma.lease.findFirst({
     where: {
       tenantId: params.tenantId,
