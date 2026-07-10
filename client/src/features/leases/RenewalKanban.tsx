@@ -13,7 +13,7 @@ import {
   type DragStartEvent,
   type DragEndEvent,
 } from '@dnd-kit/core';
-import { Clock, DollarSign, User, AlertTriangle } from 'lucide-react';
+import { Clock, User, AlertTriangle } from 'lucide-react';
 import { leasesService } from '@/services/leases.service';
 import type { RenewalStage, KanbanLease, KanbanColumn } from '@/services/leases.service';
 import { Badge } from '@/components/ui/Badge';
@@ -70,7 +70,6 @@ function CardContent({ lease }: { lease: KanbanLease }) {
           {days > 0 ? `${days}d` : 'Expired'}
         </span>
         <span className="flex items-center gap-0.5 text-[11px] text-slate-400 tabular-nums">
-          <DollarSign className="h-3 w-3 shrink-0" />
           {formatCurrency(lease.baseRent)}
         </span>
         <Badge variant={RISK_VARIANT[lease.renewalRisk] ?? 'neutral'} dot>
