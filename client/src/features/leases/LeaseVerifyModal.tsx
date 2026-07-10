@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   Upload, AlertTriangle, Sparkles, CheckCircle2, XCircle, MinusCircle, Wand2,
@@ -118,12 +118,12 @@ export default function LeaseVerifyModal({ open, onClose, leaseId }: Props) {
     }
   }
 
-  const onDrop = useCallback((e: React.DragEvent) => {
+  const onDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setDragging(false);
     const f = e.dataTransfer.files[0];
     if (f) processFile(f);
-  }, []);
+  };
 
   return (
     <Modal

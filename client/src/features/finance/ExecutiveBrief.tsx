@@ -1,11 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import {
-  Sparkles, RefreshCw, AlertTriangle,
-  Phone, Send, Search, DollarSign, ChevronRight,
-  CheckCircle2,
-} from 'lucide-react';
-import { aiService, type ActionItem } from '@/services/ai.service';
+import { Sparkles, RefreshCw, AlertTriangle } from 'lucide-react';
+import { aiService } from '@/services/ai.service';
 
 
 const HEALTH_CONFIG = {
@@ -15,19 +11,6 @@ const HEALTH_CONFIG = {
   healthy:  { label: 'HEALTHY',   color: 'text-success',  bg: 'bg-success/10', ring: 'ring-success/30'  },
 };
 
-const URGENCY_CONFIG = {
-  immediate:   { label: 'Today',       color: 'text-danger  bg-danger/10  border-danger/20'   },
-  this_week:   { label: 'This week',   color: 'text-warning bg-warning/10 border-warning/20'  },
-  this_month:  { label: 'This month',  color: 'text-slate-400 bg-surface-300/60 border-surface-400/40' },
-};
-
-const CATEGORY_ICON: Record<ActionItem['category'], React.FC<{ className?: string }>> = {
-  contact_tenant:   Phone,
-  start_renewal:    RefreshCw,
-  send_document:    Send,
-  financial_review: DollarSign,
-  investigate:      Search,
-};
 
 function timeAgo(iso: string) {
   const mins = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
@@ -51,11 +34,6 @@ function Skeleton() {
         <div className="h-5 w-3/4 rounded bg-surface-400/50" />
         <div className="h-3 w-full rounded bg-surface-400/30" />
         <div className="h-3 w-5/6 rounded bg-surface-400/30" />
-      </div>
-      <div className="border-t border-surface-400/30 px-4 py-4 sm:px-6 sm:py-5">
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
-          {[1,2,3].map(i => <div key={i} className="h-14 rounded-lg bg-surface-400/20" />)}
-        </div>
       </div>
     </div>
   );
@@ -150,39 +128,11 @@ export default function ExecutiveBriefCard() {
         </div>
       </div>
 
-      <div className="px-4 py-4 border-b border-surface-400/30 sm:px-6 sm:py-5">
+      <div className="px-4 py-4 sm:px-6 sm:py-5">
         <p className="text-lg font-semibold text-fg leading-snug">{brief.headline}</p>
         <p className="mt-2 max-w-3xl text-sm text-slate-400 leading-relaxed">{brief.summary}</p>
       </div>
 
-      <div className="px-4 py-4 sm:px-6 sm:py-5">
-        <div className="flex items-center gap-2 mb-4">
-          <CheckCircle2 className="h-3.5 w-3.5 text-brand-400/70" />
-          <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Recommended Actions</span>
-        </div>
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
-          {brief.actions.map((item, i) => {
-            const urgency = URGENCY_CONFIG[item.urgency] ?? URGENCY_CONFIG.this_month;
-            const Icon = CATEGORY_ICON[item.category] ?? ChevronRight;
-            return (
-              <div key={i} className="flex items-start gap-3 rounded-xl bg-surface-200/40 px-3.5 py-3">
-                <div className="mt-0.5 h-6 w-6 shrink-0 rounded-lg bg-surface-300/60 flex items-center justify-center">
-                  <Icon className="h-3 w-3 text-slate-400" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between gap-1.5">
-                    <p className="text-xs font-semibold text-slate-200 leading-snug">{item.action}</p>
-                    <span className={`shrink-0 inline-flex rounded-full border px-1.5 py-0.5 text-[9px] font-bold whitespace-nowrap ${urgency.color}`}>
-                      {urgency.label}
-                    </span>
-                  </div>
-                  <p className="mt-0.5 text-[11px] text-slate-500 leading-snug">{item.context}</p>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
     </div>
   );
 }

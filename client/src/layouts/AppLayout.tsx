@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Outlet, NavLink, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
-  LayoutDashboard, FileText, Building2, BarChart3, Bell, DollarSign,
+  FileText, Building2, BarChart3, Bell, DollarSign,
   LogOut, ChevronLeft, Users, Settings, Inbox, Layers,
   Wand2, ClipboardList, Heart, FolderOpen, Zap, Lock, Upload, ScrollText, Download,
   UserX, Sparkles, HelpCircle, Trash2, Database, Menu, X,
@@ -11,7 +11,6 @@ import { cn } from '@/utils/cn';
 import { Logo } from '@/components/ui/Logo';
 import { setOrgCurrency } from '@/utils/format';
 import { organizationService } from '@/services/organization.service';
-import { analyticsService } from '@/services/analytics.service';
 import { useAuthStore } from '@/state/auth.store';
 import { useUIStore } from '@/state/ui.store';
 import { authService } from '@/services/auth.service';
@@ -65,7 +64,6 @@ const NAV_SECTIONS: NavSection[] = [
   {
     label: 'Intelligence',
     items: [
-      { to: '/dashboard',  icon: LayoutDashboard, label: 'Dashboard'                                          },
       { to: '/finance',    icon: DollarSign,      label: 'Finance',     feature: 'finance'                     },
       { to: '/analytics',  icon: BarChart3,       label: 'Analytics',   feature: 'analytics'                   },
       { to: '/benchmarks', icon: Layers,          label: 'Performance', feature: 'performance'                },
@@ -131,21 +129,6 @@ export function AppLayout() {
   useEffect(() => {
     if (org?.currency) setOrgCurrency(org.currency);
   }, [org?.currency]);
-
-  // New / wiped accounts (no portfolio yet) land on the onboarding screen
-  // (import-your-data vs demo portfolio) instead of the empty work queue.
-  const { data: portfolioSummary } = useQuery({
-    queryKey: ['analytics', 'summary'],
-    queryFn: analyticsService.getSummary,
-    staleTime: 60_000,
-  });
-  useEffect(() => {
-    if (!portfolioSummary) return;
-    const empty = portfolioSummary.properties.total === 0 && portfolioSummary.leases.active === 0;
-    if (empty && location.pathname === '/queue') {
-      navigate('/setup', { replace: true });
-    }
-  }, [portfolioSummary, location.pathname, navigate]);
 
   useEffect(() => {
     setMobileNavOpen(false);

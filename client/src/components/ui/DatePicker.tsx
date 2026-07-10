@@ -37,9 +37,10 @@ export function DatePicker({
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (parsed) {
-      setViewYear(parsed.getFullYear());
-      setViewMonth(parsed.getMonth());
+    const p = value ? new Date(value + 'T00:00:00') : null;
+    if (p) {
+      setViewYear(p.getFullYear());
+      setViewMonth(p.getMonth());
     }
   }, [value]);
 

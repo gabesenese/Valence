@@ -37,7 +37,7 @@ export async function parseCsvPreview(file: File): Promise<CsvPreview> {
     reader.onload = (e) => {
       const text = (e.target?.result as string) ?? '';
       const lines = text.split(/\r?\n/);
-      const headerLine = (lines[0] ?? '').replace(/^﻿/, ''); // strip BOM
+      const headerLine = (lines[0] ?? '').replace(/^\uFEFF/, '');
       const dataLine   = lines[1] ?? '';
       const delim      = detectDelimiter(headerLine);
 

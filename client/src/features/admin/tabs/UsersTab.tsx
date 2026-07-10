@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -218,7 +218,7 @@ function UserActions({ user, secret, onDone }: { user: AdminUser; secret: string
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
           <div className="fixed z-50 w-56 rounded-xl border border-surface-400/60 bg-surface-200 shadow-card overflow-hidden"
-            style={{ top: pos.top, right: pos.right }}>
+            style={{ top: pos.top, bottom: pos.bottom, right: pos.right }}>
 
             <div className="px-3 py-2 border-b border-surface-400/30">
               <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-600 mb-1">Plan</p>
@@ -292,10 +292,10 @@ export function UsersTab({ secret }: { secret: string }) {
   const [page, setPage] = useState(1);
   const qc = useQueryClient();
 
-  const debouncedSearch = useCallback((() => {
+  const debouncedSearch = useMemo(() => {
     let t: ReturnType<typeof setTimeout>;
     return (v: string) => { clearTimeout(t); t = setTimeout(() => { setSearch(v); setPage(1); }, 300); };
-  })(), []);
+  }, []);
 
   const { data: usersData, isLoading } = useQuery({
     queryKey: ['admin', 'users', secret, search, planFilter, page],

@@ -11,9 +11,11 @@ import { LedgerWorkspace } from './LedgerWorkspace';
 import { WhatChangedPanel } from '../changes/WhatChangedPanel';
 import { BudgetCard } from './BudgetCard';
 import { PageTip } from '../onboarding/PageTip';
+import ExecutiveBriefCard from './ExecutiveBrief';
 import { PageLoader } from '@/components/ui/Spinner';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { compactCurrency } from '@/utils/format';
+import { usePlan } from '@/hooks/usePlan';
 
 type TabId = 'overview' | 'forecast' | 'ledger' | 'expenses' | 'profitability' | 'budgets';
 
@@ -51,6 +53,7 @@ function DeltaChip({ delta }: { delta?: MetricDelta }) {
 export default function FinancePage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTabRef = useRef<HTMLButtonElement>(null);
+  const { canAccess } = usePlan();
 
   const tab = (searchParams.get('tab') as TabId) ?? 'overview';
 
@@ -107,6 +110,8 @@ export default function FinancePage() {
 
       {tab === 'overview' && (
         <>
+          {canAccess('executive_brief') && <ExecutiveBriefCard />}
+
           <FinancialIntelligence />
 
           {summary && (() => {
