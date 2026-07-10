@@ -63,6 +63,7 @@ export default function App() {
 
         <Route path="/auth/login" element={<LoginPage />} />
         <Route path="/auth/register" element={<RegisterPage />} />
+        <Route path="/try" element={<RegisterPage trial />} />
         <Route path="/auth/invite/:token" element={<AcceptInvitePage />} />
         <Route path="/auth/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
