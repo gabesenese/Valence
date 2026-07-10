@@ -11,7 +11,6 @@ import { cn } from '@/utils/cn';
 import { Logo } from '@/components/ui/Logo';
 import { setOrgCurrency } from '@/utils/format';
 import { organizationService } from '@/services/organization.service';
-import { analyticsService } from '@/services/analytics.service';
 import { useAuthStore } from '@/state/auth.store';
 import { useUIStore } from '@/state/ui.store';
 import { authService } from '@/services/auth.service';
@@ -130,24 +129,6 @@ export function AppLayout() {
   useEffect(() => {
     if (org?.currency) setOrgCurrency(org.currency);
   }, [org?.currency]);
-
-  // New / wiped accounts (no portfolio yet) land on the onboarding screen
-  // (import-your-data vs demo portfolio) instead of the empty work queue.
-  const { data: portfolioSummary, isFetching: summaryFetching } = useQuery({
-    queryKey: ['analytics', 'summary'],
-    queryFn: analyticsService.getSummary,
-    staleTime: 60_000,
-  });
-  useEffect(() => {
-    // Wait for a settled read — a just-completed activation invalidates this
-    // query, so acting on the stale (empty) cache would bounce the user back to
-    // /activate before the fresh, now-non-empty summary lands.
-    if (!portfolioSummary || summaryFetching) return;
-    const empty = portfolioSummary.properties.total === 0 && portfolioSummary.leases.active === 0;
-    if (empty && location.pathname === '/queue') {
-      navigate('/activate', { replace: true });
-    }
-  }, [portfolioSummary, summaryFetching, location.pathname, navigate]);
 
   useEffect(() => {
     setMobileNavOpen(false);

@@ -62,11 +62,12 @@ export async function trackReturnVisit(userId: string): Promise<void> {
 }
 
 /**
- * Records the activation moment — the first time a real (non-demo) account views
- * its Finance Overview with actual data behind it. This is the metric that matters
- * for trials: signup → first_insight = time-to-first-insight. Fired from the
- * intelligence endpoint; the early dedup check keeps it to one cheap query per view
- * after it has fired once.
+ * Records the activation moment — the first time a real account views its Finance
+ * Overview with its OWN data behind it. This is the metric that matters for trials:
+ * signup → first_insight = time-to-first-insight. Fired from the intelligence
+ * endpoint; the early dedup check keeps it to one cheap query per view after it has
+ * fired once. Sample-portfolio exploration does NOT count — the demo loader writes
+ * leases numbered `DEMO-<userId8>-NNN`, so we require at least one non-demo lease.
  */
 export async function trackFirstInsight(userId: string): Promise<void> {
   try {
@@ -79,8 +80,15 @@ export async function trackFirstInsight(userId: string): Promise<void> {
     const user = await prisma.user.findUnique({ where: { id: userId }, select: { isDemo: true } });
     if (user?.isDemo) return;
 
-    const leaseCount = await prisma.lease.count({ where: { property: { ownerId: userId }, deletedAt: null } });
-    if (leaseCount === 0) return;
+    const demoPrefix = `DEMO-${userId.slice(0, 8).toUpperCase()}-`;
+    const realLeaseCount = await prisma.lease.count({
+      where: {
+        property: { ownerId: userId },
+        deletedAt: null,
+        NOT: { leaseNumber: { startsWith: demoPrefix } },
+      },
+    });
+    if (realLeaseCount === 0) return;
 
     await prisma.funnelEvent.create({ data: { event: 'first_insight', userId, meta: {} as object } });
   } catch { /* non-blocking */ }
