@@ -132,7 +132,6 @@ function NotesModal({
           placeholder="Add a note (optional)…"
           className="mt-4 w-full rounded-lg border border-surface-400/60 bg-surface-200 px-3 py-2.5 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-brand-500/50 resize-none"
           rows={3}
-          // eslint-disable-next-line jsx-a11y/no-autofocus
           autoFocus
         />
         <div className="mt-4 flex justify-end gap-2">
@@ -326,7 +325,7 @@ export default function AlertsPage() {
   function toggleActivity(id: string) {
     setExpandedActivity((prev) => {
       const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
+      if (next.has(id)) next.delete(id); else next.add(id);
       return next;
     });
   }

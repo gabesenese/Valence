@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -292,10 +292,10 @@ export function UsersTab({ secret }: { secret: string }) {
   const [page, setPage] = useState(1);
   const qc = useQueryClient();
 
-  const debouncedSearch = useCallback((() => {
+  const debouncedSearch = useMemo(() => {
     let t: ReturnType<typeof setTimeout>;
     return (v: string) => { clearTimeout(t); t = setTimeout(() => { setSearch(v); setPage(1); }, 300); };
-  })(), []);
+  }, []);
 
   const { data: usersData, isLoading } = useQuery({
     queryKey: ['admin', 'users', secret, search, planFilter, page],

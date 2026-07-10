@@ -545,7 +545,7 @@ export default function WorkQueuePage() {
                 collapsed={!!collapsed['other']}
                 onToggle={() => toggle('other')}
               />
-              {!!collapsed['other'] ? null : (
+              {collapsed['other'] ? null : (
                 <div className="divide-y divide-surface-400/30">
                   {other.map((item) => (
                     <WorkItemCard key={item.id} item={item} {...cardProps} />
