@@ -129,7 +129,7 @@ export default function PropertyDetailPage() {
           <Card
             key={kpi.label}
             ref={kpi.focus === 'occupancy' ? occupancyRef : kpi.focus === 'revenue' ? revenueRef : undefined}
-            className="p-4 text-center"
+            className="p-4 text-center border-transparent"
           >
             <p className={`text-xl font-bold tabular-nums ${kpi.color}`}>{kpi.value}</p>
             <p className="mt-0.5 text-xs text-slate-400">{kpi.label}</p>
