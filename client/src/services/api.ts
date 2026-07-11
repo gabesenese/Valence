@@ -13,6 +13,24 @@ api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   return config;
 });
 
+let refreshPromise: Promise<string> | null = null;
+
+async function performRefresh(): Promise<string> {
+  const refreshToken = useAuthStore.getState().refreshToken;
+  if (!refreshToken) throw new Error('No refresh token');
+  const { data } = await axios.post('/api/auth/refresh', { refreshToken });
+  const { accessToken, refreshToken: newRefresh } = data.data.tokens;
+  useAuthStore.getState().setTokens(accessToken, newRefresh);
+  return accessToken;
+}
+
+export function getFreshAccessToken(): Promise<string> {
+  if (!refreshPromise) {
+    refreshPromise = performRefresh().finally(() => { refreshPromise = null; });
+  }
+  return refreshPromise;
+}
+
 api.interceptors.response.use(
   (res) => res,
   async (error) => {
@@ -27,13 +45,7 @@ api.interceptors.response.use(
         return Promise.reject(error);
       }
       try {
-        const refreshToken = useAuthStore.getState().refreshToken;
-        if (!refreshToken) throw new Error('No refresh token');
-
-        const { data } = await axios.post('/api/auth/refresh', { refreshToken });
-        const { accessToken, refreshToken: newRefresh } = data.data.tokens;
-        useAuthStore.getState().setTokens(accessToken, newRefresh);
-
+        const accessToken = await getFreshAccessToken();
         original.headers.Authorization = `Bearer ${accessToken}`;
         return api(original);
       } catch {

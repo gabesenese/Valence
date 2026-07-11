@@ -462,12 +462,21 @@ export async function cleanupDemoAccounts(): Promise<number> {
 }
 
 
+const REFRESH_FALLBACK_MS = 30 * 24 * 60 * 60 * 1000;
+
+function durationToMs(value: string): number {
+  const match = /^(\d+)\s*(ms|s|m|h|d)$/.exec(value.trim());
+  if (!match) return REFRESH_FALLBACK_MS;
+  const amount = Number(match[1]);
+  const unitMs: Record<string, number> = { ms: 1, s: 1000, m: 60_000, h: 3_600_000, d: 86_400_000 };
+  return amount * unitMs[match[2]];
+}
+
 async function createTokenPair(user: AuthUser, meta?: SessionMeta): Promise<TokenPair> {
   const accessToken = signAccessToken(user);
   const refreshToken = signRefreshToken();
 
-  const expiresAt = new Date();
-  expiresAt.setDate(expiresAt.getDate() + 7);
+  const expiresAt = new Date(Date.now() + durationToMs(env.JWT_REFRESH_EXPIRES_IN));
 
   await prisma.refreshToken.create({
     data: {
