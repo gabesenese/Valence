@@ -651,7 +651,8 @@ export async function getKanban(userId: string) {
       owner: { select: { id: true, firstName: true, lastName: true } },
       alerts: {
         where: { status: { in: ['OPEN', 'IN_PROGRESS'] } },
-        select: { id: true, severity: true },
+        select: { id: true, severity: true, title: true, type: true },
+        orderBy: [{ severity: 'asc' }, { createdAt: 'asc' }],
       },
     },
     orderBy: { endDate: 'asc' },
@@ -674,6 +675,7 @@ export async function getKanban(userId: string) {
         renewalStage: l.renewalStage,
         baseRent: Number(l.baseRent),
         owner: l.owner,
+        alerts: l.alerts.map((a) => ({ id: a.id, severity: a.severity, title: a.title, type: a.type })),
         openAlerts: l.alerts.length,
         criticalAlerts: l.alerts.filter((a) => a.severity === 'CRITICAL').length,
       })),

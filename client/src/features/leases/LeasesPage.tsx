@@ -469,8 +469,8 @@ export default function LeasesPage() {
         <div className="grid grid-cols-2 overflow-hidden rounded-xl border border-surface-400/30 sm:flex sm:items-stretch sm:divide-x sm:divide-surface-400/30 [&>*]:border-b [&>*]:border-surface-400/30 sm:[&>*]:border-0">
           {[
             { label: 'Active', value: stats.totalActive, color: 'text-success', onClick: () => { setStatusFilter('ACTIVE'); setExpiryFilter(''); setRiskFilter(''); setStageFilter(''); setSearch(''); setPage(1); setViewMode('table'); } },
-            { label: 'Expiring 30d', value: stats.expiringIn30, color: 'text-danger', onClick: () => { setStatusFilter('ACTIVE'); setExpiryFilter('30'); setRiskFilter(''); setStageFilter(''); setSearch(''); setPage(1); setViewMode('table'); } },
-            { label: 'Expiring 90d', value: stats.expiringIn90, color: 'text-warning', onClick: () => { setStatusFilter('ACTIVE'); setExpiryFilter('90'); setRiskFilter(''); setStageFilter(''); setSearch(''); setPage(1); setViewMode('table'); } },
+            { label: 'Expiring 30d', value: stats.expiringIn30, color: 'text-warning', onClick: () => { setStatusFilter('ACTIVE'); setExpiryFilter('30'); setRiskFilter(''); setStageFilter(''); setSearch(''); setPage(1); setViewMode('table'); } },
+            { label: 'Expiring 90d', value: stats.expiringIn90, color: 'text-yellow-400', onClick: () => { setStatusFilter('ACTIVE'); setExpiryFilter('90'); setRiskFilter(''); setStageFilter(''); setSearch(''); setPage(1); setViewMode('table'); } },
             { label: 'Critical Risk', value: stats.byRisk.find((r) => r.renewalRisk === 'CRITICAL')?._count ?? 0, color: 'text-danger', onClick: () => { setStatusFilter('ACTIVE'); setRiskFilter('CRITICAL'); setExpiryFilter(''); setStageFilter(''); setSearch(''); setPage(1); setViewMode('table'); } },
           ].map((s) => (
             <button key={s.label} onClick={s.onClick} className="flex-1 flex flex-col items-center gap-0.5 px-6 py-3.5 hover:bg-surface-300/40 transition-colors">

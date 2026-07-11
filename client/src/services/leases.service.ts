@@ -98,6 +98,7 @@ export interface KanbanLease {
   renewalStage: RenewalStage;
   baseRent: number;
   owner: { id: string; firstName: string; lastName: string } | null;
+  alerts: Array<{ id: string; severity: string; title: string; type: string }>;
   openAlerts: number;
   criticalAlerts: number;
 }

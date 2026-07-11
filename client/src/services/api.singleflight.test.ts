@@ -6,6 +6,7 @@ vi.mock('axios', () => {
   const instance = {
     interceptors: { request: { use: vi.fn() }, response: { use: vi.fn() } },
     defaults: {},
+    post: postMock,
   };
   return { default: { create: () => instance, post: postMock } };
 });
