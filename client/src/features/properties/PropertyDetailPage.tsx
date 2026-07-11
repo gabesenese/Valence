@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/Button';
 import { PageLoader } from '@/components/ui/Spinner';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { formatCurrency, formatDate, daysUntil, formatRelative } from '@/utils/format';
+import { useFocusTarget } from '@/lib/focusSection';
 import PropertyFormModal from './PropertyFormModal';
 import LeaseImportModal from '../leases/LeaseImportModal';
 import LeaseFormModal from '../leases/LeaseFormModal';
@@ -34,6 +35,8 @@ export default function PropertyDetailPage() {
   const [importOpen, setImportOpen] = useState(false);
   const [importedValues, setImportedValues] = useState<Partial<Record<string, string>> | null>(null);
   const [addLeaseOpen, setAddLeaseOpen] = useState(false);
+  const occupancyRef = useFocusTarget<HTMLDivElement>('occupancy');
+  const revenueRef = useFocusTarget<HTMLDivElement>('revenue');
   const qc = useQueryClient();
 
   const { data: property, isLoading } = useQuery({
@@ -111,18 +114,23 @@ export default function PropertyDetailPage() {
       </div>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-        {[
+        {([
           {
             label: 'Occupancy',
             value: occupancyPct !== null ? `${occupancyPct}%` : '—',
             color: occupancyPct === null ? 'text-slate-500' : occupancyPct >= 80 ? 'text-success' : occupancyPct >= 60 ? 'text-warning' : 'text-danger',
+            focus: 'occupancy' as const,
           },
           { label: 'Active Leases', value: property.leases.length, color: 'text-success' },
-          { label: 'Monthly Revenue', value: formatCurrency(monthlyRevenue), color: 'text-success' },
+          { label: 'Monthly Revenue', value: formatCurrency(monthlyRevenue), color: 'text-success', focus: 'revenue' as const },
           { label: 'Open Alerts', value: property._count.alerts, color: property._count.alerts > 0 ? 'text-danger' : 'text-slate-500' },
           { label: 'Current Value', value: property.currentValue ? `$${(property.currentValue / 1_000_000).toFixed(1)}M` : '—', color: 'text-brand-400' },
-        ].map((kpi) => (
-          <Card key={kpi.label} className="p-4 text-center">
+        ] as Array<{ label: string; value: React.ReactNode; color: string; focus?: 'occupancy' | 'revenue' }>).map((kpi) => (
+          <Card
+            key={kpi.label}
+            ref={kpi.focus === 'occupancy' ? occupancyRef : kpi.focus === 'revenue' ? revenueRef : undefined}
+            className="p-4 text-center"
+          >
             <p className={`text-xl font-bold tabular-nums ${kpi.color}`}>{kpi.value}</p>
             <p className="mt-0.5 text-xs text-slate-400">{kpi.label}</p>
           </Card>

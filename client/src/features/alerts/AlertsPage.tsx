@@ -2,10 +2,11 @@ import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import {
-  AlertTriangle, CheckCircle2, Bell, FileText, Building2,
-  RefreshCw, ClipboardList, ChevronDown, ChevronUp,
-  User, Zap, XCircle, Check, Play, RotateCcw, Mail,
+  AlertTriangle, CheckCircle2, Bell,
+  RefreshCw, ChevronDown, ChevronUp,
+  User, Zap, XCircle, Check, Play, RotateCcw, Mail, ArrowRight,
 } from 'lucide-react';
+import { alertDestination } from './alertDestination';
 import { alertsService, type Alert, type AlertActivity } from '@/services/alerts.service';
 import { api } from '@/services/api';
 import { Card, CardHeader, CardTitle } from '@/components/ui/Card';
@@ -172,30 +173,17 @@ function WorkflowActions({
 }) {
   const navigate = useNavigate();
   const { status } = alert;
+  const dest = alertDestination(alert);
 
-  const contextLinks: React.ReactNode[] = [];
-  if (alert.type === 'LEASE_EXPIRATION' || alert.type === 'RENEWAL_RISK') {
-    if (alert.lease) {
-      contextLinks.push(
-        <Button key="view-lease" variant="ghost" size="sm" onClick={() => navigate(`/leases/${alert.lease!.id}`)}>
-          <FileText className="h-3.5 w-3.5" /> View Lease
-        </Button>
-      );
-    }
-  } else if (alert.type === 'PAYMENT_ANOMALY' || alert.type === 'FINANCIAL_DISCREPANCY') {
-    contextLinks.push(
-      <Button key="finance" variant="ghost" size="sm" onClick={() => navigate('/finance')}>
-        <ClipboardList className="h-3.5 w-3.5" /> Finance
-      </Button>
-    );
-  }
-  if (alert.property && alert.type !== 'LEASE_EXPIRATION' && alert.type !== 'RENEWAL_RISK') {
-    contextLinks.push(
-      <Button key="property" variant="ghost" size="sm" onClick={() => navigate(`/properties/${alert.property!.id}`)}>
-        <Building2 className="h-3.5 w-3.5" /> Property
-      </Button>
-    );
-  }
+  const reviewButton = dest ? (
+    <Button key="review" variant="primary" size="sm" onClick={() => navigate(dest.to)}>
+      Review <ArrowRight className="h-3.5 w-3.5" />
+    </Button>
+  ) : (
+    <Button key="review" variant="ghost" size="sm" disabled title="Linked record is no longer available">
+      Review
+    </Button>
+  );
 
   if (status === 'RESOLVED' || status === 'DISMISSED' || status === 'SUPPRESSED') {
     return (
@@ -207,7 +195,7 @@ function WorkflowActions({
 
   return (
     <div className="flex items-center gap-2 flex-wrap">
-      {contextLinks}
+      {reviewButton}
 
       {(status === 'ACKNOWLEDGED' || status === 'IN_PROGRESS') && (
         <Button variant="ghost" size="sm" onClick={() => onReopen(alert.id)} loading={busy} title="Revert to Open">
@@ -439,6 +427,11 @@ export default function AlertsPage() {
                     }`} />
 
                     <div className="min-w-0 flex-1">
+                      {(alert.lease?.tenant?.name ?? alert.property?.name) && (
+                        <p className="truncate text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                          {alert.lease?.tenant?.name ?? alert.property?.name}
+                        </p>
+                      )}
                       <div className="flex items-center gap-2 flex-wrap">
                         <p className="text-sm font-medium text-slate-200">{alert.title}</p>
                         <StatusBadge status={alert.severity} config={SEVERITY_CONFIG} />

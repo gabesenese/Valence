@@ -19,6 +19,7 @@ import { Button } from '@/components/ui/Button';
 import { DatePicker } from '@/components/ui/DatePicker';
 import { PageLoader } from '@/components/ui/Spinner';
 import { formatCurrency, formatDate, formatRelative, daysUntil, formatPercent } from '@/utils/format';
+import { useFocusTarget } from '@/lib/focusSection';
 
 
 const RISK_VARIANT: Record<string, 'success' | 'info' | 'warning' | 'danger'> = {
@@ -190,6 +191,7 @@ export default function LeaseDetailPage() {
   const [editOpen, setEditOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const noteRef = useRef<HTMLTextAreaElement>(null);
+  const renewalRef = useFocusTarget<HTMLDivElement>('renewal');
 
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ['leases', id] });
@@ -445,7 +447,7 @@ export default function LeaseDetailPage() {
           </div>
 
       {isActive && (
-        <Card>
+        <Card ref={renewalRef}>
           <CardHeader>
             <div className="flex items-center gap-2">
               <RefreshCw className="h-4 w-4 text-brand-400" />
