@@ -31,6 +31,7 @@ interface AuthUser {
   emailVerifiedAt: Date | null;
   mfaEnabled: boolean;
   isDemo: boolean;
+  alertEmailOptIn: boolean;
 }
 
 interface SessionMeta {
@@ -42,6 +43,7 @@ const USER_SELECT = {
   id: true, email: true, firstName: true, lastName: true,
   role: true, plan: true, addons: true, trialEndsAt: true,
   emailVerifiedAt: true, mfaEnabled: true, isDemo: true,
+  alertEmailOptIn: true,
 } as const;
 
 function signAccessToken(user: AuthUser): string {
@@ -210,6 +212,14 @@ export async function updateProfile(userId: string, firstName: string, lastName:
     data: { firstName: firstName.trim(), lastName: lastName.trim() },
     select: USER_SELECT,
   });
+  if (!user) throw new NotFoundError('User');
+  return user;
+}
+
+export async function updatePreferences(userId: string, prefs: { alertEmailOptIn?: boolean }): Promise<AuthUser> {
+  const data: { alertEmailOptIn?: boolean } = {};
+  if (typeof prefs.alertEmailOptIn === 'boolean') data.alertEmailOptIn = prefs.alertEmailOptIn;
+  const user = await prisma.user.update({ where: { id: userId }, data, select: USER_SELECT });
   if (!user) throw new NotFoundError('User');
   return user;
 }

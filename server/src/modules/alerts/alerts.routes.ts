@@ -65,6 +65,12 @@ router.post('/dismiss-all', authorize('ADMIN'), async (req: Request, res: Respon
   } catch (e) { next(e); }
 });
 
+router.post('/:id/email', authorize('ANALYST'), requireOwner('alert'), async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    sendSuccess(res, await service.emailAlert(req.params.id, req.user!.id));
+  } catch (e) { next(e); }
+});
+
 router.post('/:id/assign', authorize('ANALYST'), requireOwner('alert'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { assigneeUserId } = req.body as { assigneeUserId: string };

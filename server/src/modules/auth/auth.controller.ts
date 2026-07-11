@@ -122,6 +122,16 @@ export async function updateProfile(req: Request, res: Response, next: NextFunct
   }
 }
 
+export async function updatePreferences(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const { alertEmailOptIn } = req.body as { alertEmailOptIn?: boolean };
+    const user = await authService.updatePreferences(req.user!.id, { alertEmailOptIn });
+    sendSuccess(res, user);
+  } catch (err) {
+    next(err);
+  }
+}
+
 export async function changeEmail(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const { email, currentPassword } = req.body as { email: string; currentPassword: string };

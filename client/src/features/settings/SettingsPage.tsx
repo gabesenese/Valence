@@ -95,6 +95,17 @@ export default function SettingsPage() {
   const [profileError,  setProfileError]  = useState('');
   const [profileSaved,  setProfileSaved]  = useState(false);
 
+  const [alertPrefSaving, setAlertPrefSaving] = useState(false);
+  const setAlertEmailOptIn = async (value: boolean) => {
+    setAlertPrefSaving(true);
+    try {
+      const updated = await usersService.updatePreferences({ alertEmailOptIn: value });
+      updateUser({ alertEmailOptIn: updated.alertEmailOptIn });
+    } finally {
+      setAlertPrefSaving(false);
+    }
+  };
+
   const [newEmail,      setNewEmail]      = useState('');
   const [emailPassword, setEmailPassword] = useState('');
   const [emailSaving,   setEmailSaving]   = useState(false);
@@ -586,6 +597,27 @@ export default function SettingsPage() {
                           alertSeverityFilter !== opt && 'text-slate-500 hover:text-slate-300',
                         )}>
                         {opt === 'all' ? 'All' : opt === 'warning' ? 'Warning+' : 'Critical'}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="h-px bg-surface-400/30" />
+
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-300"><Mail className="h-4 w-4 text-slate-400" /></div>
+                    <div><p className="text-sm font-medium text-slate-300">Critical alert emails</p><p className="text-xs text-slate-500">Email me when a critical deadline alert fires</p></div>
+                  </div>
+                  <div className="flex rounded-lg border border-surface-400/30 bg-surface-200/30 p-0.5 shrink-0">
+                    {([['On', true], ['Off', false]] as const).map(([label, value]) => (
+                      <button key={label} type="button" disabled={alertPrefSaving} onClick={() => setAlertEmailOptIn(value)}
+                        className={cn('rounded-md px-3 py-1 text-xs font-medium transition-colors disabled:opacity-50',
+                          Boolean(user?.alertEmailOptIn) === value
+                            ? 'bg-brand-600/30 text-brand-300 border border-brand-600/40'
+                            : 'border border-transparent text-slate-500 hover:text-slate-300',
+                        )}>
+                        {label}
                       </button>
                     ))}
                   </div>

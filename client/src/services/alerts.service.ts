@@ -84,4 +84,7 @@ export const alertsService = {
 
   assign: (id: string, assigneeUserId: string): Promise<Alert> =>
     api.post(`/alerts/${id}/assign`, { assigneeUserId }).then(extractData<Alert>),
+
+  email: (id: string): Promise<{ sent: boolean; to: string }> =>
+    api.post(`/alerts/${id}/email`).then(extractData<{ sent: boolean; to: string }>),
 };

@@ -4,6 +4,8 @@ import { NotFoundError } from '../../utils/errors';
 import { addDays } from 'date-fns';
 import { computeRenewalRisk } from '../leases/leases.service';
 import { recordChange } from '../changes/changes.service';
+import { sendAlertEmail } from '../../lib/email';
+import { logger } from '../../utils/logger';
 
 const ALERT_INCLUDE = {
   property: { select: { id: true, name: true, code: true } },
@@ -222,6 +224,77 @@ export async function getAlertSummary(userId: string) {
   ]);
 
   return { openTotal, acknowledgedTotal, bySeverity, byType, byStatus };
+}
+
+export async function emailAlert(alertId: string, requesterUserId: string) {
+  const alert = await prisma.alert.findUnique({
+    where: { id: alertId },
+    include: {
+      property: { select: { name: true } },
+      lease: { select: { leaseNumber: true } },
+      assignee: { select: { id: true, email: true } },
+    },
+  });
+  if (!alert) throw new NotFoundError('Alert');
+
+  let recipientEmail = alert.assignee?.email ?? null;
+  if (!recipientEmail) {
+    const requester = await prisma.user.findUnique({ where: { id: requesterUserId }, select: { email: true } });
+    recipientEmail = requester?.email ?? null;
+  }
+  if (!recipientEmail) throw new NotFoundError('Recipient');
+
+  await sendAlertEmail(recipientEmail, {
+    title: alert.title,
+    description: alert.description,
+    severity: alert.severity,
+    propertyName: alert.property?.name,
+    leaseNumber: alert.lease?.leaseNumber,
+  });
+  await logAlertActivity(alertId, 'EMAILED', requesterUserId, { to: recipientEmail });
+  return { sent: true, to: recipientEmail };
+}
+
+export async function autoEmailCriticalAlerts(): Promise<number> {
+  const ownerSelect = { id: true, email: true, alertEmailOptIn: true, emailVerifiedAt: true } as const;
+  const optedInOwner = { owner: { alertEmailOptIn: true, emailVerifiedAt: { not: null } } };
+  const alerts = await prisma.alert.findMany({
+    where: {
+      severity: 'CRITICAL',
+      status: 'OPEN',
+      activities: { none: { action: 'AUTO_EMAILED' } },
+      OR: [
+        { property: { is: optedInOwner } },
+        { lease: { property: { is: optedInOwner } } },
+      ],
+    },
+    include: {
+      property: { select: { name: true, owner: { select: ownerSelect } } },
+      lease: { select: { leaseNumber: true, property: { select: { owner: { select: ownerSelect } } } } },
+    },
+    orderBy: { createdAt: 'asc' },
+    take: 100,
+  });
+
+  let sent = 0;
+  for (const alert of alerts) {
+    const owner = alert.property?.owner ?? alert.lease?.property?.owner ?? null;
+    if (!owner?.email || !owner.alertEmailOptIn || !owner.emailVerifiedAt) continue;
+    try {
+      await sendAlertEmail(owner.email, {
+        title: alert.title,
+        description: alert.description,
+        severity: alert.severity,
+        propertyName: alert.property?.name,
+        leaseNumber: alert.lease?.leaseNumber,
+      });
+      await logAlertActivity(alert.id, 'AUTO_EMAILED', undefined, { to: owner.email, source: 'critical_auto' });
+      sent++;
+    } catch (err) {
+      logger.warn('auto alert email failed', { alertId: alert.id, error: err instanceof Error ? err.message : String(err) });
+    }
+  }
+  return sent;
 }
 
 export async function generateLeaseExpirationAlerts(): Promise<number> {

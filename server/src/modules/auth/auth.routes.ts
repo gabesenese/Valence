@@ -28,6 +28,7 @@ router.get( '/verify-email',                                             control
 router.get(   '/me',                      authenticate, controller.getMe);
 router.post(  '/claim-trial',             authenticate, controller.claimTrial);
 router.patch( '/me',                      authenticate, controller.updateProfile);
+router.patch( '/me/preferences',          authenticate, controller.updatePreferences);
 router.patch( '/me/email',                authenticate, blockWhileImpersonating, controller.changeEmail);
 router.patch( '/me/password',             authenticate, blockWhileImpersonating, controller.changePassword);
 router.post(  '/me/resend-verification',  authenticate, controller.resendVerification);

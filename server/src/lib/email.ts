@@ -36,6 +36,36 @@ export async function sendDailyBriefEmail(to: string, bodyHtml: string) {
   await send(to, 'Your Valence daily brief', wrap('Your daily brief', bodyHtml));
 }
 
+const SEVERITY_STYLE: Record<string, { label: string; color: string }> = {
+  CRITICAL: { label: 'Critical', color: '#ef4444' },
+  WARNING:  { label: 'Warning',  color: '#f59e0b' },
+  INFO:     { label: 'Info',     color: '#3b82f6' },
+};
+
+export async function sendAlertEmail(to: string, alert: {
+  title: string;
+  description: string;
+  severity: string;
+  propertyName?: string | null;
+  leaseNumber?: string | null;
+}) {
+  const sev = SEVERITY_STYLE[alert.severity] ?? SEVERITY_STYLE.INFO;
+  const context = [alert.propertyName, alert.leaseNumber && `Lease ${alert.leaseNumber}`]
+    .filter(Boolean).join(' · ');
+  const body = `
+    <div style="margin-bottom:16px">
+      <span style="display:inline-block;padding:3px 10px;border-radius:99px;font-size:11px;font-weight:700;background:${sev.color}22;color:${sev.color};border:1px solid ${sev.color}44">${sev.label}</span>
+    </div>
+    <p style="margin:0 0 12px;font-size:14px;color:#e2e8f0;line-height:1.6">${escapeHtml(alert.description)}</p>
+    ${context ? `<p style="margin:0;font-size:12px;color:#64748b">${escapeHtml(context)}</p>` : ''}
+    ${btn('View in Valence', `${env.APP_URL}/alerts`)}`;
+  await send(to, `${sev.label} alert: ${alert.title}`, wrap(alert.title, body));
+}
+
+function escapeHtml(s: string): string {
+  return s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c] as string));
+}
+
 export async function sendPasswordResetEmail(to: string, resetUrl: string) {
   const body = `
     <p style="margin:0 0 16px;font-size:14px;color:#94a3b8;line-height:1.6">

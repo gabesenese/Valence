@@ -1,6 +1,6 @@
 import { prisma } from '../../infrastructure/database';
 import { addDays, addMinutes, startOfMonth, endOfMonth, subMonths } from 'date-fns';
-import { generateLeaseExpirationAlerts, logAlertActivity } from './alerts.service';
+import { generateLeaseExpirationAlerts, logAlertActivity, autoEmailCriticalAlerts } from './alerts.service';
 
 function median(values: number[]): number {
   if (values.length === 0) return 0;
@@ -282,7 +282,8 @@ export async function runAnomalyScan(): Promise<{ total: number; breakdown: Reco
 
     const breakdown = { renewalRisk, leaseExpiration, paymentAnomalies, occupancy, discrepancies };
     const total = Object.values(breakdown).reduce((s, v) => s + v, 0);
-    return { total, breakdown };
+    const emailed = await autoEmailCriticalAlerts();
+    return { total, breakdown: { ...breakdown, emailed } };
   } finally {
     await releaseLock();
   }
