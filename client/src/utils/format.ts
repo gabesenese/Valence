@@ -70,7 +70,8 @@ export function monthLabelToRange(label: string): { period: string; from: string
 
 export function compactCurrency(amount: number, currency = _orgCurrency): string {
   const sym = currencySymbol(currency);
-  if (amount >= 1_000_000) return `${sym}${(amount / 1_000_000).toFixed(1)}M`;
-  if (amount >= 1_000) return `${sym}${(amount / 1_000).toFixed(0)}K`;
-  return `${sym}${amount}`;
+  const abs = Math.abs(amount);
+  if (abs >= 1_000_000) return `${sym}${(amount / 1_000_000).toFixed(1)}M`;
+  if (abs >= 1_000) return `${sym}${(amount / 1_000).toFixed(0)}K`;
+  return `${sym}${Math.round(amount).toLocaleString('en-US')}`;
 }
