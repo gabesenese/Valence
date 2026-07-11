@@ -135,12 +135,12 @@ export function ProfitabilityWorkspace() {
 
   function buildChips(rank: number, t: typeof tenants[number]): Chip[] {
     const chips: Chip[] = [];
-    if (rank === 0) chips.push({ label: 'Top performer', className: 'bg-violet-500/10 text-violet-300' });
-    if (t.renewalRisk === 'CRITICAL') chips.push({ label: 'Critical', className: 'bg-danger/10 text-danger' });
-    else if (t.daysToExpiry != null && t.daysToExpiry <= 90 && (t.renewalRisk === 'HIGH' || t.renewalRisk === 'MEDIUM')) chips.push({ label: 'Expires soon', className: 'bg-warning/10 text-warning' });
-    if (t.marginPct < avgMargin) chips.push({ label: 'Below avg margin', className: 'bg-warning/10 text-warning' });
-    if (t.leaseCount > 1) chips.push({ label: 'Multi-lease', className: 'bg-sky-500/10 text-sky-300' });
-    if (chips.length === 0) chips.push({ label: 'Stable', className: 'bg-success/10 text-success' });
+    if (rank === 0) chips.push({ label: 'Top performer', className: 'bg-violet-500/15 text-violet-700 dark:bg-violet-500/10 dark:text-violet-300' });
+    if (t.renewalRisk === 'CRITICAL') chips.push({ label: 'Critical', className: 'bg-red-500/15 text-red-700 dark:bg-danger/10 dark:text-danger' });
+    else if (t.daysToExpiry != null && t.daysToExpiry <= 90 && (t.renewalRisk === 'HIGH' || t.renewalRisk === 'MEDIUM')) chips.push({ label: 'Expires soon', className: 'bg-amber-500/15 text-amber-700 dark:bg-warning/10 dark:text-warning' });
+    if (t.marginPct < avgMargin) chips.push({ label: 'Below avg margin', className: 'bg-amber-500/15 text-amber-700 dark:bg-warning/10 dark:text-warning' });
+    if (t.leaseCount > 1) chips.push({ label: 'Multi-lease', className: 'bg-sky-500/15 text-sky-700 dark:bg-sky-500/10 dark:text-sky-300' });
+    if (chips.length === 0) chips.push({ label: 'Stable', className: 'bg-emerald-500/15 text-emerald-700 dark:bg-success/10 dark:text-success' });
     return chips.slice(0, 3);
   }
 
