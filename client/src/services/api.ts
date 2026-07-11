@@ -18,7 +18,7 @@ let refreshPromise: Promise<string> | null = null;
 async function performRefresh(): Promise<string> {
   const refreshToken = useAuthStore.getState().refreshToken;
   if (!refreshToken) throw new Error('No refresh token');
-  const { data } = await axios.post('/api/auth/refresh', { refreshToken });
+  const { data } = await api.post('/auth/refresh', { refreshToken });
   const { accessToken, refreshToken: newRefresh } = data.data.tokens;
   useAuthStore.getState().setTokens(accessToken, newRefresh);
   return accessToken;
