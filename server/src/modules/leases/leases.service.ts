@@ -341,7 +341,7 @@ export async function setRenewalDateAction(id: string, userId: string, renewalDa
   return updated;
 }
 
-export async function assignOwner(id: string, actorUserId: string, ownerUserId: string) {
+export async function assignOwner(id: string, actorUserId: string, ownerUserId: string | null) {
   const exists = await prisma.lease.findUnique({ where: { id }, select: { id: true } });
   if (!exists) throw new NotFoundError('Lease');
   const updated = await prisma.lease.update({

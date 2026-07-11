@@ -199,7 +199,7 @@ export const leasesService = {
   setRenewalDateAction: (id: string, renewalDate: string): Promise<Lease> =>
     api.post(`/leases/${id}/set-renewal-date`, { renewalDate }).then(extractData<Lease>),
 
-  assignOwner: (id: string, ownerUserId: string): Promise<Lease> =>
+  assignOwner: (id: string, ownerUserId: string | null): Promise<Lease> =>
     api.post(`/leases/${id}/assign-owner`, { ownerUserId }).then(extractData<Lease>),
 
   markContacted: (id: string): Promise<Lease> =>

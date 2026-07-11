@@ -63,7 +63,7 @@ export const setRenewalDateSchema = z.object({
 });
 
 export const assignOwnerSchema = z.object({
-  ownerUserId: z.string().uuid(),
+  ownerUserId: z.string().uuid().nullable(),
 });
 
 export const snoozeSchema = z.object({
