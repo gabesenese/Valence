@@ -313,7 +313,7 @@ export default function LeaseDetailPage() {
   });
 
   const assignOwnerMutation = useMutation({
-    mutationFn: (ownerUserId: string) => leasesService.assignOwner(id!, ownerUserId),
+    mutationFn: (ownerUserId: string | null) => leasesService.assignOwner(id!, ownerUserId),
     onSuccess: () => { invalidate(); setAssigningOwner(false); },
   });
 
@@ -866,8 +866,10 @@ export default function LeaseDetailPage() {
                     className="w-32"
                   />
                   <button
-                    onClick={() => setAssigningOwner(false)}
-                    className="p-1 text-xs text-slate-600 hover:text-slate-300 transition-colors"
+                    onClick={() => assignOwnerMutation.mutate(null)}
+                    disabled={assignOwnerMutation.isPending}
+                    className="p-1 text-xs text-slate-600 hover:text-danger transition-colors disabled:opacity-40"
+                    title="Remove owner"
                   >✕</button>
                 </div>
               )}

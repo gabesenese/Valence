@@ -101,7 +101,7 @@ export async function setRenewalDate(req: Request, res: Response, next: NextFunc
 
 export async function assignOwner(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const { ownerUserId } = req.body as { ownerUserId: string };
+    const { ownerUserId } = req.body as { ownerUserId: string | null };
     sendSuccess(res, await service.assignOwner(req.params.id, req.user!.id, ownerUserId));
   } catch (err) { next(err); }
 }
