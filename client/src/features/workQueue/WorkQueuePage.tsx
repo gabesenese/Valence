@@ -126,7 +126,6 @@ function QueueHero({
   totalRisk,
   isFetching,
   onRefresh,
-  onReviewCritical,
 }: {
   user: { firstName?: string | null } | null;
   summary: { total: number; critical: number; warning: number; inProgress: number } | undefined;
@@ -134,7 +133,6 @@ function QueueHero({
   totalRisk: number;
   isFetching: boolean;
   onRefresh: () => void;
-  onReviewCritical: () => void;
 }) {
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
@@ -197,16 +195,6 @@ function QueueHero({
           </button>
         </div>
 
-        {!allClear && (summary?.critical ?? 0) > 0 && (
-          <button
-            type="button"
-            onClick={onReviewCritical}
-            className="mt-4 inline-flex items-center gap-2 rounded-xl border border-danger/30 bg-danger/10 hover:bg-danger/15 px-4 py-2 text-sm font-semibold text-danger transition-colors"
-          >
-            Expand Critical Today
-            <ChevronRight className="h-4 w-4" />
-          </button>
-        )}
       </div>
     </div>
   );
@@ -352,7 +340,7 @@ export default function WorkQueuePage() {
     staleTime: 60_000,
   });
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({
-    critical: true,
+    critical: false,
     assigned: true,
     week:     true,
     other:    true,
@@ -435,7 +423,6 @@ export default function WorkQueuePage() {
         totalRisk={totalRisk}
         isFetching={isFetching || myIsFetching}
         onRefresh={() => qc.invalidateQueries({ queryKey: ['work-queue'] })}
-        onReviewCritical={() => setCollapsed((p) => ({ ...p, critical: false }))}
       />
 
       {isLoading ? (
