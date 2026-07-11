@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Building2, FileText, Users, UserCog, Upload, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Building2, FileText, Users, UserCog, Upload, RefreshCw, ChevronLeft, ChevronRight, ArrowRight } from 'lucide-react';
 import { auditService, type AuditLogEntry } from '@/services/audit.service';
 import { Card, CardBody } from '@/components/ui/Card';
 import { cn } from '@/utils/cn';
@@ -16,13 +16,14 @@ const ENTITY_FILTERS = [
 ];
 
 const ACTION_META: Record<string, { label: string; color: string }> = {
-  CREATE:      { label: 'Created',     color: 'text-success bg-success/10 border-success/20'    },
-  UPDATE:      { label: 'Updated',     color: 'text-brand-300 bg-brand-600/10 border-brand-500/20' },
-  DELETE:      { label: 'Deleted',     color: 'text-danger bg-danger/10 border-danger/20'        },
-  IMPORT:      { label: 'Imported',    color: 'text-amber-300 bg-amber-500/10 border-amber-500/20' },
-  PLAN_CHANGE: { label: 'Plan change', color: 'text-purple-300 bg-purple-500/10 border-purple-500/20' },
-  ROLE_CHANGE: { label: 'Role change', color: 'text-sky-300 bg-sky-500/10 border-sky-500/20'    },
-  RESTORE:     { label: 'Restored',   color: 'text-teal-300 bg-teal-500/10 border-teal-500/20'   },
+  CREATE:       { label: 'Created',      color: 'text-success bg-success/10 border-success/20'       },
+  UPDATE:       { label: 'Updated',      color: 'text-brand-300 bg-brand-600/10 border-brand-500/20' },
+  DELETE:       { label: 'Deleted',      color: 'text-danger bg-danger/10 border-danger/20'          },
+  IMPORT:       { label: 'Imported',     color: 'text-amber-300 bg-amber-500/10 border-amber-500/20' },
+  PLAN_CHANGE:  { label: 'Plan change',  color: 'text-purple-300 bg-purple-500/10 border-purple-500/20' },
+  ROLE_CHANGE:  { label: 'Role change',  color: 'text-sky-300 bg-sky-500/10 border-sky-500/20'       },
+  RESTORE:      { label: 'Restored',     color: 'text-teal-300 bg-teal-500/10 border-teal-500/20'    },
+  STAGE_CHANGE: { label: 'Stage moved',  color: 'text-violet-300 bg-violet-500/10 border-violet-500/20' },
 };
 
 const ENTITY_ICON: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -31,6 +32,63 @@ const ENTITY_ICON: Record<string, React.ComponentType<{ className?: string }>> =
   tenant:   Users,
   user:     UserCog,
 };
+
+
+type ChangeValue = { from: unknown; to: unknown };
+
+function isFromTo(v: unknown): v is ChangeValue {
+  return typeof v === 'object' && v !== null && 'from' in v && 'to' in v;
+}
+
+function fmt(v: unknown): string {
+  if (v === null || v === undefined) return '—';
+  if (typeof v === 'string') return v || '—';
+  return String(v);
+}
+
+function ChangesDetail({
+  changes,
+  meta,
+}: {
+  changes?: Record<string, unknown> | null;
+  meta?: Record<string, unknown> | null;
+}) {
+  const hasDiff = changes && Object.values(changes).some(isFromTo);
+
+  if (hasDiff) {
+    return (
+      <div className="rounded-lg border border-surface-400/20 overflow-hidden">
+        <table className="w-full text-xs">
+          <thead>
+            <tr className="border-b border-surface-400/20 bg-surface-200/40">
+              <td className="px-3 py-1.5 font-semibold text-slate-500 uppercase tracking-wide text-[10px] w-1/3">Field</td>
+              <td className="px-3 py-1.5 font-semibold text-slate-500 uppercase tracking-wide text-[10px]">Before</td>
+              <td className="px-3 py-1.5 w-5" />
+              <td className="px-3 py-1.5 font-semibold text-slate-500 uppercase tracking-wide text-[10px]">After</td>
+            </tr>
+          </thead>
+          <tbody>
+            {Object.entries(changes).map(([key, val]) => (
+              <tr key={key} className="border-b border-surface-400/10 last:border-0">
+                <td className="px-3 py-1.5 font-mono text-slate-500">{key}</td>
+                <td className="px-3 py-1.5 text-slate-400 max-w-[140px] truncate">{isFromTo(val) ? fmt(val.from) : fmt(val)}</td>
+                <td className="py-1.5 text-slate-600"><ArrowRight className="h-3 w-3" /></td>
+                <td className="px-3 py-1.5 font-medium text-slate-200 max-w-[140px] truncate">{isFromTo(val) ? fmt(val.to) : '—'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
+  }
+
+  const payload = changes ?? meta;
+  return (
+    <div className="rounded-lg bg-surface-100/50 border border-surface-400/20 px-3 py-2.5 font-mono text-xs text-slate-400 overflow-x-auto">
+      <pre>{JSON.stringify(payload, null, 2)}</pre>
+    </div>
+  );
+}
 
 
 function AuditRow({ entry }: { entry: AuditLogEntry }) {
@@ -75,9 +133,7 @@ function AuditRow({ entry }: { entry: AuditLogEntry }) {
 
       {expanded && (hasDetail || hasMeta) && (
         <div className="px-4 pb-3">
-          <div className="rounded-lg bg-surface-100/50 border border-surface-400/20 px-3 py-2.5 font-mono text-xs text-slate-400 overflow-x-auto">
-            <pre>{JSON.stringify(entry.changes ?? entry.meta, null, 2)}</pre>
-          </div>
+          <ChangesDetail changes={entry.changes} meta={entry.meta} />
         </div>
       )}
     </div>

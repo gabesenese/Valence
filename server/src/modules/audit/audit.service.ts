@@ -1,6 +1,6 @@
 import { prisma } from '../../infrastructure/database';
 
-export type AuditAction = 'CREATE' | 'UPDATE' | 'DELETE' | 'IMPORT' | 'PLAN_CHANGE' | 'ROLE_CHANGE' | 'RESTORE' | 'IMPERSONATE';
+export type AuditAction = 'CREATE' | 'UPDATE' | 'DELETE' | 'IMPORT' | 'PLAN_CHANGE' | 'ROLE_CHANGE' | 'RESTORE' | 'IMPERSONATE' | 'STAGE_CHANGE';
 
 export interface LogAuditInput {
   userId?: string;
@@ -10,6 +10,19 @@ export interface LogAuditInput {
   entityName?: string;
   changes?: Record<string, unknown>;
   meta?: Record<string, unknown>;
+}
+
+export function diffRecords(
+  before: Record<string, unknown>,
+  patch: Record<string, unknown>,
+): Record<string, { from: unknown; to: unknown }> {
+  const changes: Record<string, { from: unknown; to: unknown }> = {};
+  for (const key of Object.keys(patch)) {
+    const bv = before[key];
+    const pv = patch[key];
+    if (String(bv) !== String(pv)) changes[key] = { from: bv ?? null, to: pv };
+  }
+  return changes;
 }
 
 export async function logAudit(input: LogAuditInput): Promise<void> {
