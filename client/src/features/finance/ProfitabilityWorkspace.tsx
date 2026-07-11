@@ -81,7 +81,7 @@ export function ProfitabilityWorkspace() {
 
   const marginLeaders = [...tenants].sort((a, b) => b.marginPct - a.marginPct).slice(0, 3);
   const highestCost = [...tenants].reduce((a, b) => (b.allocatedCost > a.allocatedCost ? b : a));
-  const costReason = report.basis === 'sqft' ? 'Largest leased footprint' : report.basis === 'equal' ? 'Most leases on the books' : 'Largest cost share';
+  const costReason = 'Largest share of operating costs';
 
   const exposure = tenants
     .filter((t) => t.daysToExpiry != null && t.daysToExpiry <= 90)
