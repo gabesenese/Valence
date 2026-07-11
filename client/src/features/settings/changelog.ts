@@ -15,6 +15,37 @@ export const CHANGE_TYPE_LABEL: Record<ChangeType, string> = {
 // Newest first. User-facing release notes — keep the language plain and benefit-led.
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    date: 'July 11, 2026',
+    title: 'Sharper signals, direct action',
+    changes: [
+      { type: 'improved', text: 'Alert badges on renewal cards now show the alert title and severity on hover — see what needs attention without leaving the board.' },
+      { type: 'improved', text: 'Clicking Review on any alert takes you directly to the relevant section of the record — renewal stage, compliance, ledger, occupancy — with it highlighted so you see it immediately.' },
+      { type: 'added',    text: 'Email a tenant from the lease page. Choose a template (renewal reminder, payment reminder, document request, and more), review the pre-filled message with their real details, and send. Each message is logged to their CRM timeline automatically.' },
+      { type: 'improved', text: 'Every kanban stage move and every field edit now appears in the Audit Log with exactly what changed — previous and new stage, or the specific fields with their before and after values.' },
+    ],
+  },
+  {
+    date: 'July 10, 2026',
+    title: '30-day sessions, smarter work queue, and alert emails',
+    changes: [
+      { type: 'fixed',    text: 'Valence now keeps you signed in for a full 30 days as promised — a bug was logging accounts out after 7 days.' },
+      { type: 'added',    text: 'Email an alert to a teammate directly from the Alert Center. For critical deadline alerts, opt into automatic notifications in Settings → Preferences.' },
+      { type: 'improved', text: 'The Work Queue opens with your critical work visible immediately — Critical Today is now expanded by default.' },
+      { type: 'improved', text: 'The "N financial issues require attention" summary on Finance is now a link that jumps to the issues below it.' },
+      { type: 'added',    text: 'Share a one-click trial link (valenceos.ca/try) with a prospect — they register and land in Valence with a 7-day trial ready to go.' },
+      { type: 'fixed',    text: 'Amounts under $1,000 now display as clean whole dollars throughout Finance.' },
+    ],
+  },
+  {
+    date: 'July 7, 2026',
+    title: 'Documents are durable, Finance starts on day one',
+    changes: [
+      { type: 'improved', text: 'Documents attached to leases are now stored durably — uploads persist and are accessible across sessions.' },
+      { type: 'improved', text: 'Finance shows contract run-rate revenue from your active leases immediately, even before expenses are imported, so the page is useful from day one.' },
+      { type: 'improved', text: 'Account owners can now delete their own documents, edit automation rules, and update organization settings.' },
+    ],
+  },
+  {
     date: 'July 5, 2026',
     title: 'A smoother start, a clearer Finance, and a sturdier platform',
     changes: [
