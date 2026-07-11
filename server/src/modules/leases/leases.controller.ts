@@ -1,7 +1,7 @@
 import type { Request, Response, NextFunction } from 'express';
 import * as service from './leases.service';
 import { enforceLeaseLimit } from '../plans/plans.service';
-import { logAudit } from '../audit/audit.service';
+import { logAudit, diffRecords } from '../audit/audit.service';
 import { sendSuccess, sendPaginated } from '../../utils/response';
 import { ForbiddenError } from '../../utils/errors';
 import type { Plan } from '@prisma/client';
@@ -55,8 +55,10 @@ export async function create(req: Request, res: Response, next: NextFunction): P
 
 export async function update(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
+    const before = await service.getLeaseById(req.params.id);
     const result = await service.updateLease(req.params.id, req.body);
-    void logAudit({ userId: req.user?.id, action: 'UPDATE', entity: 'lease', entityId: result.id, entityName: result.leaseNumber, changes: req.body as Record<string, unknown> });
+    const changes = diffRecords(before as unknown as Record<string, unknown>, req.body as Record<string, unknown>);
+    void logAudit({ userId: req.user?.id, action: 'UPDATE', entity: 'lease', entityId: result.id, entityName: result.leaseNumber, changes });
     sendSuccess(res, result);
   } catch (err) { next(err); }
 }
@@ -126,7 +128,18 @@ export async function clearRenewalDate(req: Request, res: Response, next: NextFu
 export async function advanceStage(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const { stage } = req.body as { stage: string };
-    sendSuccess(res, await service.advanceRenewalStage(req.params.id, req.user!.id, stage as never));
+    const before = await service.getLeaseById(req.params.id);
+    const result = await service.advanceRenewalStage(req.params.id, req.user!.id, stage as never);
+    void logAudit({
+      userId: req.user?.id,
+      action: 'STAGE_CHANGE',
+      entity: 'lease',
+      entityId: result.id,
+      entityName: before.leaseNumber,
+      changes: { renewalStage: { from: before.renewalStage, to: stage } },
+      meta: { propertyName: before.property.name },
+    });
+    sendSuccess(res, result);
   } catch (err) { next(err); }
 }
 

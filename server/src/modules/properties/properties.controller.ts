@@ -1,7 +1,7 @@
 import type { Request, Response, NextFunction } from 'express';
 import * as service from './properties.service';
 import { enforcePropertyLimit } from '../plans/plans.service';
-import { logAudit, getEntityActivity } from '../audit/audit.service';
+import { logAudit, getEntityActivity, diffRecords } from '../audit/audit.service';
 import { sendSuccess, sendPaginated } from '../../utils/response';
 import { ForbiddenError } from '../../utils/errors';
 import type { Plan } from '@prisma/client';
@@ -31,8 +31,10 @@ export async function create(req: Request, res: Response, next: NextFunction): P
 
 export async function update(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
+    const before = await service.getPropertyById(req.params.id);
     const result = await service.updateProperty(req.params.id, req.body, req.user!.id);
-    void logAudit({ userId: req.user?.id, action: 'UPDATE', entity: 'property', entityId: result.id, entityName: result.name, changes: req.body as Record<string, unknown> });
+    const changes = diffRecords(before as unknown as Record<string, unknown>, req.body as Record<string, unknown>);
+    void logAudit({ userId: req.user?.id, action: 'UPDATE', entity: 'property', entityId: result.id, entityName: result.name, changes });
     sendSuccess(res, result);
   } catch (err) { next(err); }
 }
