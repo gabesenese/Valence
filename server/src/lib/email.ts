@@ -148,6 +148,31 @@ export async function sendSupportTicket(opts: {
   });
 }
 
+export async function sendTenantEmail(opts: {
+  to: string;
+  subject: string;
+  body: string;
+  fromLabel: string;
+}) {
+  const footer = `
+    <div style="margin-top:32px;padding-top:20px;border-top:1px solid #1e1e2e">
+      <p style="margin:0;font-size:11px;color:#4a5568;line-height:1.6">
+        This message was sent on behalf of <strong style="color:#64748b">${escapeHtml(opts.fromLabel)}</strong> via Valence.
+        To stop receiving messages from this property manager, reply to this email with "Unsubscribe."
+      </p>
+    </div>`;
+
+  const html = `<!DOCTYPE html><html><body style="font-family:system-ui,sans-serif;background:#f8fafc;color:#1e293b;margin:0;padding:40px 20px">
+<div style="max-width:520px;margin:0 auto">
+  <div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:32px">
+    <p style="margin:0 0 24px;font-size:15px;color:#374151;line-height:1.7;white-space:pre-wrap">${escapeHtml(opts.body)}</p>
+    ${footer}
+  </div>
+</div></body></html>`;
+
+  await send(opts.to, opts.subject, html);
+}
+
 export async function sendVerificationEmail(to: string, verifyUrl: string) {
   const body = `
     <p style="margin:0 0 16px;font-size:14px;color:#94a3b8;line-height:1.6">

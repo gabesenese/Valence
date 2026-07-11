@@ -94,4 +94,10 @@ export const crmService = {
 
   deleteContactLog: (logId: string) =>
     api.delete(`/crm/contacts/${logId}`).then(extractData<{ deleted: boolean }>),
+
+  emailTenant: (
+    tenantId: string,
+    data: { subject: string; body: string; leaseId?: string; fromLabel?: string },
+  ) =>
+    api.post(`/crm/tenants/${tenantId}/email`, data).then(extractData<ContactLog>),
 };

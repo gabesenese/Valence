@@ -1,6 +1,8 @@
 import { prisma } from '../../infrastructure/database';
 import { addDays } from 'date-fns';
 import type { CrmStatus, ContactLogType } from '@prisma/client';
+import { sendTenantEmail } from '../../lib/email';
+import { ValidationError, NotFoundError } from '../../utils/errors';
 
 const tenantCrmSelect = {
   id: true,
@@ -211,4 +213,25 @@ export async function createContactLog(
 
 export async function deleteContactLog(logId: string) {
   return prisma.contactLog.delete({ where: { id: logId } });
+}
+
+export async function emailTenant(
+  tenantId: string,
+  data: { subject: string; body: string; leaseId?: string; userId?: string; fromLabel: string },
+) {
+  const tenant = await prisma.tenant.findUnique({
+    where: { id: tenantId },
+    select: { id: true, name: true, email: true },
+  });
+  if (!tenant) throw new NotFoundError('Tenant');
+  if (!tenant.email) throw new ValidationError('Tenant has no email address on file');
+
+  await sendTenantEmail({ to: tenant.email, subject: data.subject, body: data.body, fromLabel: data.fromLabel });
+
+  return createContactLog(tenantId, {
+    type: 'EMAIL',
+    body: `Subject: ${data.subject}\n\n${data.body}`,
+    leaseId: data.leaseId,
+    userId: data.userId,
+  });
 }
