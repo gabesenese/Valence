@@ -61,6 +61,25 @@ async function ensureSchema() {
  * ensure the compound exists, then drop the stale global index. Idempotent, and
  * the cheap existence check makes it a no-op once repaired.
  */
+async function ensureAlertEmailOptIn() {
+  try {
+    const [row] = await prisma.$queryRaw<{ exists: boolean }[]>`
+      SELECT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'users' AND column_name = 'alert_email_opt_in'
+      ) AS exists
+    `;
+    if (row?.exists) return;
+    logger.info('Adding alert_email_opt_in column to users');
+    await prisma.$executeRawUnsafe(
+      'ALTER TABLE "users" ADD COLUMN "alert_email_opt_in" BOOLEAN NOT NULL DEFAULT false'
+    );
+    logger.info('alert_email_opt_in column added');
+  } catch (err) {
+    logger.error('Failed to add alert_email_opt_in column', { error: (err as Error).message });
+  }
+}
+
 async function ensureLeaseNumberIndex() {
   try {
     const [row] = await prisma.$queryRaw<{ exists: boolean }[]>`
@@ -87,6 +106,7 @@ export default async function handler(req: any, res: any) {
     await connectDatabase();
     await ensureSchema();
     await ensureLeaseNumberIndex();
+    await ensureAlertEmailOptIn();
     initialized = true;
   }
   return app(req, res);
