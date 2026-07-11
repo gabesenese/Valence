@@ -18,6 +18,7 @@ import { leasesService } from '@/services/leases.service';
 import type { RenewalStage, KanbanLease, KanbanColumn } from '@/services/leases.service';
 import { Badge } from '@/components/ui/Badge';
 import { PageLoader } from '@/components/ui/Spinner';
+import { Tooltip } from '@/components/ui/Tooltip';
 import { formatCurrency, daysUntil } from '@/utils/format';
 
 
@@ -40,6 +41,36 @@ const RISK_VARIANT: Record<string, 'success' | 'info' | 'warning' | 'danger'> = 
   LOW: 'success', MEDIUM: 'info', HIGH: 'warning', CRITICAL: 'danger',
 };
 
+const SEVERITY_COLOR: Record<string, string> = {
+  CRITICAL: 'text-danger',
+  HIGH:     'text-warning',
+  MEDIUM:   'text-amber-400',
+  LOW:      'text-slate-400',
+};
+
+function AlertTooltipContent({ alerts }: { alerts: KanbanLease['alerts'] }) {
+  return (
+    <div className="space-y-1.5">
+      <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+        Active Alerts ({alerts.length})
+      </p>
+      {alerts.map((a) => (
+        <div key={a.id} className="flex items-start gap-1.5">
+          <span className={`mt-px text-[9px] font-bold shrink-0 ${SEVERITY_COLOR[a.severity] ?? 'text-slate-400'}`}>
+            ●
+          </span>
+          <div className="min-w-0">
+            <p className="text-[11px] leading-snug text-fg truncate">{a.title}</p>
+            <p className={`text-[10px] font-medium ${SEVERITY_COLOR[a.severity] ?? 'text-slate-400'}`}>
+              {a.severity}
+            </p>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 
 function CardContent({ lease }: { lease: KanbanLease }) {
   const days = daysUntil(lease.endDate);
@@ -52,11 +83,13 @@ function CardContent({ lease }: { lease: KanbanLease }) {
     <>
       <div className="flex items-start justify-between gap-1.5">
         <p className="text-sm font-semibold text-fg leading-snug">{lease.tenantName}</p>
-        {lease.criticalAlerts > 0 && (
-          <span className="shrink-0 flex items-center gap-0.5 text-[10px] font-medium text-danger">
-            <AlertTriangle className="h-3 w-3" />
-            {lease.criticalAlerts}
-          </span>
+        {lease.openAlerts > 0 && (
+          <Tooltip content={<AlertTooltipContent alerts={lease.alerts} />} className="shrink-0">
+            <span className="flex items-center gap-0.5 text-[10px] font-medium text-danger cursor-default">
+              <AlertTriangle className="h-3 w-3" />
+              {lease.openAlerts}
+            </span>
+          </Tooltip>
         )}
       </div>
 
