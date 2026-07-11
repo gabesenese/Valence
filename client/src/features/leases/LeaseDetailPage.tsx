@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   ArrowLeft, Building2, User, Calendar, DollarSign, TrendingUp,
-  AlertTriangle, CheckCircle2, RefreshCw, Phone, Check,
+  AlertTriangle, CheckCircle2, RefreshCw, Phone, Check, Mail,
   Send, FileSignature, MessageSquare, Clock, Pencil, Trash2,
   ChevronUp, ChevronDown, Eye, RotateCcw, BellOff, ArrowRight,
 } from 'lucide-react';
@@ -84,6 +84,7 @@ const ACTION_CONFIG: Record<string, ActionCfg> = {
 
 
 import type { LeaseActivityDTO, LeaseNoteDTO } from '@/services/leases.service';
+import { EmailTenantModal } from '@/features/crm/EmailTenantModal';
 
 type TEntry =
   | { kind: 'activity'; data: LeaseActivityDTO; createdAt: string }
@@ -188,6 +189,7 @@ export default function LeaseDetailPage() {
   const [editNoteInput, setEditNoteInput] = useState('');
   const [showClosedAlerts, setShowClosedAlerts] = useState(false);
   const [assigningOwner, setAssigningOwner] = useState(false);
+  const [emailingTenant, setEmailingTenant] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const noteRef = useRef<HTMLTextAreaElement>(null);
@@ -827,11 +829,21 @@ export default function LeaseDetailPage() {
               <User className="h-4 w-4 text-success shrink-0" />
               <span className="text-sm text-slate-200">{lease.tenant.name}</span>
             </div>
-            {lease.tenant.email && (
-              <a href={`mailto:${lease.tenant.email}`} className="mt-1 block text-xs text-slate-500 hover:text-brand-300 transition-colors">
-                {lease.tenant.email}
-              </a>
-            )}
+            <div className="mt-1 flex items-center justify-between gap-2">
+              {lease.tenant.email ? (
+                <a href={`mailto:${lease.tenant.email}`} className="text-xs text-slate-500 hover:text-brand-300 transition-colors truncate">
+                  {lease.tenant.email}
+                </a>
+              ) : (
+                <span className="text-xs text-slate-700">No email on file</span>
+              )}
+              <button
+                onClick={() => setEmailingTenant(true)}
+                className="shrink-0 flex items-center gap-1 text-[11px] text-slate-500 hover:text-brand-300 transition-colors"
+              >
+                <Mail className="h-3 w-3" />Email
+              </button>
+            </div>
             <div className="mt-2.5 pt-2.5 border-t border-surface-400/30 flex items-center justify-between">
               <span className="text-xs text-slate-500 flex items-center gap-1.5">
                 <User className="h-3 w-3" />Owner
@@ -889,6 +901,22 @@ export default function LeaseDetailPage() {
       </div>{/* end flex layout */}
 
       <LeaseFormModal open={editOpen} onClose={() => setEditOpen(false)} lease={lease} />
+
+      {emailingTenant && (
+        <EmailTenantModal
+          tenantId={lease.tenant.id}
+          tenantName={lease.tenant.name}
+          tenantEmail={lease.tenant.email}
+          lease={{
+            id: lease.id,
+            propertyName: lease.property.name,
+            unitNumber: lease.unitNumber,
+            baseRent: Number(lease.baseRent),
+            endDate: lease.endDate,
+          }}
+          onClose={() => setEmailingTenant(false)}
+        />
+      )}
     </div>
   );
 }

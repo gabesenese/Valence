@@ -11,6 +11,7 @@ import {
   getContactLogs,
   createContactLog,
   deleteContactLog,
+  emailTenant,
 } from './crm.service';
 import { CrmStatus } from '@prisma/client';
 import type { ContactLogType } from '@prisma/client';
@@ -108,6 +109,28 @@ router.post('/tenants/:id/contacts', authorize('ANALYST'), requireOwner('tenant'
       body: body.trim(),
       leaseId,
       userId: req.user!.id,
+    });
+    res.status(201).json({ success: true, data: log });
+  } catch (e) { next(e); }
+});
+
+router.post('/tenants/:id/email', authorize('ANALYST'), requireOwner('tenant'), async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { subject, body, leaseId, fromLabel } = req.body as {
+      subject: string;
+      body: string;
+      leaseId?: string;
+      fromLabel?: string;
+    };
+    if (!subject?.trim()) { res.status(400).json({ success: false, message: 'subject is required' }); return; }
+    if (!body?.trim())    { res.status(400).json({ success: false, message: 'body is required' }); return; }
+    if (body.length > 10_000) { res.status(400).json({ success: false, message: 'body too long (max 10,000 chars)' }); return; }
+    const log = await emailTenant(req.params.id, {
+      subject: subject.trim(),
+      body: body.trim(),
+      leaseId,
+      userId: req.user!.id,
+      fromLabel: fromLabel?.trim() || 'Your Property Manager',
     });
     res.status(201).json({ success: true, data: log });
   } catch (e) { next(e); }
