@@ -859,7 +859,7 @@ export default function LeaseDetailPage() {
                 <div className="flex items-center gap-1.5">
                   <Select
                     value={lease.ownerUserId ?? ''}
-                    onChange={(v) => { if (v) assignOwnerMutation.mutate(v); }}
+                    onChange={(v) => { if (v) { assignOwnerMutation.mutate(v); setAssigningOwner(false); } }}
                     disabled={assignOwnerMutation.isPending}
                     placeholder="Select user…"
                     options={users?.map((u) => ({ value: u.id, label: `${u.firstName} ${u.lastName}` })) ?? []}
@@ -867,7 +867,7 @@ export default function LeaseDetailPage() {
                   />
                   <button
                     onClick={() => setAssigningOwner(false)}
-                    className="text-xs text-slate-600 hover:text-slate-300 transition-colors"
+                    className="p-1 text-xs text-slate-600 hover:text-slate-300 transition-colors"
                   >✕</button>
                 </div>
               )}
