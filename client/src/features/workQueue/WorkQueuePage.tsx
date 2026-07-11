@@ -14,6 +14,8 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import { workQueueService, type WorkItem } from '@/services/workQueue.service';
+import { alertDestination, type AlertDestination } from '@/features/alerts/alertDestination';
+import { withFocus } from '@/lib/focusSection';
 import { TaskPanel } from './TaskPanel';
 import { alertsService } from '@/services/alerts.service';
 import { analyticsService } from '@/services/analytics.service';
@@ -32,6 +34,39 @@ function formatDollars(n: number) {
   return `$${n}`;
 }
 
+function workItemDestination(item: WorkItem): AlertDestination | null {
+  if (item.alertId) {
+    return alertDestination({
+      type: item.type,
+      propertyId: item.property?.id ?? undefined,
+      leaseId: item.leaseId ?? item.lease?.id ?? undefined,
+      property: item.property ?? undefined,
+      lease: item.lease ?? undefined,
+    });
+  }
+  const leaseId = item.leaseId ?? item.lease?.id;
+  if (item.source === 'lease' && leaseId) return { to: withFocus(`/leases/${leaseId}`, 'renewal'), label: 'Review renewal' };
+  if (item.source === 'finance') return { to: withFocus('/finance?tab=ledger', 'transaction'), label: 'Review ledger' };
+  return null;
+}
+
+function primaryActionMeta(item: WorkItem): { label: string; Icon: typeof RefreshCw } {
+  if (!item.alertId) {
+    return item.source === 'finance'
+      ? { label: 'Escalate to Collections', Icon: DollarSign }
+      : { label: 'Send Renewal Offer', Icon: RefreshCw };
+  }
+  switch (item.type) {
+    case 'LEASE_EXPIRATION':      return { label: 'Send Renewal Offer', Icon: RefreshCw };
+    case 'RENEWAL_RISK':          return { label: 'Schedule Call', Icon: Phone };
+    case 'PAYMENT_ANOMALY':
+    case 'OVERDUE_INVOICE':       return { label: 'Escalate to Collections', Icon: DollarSign };
+    case 'FINANCIAL_DISCREPANCY': return { label: 'Review Finance', Icon: ClipboardList };
+    case 'OCCUPANCY_CHANGE':      return { label: 'Review Pricing', Icon: TrendingUp };
+    default:                      return { label: 'Review', Icon: ClipboardList };
+  }
+}
+
 function itemActions(
   item: WorkItem,
   busy: boolean,
@@ -41,63 +76,25 @@ function itemActions(
   navigate: ReturnType<typeof useNavigate>,
 ): React.ReactNode[] {
   const alertId = item.alertId;
+  const dest = workItemDestination(item);
+  const { label, Icon } = primaryActionMeta(item);
   const actions: React.ReactNode[] = [];
 
-  if (!alertId) {
-    if (item.source === 'finance' && item.property) {
-      actions.push(
-        <Button key="collections" variant="outline" size="sm" onClick={() => navigate('/finance')}>
-          <DollarSign className="h-3.5 w-3.5" /> Escalate to Collections
-        </Button>,
-      );
-    }
-    if (item.source === 'lease' && item.leaseId) {
-      actions.push(
-        <Button key="renew" variant="outline" size="sm" onClick={() => navigate(`/leases/${item.leaseId}`)}>
-          <RefreshCw className="h-3.5 w-3.5" /> Send Renewal Offer
-        </Button>,
-      );
-    }
-    return actions;
-  }
-
-  if (item.type === 'LEASE_EXPIRATION' && item.leaseId) {
+  if (dest) {
     actions.push(
-      <Button key="renew" variant="outline" size="sm" onClick={() => navigate(`/leases/${item.leaseId}`)}>
-        <RefreshCw className="h-3.5 w-3.5" /> Send Renewal Offer
+      <Button key="primary" variant="outline" size="sm" onClick={() => navigate(dest.to)}>
+        <Icon className="h-3.5 w-3.5" /> {label}
       </Button>,
     );
-  } else if (item.type === 'RENEWAL_RISK' && item.leaseId) {
-    actions.push(
-      <Button key="call" variant="outline" size="sm" onClick={() => navigate(`/leases/${item.leaseId}`)}>
-        <Phone className="h-3.5 w-3.5" /> Schedule Call
-      </Button>,
-    );
-  } else if (item.type === 'PAYMENT_ANOMALY' || item.type === 'OVERDUE_INVOICE') {
-    actions.push(
-      <Button key="collections" variant="outline" size="sm" onClick={() => navigate('/finance')}>
-        <DollarSign className="h-3.5 w-3.5" /> Escalate to Collections
-      </Button>,
-    );
-  } else if (item.type === 'FINANCIAL_DISCREPANCY') {
-    actions.push(
-      <Button key="finance" variant="outline" size="sm" onClick={() => navigate('/finance')}>
-        <ClipboardList className="h-3.5 w-3.5" /> Review Finance
-      </Button>,
-    );
-  } else if (item.type === 'OCCUPANCY_CHANGE' && item.property) {
-    actions.push(
-      <Button key="pricing" variant="outline" size="sm" onClick={() => navigate(`/properties/${item.property!.id}`)}>
-        <TrendingUp className="h-3.5 w-3.5" /> Review Pricing
-      </Button>,
-    );
-  } else {
+  } else if (alertId) {
     actions.push(
       <Button key="progress" variant="outline" size="sm" onClick={() => onProgress(alertId)} loading={busy}>
         Start Review
       </Button>,
     );
   }
+
+  if (!alertId) return actions;
 
   actions.push(
     <Button key="dismiss" variant="ghost" size="sm" onClick={() => onDismiss(alertId)} loading={busy}>

@@ -18,7 +18,7 @@ export interface Alert {
   propertyId?: string;
   leaseId?: string;
   property?: { id: string; name: string; code: string };
-  lease?: { id: string; leaseNumber: string };
+  lease?: { id: string; leaseNumber: string; tenant?: { name: string } | null };
   assignee?: AlertUser | null;
   resolutionNote?: string | null;
   metadata?: Record<string, unknown>;

@@ -4,6 +4,7 @@ import { Bell, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
 import { alertsService } from '@/services/alerts.service';
+import { alertDestination } from '@/features/alerts/alertDestination';
 import { useUIStore } from '@/state/ui.store';
 import { cn } from '@/utils/cn';
 
@@ -114,7 +115,7 @@ export function NotificationBell() {
               visibleAlerts.map((alert) => (
                 <li key={alert.id} className="border-b border-surface-400/10 last:border-0">
                   <Link
-                    to="/alerts"
+                    to={alertDestination(alert)?.to ?? '/alerts'}
                     onClick={() => setOpen(false)}
                     className="flex flex-col gap-1 px-4 py-3 transition-colors hover:bg-surface-200/50"
                   >

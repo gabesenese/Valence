@@ -1,3 +1,4 @@
+import { forwardRef } from 'react';
 import { cn } from '@/utils/cn';
 
 interface CardProps {
@@ -7,9 +8,10 @@ interface CardProps {
   onClick?: () => void;
 }
 
-export function Card({ children, className, hover, onClick }: CardProps) {
+export const Card = forwardRef<HTMLDivElement, CardProps>(function Card({ children, className, hover, onClick }, ref) {
   return (
     <div
+      ref={ref}
       onClick={onClick}
       className={cn(
         'rounded-xl border border-surface-400/60 bg-surface-100',
@@ -21,7 +23,7 @@ export function Card({ children, className, hover, onClick }: CardProps) {
       {children}
     </div>
   );
-}
+});
 
 export function CardHeader({ children, className }: { children: React.ReactNode; className?: string }) {
   return (

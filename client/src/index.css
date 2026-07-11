@@ -129,3 +129,22 @@
     background-image: radial-gradient(var(--tw-gradient-stops));
   }
 }
+
+@keyframes focus-pulse {
+  0%   { box-shadow: 0 0 0 0 rgb(var(--brand-400) / 0); }
+  30%  { box-shadow: 0 0 0 3px rgb(var(--brand-400) / 0.5); }
+  100% { box-shadow: 0 0 0 0 rgb(var(--brand-400) / 0); }
+}
+
+[data-focus-active] {
+  border-radius: 0.75rem;
+  scroll-margin-top: 5rem;
+  animation: focus-pulse 1.6s ease-out 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-focus-active] {
+    animation: none;
+    box-shadow: 0 0 0 2px rgb(var(--brand-400) / 0.55);
+  }
+}

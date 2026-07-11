@@ -13,6 +13,7 @@ import {
   type ActivityActionType,
 } from '@/services/finance.service';
 import { formatCurrency, compactCurrency, formatDate } from '@/utils/format';
+import { useFocusTarget } from '@/lib/focusSection';
 import { categoryLabel } from '@valence/shared';
 import { LateFeePolicyPanel } from './LateFeePolicyPanel';
 import { ResolveFlagWorkspace } from './ResolveFlagWorkspace';
@@ -118,7 +119,8 @@ export function LedgerWorkspace() {
   const [searchParams, setSearchParams] = useSearchParams();
   const category = searchParams.get('category');
   const historyRef = useRef<HTMLDivElement>(null);
-  const workRef = useRef<HTMLElement>(null);
+  const revenueFocusRef = useFocusTarget<HTMLElement>('revenue');
+  const workRef = useFocusTarget<HTMLElement>('transaction');
   const [view, setView] = useState<ViewMode>('feed');
   const [filter, setFilter] = useState<LedgerFilter>('all');
   const [page, setPage] = useState(1);
@@ -254,7 +256,7 @@ export function LedgerWorkspace() {
   return (
     <div className="flex flex-col gap-4 animate-fade-in">
 
-      <section className="rounded-2xl border border-surface-400/60 bg-surface-100 p-6 sm:p-8">
+      <section ref={revenueFocusRef} className="scroll-mt-4 rounded-2xl border border-surface-400/60 bg-surface-100 p-6 sm:p-8">
         <div className="flex items-center gap-2 text-slate-500">
           <Activity className="h-3.5 w-3.5" />
           <span className="text-[11px] font-semibold uppercase tracking-widest">Financial Summary</span>

@@ -9,7 +9,7 @@ import { logger } from '../../utils/logger';
 
 const ALERT_INCLUDE = {
   property: { select: { id: true, name: true, code: true } },
-  lease: { select: { id: true, leaseNumber: true } },
+  lease: { select: { id: true, leaseNumber: true, tenant: { select: { name: true } } } },
   assignee: { select: { id: true, firstName: true, lastName: true } },
   acknowledgedByUser: { select: { id: true, firstName: true, lastName: true } },
   dismissedByUser: { select: { id: true, firstName: true, lastName: true } },
