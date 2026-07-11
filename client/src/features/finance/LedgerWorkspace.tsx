@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Activity, AlertTriangle, ArrowDownRight, ArrowRight, ArrowUpRight, Banknote,
-  Building2, Check, ChevronRight, Landmark, Receipt, Shield, Wrench, X, Zap,
+  Building2, Check, ChevronDown, ChevronRight, Landmark, Receipt, Shield, Wrench, X, Zap,
   type LucideIcon,
 } from 'lucide-react';
 import {
@@ -118,6 +118,7 @@ export function LedgerWorkspace() {
   const [searchParams, setSearchParams] = useSearchParams();
   const category = searchParams.get('category');
   const historyRef = useRef<HTMLDivElement>(null);
+  const workRef = useRef<HTMLElement>(null);
   const [view, setView] = useState<ViewMode>('feed');
   const [filter, setFilter] = useState<LedgerFilter>('all');
   const [page, setPage] = useState(1);
@@ -265,7 +266,18 @@ export function LedgerWorkspace() {
           </div>
         ) : (
           <>
-            <p className={`mt-4 text-2xl font-bold leading-snug ${actionCount > 0 ? 'text-warning' : 'text-success'}`}>{verdict}</p>
+            {actionCount > 0 ? (
+              <button
+                type="button"
+                onClick={() => workRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                className="group mt-4 flex items-start gap-1.5 text-left"
+              >
+                <span className="text-2xl font-bold leading-snug text-warning underline-offset-4 group-hover:underline">{verdict}</span>
+                <ChevronDown className="mt-1.5 h-5 w-5 shrink-0 text-warning/70 transition-transform group-hover:translate-y-0.5" />
+              </button>
+            ) : (
+              <p className="mt-4 text-2xl font-bold leading-snug text-success">{verdict}</p>
+            )}
             <div className="mt-6 flex flex-col gap-2.5">
               <div className="flex items-center gap-3">
                 <span className="w-9 shrink-0 text-[11px] font-medium uppercase tracking-wider text-slate-500">In</span>
@@ -297,7 +309,7 @@ export function LedgerWorkspace() {
         )}
       </section>
 
-      <section className="rounded-xl border border-surface-400/50 bg-surface-100 overflow-hidden">
+      <section ref={workRef} className="scroll-mt-4 rounded-xl border border-surface-400/50 bg-surface-100 overflow-hidden">
         <div className="flex items-center gap-2 border-b border-surface-400/30 px-5 py-2.5 text-slate-500">
           <AlertTriangle className="h-3.5 w-3.5" />
           <span className="text-[11px] font-semibold uppercase tracking-widest">Today's Work</span>
