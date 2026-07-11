@@ -15,6 +15,7 @@ interface AuthUser {
   emailVerifiedAt: string | null;
   mfaEnabled: boolean;
   isDemo: boolean;
+  alertEmailOptIn?: boolean;
 }
 
 interface OriginalSession {

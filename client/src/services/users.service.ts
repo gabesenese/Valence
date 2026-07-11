@@ -49,6 +49,9 @@ export const usersService = {
   changeEmail: (email: string, currentPassword: string) =>
     api.patch('/auth/me/email', { email, currentPassword }).then(extractData<ProfileUser>),
 
+  updatePreferences: (prefs: { alertEmailOptIn?: boolean }) =>
+    api.patch('/auth/me/preferences', prefs).then(extractData<ProfileUser & { alertEmailOptIn: boolean }>),
+
   changePassword: (currentPassword: string, newPassword: string) =>
     api.patch('/auth/me/password', { currentPassword, newPassword }).then(extractData<{ message: string }>),
 

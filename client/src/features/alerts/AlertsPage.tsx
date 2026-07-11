@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import {
   AlertTriangle, CheckCircle2, Bell, FileText, Building2,
   RefreshCw, ClipboardList, ChevronDown, ChevronUp,
-  User, Zap, XCircle, Check, Play, RotateCcw,
+  User, Zap, XCircle, Check, Play, RotateCcw, Mail,
 } from 'lucide-react';
 import { alertsService, type Alert, type AlertActivity } from '@/services/alerts.service';
 import { api } from '@/services/api';
@@ -158,6 +158,7 @@ function WorkflowActions({
   onResolve,
   onDismiss,
   onReopen,
+  onEmail,
   busy,
 }: {
   alert: Alert;
@@ -166,6 +167,7 @@ function WorkflowActions({
   onResolve: (id: string) => void;
   onDismiss: (id: string) => void;
   onReopen: (id: string) => void;
+  onEmail: (id: string) => void;
   busy: boolean;
 }) {
   const navigate = useNavigate();
@@ -227,6 +229,9 @@ function WorkflowActions({
 
       {(status === 'OPEN' || status === 'ACKNOWLEDGED' || status === 'IN_PROGRESS') && (
         <>
+          <Button variant="ghost" size="sm" onClick={() => onEmail(alert.id)} loading={busy} title="Email this alert to the assignee (or yourself)">
+            <Mail className="h-3.5 w-3.5" /> Email
+          </Button>
           <Button variant="ghost" size="sm" onClick={() => onDismiss(alert.id)} loading={busy}>
             <XCircle className="h-3.5 w-3.5" /> Dismiss
           </Button>
@@ -291,7 +296,14 @@ export default function AlertsPage() {
   const [statusFilter, setStatusFilter] = useState('OPEN');
   const [expandedActivity, setExpandedActivity] = useState<Set<string>>(new Set());
   const [pendingAction, setPendingAction] = useState<{ id: string; action: 'resolve' | 'dismiss' } | null>(null);
+  const [emailNotice, setEmailNotice] = useState<string | null>(null);
   const qc = useQueryClient();
+
+  useEffect(() => {
+    if (!emailNotice) return;
+    const t = setTimeout(() => setEmailNotice(null), 4000);
+    return () => clearTimeout(t);
+  }, [emailNotice]);
 
   const { data: summary } = useQuery({
     queryKey: ['alerts', 'summary'],
@@ -307,6 +319,11 @@ export default function AlertsPage() {
   });
 
   const invalidate = () => qc.invalidateQueries({ queryKey: ['alerts'] });
+
+  const emailMutation = useMutation({
+    mutationFn: (id: string) => alertsService.email(id),
+    onSuccess: (res) => { invalidate(); setEmailNotice(`Alert emailed to ${res.to}`); },
+  });
 
   const acknowledgeMutation = useMutation({ mutationFn: (id: string) => alertsService.acknowledge(id), onSuccess: invalidate });
   const progressMutation    = useMutation({ mutationFn: (id: string) => alertsService.progress(id),    onSuccess: invalidate });
@@ -455,6 +472,7 @@ export default function AlertsPage() {
                           onResolve={(id) => setPendingAction({ id, action: 'resolve' })}
                           onDismiss={(id) => setPendingAction({ id, action: 'dismiss' })}
                           onReopen={(id) => reopenMutation.mutate(id)}
+                          onEmail={(id) => emailMutation.mutate(id)}
                           busy={isBusy}
                         />
                         <button
@@ -490,6 +508,13 @@ export default function AlertsPage() {
           }}
           onCancel={() => setPendingAction(null)}
         />
+      )}
+
+      {emailNotice && (
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-lg border border-success/30 bg-surface-200 px-4 py-2.5 text-sm text-slate-200 shadow-lg animate-fade-in">
+          <CheckCircle2 className="h-4 w-4 text-success" />
+          {emailNotice}
+        </div>
       )}
     </div>
   );

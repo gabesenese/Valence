@@ -11,6 +11,7 @@ export interface AuthUser {
   emailVerifiedAt: string | null;
   mfaEnabled: boolean;
   isDemo: boolean;
+  alertEmailOptIn?: boolean;
 }
 
 export interface AuthTokens {
