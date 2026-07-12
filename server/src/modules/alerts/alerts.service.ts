@@ -60,7 +60,12 @@ export async function getAlerts(query: {
     ...statusFilter,
     ...(type && { type }),
     ...(severity && { severity }),
-    ...(propertyId && { propertyId }),
+    ...(propertyId && {
+      OR: [
+        { propertyId, leaseId: null },
+        { lease: { propertyId } },
+      ],
+    }),
     ...(leaseId && { leaseId }),
   };
 
