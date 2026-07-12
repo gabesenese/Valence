@@ -1,13 +1,17 @@
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useQuery } from '@tanstack/react-query';
+
 import {
-  ArrowLeft, Building2, MapPin, FileText, AlertTriangle,
-  DollarSign, Layers, Pencil, X, Play, Check, RotateCcw, Sparkles,
+  ArrowLeft, Building2, MapPin, FileText,
+  DollarSign, Layers, Pencil, Sparkles,
   PlusCircle, Edit3, Trash2, History,
 } from 'lucide-react';
 import { propertiesService, type PropertyDetail, type PropertyActivityEntry } from '@/services/properties.service';
-import { alertsService } from '@/services/alerts.service';
+import { occupancyColorValue } from '@/utils/occupancy';
+import { NumberTicker } from '@/components/ui/NumberTicker';
+import { TracingBeam } from '@/components/ui/TracingBeam';
 import { Card, CardHeader, CardTitle, CardBody } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -20,10 +24,6 @@ import LeaseImportModal from '../leases/LeaseImportModal';
 import LeaseFormModal from '../leases/LeaseFormModal';
 import type { ExtractedLease } from '@/services/ai.service';
 
-const SEVERITY_DOT: Record<string, string> = {
-  CRITICAL: 'bg-danger', WARNING: 'bg-warning', INFO: 'bg-info',
-};
-
 const RISK_VARIANT: Record<string, 'success' | 'info' | 'warning' | 'danger'> = {
   LOW: 'success', MEDIUM: 'info', HIGH: 'warning', CRITICAL: 'danger',
 };
@@ -35,37 +35,20 @@ export default function PropertyDetailPage() {
   const [importOpen, setImportOpen] = useState(false);
   const [importedValues, setImportedValues] = useState<Partial<Record<string, string>> | null>(null);
   const [addLeaseOpen, setAddLeaseOpen] = useState(false);
+  const [leasesExpanded, setLeasesExpanded] = useState(false);
   const occupancyRef = useFocusTarget<HTMLDivElement>('occupancy');
   const revenueRef = useFocusTarget<HTMLDivElement>('revenue');
-  const qc = useQueryClient();
-
   const { data: property, isLoading } = useQuery({
     queryKey: ['properties', id],
     queryFn: () => propertiesService.getProperty(id!),
     enabled: !!id,
   });
 
-  const { data: alertsData, isLoading: alertsLoading } = useQuery({
-    queryKey: ['properties', id, 'alerts'],
-    queryFn: () => alertsService.getAlerts({ propertyId: id, statuses: ['OPEN', 'IN_PROGRESS'], limit: 50 }),
-    enabled: !!id && !!property && property._count.alerts > 0,
-  });
-
-  const invalidateAlerts = () => {
-    qc.invalidateQueries({ queryKey: ['properties', id, 'alerts'] });
-    qc.invalidateQueries({ queryKey: ['properties', id] });
-  };
-
   const { data: activityData } = useQuery({
     queryKey: ['properties', id, 'activity'],
     queryFn: () => propertiesService.getActivity(id!),
     enabled: !!id,
   });
-
-  const resolveMutation = useMutation({ mutationFn: (aid: string) => alertsService.resolve(aid), onSuccess: invalidateAlerts });
-  const dismissMutation = useMutation({ mutationFn: (aid: string) => alertsService.dismiss(aid), onSuccess: invalidateAlerts });
-  const progressMutation = useMutation({ mutationFn: (aid: string) => alertsService.progress(aid), onSuccess: invalidateAlerts });
-  const reopenMutation = useMutation({ mutationFn: (aid: string) => alertsService.reopen(aid), onSuccess: invalidateAlerts });
 
   if (isLoading) return <PageLoader />;
   if (!property) return <div className="p-6 text-slate-500">Property not found</div>;
@@ -114,27 +97,43 @@ export default function PropertyDetailPage() {
       </div>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-        {([
-          {
-            label: 'Occupancy',
-            value: occupancyPct !== null ? `${occupancyPct}%` : '—',
-            color: occupancyPct === null ? 'text-slate-500' : occupancyPct >= 80 ? 'text-success' : occupancyPct >= 60 ? 'text-warning' : 'text-danger',
-            focus: 'occupancy' as const,
-          },
-          { label: 'Active Leases', value: property.leases.length, color: 'text-success' },
-          { label: 'Monthly Revenue', value: formatCurrency(monthlyRevenue), color: 'text-success', focus: 'revenue' as const },
-          { label: 'Open Alerts', value: property._count.alerts, color: property._count.alerts > 0 ? 'text-danger' : 'text-slate-500' },
-          { label: 'Current Value', value: property.currentValue ? `$${(property.currentValue / 1_000_000).toFixed(1)}M` : '—', color: 'text-brand-400' },
-        ] as Array<{ label: string; value: React.ReactNode; color: string; focus?: 'occupancy' | 'revenue' }>).map((kpi) => (
-          <Card
-            key={kpi.label}
-            ref={kpi.focus === 'occupancy' ? occupancyRef : kpi.focus === 'revenue' ? revenueRef : undefined}
-            className="p-4 text-center border-transparent"
-          >
-            <p className={`text-xl font-bold tabular-nums ${kpi.color}`}>{kpi.value}</p>
-            <p className="mt-0.5 text-xs text-slate-400">{kpi.label}</p>
-          </Card>
-        ))}
+        <Card ref={occupancyRef} className="p-4 text-center border-transparent">
+          <p className="text-xl font-bold tabular-nums" style={{ color: occupancyColorValue(occupancyPct) }}>
+            {occupancyPct !== null
+              ? <NumberTicker value={occupancyPct} suffix="%" />
+              : '—'}
+          </p>
+          <p className="mt-0.5 text-xs text-slate-400">Occupancy</p>
+        </Card>
+        <Card className="p-4 text-center border-transparent">
+          <p className="text-xl font-bold tabular-nums text-success">
+            <NumberTicker value={property.leases.length} />
+          </p>
+          <p className="mt-0.5 text-xs text-slate-400">Active Leases</p>
+        </Card>
+        <Card ref={revenueRef} className="p-4 text-center border-transparent">
+          <p className="text-xl font-bold tabular-nums text-success">
+            <NumberTicker value={monthlyRevenue} prefix="$" />
+          </p>
+          <p className="mt-0.5 text-xs text-slate-400">Monthly Revenue</p>
+        </Card>
+        <Card
+          className="p-4 text-center border-transparent cursor-pointer hover:border-danger/30 transition-colors"
+          onClick={() => navigate(`/alerts?propertyId=${id}`)}
+        >
+          <p className={`text-xl font-bold tabular-nums ${property._count.alerts > 0 ? 'text-danger' : 'text-slate-500'}`}>
+            <NumberTicker value={property._count.alerts} />
+          </p>
+          <p className="mt-0.5 text-xs text-slate-400">Open Alerts</p>
+        </Card>
+        <Card className="p-4 text-center border-transparent">
+          <p className="text-xl font-bold tabular-nums text-brand-400">
+            {property.currentValue
+              ? <NumberTicker value={property.currentValue / 1_000_000} prefix="$" suffix="M" decimals={1} />
+              : '—'}
+          </p>
+          <p className="mt-0.5 text-xs text-slate-400">Current Value</p>
+        </Card>
       </div>
 
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:gap-5">
@@ -156,53 +155,87 @@ export default function PropertyDetailPage() {
             </CardHeader>
             {property.leases.length === 0 ? (
               <EmptyState icon={FileText} title="No active leases on this property" />
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-surface-400/40">
-                      {['Lease', 'Tenant', 'Unit', 'Base Rent', 'Expiry', 'Risk'].map((h) => (
-                        <th key={h} className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400">{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-surface-400/30">
-                    {property.leases.map((lease) => {
-                      const days = daysUntil(lease.endDate);
-                      return (
-                        <tr key={lease.id} className="group hover:bg-surface-200/40 transition-colors">
-                          <td className="px-4 py-3">
-                            <Link to={`/leases/${lease.id}`} className="flex items-center gap-2 hover:text-brand-300 transition-colors">
-                              <FileText className="h-3.5 w-3.5 text-slate-600 shrink-0" />
-                              <span className="text-sm font-medium text-slate-200 font-mono group-hover:text-brand-300">
-                                {lease.leaseNumber}
-                              </span>
-                            </Link>
-                          </td>
-                          <td className="px-4 py-3">
-                            <p className="text-sm text-slate-300">{lease.tenant.name}</p>
-                            {lease.tenant.email && <p className="text-xs text-slate-500">{lease.tenant.email}</p>}
-                          </td>
-                          <td className="px-4 py-3 text-sm text-slate-500">{lease.unitNumber ?? '—'}</td>
-                          <td className="px-4 py-3 text-sm font-medium text-fg tabular-nums">{formatCurrency(lease.baseRent)}/mo</td>
-                          <td className="px-4 py-3">
-                            <p className="text-sm text-slate-400">{formatDate(lease.endDate)}</p>
-                            <p className={`text-xs font-semibold tabular-nums ${
-                              days <= 30 ? 'text-danger' : days <= 90 ? 'text-warning' : 'text-slate-600'
-                            }`}>{days > 0 ? `${days}d left` : 'Expired'}</p>
-                          </td>
-                          <td className="px-4 py-3">
-                            <Badge variant={RISK_VARIANT[lease.renewalRisk] ?? 'neutral'} dot>
-                              {lease.renewalRisk}
-                            </Badge>
-                          </td>
+            ) : (() => {
+              const INITIAL = 4;
+              const needsBlur = property.leases.length > INITIAL;
+              const visible = leasesExpanded ? property.leases : property.leases.slice(0, INITIAL);
+              const hidden = property.leases.length - INITIAL;
+              return (
+                <div>
+                  <div className="overflow-x-auto relative">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b border-surface-400/40">
+                          {['Lease', 'Tenant', 'Unit', 'Base Rent', 'Expiry', 'Risk'].map((h) => (
+                            <th key={h} className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400">{h}</th>
+                          ))}
                         </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )}
+                      </thead>
+                      <tbody className="divide-y divide-surface-400/30">
+                        {visible.map((lease, i) => {
+                          const days = daysUntil(lease.endDate);
+                          const isNew = i >= INITIAL;
+                          return (
+                            <motion.tr
+                              key={lease.id}
+                              initial={isNew ? { opacity: 0, y: -4 } : false}
+                              animate={{ opacity: 1, y: 0 }}
+                              transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1], delay: isNew ? (i - INITIAL) * 0.04 : 0 }}
+                              className="group hover:bg-surface-200/40 transition-colors"
+                            >
+                              <td className="px-4 py-3">
+                                <Link to={`/leases/${lease.id}`} className="flex items-center gap-2 hover:text-brand-300 transition-colors">
+                                  <FileText className="h-3.5 w-3.5 text-slate-600 shrink-0" />
+                                  <span className="text-sm font-medium text-slate-200 font-mono group-hover:text-brand-300">
+                                    {lease.leaseNumber}
+                                  </span>
+                                </Link>
+                              </td>
+                              <td className="px-4 py-3">
+                                <p className="text-sm text-slate-300">{lease.tenant.name}</p>
+                                {lease.tenant.email && <p className="text-xs text-slate-500">{lease.tenant.email}</p>}
+                              </td>
+                              <td className="px-4 py-3 text-sm text-slate-500">{lease.unitNumber ?? '—'}</td>
+                              <td className="px-4 py-3 text-sm font-medium text-fg tabular-nums">{formatCurrency(lease.baseRent)}/mo</td>
+                              <td className="px-4 py-3">
+                                <p className="text-sm text-slate-400">{formatDate(lease.endDate)}</p>
+                                <p className={`text-xs font-semibold tabular-nums ${
+                                  days <= 30 ? 'text-danger' : days <= 90 ? 'text-warning' : 'text-slate-600'
+                                }`}>{days > 0 ? `${days}d left` : 'Expired'}</p>
+                              </td>
+                              <td className="px-4 py-3">
+                                <Badge variant={RISK_VARIANT[lease.renewalRisk] ?? 'neutral'} dot>
+                                  {lease.renewalRisk}
+                                </Badge>
+                              </td>
+                            </motion.tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                    <AnimatePresence>
+                      {needsBlur && !leasesExpanded && (
+                        <motion.div
+                          initial={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          transition={{ duration: 0.2 }}
+                          className="absolute bottom-0 left-0 right-0 h-14 pointer-events-none"
+                          style={{ background: 'linear-gradient(to top, rgb(var(--surface-100)), transparent)' }}
+                        />
+                      )}
+                    </AnimatePresence>
+                  </div>
+                  {needsBlur && (
+                    <button
+                      onClick={() => setLeasesExpanded(e => !e)}
+                      className="w-full py-2.5 text-xs font-medium text-brand-400 hover:text-brand-300 hover:bg-surface-200/40 transition-colors border-t border-surface-400/20"
+                    >
+                      {leasesExpanded ? 'Show less' : `Show ${hidden} more lease${hidden !== 1 ? 's' : ''}`}
+                    </button>
+                  )}
+                </div>
+              );
+            })()}
           </Card>
 
           {activityData && activityData.length > 0 && (
@@ -214,7 +247,8 @@ export default function PropertyDetailPage() {
                 </div>
               </CardHeader>
               <CardBody>
-                <ol className="relative border-l border-surface-400/40 ml-2 flex flex-col gap-0">
+                <TracingBeam className="ml-2">
+                <ol className="relative border-l border-surface-400/40 flex flex-col gap-0">
                   {activityData.map((entry: PropertyActivityEntry) => {
                     const Icon = entry.action === 'CREATE' ? PlusCircle : entry.action === 'DELETE' ? Trash2 : Edit3;
                     const dotColor = entry.action === 'CREATE' ? 'bg-success' : entry.action === 'DELETE' ? 'bg-danger' : 'bg-brand-400';
@@ -243,82 +277,13 @@ export default function PropertyDetailPage() {
                     );
                   })}
                 </ol>
+                </TracingBeam>
               </CardBody>
             </Card>
           )}
         </div>
 
         <div className="flex flex-col gap-4 lg:w-72 lg:shrink-0">
-
-          {property._count.alerts > 0 && (
-            <div className="rounded-lg border border-danger/20 overflow-hidden">
-              <div className="flex items-center gap-2 bg-danger/10 px-4 py-3">
-                <AlertTriangle className="h-4 w-4 text-danger shrink-0" />
-                <span className="text-xs font-semibold text-danger">
-                  {property._count.alerts} Open Alert{property._count.alerts !== 1 ? 's' : ''}
-                </span>
-              </div>
-              <div className="divide-y divide-surface-400/20">
-                {alertsLoading ? (
-                  <div className="px-4 py-4 text-xs text-slate-500">Loading…</div>
-                ) : (
-                  alertsData?.data.map((alert) => (
-                    <div key={alert.id} className="group px-4 py-3 hover:bg-white/[0.02] transition-colors">
-
-                      <div className="flex items-start gap-2 mb-2.5">
-                        <span className={`mt-[5px] h-1.5 w-1.5 rounded-full shrink-0 ${SEVERITY_DOT[alert.severity] ?? 'bg-slate-500'}`} />
-                        <p className="flex-1 text-[13px] font-medium text-slate-200 leading-snug">{alert.title}</p>
-                        <button
-                          onClick={() => dismissMutation.mutate(alert.id)}
-                          className="opacity-0 group-hover:opacity-100 transition-opacity mt-0.5 shrink-0 text-slate-600 hover:text-slate-300"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      </div>
-
-                      <div className="pl-3.5 flex items-center gap-1.5">
-                        {alert.status === 'OPEN' ? (
-                          <button
-                            onClick={() => {
-                              progressMutation.mutate(alert.id);
-                              const leaseId = alert.leaseId ?? alert.lease?.id;
-                              navigate(
-                                leaseId
-                                  ? `/leases/${leaseId}`
-                                  : alert.propertyId
-                                    ? `/properties/${alert.propertyId}`
-                                    : '/alerts',
-                              );
-                            }}
-                            className="inline-flex items-center gap-1 rounded-full bg-brand-600/20 border border-brand-500/25 px-2.5 py-1 text-[11px] font-medium text-brand-300 hover:bg-brand-600/35 hover:border-brand-500/40 transition-all"
-                          >
-                            <Play className="h-2.5 w-2.5" />
-                            Review
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => reopenMutation.mutate(alert.id)}
-                            className="inline-flex items-center gap-1 rounded-full bg-surface-300/60 border border-surface-400/40 px-2.5 py-1 text-[11px] font-medium text-slate-400 hover:text-slate-200 hover:bg-surface-300/80 transition-all"
-                          >
-                            <RotateCcw className="h-2.5 w-2.5" />
-                            In Review
-                          </button>
-                        )}
-                        <button
-                          onClick={() => resolveMutation.mutate(alert.id)}
-                          className="inline-flex items-center gap-1 rounded-full bg-success/15 border border-success/20 px-2.5 py-1 text-[11px] font-medium text-success/80 hover:bg-success/25 hover:text-success hover:border-success/35 transition-all"
-                        >
-                          <Check className="h-2.5 w-2.5" />
-                          Resolve
-                        </button>
-                      </div>
-
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-          )}
 
           <Card>
             <CardHeader><CardTitle>Building Details</CardTitle></CardHeader>

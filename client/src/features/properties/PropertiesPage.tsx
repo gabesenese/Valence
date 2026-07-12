@@ -4,8 +4,8 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Building2, MapPin, Plus, Search, Sparkles, Trash2 } from 'lucide-react';
 import { propertiesService, type PropertyType, type PropertyStatus } from '@/services/properties.service';
 import type { ExtractedProperty } from '@/services/ai.service';
-import { Card, CardBody } from '@/components/ui/Card';
-import { Badge } from '@/components/ui/Badge';
+import { MagicCard } from '@/components/ui/MagicCard';
+import { occupancyColorValue } from '@/utils/occupancy';
 import { Button } from '@/components/ui/Button';
 import { PageLoader } from '@/components/ui/Spinner';
 import { ErrorState } from '@/components/ui/ErrorState';
@@ -186,93 +186,100 @@ export default function PropertiesPage() {
           </div>
         )
       ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {data?.data.map((p) => (
-            <Card
-              key={p.id}
-              hover={confirmId !== p.id}
-              className={cn('overflow-hidden cursor-pointer', confirmId === p.id && 'border-danger/30')}
-              onClick={confirmId === p.id ? undefined : () => navigate(`/properties/${p.id}`)}
-            >
-              <div className="h-1.5 bg-gradient-to-r from-brand-600 to-brand-800" />
-              <CardBody>
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-surface-300">
-                    <Building2 className="h-5 w-5 text-brand-400" />
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <Badge variant={p.status === 'ACTIVE' ? 'success' : p.status === 'UNDER_RENOVATION' ? 'warning' : 'neutral'}>
-                      {p.status.replace('_', ' ')}
-                    </Badge>
-                    <Badge variant="neutral">{p.type.replace('_', ' ')}</Badge>
-                    <button
-                      onClick={(e) => { e.stopPropagation(); setConfirmId(p.id); }}
-                      className={cn(
-                        'ml-1 flex h-6 w-6 items-center justify-center rounded-md text-slate-600 hover:bg-danger/15 hover:text-danger transition-all duration-200',
-                        confirmId === p.id && 'opacity-0 pointer-events-none',
-                      )}
-                      title="Delete property"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
-                </div>
-                <h3 className="font-semibold text-fg">{p.name}</h3>
-                <div className="mt-1 flex items-center gap-1 text-xs text-slate-500">
-                  <MapPin className="h-3 w-3" />
-                  {p.city}, {p.state}
-                </div>
-                <div className="mt-4 grid grid-cols-2 gap-2 border-t border-surface-400/30 pt-3">
-                  {(() => {
-                    const pct = p.totalUnits > 0 ? Math.round((p._count.leases / p.totalUnits) * 100) : null;
-                    return (
+        <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', perspective: 1200 }}>
+          {data?.data.map((p) => {
+            const pct = p.totalUnits > 0 ? Math.round((p._count.leases / p.totalUnits) * 100) : null;
+            return (
+              <MagicCard key={p.id}>
+                <div
+                  className={cn(
+                    'rounded-xl border bg-surface-100 overflow-hidden shadow-sm cursor-pointer transition-colors',
+                    confirmId === p.id ? 'border-danger/30' : 'border-surface-400/30 hover:border-surface-400/60',
+                  )}
+                  onClick={confirmId === p.id ? undefined : () => navigate(`/properties/${p.id}`)}
+                >
+                  <div className="h-1.5 bg-gradient-to-r from-brand-600 to-brand-800" />
+
+                  <div className="p-4">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-surface-300">
+                        <Building2 className="h-5 w-5 text-brand-400" />
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className={cn(
+                          'rounded-full border px-2 py-0.5 text-[10px] font-medium',
+                          p.status === 'ACTIVE'
+                            ? 'border-success/30 bg-success/10 text-success'
+                            : p.status === 'UNDER_RENOVATION'
+                              ? 'border-warning/30 bg-warning/10 text-warning'
+                              : 'border-surface-400/40 bg-surface-300/40 text-slate-400',
+                        )}>
+                          {p.status.replace('_', ' ')}
+                        </span>
+                        <span className="rounded-full border border-surface-400/40 bg-surface-300/40 px-2 py-0.5 text-[10px] font-medium text-slate-400">
+                          {p.type.replace('_', ' ')}
+                        </span>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setConfirmId(p.id); }}
+                          className={cn(
+                            'flex h-6 w-6 items-center justify-center rounded-md text-slate-600 hover:bg-danger/15 hover:text-danger transition-all',
+                            confirmId === p.id && 'opacity-0 pointer-events-none',
+                          )}
+                          title="Delete property"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    </div>
+
+                    <h3 className="font-semibold text-fg text-sm">{p.name}</h3>
+                    <div className="mt-1 flex items-center gap-1 text-xs text-slate-500">
+                      <MapPin className="h-3 w-3" />{p.city}, {p.state}
+                    </div>
+
+                    <div className="mt-3 grid grid-cols-2 gap-2 border-t border-surface-400/30 pt-3">
                       <div className="text-center">
-                        <p className={`text-base font-bold ${pct === null ? 'text-slate-500' : pct >= 80 ? 'text-success' : pct >= 60 ? 'text-warning' : 'text-danger'}`}>
-                          {pct !== null ? `${pct}%` : '—'}
-                        </p>
+                        <p className="text-base font-bold tabular-nums" style={{ color: occupancyColorValue(pct) }}>{pct !== null ? `${pct}%` : '—'}</p>
                         <p className="text-xs text-slate-400">Occupancy</p>
                       </div>
-                    );
-                  })()}
-                  <div className="text-center">
-                    <p className="text-base font-bold text-brand-400">
-                      {p.currentValue ? `$${(p.currentValue / 1_000_000).toFixed(1)}M` : '—'}
-                    </p>
-                    <p className="text-xs text-slate-400">Value</p>
+                      <div className="text-center">
+                        <p className="text-base font-bold tabular-nums text-brand-400">
+                          {p.currentValue ? `$${(p.currentValue / 1_000_000).toFixed(1)}M` : '—'}
+                        </p>
+                        <p className="text-xs text-slate-400">Value</p>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </CardBody>
 
-              <div
-                className={cn(
-                  'overflow-hidden transition-all duration-250 ease-in-out',
-                  confirmId === p.id ? 'max-h-20 opacity-100' : 'max-h-0 opacity-0 pointer-events-none',
-                )}
-                onClick={(e) => e.stopPropagation()}
-              >
-                <div className="flex items-center justify-between border-t border-danger/20 bg-danger/5 px-4 py-3">
-                  <p className="text-xs text-slate-400">
-                    Delete <span className="font-semibold text-fg">{p.name}</span>?
-                  </p>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={cancelConfirm}
-                      className="text-xs text-slate-500 hover:text-slate-200 transition-colors"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={(e) => void handleDelete(e, p.id)}
-                      disabled={deletingId === p.id}
-                      className="rounded-md bg-danger px-3 py-1 text-xs font-semibold text-white hover:bg-red-600 disabled:opacity-50 transition-colors"
-                    >
-                      {deletingId === p.id ? 'Deleting…' : 'Delete'}
-                    </button>
+                  <div
+                    className={cn(
+                      'overflow-hidden transition-all duration-200',
+                      confirmId === p.id ? 'max-h-20 opacity-100' : 'max-h-0 opacity-0 pointer-events-none',
+                    )}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div className="flex items-center justify-between border-t border-danger/20 bg-danger/5 px-4 py-3">
+                      <p className="text-xs text-slate-400">
+                        Delete <span className="font-semibold text-fg">{p.name}</span>?
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <button onClick={cancelConfirm} className="text-xs text-slate-500 hover:text-slate-200 transition-colors">
+                          Cancel
+                        </button>
+                        <button
+                          onClick={(e) => void handleDelete(e, p.id)}
+                          disabled={deletingId === p.id}
+                          className="rounded-md bg-danger px-3 py-1 text-xs font-semibold text-white hover:bg-red-600 disabled:opacity-50 transition-colors"
+                        >
+                          {deletingId === p.id ? 'Deleting…' : 'Delete'}
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </Card>
-          ))}
+              </MagicCard>
+            );
+          })}
         </div>
       )}
 

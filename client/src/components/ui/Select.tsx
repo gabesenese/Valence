@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { ChevronDown, Check } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export interface SelectOption {
   value: string;
@@ -51,10 +52,9 @@ export function Select({
   const sm = size === 'sm';
 
   const estimatedHeight = Math.min(options.length * 28 + 8, 260);
+  const opensBelow = rect ? window.innerHeight - rect.bottom > estimatedHeight : true;
   const dropTop = rect
-    ? window.innerHeight - rect.bottom > estimatedHeight
-      ? rect.bottom + 4
-      : rect.top - estimatedHeight - 4
+    ? opensBelow ? rect.bottom + 4 : rect.top - estimatedHeight - 4
     : 0;
 
   return (
@@ -73,44 +73,57 @@ export function Select({
         } ${selected ? 'text-slate-200' : 'text-slate-500'}`}
       >
         <span className="flex-1 truncate text-left">{selected?.label ?? placeholder}</span>
-        <ChevronDown
-          className={`shrink-0 text-slate-600 transition-transform duration-150 ${open ? 'rotate-180' : ''} ${sm ? 'h-3 w-3' : 'h-3.5 w-3.5'}`}
-        />
+        <motion.div
+          animate={{ rotate: open ? 180 : 0 }}
+          transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+        >
+          <ChevronDown className={`shrink-0 text-slate-600 ${sm ? 'h-3 w-3' : 'h-3.5 w-3.5'}`} />
+        </motion.div>
       </button>
 
-      {open && rect && createPortal(
-        <div
-          ref={dropdownRef}
-          style={{
-            position: 'fixed',
-            top: dropTop,
-            left: rect.left,
-            minWidth: rect.width,
-            zIndex: 9999,
-          }}
-          className="max-h-64 overflow-y-auto overflow-x-hidden rounded-xl border border-surface-400/60 bg-surface-100 py-1 shadow-2xl shadow-black/50"
-        >
-          {options.map((opt) => (
-            <button
-              key={opt.value}
-              type="button"
-              onClick={() => {
-                onChange(opt.value);
-                setOpen(false);
+      {rect && createPortal(
+        <AnimatePresence>
+          {open && (
+            <motion.div
+              ref={dropdownRef}
+              key="select-dropdown"
+              initial={{ opacity: 0, scale: 0.95, y: opensBelow ? -6 : 6 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: opensBelow ? -6 : 6 }}
+              transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
+              style={{
+                position: 'fixed',
+                top: dropTop,
+                left: rect.left,
+                minWidth: rect.width,
+                zIndex: 9999,
+                transformOrigin: opensBelow ? 'top' : 'bottom',
               }}
-              className={`flex w-full items-center gap-2 px-3 text-left transition-colors hover:bg-surface-300 ${
-                sm ? 'py-1.5 text-xs' : 'py-2 text-sm'
-              } ${value === opt.value ? 'text-brand-300' : 'text-slate-300'}`}
+              className="max-h-64 overflow-y-auto overflow-x-hidden rounded-xl border border-surface-400/60 bg-surface-100 py-1 shadow-2xl shadow-black/50"
             >
-              <Check
-                className={`shrink-0 ${sm ? 'h-3 w-3' : 'h-3.5 w-3.5'} ${
-                  value === opt.value ? 'text-brand-400' : 'opacity-0'
-                }`}
-              />
-              {opt.label}
-            </button>
-          ))}
-        </div>,
+              {options.map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => {
+                    onChange(opt.value);
+                    setOpen(false);
+                  }}
+                  className={`flex w-full items-center gap-2 px-3 text-left transition-colors hover:bg-surface-300 ${
+                    sm ? 'py-1.5 text-xs' : 'py-2 text-sm'
+                  } ${value === opt.value ? 'text-brand-300' : 'text-slate-300'}`}
+                >
+                  <Check
+                    className={`shrink-0 ${sm ? 'h-3 w-3' : 'h-3.5 w-3.5'} ${
+                      value === opt.value ? 'text-brand-400' : 'opacity-0'
+                    }`}
+                  />
+                  {opt.label}
+                </button>
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>,
         document.body,
       )}
     </div>

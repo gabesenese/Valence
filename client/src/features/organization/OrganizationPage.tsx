@@ -20,6 +20,7 @@ import { authService } from '@/services/auth.service';
 import { usePlan } from '@/hooks/usePlan';
 import { Card, CardHeader, CardTitle, CardBody } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { AnimatedOverlay } from '@/components/ui/AnimatedOverlay';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Select } from '@/components/ui/Select';
 import { WorkspaceShell, WorkspaceSection, type WorkspaceMeta } from '@/components/ui/WorkspaceShell';
@@ -840,7 +841,7 @@ function InviteModal({ onClose }: { onClose: () => void }) {
   const inviteLink = createdToken ? `${window.location.origin}/auth/invite/${createdToken}` : '';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+    <AnimatedOverlay open onClose={onClose} dismissOnBackdrop={false}>
       <div className="mx-4 w-full max-w-md rounded-2xl border border-surface-400/40 bg-surface-100 p-6 shadow-xl">
         <div className="mb-5 flex items-center justify-between">
           <h2 className="text-base font-semibold text-fg">
@@ -905,7 +906,7 @@ function InviteModal({ onClose }: { onClose: () => void }) {
           </div>
         )}
       </div>
-    </div>
+    </AnimatedOverlay>
   );
 }
 
@@ -1054,7 +1055,7 @@ function TransferOwnershipModal({ members, onClose, onSuccess }: {
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
+    <AnimatedOverlay open onClose={onClose} dismissOnBackdrop={false} backdropClassName="bg-black/70">
       <div className="mx-4 w-full max-w-md rounded-2xl border border-danger/30 bg-surface-100 p-6 shadow-xl">
         <div className="mb-5 flex items-start gap-3">
           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-danger/20 bg-danger/10">
@@ -1111,7 +1112,7 @@ function TransferOwnershipModal({ members, onClose, onSuccess }: {
           </div>
         </div>
       </div>
-    </div>
+    </AnimatedOverlay>
   );
 }
 

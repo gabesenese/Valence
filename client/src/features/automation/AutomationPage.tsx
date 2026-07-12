@@ -16,6 +16,7 @@ import {
 import { useAuthStore } from '@/state/auth.store';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
+import { AnimatedOverlay } from '@/components/ui/AnimatedOverlay';
 import { Select } from '@/components/ui/Select';
 import { PageLoader } from '@/components/ui/Spinner';
 
@@ -94,7 +95,7 @@ function CreateRuleModal({ onClose }: { onClose: () => void }) {
   });
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <AnimatedOverlay open onClose={onClose} dismissOnBackdrop={false}>
       <div className="w-full max-w-lg rounded-2xl border border-surface-400/40 bg-surface-100 p-6 shadow-xl overflow-y-auto max-h-[90vh]">
         <h2 className="text-base font-semibold text-fg mb-5">New Automation Rule</h2>
 
@@ -240,7 +241,7 @@ function CreateRuleModal({ onClose }: { onClose: () => void }) {
           </Button>
         </div>
       </div>
-    </div>
+    </AnimatedOverlay>
   );
 }
 
@@ -275,7 +276,7 @@ function EditRuleModal({ rule, onClose }: { rule: AutomationRule; onClose: () =>
   const TrigIcon = trig.icon;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <AnimatedOverlay open onClose={onClose} dismissOnBackdrop={false}>
       <div className="w-full max-w-lg rounded-2xl border border-surface-400/40 bg-surface-100 p-6 shadow-xl overflow-y-auto max-h-[90vh]">
         <h2 className="text-base font-semibold text-fg mb-5">Edit Rule</h2>
 
@@ -343,7 +344,7 @@ function EditRuleModal({ rule, onClose }: { rule: AutomationRule; onClose: () =>
           </Button>
         </div>
       </div>
-    </div>
+    </AnimatedOverlay>
   );
 }
 

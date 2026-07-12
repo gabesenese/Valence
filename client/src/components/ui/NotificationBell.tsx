@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Bell, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
@@ -83,8 +84,16 @@ export function NotificationBell() {
         )}
       </button>
 
+      <AnimatePresence>
       {open && (
-        <div className="absolute right-0 top-10 z-50 w-80 rounded-xl border border-surface-400/40 bg-surface-100 shadow-card">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95, y: -6 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.95, y: -6 }}
+          transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
+          style={{ transformOrigin: 'top right' }}
+          className="absolute right-0 top-10 z-50 w-80 rounded-xl border border-surface-400/40 bg-surface-100 shadow-card"
+        >
           <div className="flex items-center justify-between border-b border-surface-400/20 px-4 py-3">
             <span className="text-sm font-semibold text-slate-200">Notifications</span>
             <div className="flex items-center gap-2">
@@ -146,8 +155,9 @@ export function NotificationBell() {
               View all alerts →
             </Link>
           </div>
-        </div>
+        </motion.div>
       )}
+      </AnimatePresence>
     </div>
   );
 }

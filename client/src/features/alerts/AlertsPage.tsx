@@ -12,6 +12,7 @@ import { api } from '@/services/api';
 import { Card, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
+import { AnimatedOverlay } from '@/components/ui/AnimatedOverlay';
 import { PageLoader } from '@/components/ui/Spinner';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { PageHeader } from '@/components/ui/PageHeader';
@@ -111,14 +112,8 @@ function NotesModal({
   const [note, setNote] = useState('');
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
-      onClick={onCancel}
-    >
-      <div
-        className="w-full max-w-md rounded-xl border border-surface-400/60 bg-surface-100 p-6 shadow-2xl"
-        onClick={(e) => e.stopPropagation()}
-      >
+    <AnimatedOverlay open onClose={onCancel}>
+      <div className="w-full max-w-md rounded-xl border border-surface-400/60 bg-surface-100 p-6 shadow-2xl">
         <h3 className="text-base font-semibold text-fg">
           {action === 'resolve' ? 'Resolve alert' : 'Dismiss alert'}
         </h3>
@@ -147,7 +142,7 @@ function NotesModal({
           </Button>
         </div>
       </div>
-    </div>
+    </AnimatedOverlay>
   );
 }
 
