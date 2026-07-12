@@ -114,7 +114,7 @@ export function EmailTenantModal({ tenantId, tenantName, tenantEmail, lease, onC
 
   return (
     <Modal open title="Email tenant" onClose={onClose}>
-      <div className="space-y-4">
+      <div className="space-y-4 px-5 py-4">
         {!tenantEmail && (
           <p className="rounded-lg bg-warning/10 border border-warning/20 px-3 py-2 text-xs text-warning">
             No email address on file for this tenant.
@@ -173,7 +173,7 @@ export function EmailTenantModal({ tenantId, tenantName, tenantEmail, lease, onC
         )}
       </div>
 
-      <div className="mt-5 flex justify-end gap-2">
+      <div className="flex items-center justify-end gap-2 border-t border-surface-400/40 px-5 py-4">
         <Button variant="ghost" size="sm" onClick={onClose}>Cancel</Button>
         <Button
           size="sm"
