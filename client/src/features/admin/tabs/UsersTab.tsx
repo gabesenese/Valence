@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { adminService, type AdminUser } from '@/services/admin.service';
 import { useAuthStore } from '@/state/auth.store';
+import { AnimatedOverlay } from '@/components/ui/AnimatedOverlay';
 import { cn } from '@/utils/cn';
 
 const PLANS = ['FREE', 'ESSENTIALS', 'PROFESSIONAL', 'EXECUTIVE'];
@@ -74,9 +75,8 @@ function JourneyModal({ user, secret, onClose }: { user: AdminUser; secret: stri
   });
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="fixed inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative z-10 w-full max-w-md rounded-2xl border border-surface-400/60 bg-surface-100 shadow-card max-h-[80vh] overflow-hidden flex flex-col">
+    <AnimatedOverlay open onClose={onClose} backdropClassName="bg-black/50">
+      <div className="w-full max-w-md rounded-2xl border border-surface-400/60 bg-surface-100 shadow-card max-h-[80vh] overflow-hidden flex flex-col">
         <div className="flex items-start justify-between border-b border-surface-400/30 px-5 py-4">
           <div>
             <div className="flex items-center gap-2">
@@ -132,7 +132,7 @@ function JourneyModal({ user, secret, onClose }: { user: AdminUser; secret: stri
           </>
         )}
       </div>
-    </div>,
+    </AnimatedOverlay>,
     document.body,
   );
 }

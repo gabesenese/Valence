@@ -21,6 +21,7 @@ import { alertsService } from '@/services/alerts.service';
 import { analyticsService } from '@/services/analytics.service';
 import { ActivationPrompt } from '@/features/onboarding/ActivationPrompt';
 import { useAuthStore } from '@/state/auth.store';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -32,6 +33,36 @@ function formatDollars(n: number) {
   if (n >= 1000000) return `$${(n / 1000000).toFixed(1)}M`;
   if (n >= 1000) return `$${Math.round(n / 1000)}k`;
   return `$${n}`;
+}
+
+function AnimatedItem({ index, children }: { index: number; children: React.ReactNode }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1], delay: index * 0.055 }}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+function AnimatedCollapse({ show, children }: { show: boolean; children: React.ReactNode }) {
+  return (
+    <AnimatePresence initial={false}>
+      {show && (
+        <motion.div
+          initial={{ height: 0, opacity: 0 }}
+          animate={{ height: 'auto', opacity: 1 }}
+          exit={{ height: 0, opacity: 0 }}
+          transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+          style={{ overflow: 'hidden' }}
+        >
+          {children}
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
 }
 
 function workItemDestination(item: WorkItem): AlertDestination | null {
@@ -213,15 +244,10 @@ function WorkItemCard({
   const navigate = useNavigate();
   const busy = busyId === item.alertId;
 
-  const borderColor =
-    item.severity === 'CRITICAL' ? 'border-l-danger' :
-    item.severity === 'WARNING'  ? 'border-l-warning/70' :
-                                    'border-l-info/50';
-
   const actions = itemActions(item, busy, onProgress, onResolve, onDismiss, navigate);
 
-  return (
-    <div className={`border-l-4 ${borderColor} hover:bg-surface-200/30 transition-colors`}>
+  const card = (
+    <div className="hover:bg-surface-200/30 transition-colors">
       <div className="px-4 py-4 flex flex-col gap-1.5 sm:px-5">
         {item.monthlyRisk > 0 && (
           <div className="flex items-baseline gap-1">
@@ -268,6 +294,8 @@ function WorkItemCard({
       </div>
     </div>
   );
+
+  return card;
 }
 
 function SectionHeader({
@@ -436,17 +464,19 @@ export default function WorkQueuePage() {
               collapsed={!!collapsed['critical']}
               onToggle={() => toggle('critical')}
             />
-            {!collapsed['critical'] && (
-              critical.length === 0 ? (
+            <AnimatedCollapse show={!collapsed['critical']}>
+              {critical.length === 0 ? (
                 <EmptySection message="No critical items — all clear." />
               ) : (
                 <div className="divide-y divide-surface-400/30">
-                  {critical.map((item) => (
-                    <WorkItemCard key={item.id} item={item} {...cardProps} />
+                  {critical.map((item, i) => (
+                    <AnimatedItem key={item.id} index={i}>
+                      <WorkItemCard item={item} {...cardProps} />
+                    </AnimatedItem>
                   ))}
                 </div>
-              )
-            )}
+              )}
+            </AnimatedCollapse>
           </Card>
 
           <Card className="overflow-hidden">
@@ -473,17 +503,19 @@ export default function WorkQueuePage() {
                 ) : undefined
               }
             />
-            {!collapsed['assigned'] && (
-              myItems.length === 0 ? (
+            <AnimatedCollapse show={!collapsed['assigned']}>
+              {myItems.length === 0 ? (
                 <EmptySection message={`Nothing assigned to ${user?.firstName ?? 'you'} right now.`} />
               ) : (
                 <div className="divide-y divide-surface-400/30">
-                  {myItems.map((item) => (
-                    <WorkItemCard key={item.id} item={item} {...cardProps} />
+                  {myItems.map((item, i) => (
+                    <AnimatedItem key={item.id} index={i}>
+                      <WorkItemCard item={item} {...cardProps} />
+                    </AnimatedItem>
                   ))}
                 </div>
-              )
-            )}
+              )}
+            </AnimatedCollapse>
           </Card>
 
           <Card className="overflow-hidden">
@@ -494,30 +526,34 @@ export default function WorkQueuePage() {
               collapsed={!!collapsed['week']}
               onToggle={() => toggle('week')}
             />
-            {!collapsed['week'] && (
-              dueThisWeek.length === 0 ? (
+            <AnimatedCollapse show={!collapsed['week']}>
+              {dueThisWeek.length === 0 ? (
                 <EmptySection message="Nothing expiring in the next 7 days." />
               ) : (
                 <div className="divide-y divide-surface-400/30">
                   {renewalMeetings.length > 0 && (
                     <>
                       <SubHeader label="Renewal Meetings" count={renewalMeetings.length} />
-                      {renewalMeetings.map((item) => (
-                        <WorkItemCard key={item.id} item={item} {...cardProps} />
+                      {renewalMeetings.map((item, i) => (
+                        <AnimatedItem key={item.id} index={i}>
+                          <WorkItemCard item={item} {...cardProps} />
+                        </AnimatedItem>
                       ))}
                     </>
                   )}
                   {followUps.length > 0 && (
                     <>
                       <SubHeader label="Follow-ups" count={followUps.length} />
-                      {followUps.map((item) => (
-                        <WorkItemCard key={item.id} item={item} {...cardProps} />
+                      {followUps.map((item, i) => (
+                        <AnimatedItem key={item.id} index={i}>
+                          <WorkItemCard item={item} {...cardProps} />
+                        </AnimatedItem>
                       ))}
                     </>
                   )}
                 </div>
-              )
-            )}
+              )}
+            </AnimatedCollapse>
           </Card>
 
           {other.length > 0 && (
@@ -529,13 +565,15 @@ export default function WorkQueuePage() {
                 collapsed={!!collapsed['other']}
                 onToggle={() => toggle('other')}
               />
-              {collapsed['other'] ? null : (
+              <AnimatedCollapse show={!collapsed['other']}>
                 <div className="divide-y divide-surface-400/30">
-                  {other.map((item) => (
-                    <WorkItemCard key={item.id} item={item} {...cardProps} />
+                  {other.map((item, i) => (
+                    <AnimatedItem key={item.id} index={i}>
+                      <WorkItemCard item={item} {...cardProps} />
+                    </AnimatedItem>
                   ))}
                 </div>
-              )}
+              </AnimatedCollapse>
             </Card>
           )}
         </div>

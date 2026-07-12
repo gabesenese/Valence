@@ -1,4 +1,6 @@
 import { useState, useMemo, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { NumberTicker } from '@/components/ui/NumberTicker';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
@@ -440,27 +442,27 @@ export default function LeasesPage() {
             New Lease
           </Button>
           <div className="flex items-center gap-1 rounded-lg border border-surface-400/60 bg-surface-200 p-1">
-            <button
-              onClick={() => setViewMode('kanban')}
-              className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${viewMode === 'kanban' ? 'bg-surface-400 text-fg' : 'text-slate-500 hover:text-slate-300'}`}
-            >
-              <Columns3 className="h-3.5 w-3.5" />
-              Pipeline
-            </button>
-            <button
-              onClick={() => setViewMode('table')}
-              className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${viewMode === 'table' ? 'bg-surface-400 text-fg' : 'text-slate-500 hover:text-slate-300'}`}
-            >
-              <LayoutList className="h-3.5 w-3.5" />
-              Table
-            </button>
-            <button
-              onClick={() => setViewMode('priority')}
-              className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${viewMode === 'priority' ? 'bg-surface-400 text-fg' : 'text-slate-500 hover:text-slate-300'}`}
-            >
-              <Zap className="h-3.5 w-3.5" />
-              Priority
-            </button>
+            {([
+              { mode: 'kanban', icon: Columns3, label: 'Pipeline' },
+              { mode: 'table',  icon: LayoutList, label: 'Table' },
+              { mode: 'priority', icon: Zap, label: 'Priority' },
+            ] as const).map(({ mode, icon: Icon, label }) => (
+              <button
+                key={mode}
+                onClick={() => setViewMode(mode)}
+                className={`relative flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${viewMode === mode ? 'text-fg' : 'text-slate-500 hover:text-slate-300'}`}
+              >
+                {viewMode === mode && (
+                  <motion.div
+                    layoutId="lease-view-pill"
+                    className="absolute inset-0 rounded-md bg-surface-400"
+                    transition={{ type: 'spring', stiffness: 400, damping: 35 }}
+                  />
+                )}
+                <Icon className="relative h-3.5 w-3.5" />
+                <span className="relative">{label}</span>
+              </button>
+            ))}
           </div>
           </div>
       </div>
@@ -474,7 +476,9 @@ export default function LeasesPage() {
             { label: 'Critical Risk', value: stats.byRisk.find((r) => r.renewalRisk === 'CRITICAL')?._count ?? 0, color: 'text-danger', onClick: () => { setStatusFilter('ACTIVE'); setRiskFilter('CRITICAL'); setExpiryFilter(''); setStageFilter(''); setSearch(''); setPage(1); setViewMode('table'); } },
           ].map((s) => (
             <button key={s.label} onClick={s.onClick} className="flex-1 flex flex-col items-center gap-0.5 px-6 py-3.5 hover:bg-surface-300/40 transition-colors">
-              <p className={`text-xl font-bold tabular-nums ${s.color}`}>{s.value}</p>
+              <p className={`text-xl font-bold tabular-nums ${s.color}`}>
+                <NumberTicker value={s.value} />
+              </p>
               <p className="text-xs text-slate-500">{s.label}</p>
             </button>
           ))}
@@ -495,13 +499,21 @@ export default function LeasesPage() {
         </div>
       )}
 
-      {viewMode === 'kanban' && <RenewalKanban />}
+      <AnimatePresence mode="wait">
+      {viewMode === 'kanban' && (
+        <motion.div key="kanban" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}>
+          <RenewalKanban />
+        </motion.div>
+      )}
 
       {viewMode === 'priority' && (
-        <PriorityQueueView onOpenDrawer={setDrawerLeaseId} />
+        <motion.div key="priority" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}>
+          <PriorityQueueView onOpenDrawer={setDrawerLeaseId} />
+        </motion.div>
       )}
 
       {viewMode === 'table' && (
+        <motion.div key="table" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}>
         <>
           <div className="flex flex-col gap-3">
             <div className="flex items-center gap-1.5 flex-wrap">
@@ -700,7 +712,9 @@ export default function LeasesPage() {
             )}
           </div>
         </>
+        </motion.div>
       )}
+      </AnimatePresence>
 
       <BulkBar
         count={selectedIds.size}

@@ -10,6 +10,7 @@ import { useAuthStore } from '@/state/auth.store';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
+import { AnimatedOverlay } from '@/components/ui/AnimatedOverlay';
 import { PageLoader } from '@/components/ui/Spinner';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Select } from '@/components/ui/Select';
@@ -241,7 +242,7 @@ function InviteModal({ onClose }: { onClose: () => void }) {
     : '';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+    <AnimatedOverlay open onClose={onClose} dismissOnBackdrop={false}>
       <div className="w-full max-w-md rounded-2xl border border-surface-400/40 bg-surface-100 p-6 shadow-xl mx-4">
         <div className="flex items-center justify-between mb-5">
           <h2 className="text-base font-semibold text-fg">
@@ -320,7 +321,7 @@ function InviteModal({ onClose }: { onClose: () => void }) {
           </div>
         )}
       </div>
-    </div>
+    </AnimatedOverlay>
   );
 }
 

@@ -10,6 +10,7 @@ import { usersService, type TeamMember } from '@/services/users.service';
 import { useAuthStore } from '@/state/auth.store';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { AnimatedOverlay } from '@/components/ui/AnimatedOverlay';
 import { Select } from '@/components/ui/Select';
 import { DatePicker } from '@/components/ui/DatePicker';
 import { PageLoader } from '@/components/ui/Spinner';
@@ -147,10 +148,7 @@ function EditTaskModal({
     : null;
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70"
-      onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}
-    >
+    <AnimatedOverlay open onClose={onClose} backdropClassName="bg-black/70">
       <div className="w-full max-w-lg rounded-2xl border border-surface-400/40 bg-surface-100 shadow-2xl shadow-black/60 overflow-hidden">
 
         <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-surface-400/20">
@@ -237,7 +235,7 @@ function EditTaskModal({
           </Button>
         </div>
       </div>
-    </div>
+    </AnimatedOverlay>
   );
 }
 
@@ -408,7 +406,7 @@ function CreateTaskModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+    <AnimatedOverlay open onClose={onClose} dismissOnBackdrop={false}>
       <div className="w-full max-w-md rounded-2xl border border-surface-400/40 bg-surface-100 p-6 shadow-xl">
         <h2 className="text-base font-semibold text-fg mb-4">New Task</h2>
         <div className="flex flex-col gap-3">
@@ -448,7 +446,7 @@ function CreateTaskModal({
           </Button>
         </div>
       </div>
-    </div>
+    </AnimatedOverlay>
   );
 }
 

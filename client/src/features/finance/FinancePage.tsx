@@ -1,5 +1,6 @@
 import { useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { financeService, type MetricDelta } from '@/services/finance.service';
@@ -95,21 +96,34 @@ export default function FinancePage() {
             ref={tab === t.id ? activeTabRef : undefined}
             type="button"
             onClick={() => setTab(t.id)}
-            className={`-mb-px shrink-0 border-b-2 px-3.5 py-2 text-sm font-medium transition-colors ${
-              tab === t.id
-                ? 'border-brand-500 text-fg'
-                : 'border-transparent text-slate-500 hover:text-slate-300'
+            className={`relative -mb-px shrink-0 px-3.5 py-2 text-sm font-medium transition-colors ${
+              tab === t.id ? 'text-fg' : 'text-slate-500 hover:text-slate-300'
             }`}
           >
             {t.label}
+            {tab === t.id && (
+              <motion.span
+                layoutId="finance-tab-underline"
+                className="absolute inset-x-0 -bottom-px h-0.5 bg-brand-500"
+                transition={{ type: 'spring', stiffness: 500, damping: 40 }}
+              />
+            )}
           </button>
         ))}
       </div>
 
       {TAB_TIP[tab] && <PageTip key={tab} tipKey={TAB_TIP[tab]!} anchorRef={activeTabRef} />}
 
+      <AnimatePresence mode="wait">
       {tab === 'overview' && (
-        <>
+        <motion.div
+          key="overview"
+          className="flex flex-col gap-4"
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -6 }}
+          transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+        >
           {canAccess('executive_brief') && <ExecutiveBriefCard />}
 
           <FinancialIntelligence />
@@ -163,18 +177,39 @@ export default function FinancePage() {
           })()}
 
           <WhatChangedPanel />
-        </>
+        </motion.div>
       )}
 
-      {tab === 'forecast' && <ForecastWorkspace />}
+      {tab === 'forecast' && (
+        <motion.div key="forecast" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}>
+          <ForecastWorkspace />
+        </motion.div>
+      )}
 
-      {tab === 'ledger' && <LedgerWorkspace />}
+      {tab === 'ledger' && (
+        <motion.div key="ledger" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}>
+          <LedgerWorkspace />
+        </motion.div>
+      )}
 
-      {tab === 'expenses' && <ExpensesWorkspace />}
+      {tab === 'expenses' && (
+        <motion.div key="expenses" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}>
+          <ExpensesWorkspace />
+        </motion.div>
+      )}
 
-      {tab === 'profitability' && <ProfitabilityWorkspace />}
+      {tab === 'profitability' && (
+        <motion.div key="profitability" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}>
+          <ProfitabilityWorkspace />
+        </motion.div>
+      )}
 
-      {tab === 'budgets' && <BudgetCard />}
+      {tab === 'budgets' && (
+        <motion.div key="budgets" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}>
+          <BudgetCard />
+        </motion.div>
+      )}
+      </AnimatePresence>
 
     </div>
   );

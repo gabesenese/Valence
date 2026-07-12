@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { ChevronLeft, ChevronRight, ChevronDown, Calendar } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const DAY_LABELS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 const MONTHS = [
@@ -119,15 +120,22 @@ export function DatePicker({
       >
         <Calendar className="h-3.5 w-3.5 shrink-0 text-slate-500" />
         <span className="flex-1 text-left">{label || placeholder}</span>
-        <ChevronDown
-          className={`h-3.5 w-3.5 shrink-0 text-slate-600 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
-        />
+        <motion.div animate={{ rotate: open ? 180 : 0 }} transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}>
+          <ChevronDown className="h-3.5 w-3.5 shrink-0 text-slate-600" />
+        </motion.div>
       </button>
 
-      {open && rect && createPortal(
-        <div
+      {rect && createPortal(
+        <AnimatePresence>
+        {open && (
+        <motion.div
           ref={dropdownRef}
-          style={{ position: 'fixed', top: dropTop, left: rect.left, zIndex: 9999, width: 264 }}
+          key="datepicker-dropdown"
+          initial={{ opacity: 0, scale: 0.95, y: -6 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.95, y: -6 }}
+          transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
+          style={{ position: 'fixed', top: dropTop, left: rect.left, zIndex: 9999, width: 264, transformOrigin: 'top' }}
           className="overflow-hidden rounded-2xl border border-surface-400/60 bg-surface-100 shadow-2xl shadow-black/50"
         >
           <div className="flex items-center justify-between border-b border-surface-400/30 px-4 py-3">
@@ -195,7 +203,9 @@ export function DatePicker({
               </button>
             </div>
           )}
-        </div>,
+        </motion.div>
+        )}
+        </AnimatePresence>,
         document.body,
       )}
     </div>

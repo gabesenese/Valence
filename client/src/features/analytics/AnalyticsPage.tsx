@@ -8,6 +8,7 @@ import { analyticsService } from '@/services/analytics.service';
 import { Card, CardHeader, CardTitle, CardBody } from '@/components/ui/Card';
 import { PageLoader } from '@/components/ui/Spinner';
 import { compactCurrency, formatCurrency, monthLabelToRange } from '@/utils/format';
+import { occupancyColorValue } from '@/utils/occupancy';
 import { useChartColors } from '@/hooks/useChartColors';
 
 export default function AnalyticsPage() {
@@ -91,11 +92,11 @@ export default function AnalyticsPage() {
                     <div className="flex items-center gap-2 shrink-0">
                       <div className="hidden w-24 h-1.5 rounded-full bg-surface-400 sm:block">
                         <div
-                          className="h-full rounded-full bg-brand-500 transition-[width]"
-                          style={{ width: `${Math.min(100, p.occupancyRate)}%` }}
+                          className="h-full rounded-full transition-[width]"
+                          style={{ width: `${Math.min(100, p.occupancyRate)}%`, backgroundColor: occupancyColorValue(p.occupancyRate) }}
                         />
                       </div>
-                      <span className="text-sm font-semibold text-fg w-10 text-right tabular-nums">{p.occupancyRate}%</span>
+                      <span className="text-sm font-semibold w-10 text-right tabular-nums" style={{ color: occupancyColorValue(p.occupancyRate) }}>{p.occupancyRate}%</span>
                     </div>
                     <span className="text-sm font-semibold text-fg tabular-nums w-14 text-right shrink-0">{compactCurrency(p.monthlyRevenue)}</span>
                   </div>

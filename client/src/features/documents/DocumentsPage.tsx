@@ -7,6 +7,7 @@ import {
 import { documentsService, type Document, type DocumentType } from '@/services/documents.service';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
+import { AnimatedOverlay } from '@/components/ui/AnimatedOverlay';
 import { Select } from '@/components/ui/Select';
 import { DataTable, type Column } from '@/components/ui/DataTable';
 import { PageHeader } from '@/components/ui/PageHeader';
@@ -138,7 +139,7 @@ function UploadModal({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+    <AnimatedOverlay open onClose={onClose} dismissOnBackdrop={false}>
       <div className="w-full max-w-md rounded-2xl border border-surface-400/40 bg-surface-100 p-6 shadow-xl">
         <h2 className="text-base font-semibold text-fg mb-4">Upload Document</h2>
         <div
@@ -185,7 +186,7 @@ function UploadModal({ onClose }: { onClose: () => void }) {
           </Button>
         </div>
       </div>
-    </div>
+    </AnimatedOverlay>
   );
 }
 
