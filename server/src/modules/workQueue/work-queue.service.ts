@@ -66,6 +66,9 @@ function suggestAction(
     case 'RENEWAL_RISK':
       return `Meet with ${tenant} to assess renewal probability and address concerns directly`;
 
+    case 'RENEWAL_FOLLOWUP':
+      return `Follow up with ${tenant} on the renewal — send an offer, or reschedule the next touch`;
+
     case 'PAYMENT_ANOMALY':
       return `Audit ${property} revenue records and contact tenant if payment is missing`;
 
@@ -122,6 +125,26 @@ export async function getWorkQueue(options: { userId: string; assignedToUserId?:
     alerts.map((a) => a.leaseId).filter((id): id is string => id !== null),
   );
 
+  const dueFollowUps = assignedToUserId
+    ? []
+    : await prisma.lease.findMany({
+        where: {
+          property: { ownerId: userId, deletedAt: null },
+          deletedAt: null,
+          status: 'ACTIVE',
+          renewalScheduledAt: { lte: now },
+          ...(coveredLeaseIds.size > 0 ? { id: { notIn: [...coveredLeaseIds] } } : {}),
+          OR: [{ snoozedUntil: null }, { snoozedUntil: { lt: now } }],
+        },
+        include: {
+          property: { select: { id: true, name: true, code: true } },
+          tenant: { select: { name: true } },
+        },
+      });
+
+  const followUpLeaseIds = new Set(dueFollowUps.map((l) => l.id));
+  const excludedLeaseIds = new Set<string>([...coveredLeaseIds, ...followUpLeaseIds]);
+
   const uncoveredLeases = assignedToUserId
     ? []
     : await prisma.lease.findMany({
@@ -130,7 +153,7 @@ export async function getWorkQueue(options: { userId: string; assignedToUserId?:
           status: 'ACTIVE',
           deletedAt: null,
           endDate: { gte: now, lte: ninetyDaysOut },
-          ...(coveredLeaseIds.size > 0 ? { id: { notIn: [...coveredLeaseIds] } } : {}),
+          ...(excludedLeaseIds.size > 0 ? { id: { notIn: [...excludedLeaseIds] } } : {}),
           OR: [{ snoozedUntil: null }, { snoozedUntil: { lt: now } }],
         },
         include: {
@@ -152,6 +175,8 @@ export async function getWorkQueue(options: { userId: string; assignedToUserId?:
           type: 'REVENUE',
           status: 'PENDING',
           dueDate: { lt: now },
+          property: { ownerId: userId, deletedAt: null },
+          OR: [{ leaseId: null }, { lease: { deletedAt: null } }],
           ...(coveredByPaymentAlert.size > 0
             ? { leaseId: { notIn: [...coveredByPaymentAlert] } }
             : {}),
@@ -251,6 +276,43 @@ export async function getWorkQueue(options: { userId: string; assignedToUserId?:
     return item;
   });
 
+  const followUpItems: WorkItem[] = dueFollowUps.map((lease) => {
+    const daysUntilExpiry = differenceInDays(lease.endDate, now);
+    const overdueDays = Math.max(0, differenceInDays(now, lease.renewalScheduledAt!));
+    const severity: WorkItemSeverity = daysUntilExpiry <= 30 ? 'CRITICAL' : 'WARNING';
+    const monthlyRisk = Number(lease.baseRent);
+    const when = overdueDays === 0 ? 'today' : `${overdueDays} ${overdueDays === 1 ? 'day' : 'days'} ago`;
+
+    const item: WorkItem = {
+      id: `followup:${lease.id}`,
+      source: 'lease',
+      alertId: null,
+      leaseId: lease.id,
+      financialRecordId: null,
+      type: 'RENEWAL_FOLLOWUP',
+      severity,
+      status: 'OPEN',
+      title: `Renewal follow-up due — ${lease.tenant.name}`,
+      description: `You scheduled a renewal follow-up for ${lease.tenant.name} at ${lease.property.name} (${when}).`,
+      suggestedAction: suggestAction('RENEWAL_FOLLOWUP', daysUntilExpiry, lease.tenant.name, lease.property.name),
+      priorityScore: 0,
+      monthlyRisk,
+      daysUntilExpiry,
+      property: lease.property,
+      lease: {
+        id: lease.id,
+        leaseNumber: lease.leaseNumber,
+        tenantName: lease.tenant.name,
+        baseRent: monthlyRisk,
+      },
+      assignee: null,
+      createdAt: lease.renewalScheduledAt!,
+    };
+
+    item.priorityScore = score(item);
+    return item;
+  });
+
   const invoiceItems: WorkItem[] = overdueInvoices.map((record) => {
     const daysOverdue = differenceInDays(now, record.dueDate!);
     const severity: WorkItemSeverity =
@@ -291,7 +353,7 @@ export async function getWorkQueue(options: { userId: string; assignedToUserId?:
     return item;
   });
 
-  const items = [...alertItems, ...leaseItems, ...invoiceItems].sort(
+  const items = [...alertItems, ...followUpItems, ...leaseItems, ...invoiceItems].sort(
     (a, b) => b.priorityScore - a.priorityScore,
   );
 
