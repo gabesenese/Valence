@@ -3,20 +3,18 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import {
   CheckCircle,
-  ClipboardList,
   RefreshCw,
-  DollarSign,
   Clock,
   XCircle,
   ChevronDown,
   ChevronRight,
-  Phone,
-  TrendingUp,
 } from 'lucide-react';
 import { workQueueService, type WorkItem } from '@/services/workQueue.service';
 import { alertDestination, type AlertDestination } from '@/features/alerts/alertDestination';
 import { withFocus } from '@/lib/focusSection';
 import { TaskPanel } from './TaskPanel';
+import { RenewalWorkspace } from '@/features/finance/RenewalWorkspace';
+import { CollectionsWorkspace } from '@/features/finance/CollectionsWorkspace';
 import { alertsService } from '@/services/alerts.service';
 import { analyticsService } from '@/services/analytics.service';
 import { ActivationPrompt } from '@/features/onboarding/ActivationPrompt';
@@ -24,7 +22,6 @@ import { useAuthStore } from '@/state/auth.store';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
-import { Button } from '@/components/ui/Button';
 import { PageLoader } from '@/components/ui/Spinner';
 import { ErrorState } from '@/components/ui/ErrorState';
 
@@ -81,70 +78,30 @@ function workItemDestination(item: WorkItem): AlertDestination | null {
   return null;
 }
 
-function primaryActionMeta(item: WorkItem): { label: string; Icon: typeof RefreshCw } {
-  if (!item.alertId) {
-    return item.source === 'finance'
-      ? { label: 'Escalate to Collections', Icon: DollarSign }
-      : { label: 'Send Renewal Offer', Icon: RefreshCw };
-  }
+type WorkspaceKind = 'renewal' | 'collections';
+
+function workspaceKind(item: WorkItem): WorkspaceKind | null {
+  const leaseId = item.leaseId ?? item.lease?.id;
+  if (!leaseId) return null;
+  if (!item.alertId) return item.source === 'finance' ? 'collections' : 'renewal';
   switch (item.type) {
-    case 'LEASE_EXPIRATION':      return { label: 'Send Renewal Offer', Icon: RefreshCw };
-    case 'RENEWAL_RISK':          return { label: 'Schedule Call', Icon: Phone };
+    case 'LEASE_EXPIRATION':
+    case 'RENEWAL_RISK':
+      return 'renewal';
     case 'PAYMENT_ANOMALY':
-    case 'OVERDUE_INVOICE':       return { label: 'Escalate to Collections', Icon: DollarSign };
-    case 'FINANCIAL_DISCREPANCY': return { label: 'Review Finance', Icon: ClipboardList };
-    case 'OCCUPANCY_CHANGE':      return { label: 'Review Pricing', Icon: TrendingUp };
-    default:                      return { label: 'Review', Icon: ClipboardList };
+    case 'OVERDUE_INVOICE':
+      return 'collections';
+    default:
+      return null;
   }
 }
 
-function itemActions(
-  item: WorkItem,
-  busy: boolean,
-  onProgress: (id: string) => void,
-  onResolve: (id: string) => void,
-  onDismiss: (id: string) => void,
-  navigate: ReturnType<typeof useNavigate>,
-): React.ReactNode[] {
-  const alertId = item.alertId;
-  const dest = workItemDestination(item);
-  const { label, Icon } = primaryActionMeta(item);
-  const actions: React.ReactNode[] = [];
-
-  if (dest) {
-    actions.push(
-      <Button key="primary" variant="outline" size="sm" onClick={() => navigate(dest.to)}>
-        <Icon className="h-3.5 w-3.5" /> {label}
-      </Button>,
-    );
-  } else if (alertId) {
-    actions.push(
-      <Button key="progress" variant="outline" size="sm" onClick={() => onProgress(alertId)} loading={busy}>
-        Start Review
-      </Button>,
-    );
+function openLabel(item: WorkItem): string {
+  switch (workspaceKind(item)) {
+    case 'renewal':     return 'Open renewal';
+    case 'collections': return 'Open collections';
+    default:            return workItemDestination(item)?.label ?? 'Review';
   }
-
-  if (!alertId) return actions;
-
-  actions.push(
-    <Button key="dismiss" variant="ghost" size="sm" onClick={() => onDismiss(alertId)} loading={busy}>
-      <XCircle className="h-3.5 w-3.5" /> Dismiss
-    </Button>,
-  );
-  actions.push(
-    <Button
-      key="resolve"
-      variant="success"
-      size="sm"
-      onClick={() => onResolve(alertId)}
-      loading={busy}
-    >
-      <CheckCircle className="h-3.5 w-3.5" /> Resolve
-    </Button>,
-  );
-
-  return actions;
 }
 
 function QueueHero({
@@ -231,71 +188,106 @@ function QueueHero({
 function WorkItemCard({
   item,
   busyId,
-  onProgress,
   onResolve,
   onDismiss,
 }: {
   item: WorkItem;
   busyId: string | null;
-  onProgress: (id: string) => void;
   onResolve: (id: string) => void;
   onDismiss: (id: string) => void;
 }) {
   const navigate = useNavigate();
   const busy = busyId === item.alertId;
+  const [workspace, setWorkspace] = useState<WorkspaceKind | null>(null);
+  const leaseId = item.leaseId ?? item.lease?.id ?? null;
+  const kind = workspaceKind(item);
+  const dest = workItemDestination(item);
+  const canOpen = !!kind || !!dest;
 
-  const actions = itemActions(item, busy, onProgress, onResolve, onDismiss, navigate);
+  function open() {
+    if (kind) setWorkspace(kind);
+    else if (dest) navigate(dest.to);
+  }
 
-  const card = (
-    <div className="hover:bg-surface-200/30 transition-colors">
-      <div className="px-4 py-4 flex flex-col gap-1.5 sm:px-5">
-        {item.monthlyRisk > 0 && (
-          <div className="flex items-baseline gap-1">
-            <span className="text-lg font-bold tabular-nums text-warning">{formatDollars(item.monthlyRisk)}</span>
-            <span className="text-xs text-slate-500">/mo at risk</span>
+  return (
+    <>
+      <div className="hover:bg-surface-200/30 transition-colors">
+        <button
+          type="button"
+          onClick={open}
+          disabled={!canOpen}
+          className="group flex w-full items-start gap-3 px-4 py-4 text-left sm:px-5 disabled:cursor-default"
+        >
+          <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+            {item.monthlyRisk > 0 && (
+              <div className="flex items-baseline gap-1">
+                <span className="text-lg font-bold tabular-nums text-warning">{formatDollars(item.monthlyRisk)}</span>
+                <span className="text-xs text-slate-500">/mo at risk</span>
+              </div>
+            )}
+
+            <p className="text-sm font-medium text-slate-200 leading-snug">
+              {item.title}
+              {item.status === 'IN_PROGRESS' && (
+                <span className="ml-2 inline-flex items-center rounded-full border border-brand-500/20 bg-brand-600/10 px-1.5 py-0.5 text-[10px] font-medium text-brand-400">In Progress</span>
+              )}
+            </p>
+
+            {item.suggestedAction && (
+              <p className="text-xs text-brand-300/80">{item.suggestedAction}</p>
+            )}
+
+            <div className="flex items-center gap-3 flex-wrap text-xs text-slate-500 mt-0.5">
+              {item.property && <span>{item.property.name}</span>}
+              {item.daysUntilExpiry !== null && (
+                <span className={`flex items-center gap-0.5 font-medium ${
+                  item.daysUntilExpiry <= 30 ? 'text-danger' : item.daysUntilExpiry <= 60 ? 'text-warning' : 'text-slate-400'
+                }`}>
+                  <Clock className="h-3 w-3" />
+                  {item.daysUntilExpiry}d left
+                </span>
+              )}
+            </div>
           </div>
-        )}
 
-        <p className="text-sm font-medium text-slate-200 leading-snug">
-          {item.title}
-          {item.status === 'IN_PROGRESS' && (
-            <span className="ml-2 inline-flex items-center rounded-full border border-brand-500/20 bg-brand-600/10 px-1.5 py-0.5 text-[10px] font-medium text-brand-400">In Progress</span>
-          )}
-        </p>
-
-        {item.suggestedAction && (
-          <p className="flex items-center gap-1 text-xs text-brand-300/80">
-            <ChevronRight className="h-3 w-3 shrink-0" />
-            {item.suggestedAction}
-          </p>
-        )}
-
-        <div className="flex items-center gap-3 flex-wrap text-xs text-slate-500 mt-0.5">
-          {item.property && <span>{item.property.name}</span>}
-          {item.daysUntilExpiry !== null && (
-            <span className={`flex items-center gap-0.5 font-medium ${
-              item.daysUntilExpiry <= 30 ? 'text-danger' : item.daysUntilExpiry <= 60 ? 'text-warning' : 'text-slate-400'
-            }`}>
-              <Clock className="h-3 w-3" />
-              {item.daysUntilExpiry}d left
+          {canOpen && (
+            <span className="mt-0.5 flex shrink-0 items-center gap-1 text-xs font-medium text-slate-500 transition-colors group-hover:text-brand-300">
+              {openLabel(item)}
+              <ChevronRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
             </span>
           )}
-        </div>
+        </button>
 
-        {actions.length > 0 && (
-          <div className="flex items-center gap-2 flex-wrap pt-1">
-            {actions}
+        {item.alertId && (
+          <div className="flex items-center gap-4 px-4 pb-3 sm:px-5">
+            <button
+              type="button"
+              onClick={() => onResolve(item.alertId!)}
+              disabled={busy}
+              className="flex items-center gap-1 text-xs font-medium text-slate-500 transition-colors hover:text-success disabled:opacity-40"
+            >
+              <CheckCircle className="h-3.5 w-3.5" /> Mark resolved
+            </button>
+            <button
+              type="button"
+              onClick={() => onDismiss(item.alertId!)}
+              disabled={busy}
+              className="flex items-center gap-1 text-xs font-medium text-slate-500 transition-colors hover:text-slate-300 disabled:opacity-40"
+            >
+              <XCircle className="h-3.5 w-3.5" /> Dismiss
+            </button>
           </div>
         )}
+
+        <div className="px-5 pb-3">
+          <TaskPanel alertId={item.alertId} leaseId={item.leaseId} />
+        </div>
       </div>
 
-      <div className="px-5 pb-3">
-        <TaskPanel alertId={item.alertId} leaseId={item.leaseId} />
-      </div>
-    </div>
+      <RenewalWorkspace open={workspace === 'renewal'} leaseId={leaseId} onClose={() => setWorkspace(null)} />
+      <CollectionsWorkspace open={workspace === 'collections'} leaseId={leaseId} onClose={() => setWorkspace(null)} />
+    </>
   );
-
-  return card;
 }
 
 function SectionHeader({
@@ -381,12 +373,6 @@ export default function WorkQueuePage() {
     queryFn: () => workQueueService.getQueue(true),
   });
 
-  const progressMutation = useMutation({
-    mutationFn: (id: string) => { setBusyId(id); return alertsService.progress(id); },
-    onSettled: () => setBusyId(null),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['work-queue'] }),
-  });
-
   const resolveMutation = useMutation({
     mutationFn: (id: string) => { setBusyId(id); return alertsService.resolve(id); },
     onSettled: () => setBusyId(null),
@@ -399,38 +385,37 @@ export default function WorkQueuePage() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['work-queue'] }),
   });
 
-  const handleProgress = (id: string) => progressMutation.mutate(id);
   const handleResolve = (id: string) => resolveMutation.mutate(id);
   const handleDismiss = (id: string) => dismissMutation.mutate(id);
 
   const toggle = (key: string) => setCollapsed((p) => ({ ...p, [key]: !p[key] }));
 
-  const critical = data?.items.filter((i) => i.severity === 'CRITICAL') ?? [];
+  const isFollowUp = (i: WorkItem) => i.type === 'RENEWAL_FOLLOWUP';
+  const expiringSoon = (i: WorkItem) => i.daysUntilExpiry !== null && i.daysUntilExpiry >= 0 && i.daysUntilExpiry <= 7;
+  const dueNow = (i: WorkItem) => isFollowUp(i) || expiringSoon(i);
+
+  const critical = data?.items.filter((i) => i.severity === 'CRITICAL' && !isFollowUp(i)) ?? [];
 
   const myItems = myData?.items ?? [];
   const myLeases = myItems.filter((i) => i.leaseId !== null);
   const myAlerts = myItems.filter((i) => i.alertId !== null && i.leaseId === null);
 
-  const dueThisWeek = data?.items.filter(
-    (i) => i.daysUntilExpiry !== null && i.daysUntilExpiry >= 0 && i.daysUntilExpiry <= 7,
-  ) ?? [];
+  const dueThisWeek = data?.items.filter(dueNow) ?? [];
   const renewalMeetings = dueThisWeek.filter((i) =>
-    ['LEASE_EXPIRATION', 'RENEWAL_RISK'].includes(i.type),
+    ['LEASE_EXPIRATION', 'RENEWAL_RISK', 'RENEWAL_FOLLOWUP'].includes(i.type),
   );
   const followUps = dueThisWeek.filter(
-    (i) => !['LEASE_EXPIRATION', 'RENEWAL_RISK'].includes(i.type),
+    (i) => !['LEASE_EXPIRATION', 'RENEWAL_RISK', 'RENEWAL_FOLLOWUP'].includes(i.type),
   );
 
   const other = data?.items.filter(
-    (i) =>
-      i.severity !== 'CRITICAL' &&
-      !(i.daysUntilExpiry !== null && i.daysUntilExpiry >= 0 && i.daysUntilExpiry <= 7),
+    (i) => i.severity !== 'CRITICAL' && !isFollowUp(i) && !expiringSoon(i),
   ) ?? [];
 
   const totalRisk = data?.items.reduce((s, i) => s + i.monthlyRisk, 0) ?? 0;
   const topItem = critical[0];
 
-  const cardProps = { busyId, onProgress: handleProgress, onResolve: handleResolve, onDismiss: handleDismiss };
+  const cardProps = { busyId, onResolve: handleResolve, onDismiss: handleDismiss };
 
   return (
     <div className="flex flex-col gap-4 p-4 animate-fade-in sm:gap-6 sm:p-6">
@@ -533,7 +518,7 @@ export default function WorkQueuePage() {
                 <div className="divide-y divide-surface-400/30">
                   {renewalMeetings.length > 0 && (
                     <>
-                      <SubHeader label="Renewal Meetings" count={renewalMeetings.length} />
+                      <SubHeader label="Renewals" count={renewalMeetings.length} />
                       {renewalMeetings.map((item, i) => (
                         <AnimatedItem key={item.id} index={i}>
                           <WorkItemCard item={item} {...cardProps} />
