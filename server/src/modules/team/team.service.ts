@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import { resolveOrganizationId } from '../organization/organization.service';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
@@ -72,6 +73,9 @@ export async function acceptInvite(
 
   const passwordHash = await bcrypt.hash(input.password, env.BCRYPT_ROUNDS);
   const trialEndsAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
+  // New members join the inviter's organization — this is what makes them
+  // appear in (and only in) that organization's team list.
+  const organizationId = await resolveOrganizationId(invite.invitedById);
 
   const user = await prisma.user.create({
     data: {
@@ -81,6 +85,7 @@ export async function acceptInvite(
       lastName: input.lastName.trim(),
       role: invite.role,
       trialEndsAt,
+      organizationId,
     },
     select: {
       id: true, email: true, firstName: true, lastName: true,

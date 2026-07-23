@@ -42,6 +42,7 @@ export interface ProfileUser {
 
 export const usersService = {
   listUsers: () => api.get('/auth/users').then(extractData<TeamMember[]>),
+  removeMember: (id: string) => api.delete(`/auth/users/${id}/membership`).then(extractData<TeamMember>),
 
   updateProfile: (firstName: string, lastName: string) =>
     api.patch('/auth/me', { firstName, lastName }).then(extractData<ProfileUser>),

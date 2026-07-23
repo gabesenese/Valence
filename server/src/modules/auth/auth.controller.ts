@@ -79,6 +79,15 @@ export async function updateUserRole(req: Request, res: Response, next: NextFunc
   }
 }
 
+export async function removeMember(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const user = await authService.removeMember(req.params.id, { id: req.user!.id });
+    sendSuccess(res, user);
+  } catch (err) {
+    next(err);
+  }
+}
+
 export async function setUserActive(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const { isActive } = req.body as { isActive: boolean };

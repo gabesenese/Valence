@@ -9,6 +9,20 @@ export async function getOrganization(userId: string) {
   return org;
 }
 
+/**
+ * Returns the organization the user belongs to, creating and linking one
+ * for legacy accounts that predate membership. Membership is the single
+ * source of truth for team scoping — never fall back to platform-wide
+ * queries when it is missing.
+ */
+export async function resolveOrganizationId(userId: string): Promise<string> {
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: { organizationId: true } });
+  if (user?.organizationId) return user.organizationId;
+  const org = await getOrganization(userId);
+  await prisma.user.update({ where: { id: userId }, data: { organizationId: org.id } });
+  return org.id;
+}
+
 export async function updateOrganization(userId: string, data: {
   name?: string;
   industry?: string | null;

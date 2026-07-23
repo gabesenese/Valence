@@ -170,6 +170,12 @@ function MemberRow({ member, currentUserId, currentUserRole }: {
     mutationFn: (isActive: boolean) => usersService.setActive(member.id, isActive),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['users'] }),
   });
+  const [confirmRemove, setConfirmRemove] = useState(false);
+  const removeMutation = useMutation({
+    mutationFn: () => usersService.removeMember(member.id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['users'] }),
+  });
+  const canRemove = canManage && member.role !== 'SUPER_ADMIN';
 
   const lastLogin = member.lastLoginAt
     ? new Date(member.lastLoginAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
@@ -201,19 +207,46 @@ function MemberRow({ member, currentUserId, currentUserRole }: {
       </td>
       <td className="px-4 py-3">
         {canManage && (
-          <button
-            onClick={() => activeMutation.mutate(!member.isActive)}
-            disabled={activeMutation.isPending}
-            className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors ${
-              member.isActive
-                ? 'text-slate-500 hover:text-danger hover:bg-danger/10'
-                : 'text-slate-500 hover:text-success hover:bg-success/10'
-            }`}
-          >
-            {member.isActive
-              ? <><UserX className="h-3.5 w-3.5" />Deactivate</>
-              : <><UserCheck className="h-3.5 w-3.5" />Activate</>}
-          </button>
+          confirmRemove ? (
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-slate-400">Remove from team?</span>
+              <button
+                onClick={() => removeMutation.mutate()}
+                disabled={removeMutation.isPending}
+                className="rounded-md bg-danger px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-danger/80 transition-colors disabled:opacity-50"
+              >
+                {removeMutation.isPending ? 'Removing…' : 'Yes, remove'}
+              </button>
+              <button onClick={() => setConfirmRemove(false)} className="text-xs text-slate-500 hover:text-slate-300 transition-colors">
+                Cancel
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => activeMutation.mutate(!member.isActive)}
+                disabled={activeMutation.isPending}
+                className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors ${
+                  member.isActive
+                    ? 'text-slate-500 hover:text-warning hover:bg-warning/10'
+                    : 'text-slate-500 hover:text-success hover:bg-success/10'
+                }`}
+              >
+                {member.isActive
+                  ? <><UserX className="h-3.5 w-3.5" />Deactivate</>
+                  : <><UserCheck className="h-3.5 w-3.5" />Activate</>}
+              </button>
+              {canRemove && (
+                <button
+                  onClick={() => setConfirmRemove(true)}
+                  title="Remove from organization (keeps their history)"
+                  className="flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium text-slate-500 hover:text-danger hover:bg-danger/10 transition-colors"
+                >
+                  <X className="h-3.5 w-3.5" />Remove
+                </button>
+              )}
+            </div>
+          )
         )}
       </td>
     </tr>

@@ -10,6 +10,7 @@ import { logAudit } from '../audit/audit.service';
 import { sendPasswordResetEmail, sendVerificationEmail } from '../../lib/email';
 import { DemoPortfolioFactory } from '../demo/demo.factory';
 import { trackEvent, trackReturnVisit } from '../analytics/funnel.service';
+import { resolveOrganizationId } from '../organization/organization.service';
 import { isTesterEmail } from '../../config/testers';
 import type { RegisterInput, LoginInput } from './auth.schemas';
 import type { UserRole, Plan } from '@prisma/client';
@@ -170,11 +171,49 @@ export async function getMe(userId: string): Promise<AuthUser> {
 export async function listUsers(
   viewer: { id: string; role: UserRole },
 ): Promise<(AuthUser & { isActive: boolean; lastLoginAt: Date | null; createdAt: Date })[]> {
+  /*
+   * Team lists are scoped to the viewer's organization and never include
+   * demo accounts. Platform-wide user administration lives in the admin
+   * module, not here — a SUPER_ADMIN viewing their team should see their
+   * team, not every account on the platform.
+   */
+  const organizationId = await resolveOrganizationId(viewer.id);
   return prisma.user.findMany({
-    where: viewer.role === 'SUPER_ADMIN' ? {} : { id: viewer.id },
+    where: { organizationId, isDemo: false },
     select: { ...USER_SELECT, isActive: true, lastLoginAt: true, createdAt: true },
     orderBy: [{ firstName: 'asc' }, { lastName: 'asc' }],
   });
+}
+
+/**
+ * Removes a member from the actor's organization without deleting the
+ * account. Hard deletion would cascade through audit logs, task history,
+ * and lease activity attribution; removal instead frees the seat, revokes
+ * access, and preserves history: organizationId is cleared, the account
+ * is deactivated, and all sessions are invalidated.
+ */
+export async function removeMember(targetUserId: string, actor: { id: string }) {
+  if (targetUserId === actor.id) {
+    throw new ConflictError("You can't remove yourself from the organization.");
+  }
+  const organizationId = await resolveOrganizationId(actor.id);
+  const target = await prisma.user.findFirst({
+    where: { id: targetUserId, organizationId },
+    select: { id: true, email: true, role: true },
+  });
+  if (!target) throw new NotFoundError('Member');
+  if (target.role === 'SUPER_ADMIN') {
+    throw new ConflictError('Transfer ownership or change their role before removing a Super Admin.');
+  }
+
+  const user = await prisma.user.update({
+    where: { id: targetUserId },
+    data: { organizationId: null, isActive: false },
+    select: { id: true, email: true, firstName: true, lastName: true, role: true, isActive: true },
+  });
+  await prisma.refreshToken.deleteMany({ where: { userId: targetUserId } });
+  void logAudit({ userId: actor.id, action: 'DELETE', entity: 'user', entityId: targetUserId, entityName: target.email });
+  return user;
 }
 
 export async function updateUserRole(

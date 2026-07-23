@@ -270,10 +270,11 @@ function OrgSummary({ members }: { members: TeamMember[] }) {
 }
 
 
-function TodaysWork({ members, invites, onOpenMember }: {
+function TodaysWork({ members, invites, onOpenMember, onCompleteProfile }: {
   members: TeamMember[];
   invites: Invite[];
   onOpenMember: (id: string) => void;
+  onCompleteProfile: () => void;
 }) {
   const { data: org } = useQuery({
     queryKey: ['organization'],
@@ -311,14 +312,17 @@ function TodaysWork({ members, invites, onOpenMember }: {
       });
     });
 
-  if (org && !org.industry) {
+  const missingFields: string[] = [];
+  if (org && (!org.name || org.name === 'My Organization')) missingFields.push('organization name');
+  if (org && !org.industry) missingFields.push('industry');
+  if (missingFields.length > 0) {
     items.push({
       key: 'profile',
       tone: 'info',
       title: 'Complete your organization profile',
-      detail: "Industry hasn't been configured. Reports and benchmarks won't be categorized correctly.",
+      detail: `Missing: ${missingFields.join(' and ')}. Reports and benchmarks won't be categorized correctly until this is set.`,
       action: 'Complete profile',
-      onClick: () => scrollToId('settings'),
+      onClick: onCompleteProfile,
     });
   }
 
@@ -498,6 +502,11 @@ function MemberWorkspace({ member, currentUser, onClose }: {
     mutationFn: (next: boolean) => usersService.setActive(member!.id, next),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['users'] }); onClose(); },
   });
+  const [confirmRemove, setConfirmRemove] = useState(false);
+  const removeMutation = useMutation({
+    mutationFn: () => usersService.removeMember(member!.id),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['users'] }); onClose(); },
+  });
 
   if (!member) return <WorkspaceShell open={false} onClose={onClose} eyebrow="Manage Member" title="">{null}</WorkspaceShell>;
 
@@ -525,15 +534,49 @@ function MemberWorkspace({ member, currentUser, onClose }: {
       <button
         type="button"
         onClick={() => activeMutation.mutate(!member.isActive)}
-        disabled={activeMutation.isPending}
+        disabled={activeMutation.isPending || removeMutation.isPending}
         className={`w-full rounded-lg px-4 py-2.5 text-sm font-semibold transition-colors disabled:opacity-50 ${
           member.isActive
-            ? 'border border-danger/30 bg-danger/10 text-danger hover:bg-danger/20'
+            ? 'border border-warning/30 bg-warning/10 text-warning hover:bg-warning/20'
             : 'bg-brand-600 text-white hover:bg-brand-500'
         }`}
       >
         {activeMutation.isPending ? 'Working…' : member.isActive ? 'Deactivate member' : 'Reactivate member'}
       </button>
+      {confirmRemove ? (
+        <div className="flex flex-col gap-2 rounded-lg border border-danger/30 bg-danger/10 p-3">
+          <p className="text-xs leading-relaxed text-danger">
+            Remove {member.firstName} from the organization? They lose access and their seat is freed.
+            Their history, audit records, and past work stay intact. This can only be undone with a new invitation.
+          </p>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => removeMutation.mutate()}
+              disabled={removeMutation.isPending}
+              className="flex-1 rounded-lg bg-danger px-4 py-2 text-sm font-semibold text-white hover:bg-danger/80 transition-colors disabled:opacity-50"
+            >
+              {removeMutation.isPending ? 'Removing…' : 'Yes, remove from team'}
+            </button>
+            <button
+              type="button"
+              onClick={() => setConfirmRemove(false)}
+              className="rounded-lg px-4 py-2 text-sm text-slate-400 hover:text-slate-200 transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setConfirmRemove(true)}
+          disabled={activeMutation.isPending || removeMutation.isPending}
+          className="w-full rounded-lg border border-danger/30 bg-danger/10 px-4 py-2.5 text-sm font-semibold text-danger transition-colors hover:bg-danger/20 disabled:opacity-50"
+        >
+          Remove from organization
+        </button>
+      )}
     </div>
   ) : undefined;
 
@@ -911,11 +954,23 @@ function InviteModal({ onClose }: { onClose: () => void }) {
 }
 
 
-function OrgSettingsCard() {
+function OrgSettingsCard({ focusSignal = 0 }: { focusSignal?: number }) {
   const qc = useQueryClient();
   const currentUser = useAuthStore((s) => s.user);
   const canEdit = currentUser?.role === 'ANALYST' || currentUser?.role === 'ADMIN' || currentUser?.role === 'SUPER_ADMIN';
   const [editing, setEditing] = useState(false);
+  const [highlighted, setHighlighted] = useState(false);
+  const anchorRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!focusSignal) return;
+    anchorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (canEdit) setEditing(true);
+    setHighlighted(true);
+    const t = setTimeout(() => setHighlighted(false), 2500);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusSignal]);
 
   const { data: org, isLoading } = useQuery({
     queryKey: ['organization'],
@@ -957,10 +1012,9 @@ function OrgSettingsCard() {
     }
   };
 
-  if (isLoading) return null;
-
   return (
-    <div id="settings" className="scroll-mt-4">
+    <div id="settings" ref={anchorRef} className={`scroll-mt-4 rounded-2xl transition-shadow duration-500 ${highlighted ? 'ring-2 ring-brand-500/60' : ''}`}>
+      {isLoading ? null : (
       <Card>
         <CardHeader>
           <div className="flex items-center gap-2">
@@ -1027,6 +1081,7 @@ function OrgSettingsCard() {
           </CardBody>
         )}
       </Card>
+      )}
     </div>
   );
 }
@@ -1193,6 +1248,7 @@ export default function OrganizationPage() {
   const canManage = currentUser?.role === 'ADMIN' || currentUser?.role === 'SUPER_ADMIN';
   const [showInvite, setShowInvite] = useState(false);
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
+  const [settingsFocus, setSettingsFocus] = useState(0);
 
   const { data: members = [], isLoading } = useQuery({
     queryKey: ['users'],
@@ -1229,7 +1285,7 @@ export default function OrganizationPage() {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-4 lg:items-start">
         <div className="flex flex-col gap-6 lg:col-span-3">
           {canManage && (
-            <TodaysWork members={members} invites={invites} onOpenMember={setSelectedMemberId} />
+            <TodaysWork members={members} invites={invites} onOpenMember={setSelectedMemberId} onCompleteProfile={() => setSettingsFocus(Date.now())} />
           )}
           <InvitationsSection invites={invites} canManage={canManage} />
           <TeamSection
@@ -1245,7 +1301,7 @@ export default function OrganizationPage() {
         <div className="flex flex-col gap-6">
           <RecentActivity />
           {canManage && <BillingCard memberCount={activeCount} canManage={canManage} />}
-          <OrgSettingsCard />
+          <OrgSettingsCard focusSignal={settingsFocus} />
           {isOwner && <DangerZone members={members} />}
         </div>
       </div>
