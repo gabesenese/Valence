@@ -37,11 +37,11 @@ function RestoreBanner({ result, onDismiss }: { result: RestoreResult; onDismiss
 }
 
 
-function BackupRow({ backup, onRestore, onDelete, apiBase, busy }: {
+function BackupRow({ backup, onRestore, onDelete, onDownload, busy }: {
   backup: BackupMeta;
   onRestore: (id: string) => void;
   onDelete: (id: string) => void;
-  apiBase: string;
+  onDownload: (id: string) => void;
   busy: boolean;
 }) {
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -67,14 +67,15 @@ function BackupRow({ backup, onRestore, onDelete, apiBase, busy }: {
       </div>
 
       <div className="flex items-center gap-2 shrink-0">
-        <a
-          href={`${apiBase}/backups/${backup.id}/download`}
-          download
+        <button
+          type="button"
+          onClick={() => onDownload(backup.id)}
+          disabled={busy}
           className="inline-flex items-center gap-1.5 rounded-lg border border-surface-400/30 bg-surface-200/60 hover:bg-surface-200 px-2.5 py-1.5 text-xs text-slate-300 transition-colors"
           title="Download as JSON"
         >
           <Download className="h-3.5 w-3.5" />
-        </a>
+        </button>
 
         {confirmRestore ? (
           <div className="flex flex-wrap items-center gap-2">
@@ -129,7 +130,6 @@ function BackupRow({ backup, onRestore, onDelete, apiBase, busy }: {
 export default function BackupPage() {
   const qc = useQueryClient();
   const [restoreResult, setRestoreResult] = useState<RestoreResult | null>(null);
-  const apiBase = import.meta.env.VITE_API_URL ?? '/api';
 
   const { data: backups = [], isLoading } = useQuery({
     queryKey: ['backups'],
@@ -149,6 +149,9 @@ export default function BackupPage() {
   const deleteMutation = useMutation({
     mutationFn: backupService.delete,
     onSuccess: () => qc.invalidateQueries({ queryKey: ['backups'] }),
+  });
+  const downloadMutation = useMutation({
+    mutationFn: backupService.download,
   });
 
   const manualCount = backups.filter((b) => b.trigger === 'manual').length;
@@ -229,8 +232,8 @@ export default function BackupPage() {
                 <BackupRow
                   key={backup.id}
                   backup={backup}
-                  apiBase={apiBase}
-                  busy={restoreMutation.isPending || deleteMutation.isPending}
+                  busy={restoreMutation.isPending || deleteMutation.isPending || downloadMutation.isPending}
+                  onDownload={(id) => downloadMutation.mutate(id)}
                   onRestore={(id) => restoreMutation.mutate(id)}
                   onDelete={(id) => deleteMutation.mutate(id)}
                 />

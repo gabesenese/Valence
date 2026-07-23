@@ -35,5 +35,13 @@ export const backupService = {
     await api.delete(`/backups/${id}`);
   },
 
-  downloadUrl: (id: string): string => `/api/backups/${id}/download`,
+  download: async (id: string): Promise<void> => {
+    const res = await api.get(`/backups/${id}/download`, { responseType: 'blob' });
+    const url = URL.createObjectURL(new Blob([res.data as BlobPart], { type: 'application/json' }));
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `valence-backup-${id}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  },
 };
