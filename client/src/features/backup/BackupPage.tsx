@@ -22,6 +22,9 @@ function formatDate(iso: string): string {
 
 function RestoreBanner({ result, onDismiss }: { result: RestoreResult; onDismiss: () => void }) {
   const total = result.properties + result.tenants + result.leases + result.financialRecords;
+  const skippedTotal = result.skipped
+    ? result.skipped.properties + result.skipped.tenants + result.skipped.leases + result.skipped.financialRecords
+    : 0;
   return (
     <div className="flex items-start gap-3 rounded-xl border border-success/30 bg-success/10 px-4 py-3">
       <CheckCircle2 className="h-4 w-4 text-success shrink-0 mt-0.5" />
@@ -30,6 +33,11 @@ function RestoreBanner({ result, onDismiss }: { result: RestoreResult; onDismiss
         <p className="text-xs text-success/70 mt-0.5">
           {result.properties} properties · {result.tenants} tenants · {result.leases} leases · {result.financialRecords} financial records
         </p>
+        {skippedTotal > 0 && (
+          <p className="text-xs text-warning mt-0.5">
+            {skippedTotal} record{skippedTotal === 1 ? '' : 's'} in the snapshot could not be restored and {skippedTotal === 1 ? 'was' : 'were'} skipped.
+          </p>
+        )}
       </div>
       <button onClick={onDismiss} className="text-success/50 hover:text-success text-xs">✕</button>
     </div>

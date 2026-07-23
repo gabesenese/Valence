@@ -4,6 +4,10 @@ import { logAudit } from '../audit/audit.service';
 
 const MAX_AUTOMATED_BACKUPS = 30;
 export const MAX_MANUAL_BACKUPS = 10;
+const MAX_IMPORT_BACKUPS = 10;
+
+const BACKUP_JOB_LOCK_ID = 'scheduled_backups';
+const BACKUP_JOB_LOCK_MS = 30 * 60 * 1000;
 
 
 interface SnapshotProperty {
@@ -74,14 +78,36 @@ async function buildSnapshot(userId: string): Promise<BackupSnapshot> {
 }
 
 
+async function pruneBackups(userId: string, trigger: string, keep: number): Promise<void> {
+  const backups = await prisma.backup.findMany({
+    where: { userId, trigger },
+    orderBy: { createdAt: 'desc' },
+    select: { id: true },
+  });
+  if (backups.length > keep) {
+    const toDelete = backups.slice(keep).map((b) => b.id);
+    await prisma.backup.deleteMany({ where: { id: { in: toDelete } } });
+  }
+}
+
 export async function createBackup(userId: string, label: string, trigger: 'manual' | 'automated' | 'import' = 'manual') {
   const snapshot = await buildSnapshot(userId);
   const sizeBytes = Buffer.byteLength(JSON.stringify(snapshot), 'utf8');
 
-  return prisma.backup.create({
+  const backup = await prisma.backup.create({
     data: { userId, label, trigger, sizeBytes, snapshot: snapshot as object },
     select: { id: true, label: true, trigger: true, sizeBytes: true, createdAt: true },
   });
+
+  // Import-triggered backups are created automatically on every CSV import and
+  // previously had no retention cap, so they accumulated without bound.
+  if (trigger === 'import') {
+    await pruneBackups(userId, 'import', MAX_IMPORT_BACKUPS).catch((err) =>
+      logger.warn(`Import backup pruning failed for user ${userId}`, { error: err }),
+    );
+  }
+
+  return backup;
 }
 
 export async function listBackups(userId: string) {
@@ -111,8 +137,14 @@ export async function restoreBackup(id: string, userId: string) {
 
   if (!isBackupSnapshot(raw)) throw new Error('Invalid or corrupted backup snapshot');
 
+  // Safety net: capture current state before mutating anything, so a restore
+  // that turns out to be a mistake is itself reversible. Counts toward the
+  // automated retention cap, so these prune themselves over time.
+  await createBackup(userId, `Pre-restore safety — ${new Date().toLocaleDateString('en-CA')}`, 'automated');
+
   const { properties, tenants, leases, financialRecords } = raw.data;
   const restored = { properties: 0, tenants: 0, leases: 0, financialRecords: 0 };
+  const skipped = { properties: 0, tenants: 0, leases: 0, financialRecords: 0 };
 
   await prisma.$transaction(async (tx) => {
     /*
@@ -141,7 +173,7 @@ export async function restoreBackup(id: string, userId: string) {
 
     await Promise.all([
       ...properties.map(async (p) => {
-        if (foreignProp.has(p.id)) return;
+        if (foreignProp.has(p.id)) { skipped.properties++; return; }
         await tx.property.upsert({
           where: { id: p.id },
           create: {
@@ -178,7 +210,7 @@ export async function restoreBackup(id: string, userId: string) {
         restored.properties++;
       }),
       ...tenants.map(async (t) => {
-        if (foreignTenant.has(t.id)) return;
+        if (foreignTenant.has(t.id)) { skipped.tenants++; return; }
         await tx.tenant.upsert({
           where: { id: t.id },
           create: {
@@ -203,7 +235,7 @@ export async function restoreBackup(id: string, userId: string) {
     ]);
 
     await Promise.all(leases.map(async (l) => {
-      if (foreignLease.has(l.id) || !callerPropIds.has(l.propertyId) || !callerTenantIds.has(l.tenantId)) return;
+      if (foreignLease.has(l.id) || !callerPropIds.has(l.propertyId) || !callerTenantIds.has(l.tenantId)) { skipped.leases++; return; }
       await tx.lease.upsert({
         where: { id: l.id },
         create: {
@@ -239,7 +271,7 @@ export async function restoreBackup(id: string, userId: string) {
     }));
 
     await Promise.all(financialRecords.map(async (f) => {
-      if (foreignRecord.has(f.id) || !callerPropIds.has(f.propertyId) || (f.leaseId && !callerLeaseIds.has(f.leaseId))) return;
+      if (foreignRecord.has(f.id) || !callerPropIds.has(f.propertyId) || (f.leaseId && !callerLeaseIds.has(f.leaseId))) { skipped.financialRecords++; return; }
       await tx.financialRecord.upsert({
         where: { id: f.id },
         create: {
@@ -262,14 +294,55 @@ export async function restoreBackup(id: string, userId: string) {
       });
       restored.financialRecords++;
     }));
+  }, {
+    // Large portfolios mean hundreds of upserts in one transaction; the
+    // Prisma default of 5s aborts restores for exactly the users who need
+    // them most.
+    maxWait: 10_000,
+    timeout: 60_000,
   });
 
-  void logAudit({ userId, action: 'RESTORE', entity: 'backup', entityId: id, meta: { ...restored } });
-  return restored;
+  void logAudit({ userId, action: 'RESTORE', entity: 'backup', entityId: id, meta: { ...restored, skipped } });
+  return { ...restored, skipped };
 }
 
 
+async function tryAcquireBackupLock(): Promise<boolean> {
+  const now = new Date();
+  const until = new Date(now.getTime() + BACKUP_JOB_LOCK_MS);
+
+  const updated = await prisma.jobLock.updateMany({
+    where: { id: BACKUP_JOB_LOCK_ID, lockedUntil: { lt: now } },
+    data: { lockedAt: now, lockedUntil: until },
+  });
+  if (updated.count > 0) return true;
+
+  try {
+    await prisma.jobLock.create({ data: { id: BACKUP_JOB_LOCK_ID, lockedAt: now, lockedUntil: until } });
+    return true;
+  } catch {
+    return false; // unique constraint — another instance holds the lock
+  }
+}
+
+async function releaseBackupLock(): Promise<void> {
+  await prisma.jobLock.deleteMany({ where: { id: BACKUP_JOB_LOCK_ID } });
+}
+
 export async function runScheduledBackups(): Promise<void> {
+  if (!(await tryAcquireBackupLock())) {
+    logger.info('Scheduled backups skipped — another instance holds the lock');
+    return;
+  }
+
+  try {
+    await runScheduledBackupsInner();
+  } finally {
+    await releaseBackupLock().catch((err) => logger.warn('Backup lock release failed', { error: err }));
+  }
+}
+
+async function runScheduledBackupsInner(): Promise<void> {
   const users = await prisma.user.findMany({
     where: { isActive: true, isDemo: false },
     select: { id: true },
@@ -280,16 +353,7 @@ export async function runScheduledBackups(): Promise<void> {
       const label = `Automated — ${new Date().toLocaleDateString('en-CA')}`;
       await createBackup(user.id, label, 'automated');
 
-      const automated = await prisma.backup.findMany({
-        where: { userId: user.id, trigger: 'automated' },
-        orderBy: { createdAt: 'desc' },
-        select: { id: true },
-      });
-
-      if (automated.length > MAX_AUTOMATED_BACKUPS) {
-        const toDelete = automated.slice(MAX_AUTOMATED_BACKUPS).map((b) => b.id);
-        await prisma.backup.deleteMany({ where: { id: { in: toDelete } } });
-      }
+      await pruneBackups(user.id, 'automated', MAX_AUTOMATED_BACKUPS);
     } catch (err) {
       logger.warn(`Scheduled backup failed for user ${user.id}`, { error: err });
     }

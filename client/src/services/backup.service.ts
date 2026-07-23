@@ -13,6 +13,13 @@ export interface RestoreResult {
   tenants: number;
   leases: number;
   financialRecords: number;
+  /** Rows in the snapshot that were not restored (invalid or not owned by the caller). */
+  skipped?: {
+    properties: number;
+    tenants: number;
+    leases: number;
+    financialRecords: number;
+  };
 }
 
 export const backupService = {
