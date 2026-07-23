@@ -26,7 +26,15 @@ const txMock = {
 
 const { prismaMock } = vi.hoisted(() => ({
   prismaMock: {
-    backup: { findFirst: vi.fn() },
+    backup: {
+      findFirst: vi.fn(),
+      // restoreBackup takes a pre-restore safety snapshot via createBackup
+      create: vi.fn(() => Promise.resolve({ id: 'safety-backup', label: '', trigger: 'automated', sizeBytes: 0, createdAt: new Date() })),
+    },
+    property: { findMany: vi.fn(() => Promise.resolve([])) },
+    tenant: { findMany: vi.fn(() => Promise.resolve([])) },
+    lease: { findMany: vi.fn(() => Promise.resolve([])) },
+    financialRecord: { findMany: vi.fn(() => Promise.resolve([])) },
     $transaction: vi.fn((cb: (tx: unknown) => unknown) => cb(txMock)),
   },
 }));
@@ -56,5 +64,14 @@ describe('backup restore — account scoping', () => {
     expect(upsertedIds).toEqual(['own-prop']);
     expect(upsertedIds).not.toContain('foreign-prop');
     expect(result.properties).toBe(1);
+    expect(result.skipped.properties).toBe(1);
+  });
+
+  it('takes a pre-restore safety snapshot before mutating data', async () => {
+    await restoreBackup('backup-1', OWNER);
+    expect(prismaMock.backup.create).toHaveBeenCalledTimes(1);
+    const createOrder = prismaMock.backup.create.mock.invocationCallOrder[0];
+    const txOrder = prismaMock.$transaction.mock.invocationCallOrder[0];
+    expect(createOrder).toBeLessThan(txOrder);
   });
 });
