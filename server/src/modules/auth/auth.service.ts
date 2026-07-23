@@ -212,7 +212,7 @@ export async function removeMember(targetUserId: string, actor: { id: string }) 
     select: { id: true, email: true, firstName: true, lastName: true, role: true, isActive: true },
   });
   await prisma.refreshToken.deleteMany({ where: { userId: targetUserId } });
-  void logAudit({ userId: actor.id, action: 'REMOVE', entity: 'user', entityId: targetUserId, entityName: target.email });
+  void logAudit({ userId: actor.id, action: 'DELETE', entity: 'user', entityId: targetUserId, entityName: target.email });
   return user;
 }
 
