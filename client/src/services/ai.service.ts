@@ -157,6 +157,7 @@ export interface SimulationResult {
     timeToImpact:    string;
     confidence:      'high' | 'medium' | 'low';
   };
+  assumptions?: string[];
   computedAt: string;
 }
 
