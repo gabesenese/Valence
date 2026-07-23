@@ -8,7 +8,7 @@ import { applyExtractedLease } from './lease-apply.service';
 import { extractPropertyFromPDF } from './property-extractor.service';
 import { generateExecutiveBrief } from './executive-brief.service';
 import { computeHealthScore } from './health-score.service';
-import { runSimulation, getActiveTenantsForSimulator } from './scenario-simulator.service';
+import { runSimulation, getActiveTenantsForSimulator, getSimulatorOptions } from './scenario-simulator.service';
 import { authenticate } from '../../middleware/authenticate';
 import { requireOwner } from '../../middleware/ownership';
 import { aiLimiter } from '../../middleware/rateLimits';
@@ -95,6 +95,10 @@ router.post('/simulate', planGate('ESSENTIALS'), meterUsage('IMPACT_SIMULATION')
 
 router.get('/simulate/tenants', async (req: Request, res: Response, next: NextFunction) => {
   try { sendSuccess(res, await getActiveTenantsForSimulator(req.user!.id)); } catch (e) { next(e); }
+});
+
+router.get('/simulate/options', async (req: Request, res: Response, next: NextFunction) => {
+  try { sendSuccess(res, await getSimulatorOptions(req.user!.id)); } catch (e) { next(e); }
 });
 
 

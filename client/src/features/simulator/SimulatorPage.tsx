@@ -4,7 +4,7 @@ import {
   TrendingDown, TrendingUp, AlertTriangle, Users,
   RefreshCw, ArrowRight, CheckCircle2, Zap, Building2, Info,
 } from 'lucide-react';
-import { aiService, type ScenarioType, type SimulationResult } from '@/services/ai.service';
+import { aiService, type ScenarioType, type SimulationResult, type SimulatorOptions } from '@/services/ai.service';
 import { formatCurrency, compactCurrency } from '@/utils/format';
 import { Card, CardBody } from '@/components/ui/Card';
 import { Select } from '@/components/ui/Select';
@@ -65,6 +65,36 @@ function isValidPct(v: unknown, max: number): boolean {
   return Number.isFinite(n) && n > 0 && n <= max;
 }
 
+function useSimulatorOptions() {
+  return useQuery({
+    queryKey: ['simulator', 'options'],
+    queryFn:  aiService.getSimulatorOptions,
+    staleTime: 60_000,
+  });
+}
+
+/** Property scope selector with an explicit "entire portfolio" (none) option. */
+function ScopeSelect({ value, onChange, options }: {
+  value: string | undefined;
+  onChange: (propertyId: string | undefined) => void;
+  options: SimulatorOptions | undefined;
+}) {
+  return (
+    <div>
+      <label className="text-xs font-medium text-slate-400 block mb-1.5">Apply To</label>
+      <Select
+        size="md"
+        value={value ?? ''}
+        onChange={(v) => onChange(v || undefined)}
+        options={[
+          { value: '', label: 'Entire portfolio' },
+          ...(options?.properties.map(p => ({ value: p.id, label: p.name })) ?? []),
+        ]}
+      />
+    </div>
+  );
+}
+
 
 function TenantDepartureForm({ value, onChange }: { value: Record<string, unknown>; onChange: (v: Record<string, unknown>) => void }) {
   const { data: tenants, isLoading } = useQuery({
@@ -96,8 +126,11 @@ function TenantDepartureForm({ value, onChange }: { value: Record<string, unknow
 }
 
 function OccupancyDropForm({ value, onChange }: { value: Record<string, unknown>; onChange: (v: Record<string, unknown>) => void }) {
+  const { data: options } = useSimulatorOptions();
   return (
-    <div>
+    <div className="flex flex-col gap-3">
+      <ScopeSelect value={value.propertyId as string | undefined} onChange={(propertyId) => onChange({ ...value, propertyId })} options={options} />
+      <div>
       <label className="text-xs font-medium text-slate-400 block mb-1.5">Occupancy Drop (%)</label>
       <input
         type="number" min={1} max={100}
@@ -106,13 +139,16 @@ function OccupancyDropForm({ value, onChange }: { value: Record<string, unknown>
         className="w-full rounded-lg border border-surface-400/50 bg-surface-200 px-3 py-2 text-sm text-fg focus:border-brand-500 focus:outline-none"
       />
       <p className="mt-1 text-[11px] text-slate-600">e.g. 5 = occupancy drops from 90% to 85%</p>
+      </div>
     </div>
   );
 }
 
 function ExpenseIncreaseForm({ value, onChange }: { value: Record<string, unknown>; onChange: (v: Record<string, unknown>) => void }) {
+  const { data: options } = useSimulatorOptions();
   return (
     <div className="flex flex-col gap-3">
+      <ScopeSelect value={value.propertyId as string | undefined} onChange={(propertyId) => onChange({ ...value, propertyId })} options={options} />
       <div>
         <label className="text-xs font-medium text-slate-400 block mb-1.5">Expense Increase (%)</label>
         <input
@@ -123,30 +159,57 @@ function ExpenseIncreaseForm({ value, onChange }: { value: Record<string, unknow
         />
       </div>
       <div>
-        <label className="text-xs font-medium text-slate-400 block mb-1.5">Category (optional)</label>
-        <input
-          type="text"
+        <label className="text-xs font-medium text-slate-400 block mb-1.5">Category</label>
+        <Select
+          size="md"
           value={(value.category as string) ?? ''}
-          placeholder="e.g. Maintenance, Utilities…"
-          onChange={e => onChange({ ...value, category: e.target.value })}
-          className="w-full rounded-lg border border-surface-400/50 bg-surface-200 px-3 py-2 text-sm text-fg placeholder-slate-600 focus:border-brand-500 focus:outline-none"
+          onChange={(v) => onChange({ ...value, category: v || undefined })}
+          options={[
+            { value: '', label: 'All categories' },
+            ...(options?.expenseCategories.map(c => ({ value: c, label: c })) ?? []),
+          ]}
         />
+        {options && options.expenseCategories.length === 0 && (
+          <p className="mt-1 text-[11px] text-slate-600">No categorised expenses recorded yet — increase applies to total expenses.</p>
+        )}
       </div>
     </div>
   );
 }
 
 function RentIncreaseForm({ value, onChange }: { value: Record<string, unknown>; onChange: (v: Record<string, unknown>) => void }) {
+  const { data: options } = useSimulatorOptions();
+  const propertyId = value.propertyId as string | undefined;
+  const leases = (options?.leases ?? []).filter(l => !propertyId || l.propertyId === propertyId);
   return (
-    <div>
-      <label className="text-xs font-medium text-slate-400 block mb-1.5">Rent Increase (%)</label>
-      <input
-        type="number" min={0.1} max={100} step={0.5}
-        value={(value.percentageIncrease as number) ?? 3}
-        onChange={e => onChange({ ...value, percentageIncrease: Number(e.target.value) })}
-        className="w-full rounded-lg border border-surface-400/50 bg-surface-200 px-3 py-2 text-sm text-fg focus:border-brand-500 focus:outline-none"
+    <div className="flex flex-col gap-3">
+      <ScopeSelect
+        value={propertyId}
+        onChange={(pid) => onChange({ ...value, propertyId: pid, leaseId: undefined })}
+        options={options}
       />
-      <p className="mt-1 text-[11px] text-slate-600">Applied across all active leases at renewal</p>
+      <div>
+        <label className="text-xs font-medium text-slate-400 block mb-1.5">Lease</label>
+        <Select
+          size="md"
+          value={(value.leaseId as string) ?? ''}
+          onChange={(v) => onChange({ ...value, leaseId: v || undefined })}
+          options={[
+            { value: '', label: propertyId ? 'All leases at this property' : 'All leases in portfolio' },
+            ...leases.map(l => ({ value: l.id, label: `${l.label} · ${compactCurrency(l.monthlyRent)}/mo` })),
+          ]}
+        />
+      </div>
+      <div>
+        <label className="text-xs font-medium text-slate-400 block mb-1.5">Rent Increase (%)</label>
+        <input
+          type="number" min={0.1} max={100} step={0.5}
+          value={(value.percentageIncrease as number) ?? 3}
+          onChange={e => onChange({ ...value, percentageIncrease: Number(e.target.value) })}
+          className="w-full rounded-lg border border-surface-400/50 bg-surface-200 px-3 py-2 text-sm text-fg focus:border-brand-500 focus:outline-none"
+        />
+        <p className="mt-1 text-[11px] text-slate-600">Applied at renewal to the selected scope</p>
+      </div>
     </div>
   );
 }

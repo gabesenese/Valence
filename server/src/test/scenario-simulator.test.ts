@@ -11,9 +11,9 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 const { prismaMock } = vi.hoisted(() => ({
   prismaMock: {
-    property: { findMany: vi.fn() },
+    property: { findMany: vi.fn(), findFirst: vi.fn() },
     financialRecord: { aggregate: vi.fn() },
-    lease: { aggregate: vi.fn(), findMany: vi.fn() },
+    lease: { aggregate: vi.fn(), findMany: vi.fn(), findFirst: vi.fn() },
   },
 }));
 
@@ -126,11 +126,44 @@ describe('input validation — garbage never burns a metered credit', () => {
 });
 
 describe('rent increase — the upside scenario', () => {
-  it('projects revenue growth with a churn disclosure', async () => {
+  it('projects portfolio-wide growth with churn disclosure and explicit scope', async () => {
     seedPortfolio({ revenue3mo: 300_000, expenses3mo: 90_000 });
     const res = await runSimulation({ scenario: 'rent_increase', params: { percentageIncrease: 3 } }, USER);
     expect(res.impact.revenueChange).toBe(3000); // 100k/mo * 3%
     expect(res.impact.estimatedAnnualImpact).toBe(36_000);
     expect(res.assumptions.join(' ')).toMatch(/churn/i);
+    expect(res.assumptions[0]).toMatch(/entire portfolio/i);
+  });
+
+  it('scopes to a single lease when leaseId is given', async () => {
+    seedPortfolio({ revenue3mo: 300_000, expenses3mo: 90_000 });
+    prismaMock.lease.findFirst.mockResolvedValue({ baseRent: 5_000, tenant: { name: 'Acme Corp' } });
+    const res = await runSimulation({ scenario: 'rent_increase', params: { percentageIncrease: 3, leaseId: 'l1' } }, USER);
+    expect(res.impact.revenueChange).toBe(150); // 5k * 3%
+    expect(res.assumptions.join(' ')).toMatch(/single lease/i);
+    expect(res.assumptions.join(' ')).toMatch(/Acme Corp/);
+  });
+
+  it('rejects a lease that is missing or not owned by the caller', async () => {
+    seedPortfolio({ revenue3mo: 300_000 });
+    prismaMock.lease.findFirst.mockResolvedValue(null);
+    await expect(
+      runSimulation({ scenario: 'rent_increase', params: { percentageIncrease: 3, leaseId: 'other-org-lease' } }, USER),
+    ).rejects.toThrow(/not found or is not active/i);
+  });
+});
+
+describe('property scoping — explicit in every result', () => {
+  it('names the property in the scope assumption and rejects unowned properties', async () => {
+    seedPortfolio({ revenue3mo: 300_000, expenses3mo: 90_000 });
+    prismaMock.property.findFirst.mockResolvedValue({ name: 'Riverside Plaza' });
+    const res = await runSimulation(
+      { scenario: 'expense_increase', params: { percentageIncrease: 10, propertyId: 'p1' } }, USER);
+    expect(res.assumptions[0]).toBe('Scope: Riverside Plaza only.');
+
+    prismaMock.property.findFirst.mockResolvedValue(null);
+    await expect(
+      runSimulation({ scenario: 'expense_increase', params: { percentageIncrease: 10, propertyId: 'stolen' } }, USER),
+    ).rejects.toThrow(/not found/i);
   });
 });
