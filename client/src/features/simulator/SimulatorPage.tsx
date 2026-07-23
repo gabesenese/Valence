@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import {
   TrendingDown, TrendingUp, AlertTriangle, Users,
-  RefreshCw, ArrowRight, CheckCircle2, Zap,
+  RefreshCw, ArrowRight, CheckCircle2, Zap, Building2, Info,
 } from 'lucide-react';
 import { aiService, type ScenarioType, type SimulationResult } from '@/services/ai.service';
 import { formatCurrency, compactCurrency } from '@/utils/format';
@@ -42,7 +42,28 @@ const SCENARIOS: {
     accentColor: '#f97316',
     defaultParams: { percentageIncrease: 10 },
   },
+  {
+    type: 'rent_increase',
+    label: 'Rent Increase',
+    question: 'What if you raise rents by X%?',
+    icon: TrendingUp,
+    accentColor: '#22c55e',
+    defaultParams: { percentageIncrease: 3 },
+  },
+  {
+    type: 'acquisition',
+    label: 'Acquisition',
+    question: 'What if you buy another property?',
+    icon: Building2,
+    accentColor: '#8b5cf6',
+    defaultParams: { units: 10, monthlyRevenue: 20000, monthlyExpenses: 7000, propertyName: '' },
+  },
 ];
+
+function isValidPct(v: unknown, max: number): boolean {
+  const n = Number(v);
+  return Number.isFinite(n) && n > 0 && n <= max;
+}
 
 
 function TenantDepartureForm({ value, onChange }: { value: Record<string, unknown>; onChange: (v: Record<string, unknown>) => void }) {
@@ -115,10 +136,59 @@ function ExpenseIncreaseForm({ value, onChange }: { value: Record<string, unknow
   );
 }
 
+function RentIncreaseForm({ value, onChange }: { value: Record<string, unknown>; onChange: (v: Record<string, unknown>) => void }) {
+  return (
+    <div>
+      <label className="text-xs font-medium text-slate-400 block mb-1.5">Rent Increase (%)</label>
+      <input
+        type="number" min={0.1} max={100} step={0.5}
+        value={(value.percentageIncrease as number) ?? 3}
+        onChange={e => onChange({ ...value, percentageIncrease: Number(e.target.value) })}
+        className="w-full rounded-lg border border-surface-400/50 bg-surface-200 px-3 py-2 text-sm text-fg focus:border-brand-500 focus:outline-none"
+      />
+      <p className="mt-1 text-[11px] text-slate-600">Applied across all active leases at renewal</p>
+    </div>
+  );
+}
+
+function AcquisitionForm({ value, onChange }: { value: Record<string, unknown>; onChange: (v: Record<string, unknown>) => void }) {
+  const num = (field: string, label: string, min: number, placeholder?: string) => (
+    <div>
+      <label className="text-xs font-medium text-slate-400 block mb-1.5">{label}</label>
+      <input
+        type="number" min={min}
+        value={(value[field] as number) ?? ''}
+        placeholder={placeholder}
+        onChange={e => onChange({ ...value, [field]: Number(e.target.value) })}
+        className="w-full rounded-lg border border-surface-400/50 bg-surface-200 px-3 py-2 text-sm text-fg placeholder-slate-600 focus:border-brand-500 focus:outline-none"
+      />
+    </div>
+  );
+  return (
+    <div className="flex flex-col gap-3">
+      {num('units', 'Units', 1)}
+      {num('monthlyRevenue', 'Expected Monthly Revenue', 0)}
+      {num('monthlyExpenses', 'Expected Monthly Expenses', 0)}
+      <div>
+        <label className="text-xs font-medium text-slate-400 block mb-1.5">Property Name (optional)</label>
+        <input
+          type="text"
+          value={(value.propertyName as string) ?? ''}
+          placeholder="e.g. Riverside Plaza"
+          onChange={e => onChange({ ...value, propertyName: e.target.value })}
+          className="w-full rounded-lg border border-surface-400/50 bg-surface-200 px-3 py-2 text-sm text-fg placeholder-slate-600 focus:border-brand-500 focus:outline-none"
+        />
+      </div>
+    </div>
+  );
+}
+
 const PARAM_FORMS: Record<string, React.FC<{ value: Record<string, unknown>; onChange: (v: Record<string, unknown>) => void }>> = {
   tenant_departure: TenantDepartureForm,
   occupancy_drop:   OccupancyDropForm,
   expense_increase: ExpenseIncreaseForm,
+  rent_increase:    RentIncreaseForm,
+  acquisition:      AcquisitionForm,
 };
 
 
@@ -233,6 +303,18 @@ function ResultsPanel({ result }: { result: SimulationResult }) {
         ))}
       </div>
 
+      {(result.assumptions?.length ?? 0) > 0 && (
+        <div className="flex items-start gap-3 rounded-xl border border-warning/20 bg-warning/5 px-4 py-3">
+          <Info className="h-4 w-4 text-warning shrink-0 mt-0.5" />
+          <div className="flex flex-col gap-1">
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-warning/80">Assumptions behind these numbers</p>
+            {result.assumptions!.map((a, i) => (
+              <p key={i} className="text-xs leading-relaxed text-slate-400">{a}</p>
+            ))}
+          </div>
+        </div>
+      )}
+
       <p className="text-[11px] text-slate-600 text-center">
         Time to full impact: <span className="text-slate-400">{analysis.timeToImpact}</span>
       </p>
@@ -257,12 +339,24 @@ export default function ImpactAnalysisPage() {
 
   const scenario   = SCENARIOS.find(s => s.type === selected)!;
   const ParamForm  = PARAM_FORMS[selected];
-  const canSubmit  = selected !== 'tenant_departure' || !!params.tenantId;
+  const canSubmit  = (() => {
+    switch (selected) {
+      case 'tenant_departure': return !!params.tenantId;
+      case 'occupancy_drop':   return isValidPct(params.percentageDrop, 100);
+      case 'expense_increase': return isValidPct(params.percentageIncrease, 500);
+      case 'rent_increase':    return isValidPct(params.percentageIncrease, 100);
+      case 'acquisition': {
+        const u = Number(params.units), r = Number(params.monthlyRevenue), e = Number(params.monthlyExpenses);
+        return Number.isFinite(u) && u >= 1 && Number.isFinite(r) && r >= 0 && Number.isFinite(e) && e >= 0;
+      }
+      default: return false;
+    }
+  })();
 
   return (
     <div className="flex flex-col gap-4 p-4 animate-fade-in sm:p-5">
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         {SCENARIOS.map(s => {
           const active = s.type === selected;
           return (

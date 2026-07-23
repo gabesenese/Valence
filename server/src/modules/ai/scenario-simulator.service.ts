@@ -1,6 +1,8 @@
 import Groq from 'groq-sdk';
 import { prisma } from '../../infrastructure/database';
-import { startOfMonth } from 'date-fns';
+import { env } from '../../config/env';
+import { ValidationError } from '../../utils/errors';
+import { startOfMonth, subMonths } from 'date-fns';
 
 
 export type ScenarioType =
@@ -62,23 +64,50 @@ export interface SimulationResult {
     timeToImpact:    string;
     confidence:      'high' | 'medium' | 'low';
   };
+  /** Estimates and simplifications the numbers rest on. Always shown to the user. */
+  assumptions: string[];
   computedAt: string;
 }
 
+type Confidence = 'high' | 'medium' | 'low';
+const CONFIDENCE_RANK: Record<Confidence, number> = { low: 0, medium: 1, high: 2 };
+function minConfidence(a: Confidence, b: Confidence): Confidence {
+  return CONFIDENCE_RANK[a] <= CONFIDENCE_RANK[b] ? a : b;
+}
+
+const EXPENSE_RATIO_ESTIMATE = 0.35;
+const fmtMoney = (n: number) => `$${Math.round(Math.abs(n)).toLocaleString()}`;
+
 
 async function getCurrentState(userId: string, propertyId?: string) {
-  const now        = new Date();
-  const monthStart = startOfMonth(now);
+  const now          = new Date();
+  const monthStart   = startOfMonth(now);
+  const threeMoStart = startOfMonth(subMonths(now, 3));
 
   const propertyFilter    = propertyId ? { id: propertyId, ownerId: userId } : { ownerId: userId };
   const financialFilter   = propertyId
     ? { propertyId, property: { ownerId: userId } }
     : { property: { ownerId: userId } };
 
-  const [properties, revAgg, expAgg, leaseAgg] = await Promise.all([
+  /*
+   * Baselines use the trailing 3 complete months (÷3) rather than the
+   * current month, which is partial and swings the simulation by calendar
+   * day. Current month is the fallback, then the rent roll for revenue.
+   * Every estimate is recorded in `assumptions` and lowers confidence —
+   * the simulator must never present an invented number as recorded data.
+   */
+  const [properties, revPrev, expPrev, revCur, expCur, leaseAgg] = await Promise.all([
     prisma.property.findMany({
       where: { status: 'ACTIVE', deletedAt: null, ...propertyFilter },
       select: { totalUnits: true, _count: { select: { leases: { where: { status: 'ACTIVE', deletedAt: null } } } } },
+    }),
+    prisma.financialRecord.aggregate({
+      where: { ...financialFilter, type: 'REVENUE', periodStart: { gte: threeMoStart, lt: monthStart }, status: { not: 'VOID' } },
+      _sum: { amount: true },
+    }),
+    prisma.financialRecord.aggregate({
+      where: { ...financialFilter, type: 'EXPENSE', periodStart: { gte: threeMoStart, lt: monthStart }, status: { not: 'VOID' } },
+      _sum: { amount: true },
     }),
     prisma.financialRecord.aggregate({
       where: { ...financialFilter, type: 'REVENUE', periodStart: { gte: monthStart }, status: { not: 'VOID' } },
@@ -91,26 +120,67 @@ async function getCurrentState(userId: string, propertyId?: string) {
     prisma.lease.aggregate({
       where: {
         status: 'ACTIVE', deletedAt: null,
-        property: { ownerId: userId, ...(propertyId ? { id: propertyId } : {}) },
+        property: { ownerId: userId, deletedAt: null, ...(propertyId ? { id: propertyId } : {}) },
       },
       _sum: { baseRent: true },
       _count: true,
     }),
   ]);
 
-  const totalUnits     = properties.reduce((s, p) => s + p.totalUnits, 0);
-  const occupiedUnits  = properties.reduce((s, p) => s + p._count.leases, 0);
-  const monthlyRevenue  = Number(revAgg._sum.amount ?? 0) || Number(leaseAgg._sum.baseRent ?? 0);
-  const monthlyExpenses = Number(expAgg._sum.amount ?? 0);
+  const totalUnits    = properties.reduce((s, p) => s + p.totalUnits, 0);
+  const occupiedUnits = properties.reduce((s, p) => s + p._count.leases, 0);
+
+  const assumptions: string[] = [];
+  let dataConfidence: Confidence = 'high';
+
+  const revTrailing = Number(revPrev._sum.amount ?? 0) / 3;
+  const revCurrent  = Number(revCur._sum.amount ?? 0);
+  const rentRoll    = Number(leaseAgg._sum.baseRent ?? 0);
+  let monthlyRevenue: number;
+  if (revTrailing > 0) {
+    monthlyRevenue = revTrailing;
+  } else if (revCurrent > 0) {
+    monthlyRevenue = revCurrent;
+    assumptions.push('Revenue baseline uses the current (partial) month only — no records in the previous 3 months.');
+    dataConfidence = minConfidence(dataConfidence, 'medium');
+  } else {
+    monthlyRevenue = rentRoll;
+    if (rentRoll > 0) {
+      assumptions.push(`Revenue baseline of ${fmtMoney(rentRoll)}/mo is the contracted rent roll — no revenue records found.`);
+      dataConfidence = minConfidence(dataConfidence, 'medium');
+    }
+  }
+
+  const expTrailing = Number(expPrev._sum.amount ?? 0) / 3;
+  const expCurrent  = Number(expCur._sum.amount ?? 0);
+  let monthlyExpenses: number;
+  let expensesEstimated = false;
+  if (expTrailing > 0) {
+    monthlyExpenses = expTrailing;
+  } else if (expCurrent > 0) {
+    monthlyExpenses = expCurrent;
+    assumptions.push('Expense baseline uses the current (partial) month only — no records in the previous 3 months.');
+    dataConfidence = minConfidence(dataConfidence, 'medium');
+  } else {
+    monthlyExpenses = monthlyRevenue * EXPENSE_RATIO_ESTIMATE;
+    expensesEstimated = true;
+    if (monthlyExpenses > 0) {
+      assumptions.push(`No expense records found — expenses estimated at ${fmtMoney(monthlyExpenses)}/mo (${EXPENSE_RATIO_ESTIMATE * 100}% of revenue, an industry heuristic). Record actual expenses for reliable results.`);
+      dataConfidence = minConfidence(dataConfidence, 'low');
+    }
+  }
 
   return {
     monthlyRevenue,
     monthlyExpenses,
+    expensesEstimated,
     noi: monthlyRevenue - monthlyExpenses,
     occupancyRate: totalUnits > 0 ? (occupiedUnits / totalUnits) * 100 : 0,
     totalUnits,
     activeLeases: leaseAgg._count,
     occupiedUnits,
+    assumptions,
+    dataConfidence,
   };
 }
 
@@ -119,43 +189,85 @@ async function calcOccupancyDrop(
   params: OccupancyDropParams,
   state: Awaited<ReturnType<typeof getCurrentState>>,
 ) {
-  const lostUnits      = Math.round(state.totalUnits * (params.percentageDrop / 100));
+  const assumptions: string[] = [];
+  const requestedUnits = Math.round(state.totalUnits * (params.percentageDrop / 100));
+  // You can't vacate more units than are occupied. Clamp, and say so.
+  const lostUnits = Math.min(requestedUnits, state.occupiedUnits);
+  if (lostUnits < requestedUnits) {
+    assumptions.push(`A ${params.percentageDrop}pp drop implies ${requestedUnits} units, but only ${state.occupiedUnits} are occupied — impact capped at full vacancy.`);
+  }
   const avgRentPerLease = state.activeLeases > 0 ? state.monthlyRevenue / state.activeLeases : 0;
-  const revChange      = -(lostUnits * avgRentPerLease);
-  const newOccupancy   = Math.max(0, state.occupancyRate - params.percentageDrop);
-  return { revChange, expChange: 0, newOccupancy };
+  assumptions.push('Assumes vacated units produce no revenue for the full projection period and each unit loses the portfolio-average rent.');
+  const revChange = -(lostUnits * avgRentPerLease);
+  const occDelta  = state.totalUnits > 0 ? -((lostUnits / state.totalUnits) * 100) : 0;
+  return { revChange, expChange: 0, occDelta, assumptions };
 }
 
-async function calcTenantDeparture(params: TenantDepartureParams, userId: string) {
-  if (!params.tenantId) return { revChange: 0, expChange: 0, newOccupancyDelta: 0, tenantName: 'Unknown' };
-  const lease = await prisma.lease.findFirst({
+async function calcTenantDeparture(
+  params: TenantDepartureParams,
+  userId: string,
+  state: Awaited<ReturnType<typeof getCurrentState>>,
+) {
+  const empty = { revChange: 0, expChange: 0, occDelta: 0, tenantName: 'Unknown', assumptions: [] as string[] };
+  if (!params.tenantId) return empty;
+  // A tenant can hold several leases — losing them means losing all of them.
+  const leases = await prisma.lease.findMany({
     where: {
       tenantId: params.tenantId,
       status: 'ACTIVE',
       deletedAt: null,
-      property: { ownerId: userId }, // enforce ownership
+      property: { ownerId: userId, deletedAt: null }, // enforce ownership
     },
-    include: {
-      tenant:   { select: { name: true } },
-      property: { select: { totalUnits: true, name: true } },
-    },
+    include: { tenant: { select: { name: true } } },
   });
-  if (!lease) return { revChange: 0, expChange: 0, newOccupancyDelta: 0, tenantName: 'Unknown' };
+  if (leases.length === 0) return empty;
 
-  const revChange      = -Number(lease.baseRent);
-  const occupancyDelta = lease.property.totalUnits > 0
-    ? -(1 / lease.property.totalUnits) * 100
-    : 0;
-  return { revChange, expChange: 0, newOccupancyDelta: occupancyDelta, tenantName: lease.tenant.name };
+  const revChange = -leases.reduce((sum, l) => sum + Number(l.baseRent), 0);
+  // Occupancy delta at the same scale as the occupancy rate it adjusts (portfolio or property).
+  const occDelta = state.totalUnits > 0 ? -((leases.length / state.totalUnits) * 100) : 0;
+  const tenantName = leases[0].tenant.name;
+  const assumptions = [
+    `${tenantName} holds ${leases.length} active lease${leases.length > 1 ? 's' : ''} totalling ${fmtMoney(revChange)}/mo — all are assumed lost.`,
+    'Assumes no replacement tenant for the full projection period; re-letting shortens the real impact.',
+  ];
+  return { revChange, expChange: 0, occDelta, tenantName, assumptions };
 }
 
-function calcExpenseIncrease(
+async function calcExpenseIncrease(
   params: ExpenseIncreaseParams,
   state: Awaited<ReturnType<typeof getCurrentState>>,
+  userId: string,
+  propertyId?: string,
 ) {
-  const base      = state.monthlyExpenses || state.monthlyRevenue * 0.35; // estimate if no records
+  const assumptions: string[] = [];
+  let base = state.monthlyExpenses; // already trailing-3-month or disclosed estimate
+
+  if (params.category?.trim()) {
+    const category     = params.category.trim();
+    const now          = new Date();
+    const monthStart   = startOfMonth(now);
+    const threeMoStart = startOfMonth(subMonths(now, 3));
+    const catAgg = await prisma.financialRecord.aggregate({
+      where: {
+        property: { ownerId: userId, ...(propertyId ? { id: propertyId } : {}) },
+        type: 'EXPENSE',
+        status: { not: 'VOID' },
+        category: { equals: category, mode: 'insensitive' },
+        periodStart: { gte: threeMoStart, lt: monthStart },
+      },
+      _sum: { amount: true },
+    });
+    const catBase = Number(catAgg._sum.amount ?? 0) / 3;
+    if (catBase > 0) {
+      base = catBase;
+      assumptions.push(`Increase applied to '${category}' expenses only (${fmtMoney(catBase)}/mo, trailing 3-month average).`);
+    } else {
+      assumptions.push(`No expense records found in category '${category}' — increase applied to total expenses instead.`);
+    }
+  }
+
   const expChange = base * (params.percentageIncrease / 100);
-  return { revChange: 0, expChange };
+  return { revChange: 0, expChange, assumptions };
 }
 
 function calcAcquisition(params: AcquisitionParams) {
@@ -178,7 +290,7 @@ function calcRentIncrease(
 
 let _client: Groq | null = null;
 function getClient() {
-  if (!_client) _client = new Groq({ apiKey: process.env.GROQ_API_KEY });
+  if (!_client) _client = new Groq({ apiKey: env.GROQ_API_KEY });
   return _client;
 }
 
@@ -196,6 +308,7 @@ async function generateAnalysis(
   current: SimulationResult['current'],
   projected: SimulationResult['projected'],
   impact: SimulationResult['impact'],
+  assumptions: string[],
 ): Promise<SimulationResult['analysis']> {
   const prompt = `You are a commercial real estate portfolio analyst.
 A property manager is running a scenario simulation to understand the financial impact of a change.
@@ -221,7 +334,8 @@ Financial Impact:
 - NOI Change: ${impact.noiChange >= 0 ? '+' : ''}$${Math.abs(impact.noiChange).toLocaleString()} (${impact.noiChangePct >= 0 ? '+' : ''}${impact.noiChangePct.toFixed(1)}%)
 - Annualized Impact: ${impact.estimatedAnnualImpact >= 0 ? '+' : ''}$${Math.abs(impact.estimatedAnnualImpact).toLocaleString()}
 
-Provide a concise, expert analysis using the EXACT dollar figures above. Every finding must reference the specific numbers provided. Focus on what the operator should actually do.`;
+${assumptions.length > 0 ? `\nAssumptions and data limitations (factor these into your confidence rating):\n${assumptions.map((a) => `- ${a}`).join('\n')}\n` : ''}
+Provide a concise, expert analysis using the EXACT dollar figures above. Every finding must reference the specific numbers provided. Focus on what the operator should actually do. If assumptions or data limitations are listed, your confidence must reflect them.`;
 
   const response = await getClient().chat.completions.create({
     model: 'llama-3.3-70b-versatile',
@@ -280,16 +394,25 @@ function buildFallbackAnalysis(
   impact: SimulationResult['impact'],
   current: SimulationResult['current'],
   projected: SimulationResult['projected'],
+  dataConfidence: Confidence,
 ): SimulationResult['analysis'] {
   const fmt   = (n: number) => `$${Math.abs(n).toLocaleString()}`;
   const sign  = (n: number) => n >= 0 ? '+' : '-';
   const pct   = (n: number) => `${n >= 0 ? '+' : ''}${n.toFixed(1)}%`;
 
-  const findings: string[] = [
-    `${SCENARIO_LABELS[scenario]} reduces monthly revenue by ${fmt(impact.revenueChange)} (${pct(impact.revenueChangePct)})`,
-    `NOI moves from ${fmt(current.noi)} to ${fmt(projected.noi)}/mo — a ${fmt(impact.noiChange)} change (${pct(impact.noiChangePct)})`,
+  // Lead with the number that actually moved — an expense scenario should
+  // not open with "reduces monthly revenue by $0".
+  const findings: string[] = [];
+  if (impact.revenueChange !== 0) {
+    findings.push(`${SCENARIO_LABELS[scenario]} ${impact.revenueChange < 0 ? 'reduces' : 'increases'} monthly revenue by ${fmt(impact.revenueChange)} (${pct(impact.revenueChangePct)})`);
+  }
+  if (impact.expenseChange !== 0) {
+    findings.push(`${SCENARIO_LABELS[scenario]} ${impact.expenseChange > 0 ? 'raises' : 'lowers'} monthly expenses by ${fmt(impact.expenseChange)}`);
+  }
+  findings.push(
+    `NOI moves from ${fmt(current.noi)}/mo to ${fmt(projected.noi)}/mo — a ${sign(impact.noiChange)}${fmt(impact.noiChange)} change (${pct(impact.noiChangePct)})`,
     `Annualised impact: ${sign(impact.estimatedAnnualImpact)}${fmt(impact.estimatedAnnualImpact)}/year`,
-  ];
+  );
 
   if (impact.occupancyChange !== 0) {
     findings.push(`Occupancy shifts from ${current.occupancyRate.toFixed(1)}% to ${projected.occupancyRate.toFixed(1)}%`);
@@ -316,7 +439,7 @@ function buildFallbackAnalysis(
     case 'occupancy_drop':
       recommendations.push(
         `Review pricing strategy — a ${fmt(impact.revenueChange)}/mo shortfall suggests rents may need adjusting`,
-        `Identify the ${current.totalUnits - projected.occupancyRate / 100 * current.totalUnits | 0} at-risk units and prioritise lease renewals`,
+        `Identify the ${Math.round(current.totalUnits * (1 - projected.occupancyRate / 100))} vacant units this would leave and prioritise lease renewals`,
         `Ensure operating reserves cover at least 3 months of the ${fmt(impact.revenueChange)} gap`,
       );
       riskFactors.push(
@@ -356,12 +479,54 @@ function buildFallbackAnalysis(
     recommendations,
     riskFactors,
     timeToImpact,
-    confidence: 'medium',
+    confidence: dataConfidence,
   };
 }
 
 
+function assertFinite(v: unknown, name: string, min: number, max: number): number {
+  const n = Number(v);
+  if (!Number.isFinite(n) || n < min || n > max) {
+    throw new ValidationError(`${name} must be a number between ${min} and ${max}.`);
+  }
+  return n;
+}
+
+/**
+ * Rejects malformed requests before any metered work happens — a garbage
+ * simulation would otherwise still consume an IMPACT_SIMULATION credit
+ * and return a confident-looking "no impact" result.
+ */
+function validateRequest(req: SimulationRequest): void {
+  if (!req || typeof req !== 'object' || !(req.scenario in SCENARIO_LABELS)) {
+    throw new ValidationError('Unknown scenario type.');
+  }
+  const p = (req.params ?? {}) as Record<string, unknown>;
+  switch (req.scenario) {
+    case 'occupancy_drop':
+      assertFinite(p.percentageDrop, 'Occupancy drop', 0.1, 100);
+      break;
+    case 'expense_increase':
+      assertFinite(p.percentageIncrease, 'Expense increase', 0.1, 500);
+      break;
+    case 'rent_increase':
+      assertFinite(p.percentageIncrease, 'Rent increase', 0.1, 100);
+      break;
+    case 'tenant_departure':
+      if (typeof p.tenantId !== 'string' || !p.tenantId) {
+        throw new ValidationError('Select a tenant to simulate.');
+      }
+      break;
+    case 'acquisition':
+      assertFinite(p.units, 'Units', 1, 100_000);
+      assertFinite(p.monthlyRevenue, 'Monthly revenue', 0, 1_000_000_000);
+      assertFinite(p.monthlyExpenses, 'Monthly expenses', 0, 1_000_000_000);
+      break;
+  }
+}
+
 export async function runSimulation(req: SimulationRequest, userId: string): Promise<SimulationResult> {
+  validateRequest(req);
   const propertyId = 'propertyId' in req.params
     ? (req.params as { propertyId?: string }).propertyId
     : undefined;
@@ -371,34 +536,40 @@ export async function runSimulation(req: SimulationRequest, userId: string): Pro
   let revChange = 0;
   let expChange = 0;
   let occDelta  = 0;
+  const assumptions: string[] = [...state.assumptions];
 
   switch (req.scenario) {
     case 'occupancy_drop': {
-      const p = req.params as OccupancyDropParams;
-      const r = await calcOccupancyDrop(p, state);
-      revChange = r.revChange; expChange = r.expChange;
-      occDelta  = -p.percentageDrop;
+      const r = await calcOccupancyDrop(req.params as OccupancyDropParams, state);
+      revChange = r.revChange; expChange = r.expChange; occDelta = r.occDelta;
+      assumptions.push(...r.assumptions);
       break;
     }
     case 'tenant_departure': {
-      const r = await calcTenantDeparture(req.params as TenantDepartureParams, userId);
-      revChange = r.revChange; expChange = r.expChange;
-      occDelta  = ('newOccupancyDelta' in r) ? (r.newOccupancyDelta ?? 0) : 0;
+      const r = await calcTenantDeparture(req.params as TenantDepartureParams, userId, state);
+      if (r.tenantName === 'Unknown') {
+        throw new ValidationError('This tenant has no active leases to simulate.');
+      }
+      revChange = r.revChange; expChange = r.expChange; occDelta = r.occDelta;
+      assumptions.push(...r.assumptions);
       break;
     }
     case 'expense_increase': {
-      const r = calcExpenseIncrease(req.params as ExpenseIncreaseParams, state);
+      const r = await calcExpenseIncrease(req.params as ExpenseIncreaseParams, state, userId, propertyId);
       revChange = r.revChange; expChange = r.expChange;
+      assumptions.push(...r.assumptions);
       break;
     }
     case 'acquisition': {
       const r = calcAcquisition(req.params as AcquisitionParams);
       revChange = r.revChange; expChange = r.expChange;
+      assumptions.push('Assumes the acquired property performs exactly at the stated revenue and expenses from day one.');
       break;
     }
     case 'rent_increase': {
       const r = calcRentIncrease(req.params as RentIncreaseParams, state);
       revChange = r.revChange; expChange = r.expChange;
+      assumptions.push('Assumes all tenants accept the increase with no churn — real-world renewals may reduce the upside.');
       break;
     }
   }
@@ -409,9 +580,9 @@ export async function runSimulation(req: SimulationRequest, userId: string): Pro
   const projOccupancy = Math.max(0, Math.min(100, state.occupancyRate + occDelta));
 
   const current = {
-    monthlyRevenue:  state.monthlyRevenue,
-    monthlyExpenses: state.monthlyExpenses,
-    noi:             state.noi,
+    monthlyRevenue:  Math.round(state.monthlyRevenue),
+    monthlyExpenses: Math.round(state.monthlyExpenses),
+    noi:             Math.round(state.noi),
     occupancyRate:   Number(state.occupancyRate.toFixed(1)),
     totalUnits:      state.totalUnits,
     activeLeases:    state.activeLeases,
@@ -438,10 +609,12 @@ export async function runSimulation(req: SimulationRequest, userId: string): Pro
 
   let analysis: SimulationResult['analysis'];
   try {
-    analysis = await generateAnalysis(req.scenario, req.params, current, projected, impact);
+    analysis = await generateAnalysis(req.scenario, req.params, current, projected, impact, assumptions);
   } catch {
-    analysis = buildFallbackAnalysis(req.scenario, impact, current, projected);
+    analysis = buildFallbackAnalysis(req.scenario, impact, current, projected, state.dataConfidence);
   }
+  // The AI cannot be more confident than the underlying data allows.
+  analysis.confidence = minConfidence(analysis.confidence, state.dataConfidence);
 
   return {
     scenario:      req.scenario,
@@ -451,6 +624,7 @@ export async function runSimulation(req: SimulationRequest, userId: string): Pro
     projected,
     impact,
     analysis,
+    assumptions,
     computedAt: new Date().toISOString(),
   };
 }
