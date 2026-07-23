@@ -126,8 +126,9 @@ export async function getWorkQueue(options: { userId: string; assignedToUserId?:
     ? []
     : await prisma.lease.findMany({
         where: {
-          property: { ownerId: userId },
+          property: { ownerId: userId, deletedAt: null },
           status: 'ACTIVE',
+          deletedAt: null,
           endDate: { gte: now, lte: ninetyDaysOut },
           ...(coveredLeaseIds.size > 0 ? { id: { notIn: [...coveredLeaseIds] } } : {}),
           OR: [{ snoozedUntil: null }, { snoozedUntil: { lt: now } }],

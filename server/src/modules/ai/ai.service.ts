@@ -22,7 +22,7 @@ export const insightEngine: InsightEngine = {
   async analyzeProperty(propertyId: string): Promise<GeneratedInsight[]> {
     const property = await prisma.property.findUnique({
       where: { id: propertyId },
-      include: { _count: { select: { leases: true } } },
+      include: { _count: { select: { leases: { where: { deletedAt: null } } } } },
     });
 
     const insight = await provider.generateInsight({
