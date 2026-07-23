@@ -1,4 +1,5 @@
 import { prisma } from '../../infrastructure/database';
+import { ACTIVE_LEASE_COUNT, ACTIVE_PROPERTY_WHERE } from '../metrics/portfolio-metrics';
 import { differenceInDays } from 'date-fns';
 import type { AutomationTrigger, AutomationAction, UserRole } from '@prisma/client';
 import { NotFoundError } from '../../utils/errors';
@@ -216,7 +217,7 @@ async function evaluateRule(
     const threshold = conditions.occupancyPct ?? 80;
 
     const properties = await prisma.property.findMany({
-      where: { status: 'ACTIVE' },
+      where: ACTIVE_PROPERTY_WHERE,
       select: {
         id: true,
         name: true,
@@ -231,7 +232,7 @@ async function evaluateRule(
           select: { id: true },
           take: 1,
         },
-        _count: { select: { leases: { where: { status: 'ACTIVE' } } } },
+        _count: ACTIVE_LEASE_COUNT,
       },
     });
 
@@ -271,7 +272,7 @@ async function evaluateRule(
     const expiryWindow = new Date(now.getTime() + 90 * 86400000);
 
     const properties = await prisma.property.findMany({
-      where: { status: 'ACTIVE' },
+      where: ACTIVE_PROPERTY_WHERE,
       select: {
         id: true,
         name: true,
@@ -286,10 +287,10 @@ async function evaluateRule(
           select: { id: true },
           take: 1,
         },
-        _count: { select: { leases: { where: { status: 'ACTIVE' } } } },
+        _count: ACTIVE_LEASE_COUNT,
         alerts: { where: { status: 'OPEN', severity: 'CRITICAL' }, select: { id: true } },
         leases: {
-          where: { status: 'ACTIVE', endDate: { lte: expiryWindow } },
+          where: { status: 'ACTIVE', deletedAt: null, endDate: { lte: expiryWindow } },
           select: { id: true },
         },
       },

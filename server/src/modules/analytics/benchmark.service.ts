@@ -1,4 +1,5 @@
 import { prisma } from '../../infrastructure/database';
+import { ACTIVE_LEASE_COUNT, ACTIVE_PROPERTY_WHERE } from '../metrics/portfolio-metrics';
 import { startOfMonth, endOfMonth, subMonths, addDays } from 'date-fns';
 
 
@@ -117,14 +118,14 @@ export async function getBenchmarks(userId: string): Promise<BenchmarkReport> {
   const lastEnd    = endOfMonth(subMonths(now, 1));
 
   const rawProperties = await prisma.property.findMany({
-    where: { status: 'ACTIVE', ownerId: userId },
+    where: { ...ACTIVE_PROPERTY_WHERE, ownerId: userId },
     select: {
       id: true,
       name: true,
       code: true,
       totalUnits: true,
       totalSqft: true,
-      _count: { select: { leases: { where: { status: 'ACTIVE' } } } },
+      _count: ACTIVE_LEASE_COUNT,
     },
   });
 

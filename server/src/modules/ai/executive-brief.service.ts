@@ -1,5 +1,6 @@
 import Groq from 'groq-sdk';
 import { prisma } from '../../infrastructure/database';
+import { ACTIVE_LEASE_COUNT, ACTIVE_PROPERTY_WHERE, computeOccupancy } from '../metrics/portfolio-metrics';
 import { differenceInDays } from 'date-fns';
 
 
@@ -37,7 +38,7 @@ async function gatherContext(userId: string) {
 
   const [leases, properties, criticalAlerts, flaggedFinancials] = await Promise.all([
     prisma.lease.findMany({
-      where: { status: 'ACTIVE', property: { ownerId: userId } },
+      where: { status: 'ACTIVE', deletedAt: null, property: { ownerId: userId, deletedAt: null } },
       include: {
         property: { select: { name: true, code: true } },
         tenant:   { select: { name: true, email: true } },
@@ -50,8 +51,8 @@ async function gatherContext(userId: string) {
       orderBy: { endDate: 'asc' },
     }),
     prisma.property.findMany({
-      where: { status: 'ACTIVE', ownerId: userId },
-      select: { totalUnits: true, _count: { select: { leases: { where: { status: 'ACTIVE' } } } } },
+      where: { ...ACTIVE_PROPERTY_WHERE, ownerId: userId },
+      select: { totalUnits: true, _count: ACTIVE_LEASE_COUNT },
     }),
     prisma.alert.findMany({
       where: {
@@ -77,9 +78,7 @@ async function gatherContext(userId: string) {
   ]);
 
   const totalRevenue = leases.reduce((s, l) => s + Number(l.baseRent), 0);
-  const totalUnits   = properties.reduce((s, p) => s + p.totalUnits, 0);
-  const occupiedUnits = properties.reduce((s, p) => s + p._count.leases, 0);
-  const occupancyRate = totalUnits > 0 ? Math.round((occupiedUnits / totalUnits) * 100) : 0;
+  const occupancyRate = Math.round(computeOccupancy(properties).occupancyRate);
 
   const expiring90  = leases.filter(l => differenceInDays(l.endDate, now) <= 90);
   const revenueAt90 = expiring90.reduce((s, l) => s + Number(l.baseRent), 0);

@@ -1,4 +1,5 @@
 import { prisma } from '../../infrastructure/database';
+import { ACTIVE_LEASE_COUNT, ACTIVE_LEASE_WHERE, ACTIVE_PROPERTY_WHERE } from '../metrics/portfolio-metrics';
 import { startOfMonth, endOfMonth, subMonths, addDays } from 'date-fns';
 
 
@@ -109,7 +110,7 @@ async function scoreLeaseRisk(propertyIds: string[], totalRevenue: number, refDa
   const atRisk  = await prisma.lease.findMany({
     where: {
       propertyId:   { in: propertyIds },
-      status:       'ACTIVE',
+      ...ACTIVE_LEASE_WHERE,
       endDate:      { gte: base, lte: horizon },
       renewalStage: { in: ['NOT_STARTED', 'CONTACTED'] },
     },
@@ -206,11 +207,11 @@ export async function computeHealthScore(userId: string): Promise<PortfolioHealt
 
   const [properties, activeLeaseAgg, financialRecordCount] = await Promise.all([
     prisma.property.findMany({
-      where: { status: 'ACTIVE', ownerId: userId },
+      where: { ...ACTIVE_PROPERTY_WHERE, ownerId: userId },
       select: {
         id: true,
         totalUnits: true,
-        _count: { select: { leases: { where: { status: 'ACTIVE' } } } },
+        _count: ACTIVE_LEASE_COUNT,
       },
     }),
     prisma.lease.aggregate({ where: { status: 'ACTIVE', property: { ownerId: userId } }, _sum: { baseRent: true } }),

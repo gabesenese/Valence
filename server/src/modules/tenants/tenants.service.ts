@@ -1,4 +1,5 @@
 import { prisma } from '../../infrastructure/database';
+import { ACTIVE_LEASE_COUNT } from '../metrics/portfolio-metrics';
 import { NotFoundError, ConflictError } from '../../utils/errors';
 import { trackIfFirstTime } from '../analytics/funnel.service';
 
@@ -30,7 +31,7 @@ export async function getTenants(
       take: limit,
       orderBy: { name: 'asc' },
       include: {
-        _count: { select: { leases: { where: { status: 'ACTIVE' } } } },
+        _count: ACTIVE_LEASE_COUNT,
       },
     }),
     prisma.tenant.count({ where }),
@@ -85,10 +86,11 @@ export async function getTenantById(id: string) {
     where: { id },
     include: {
       leases: {
+        where: { deletedAt: null },
         orderBy: { endDate: 'asc' },
         include: { property: { select: { id: true, name: true, code: true } } },
       },
-      _count: { select: { leases: true } },
+      _count: { select: { leases: { where: { deletedAt: null } } } },
     },
   });
   if (!tenant || tenant.deletedAt) throw new NotFoundError('Tenant');

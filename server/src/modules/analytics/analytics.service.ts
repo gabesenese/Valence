@@ -1,4 +1,5 @@
 import { prisma } from '../../infrastructure/database';
+import { ACTIVE_LEASE_COUNT, computeOccupancy } from '../metrics/portfolio-metrics';
 import { subMonths, startOfMonth, endOfMonth, format, addDays, differenceInDays } from 'date-fns';
 
 export interface PortfolioInsight {
@@ -170,7 +171,7 @@ export async function getExecutiveSummary(userId: string) {
   const lastMonthStart = startOfMonth(subMonths(now, 1));
   const lastMonthEnd = endOfMonth(subMonths(now, 1));
   const ownedProp  = { ownerId: userId, deletedAt: null };
-  const ownedLease = { property: { ownerId: userId, deletedAt: null } };
+  const ownedLease = { property: { ownerId: userId, deletedAt: null }, deletedAt: null };
   const ownedRecord = { property: { ownerId: userId } };
   const ownedAlert  = { OR: [{ property: { ownerId: userId } }, { createdById: userId }] };
 
@@ -204,14 +205,12 @@ export async function getExecutiveSummary(userId: string) {
       select: {
         id: true,
         totalUnits: true,
-        _count: { select: { leases: { where: { status: 'ACTIVE' } } } },
+        _count: ACTIVE_LEASE_COUNT,
       },
     }),
   ]);
 
-  const totalUnits = occupancyData.reduce((s, p) => s + p.totalUnits, 0);
-  const occupiedUnits = occupancyData.reduce((s, p) => s + p._count.leases, 0);
-  const occupancyRate = totalUnits > 0 ? (occupiedUnits / totalUnits) * 100 : 0;
+  const { totalUnits, occupiedUnits, occupancyRate } = computeOccupancy(occupancyData);
 
   const currentRevenue = Number(thisMonthRevenue._sum.amount ?? 0);
   const previousRevenue = Number(lastMonthRevenue._sum.amount ?? 0);
@@ -241,7 +240,7 @@ export async function getExecutiveSummary(userId: string) {
 }
 
 export async function getLeaseDistribution(userId: string) {
-  const owned = { property: { ownerId: userId } };
+  const owned = { property: { ownerId: userId }, deletedAt: null };
   const [byStatus, byRisk, byType] = await Promise.all([
     prisma.lease.groupBy({ by: ['status'], where: owned, _count: true }),
     prisma.lease.groupBy({ by: ['renewalRisk'], where: { ...owned, status: 'ACTIVE' }, _count: true }),
@@ -259,7 +258,7 @@ export async function getPropertyPerformance(userId: string) {
       name: true,
       code: true,
       totalUnits: true,
-      _count: { select: { leases: { where: { status: 'ACTIVE' } } } },
+      _count: ACTIVE_LEASE_COUNT,
     },
   });
 

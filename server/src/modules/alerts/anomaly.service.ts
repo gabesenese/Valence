@@ -1,4 +1,5 @@
 import { prisma } from '../../infrastructure/database';
+import { ACTIVE_LEASE_COUNT, ACTIVE_PROPERTY_WHERE } from '../metrics/portfolio-metrics';
 import { addDays, addMinutes, startOfMonth, endOfMonth, subMonths } from 'date-fns';
 import { generateLeaseExpirationAlerts, logAlertActivity, autoEmailCriticalAlerts } from './alerts.service';
 
@@ -168,12 +169,12 @@ async function detectOccupancyDrops(): Promise<number> {
   let created = 0;
 
   const properties = await prisma.property.findMany({
-    where: { status: 'ACTIVE' },
+    where: ACTIVE_PROPERTY_WHERE,
     select: {
       id: true,
       name: true,
       totalUnits: true,
-      _count: { select: { leases: { where: { status: 'ACTIVE' } } } },
+      _count: ACTIVE_LEASE_COUNT,
     },
   });
 

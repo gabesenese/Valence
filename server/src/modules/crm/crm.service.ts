@@ -34,7 +34,7 @@ const tenantCrmSelect = {
   _count: {
     select: {
       contactLogs: true,
-      leases: { where: { status: 'ACTIVE' } },
+      leases: { where: { status: 'ACTIVE', deletedAt: null } },
     },
   },
 } as const;
