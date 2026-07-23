@@ -201,6 +201,7 @@ model User {
   mfaEnabled       Boolean   @default(false) @map("mfa_enabled")
   isActive         Boolean   @default(true) @map("is_active")
   isDemo           Boolean   @default(false) @map("is_demo")
+  organizationId   String?   @map("organization_id")
   seenTips         String[]  @default([]) @map("seen_tips")
   lastLoginAt      DateTime? @map("last_login_at")
   lastChangesSeenAt DateTime? @map("last_changes_seen_at")
@@ -238,9 +239,11 @@ model User {
   sentInvites        Invite[]        @relation("InvitedBy")
   backups            Backup[]
   integrations       Integration[]
+  organization       Organization?   @relation("OrgMembers", fields: [organizationId], references: [id], onDelete: SetNull)
 
   @@index([email])
   @@index([role])
+  @@index([organizationId])
   @@map("users")
 }
 
@@ -807,6 +810,8 @@ model Organization {
   currency  String   @default("USD")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
+
+  members User[] @relation("OrgMembers")
 
   @@map("organization")
 }
