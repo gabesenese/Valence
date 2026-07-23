@@ -501,7 +501,7 @@ function validateRequest(req: SimulationRequest): void {
   if (!req || typeof req !== 'object' || !(req.scenario in SCENARIO_LABELS)) {
     throw new ValidationError('Unknown scenario type.');
   }
-  const p = (req.params ?? {}) as Record<string, unknown>;
+  const p = (req.params ?? {}) as unknown as Record<string, unknown>;
   switch (req.scenario) {
     case 'occupancy_drop':
       assertFinite(p.percentageDrop, 'Occupancy drop', 0.1, 100);
