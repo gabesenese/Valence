@@ -1,5 +1,6 @@
 import { DollarSign } from 'lucide-react';
 import { Input } from './Input';
+import { formatMoneyString } from '@/utils/format';
 
 /**
  * Text input for dollar amounts. Displays thousands separators as the
@@ -16,13 +17,6 @@ interface MoneyInputProps {
   allowCents?: boolean;
   disabled?: boolean;
   className?: string;
-}
-
-export function formatMoneyString(raw: string, allowCents = false): string {
-  if (!raw) return '';
-  const [int, dec] = raw.split('.');
-  const formatted = int.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-  return allowCents && dec !== undefined ? `${formatted}.${dec}` : formatted;
 }
 
 export function MoneyInput({

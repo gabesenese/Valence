@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { formatMoneyString } from '@/components/ui/MoneyInput';
+import { formatMoneyString } from '@/utils/format';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { AlertTriangle, ArrowRight, Check } from 'lucide-react';

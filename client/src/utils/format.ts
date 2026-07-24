@@ -75,3 +75,14 @@ export function compactCurrency(amount: number, currency = _orgCurrency): string
   if (abs >= 1_000) return `${sym}${(amount / 1_000).toFixed(0)}K`;
   return `${sym}${Math.round(amount).toLocaleString('en-US')}`;
 }
+
+/**
+ * Comma-groups a raw numeric string as the user types (20000 -> 20,000).
+ * Keeps a decimal part only when allowCents is set.
+ */
+export function formatMoneyString(raw: string, allowCents = false): string {
+  if (!raw) return '';
+  const [int, dec] = raw.split('.');
+  const formatted = int.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  return allowCents && dec !== undefined ? `${formatted}.${dec}` : formatted;
+}
