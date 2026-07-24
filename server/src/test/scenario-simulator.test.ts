@@ -168,6 +168,17 @@ describe('property scoping — explicit in every result', () => {
   });
 });
 
+describe('analysis provenance — no unlabeled guidance', () => {
+  it('marks fallback analyses as standard guidance with conditional risk phrasing', async () => {
+    seedPortfolio({ revenue3mo: 300_000, expenses3mo: 90_000 });
+    const res = await runSimulation({ scenario: 'expense_increase', params: { percentageIncrease: 10 } }, USER);
+    expect(res.analysisSource).toBe('standard'); // GROQ unavailable in tests
+    const risks = res.analysis.riskFactors.join(' ');
+    expect(risks).not.toMatch(/often precedes/);
+    expect(risks).toMatch(/can also surface|could|may/);
+  });
+});
+
 describe('simulator options — acquisition templates', () => {
   it('returns per-property trailing averages with rent-roll fallback for revenue', async () => {
     prismaMock.property.findMany.mockResolvedValue([
