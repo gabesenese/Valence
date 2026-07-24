@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { formatMoneyString } from '@/utils/format';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { AlertTriangle, ArrowRight, Check } from 'lucide-react';
@@ -25,7 +26,7 @@ function BudgetRow({
   onClear: () => void;
   onReview: () => void;
 }) {
-  const [value, setValue] = useState(item ? String(item.budget) : '');
+  const [value, setValue] = useState(item ? formatMoneyString(String(Math.round(item.budget))) : '');
   const [justSaved, setJustSaved] = useState(false);
   const actual = item?.actual ?? 0;
 
@@ -36,7 +37,7 @@ function BudgetRow({
   }, [justSaved]);
 
   const commit = () => {
-    const amount = parseFloat(value);
+    const amount = parseFloat(value.replace(/,/g, ''));
     if (!value.trim() || !Number.isFinite(amount) || amount <= 0) {
       if (item) onClear();
       return;
@@ -55,7 +56,8 @@ function BudgetRow({
         <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-slate-600">$</span>
         <input
           value={value}
-          onChange={(e) => setValue(e.target.value.replace(/[^0-9.]/g, ''))}
+          inputMode="numeric"
+          onChange={(e) => setValue(formatMoneyString(e.target.value.replace(/[^0-9]/g, '')))}
           onBlur={commit}
           onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
           placeholder="—"

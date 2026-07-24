@@ -7,6 +7,7 @@ import {
 import { aiService, type ScenarioType, type SimulationResult, type SimulatorOptions } from '@/services/ai.service';
 import { formatCurrency, compactCurrency } from '@/utils/format';
 import { Card, CardBody } from '@/components/ui/Card';
+import { MoneyInput } from '@/components/ui/MoneyInput';
 import { Select } from '@/components/ui/Select';
 
 
@@ -215,23 +216,33 @@ function RentIncreaseForm({ value, onChange }: { value: Record<string, unknown>;
 }
 
 function AcquisitionForm({ value, onChange }: { value: Record<string, unknown>; onChange: (v: Record<string, unknown>) => void }) {
-  const num = (field: string, label: string, min: number, placeholder?: string) => (
-    <div>
-      <label className="text-xs font-medium text-slate-400 block mb-1.5">{label}</label>
-      <input
-        type="number" min={min}
-        value={(value[field] as number) ?? ''}
-        placeholder={placeholder}
-        onChange={e => onChange({ ...value, [field]: Number(e.target.value) })}
-        className="w-full rounded-lg border border-surface-400/50 bg-surface-200 px-3 py-2 text-sm text-fg placeholder-slate-600 focus:border-brand-500 focus:outline-none"
-      />
-    </div>
-  );
   return (
     <div className="flex flex-col gap-3">
-      {num('units', 'Units', 1)}
-      {num('monthlyRevenue', 'Expected Monthly Revenue', 0)}
-      {num('monthlyExpenses', 'Expected Monthly Expenses', 0)}
+      <div>
+        <label className="text-xs font-medium text-slate-400 block mb-1.5">Units</label>
+        <input
+          type="number" min={1}
+          value={(value.units as number) ?? ''}
+          onChange={e => onChange({ ...value, units: Number(e.target.value) })}
+          className="w-full rounded-lg border border-surface-400/50 bg-surface-200 px-3 py-2 text-sm text-fg placeholder-slate-600 focus:border-brand-500 focus:outline-none"
+        />
+      </div>
+      <div>
+        <label className="text-xs font-medium text-slate-400 block mb-1.5">Expected Monthly Revenue</label>
+        <MoneyInput
+          value={(value.monthlyRevenue as number) ?? ''}
+          onChange={(n) => onChange({ ...value, monthlyRevenue: n })}
+          placeholder="20,000"
+        />
+      </div>
+      <div>
+        <label className="text-xs font-medium text-slate-400 block mb-1.5">Expected Monthly Expenses</label>
+        <MoneyInput
+          value={(value.monthlyExpenses as number) ?? ''}
+          onChange={(n) => onChange({ ...value, monthlyExpenses: n })}
+          placeholder="7,000"
+        />
+      </div>
       <div>
         <label className="text-xs font-medium text-slate-400 block mb-1.5">Property Name (optional)</label>
         <input
