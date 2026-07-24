@@ -371,14 +371,15 @@ function ResultsPanel({ result }: { result: SimulationResult }) {
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         {[
-          { title: 'Findings',        items: analysis.findings,        icon: Zap,          color: 'text-brand-400' },
-          { title: 'Recommendations', items: analysis.recommendations, icon: CheckCircle2, color: 'text-success'   },
-          { title: 'Risk Factors',    items: analysis.riskFactors,     icon: AlertTriangle, color: 'text-warning'  },
-        ].map(({ title, items, icon: Icon, color }) => (
+          { title: 'Findings',        caption: 'From your data',       items: analysis.findings,        icon: Zap,          color: 'text-brand-400' },
+          { title: 'Recommendations', caption: 'Guidance to consider', items: analysis.recommendations, icon: CheckCircle2, color: 'text-success'   },
+          { title: 'Risk Factors',    caption: 'Possibilities to watch', items: analysis.riskFactors,   icon: AlertTriangle, color: 'text-warning'  },
+        ].map(({ title, caption, items, icon: Icon, color }) => (
           <div key={title} className="rounded-xl border border-surface-400/40 bg-surface-100 p-4">
             <div className="flex items-center gap-2 mb-3">
               <Icon className={`h-3.5 w-3.5 ${color}`} />
               <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">{title}</span>
+              <span className="ml-auto text-[10px] text-slate-600">{caption}</span>
             </div>
             <ul className="space-y-2">
               {items.map((item, i) => (
@@ -405,7 +406,13 @@ function ResultsPanel({ result }: { result: SimulationResult }) {
       )}
 
       <p className="text-[11px] text-slate-600 text-center">
-        Time to full impact: <span className="text-slate-400">{analysis.timeToImpact}</span>
+        Typical time to full impact: <span className="text-slate-400">{analysis.timeToImpact}</span>
+        <span className="mx-2 text-slate-700">·</span>
+        {result.analysisSource === 'standard'
+          ? 'Standard guidance composed from your computed figures'
+          : 'AI-written analysis of your computed figures'}
+        <span className="mx-2 text-slate-700">·</span>
+        Informational, not financial advice
       </p>
     </div>
   );

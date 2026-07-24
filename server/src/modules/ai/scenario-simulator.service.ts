@@ -66,6 +66,8 @@ export interface SimulationResult {
   };
   /** Estimates and simplifications the numbers rest on. Always shown to the user. */
   assumptions: string[];
+  /** 'ai' = LLM-written prose from the computed figures; 'standard' = deterministic template guidance. */
+  analysisSource: 'ai' | 'standard';
   computedAt: string;
 }
 
@@ -347,7 +349,14 @@ Financial Impact:
 - Annualized Impact: ${impact.estimatedAnnualImpact >= 0 ? '+' : ''}$${Math.abs(impact.estimatedAnnualImpact).toLocaleString()}
 
 ${assumptions.length > 0 ? `\nAssumptions and data limitations (factor these into your confidence rating):\n${assumptions.map((a) => `- ${a}`).join('\n')}\n` : ''}
-Provide a concise, expert analysis using the EXACT dollar figures above. Every finding must reference the specific numbers provided. Focus on what the operator should actually do. If assumptions or data limitations are listed, your confidence must reflect them.`;
+Provide a concise, expert analysis using the EXACT dollar figures above. Every finding must reference the specific numbers provided. Focus on what the operator should actually do. If assumptions or data limitations are listed, your confidence must reflect them.
+
+STRICT RULES — the reader is a paying client who must not be misled:
+- Never invent figures, dates, market statistics, comparables, regulations, or vendor names not present in the data above.
+- Findings must be restatements or direct arithmetic of the provided figures only.
+- Phrase recommendations as options to consider ("consider", "review", "worth checking"), not as certainties or directives.
+- Risk factors must be phrased as possibilities ("could", "may"), never as predictions or facts.
+- If you cannot support a statement from the data above, omit it rather than generalise.`;
 
   const response = await getClient().chat.completions.create({
     model: 'llama-3.3-70b-versatile',
@@ -443,7 +452,7 @@ function buildFallbackAnalysis(
       );
       riskFactors.push(
         `Extended vacancy could push annualised loss beyond ${fmt(impact.estimatedAnnualImpact)}`,
-        `Neighbouring tenants may cite vacancy as grounds for rent negotiations`,
+        `Visible vacancy can weaken your position in other tenants' rent negotiations`,
       );
       timeToImpact = 'Immediate';
       break;
@@ -456,7 +465,7 @@ function buildFallbackAnalysis(
       );
       riskFactors.push(
         `Further occupancy erosion could amplify impact beyond ${fmt(impact.estimatedAnnualImpact)}/year`,
-        `Lower occupancy signals may affect property valuation and financing terms`,
+        `If sustained, lower occupancy could affect property valuation and financing terms`,
       );
       timeToImpact = '1–3 months';
       break;
@@ -469,7 +478,7 @@ function buildFallbackAnalysis(
       );
       riskFactors.push(
         `If revenue stays flat, the ${fmt(impact.noiChange)}/mo NOI compression compounds annually`,
-        `Expense inflation often precedes insurance and tax reassessments`,
+        `Sustained expense inflation can also surface later in insurance premiums and tax reassessments — worth monitoring`,
       );
       timeToImpact = '1–6 months';
       break;
@@ -634,10 +643,13 @@ export async function runSimulation(req: SimulationRequest, userId: string): Pro
   };
 
   let analysis: SimulationResult['analysis'];
+  let analysisSource: SimulationResult['analysisSource'];
   try {
     analysis = await generateAnalysis(req.scenario, req.params, current, projected, impact, assumptions);
+    analysisSource = 'ai';
   } catch {
     analysis = buildFallbackAnalysis(req.scenario, impact, current, projected, state.dataConfidence);
+    analysisSource = 'standard';
   }
   // The AI cannot be more confident than the underlying data allows.
   analysis.confidence = minConfidence(analysis.confidence, state.dataConfidence);
@@ -651,6 +663,7 @@ export async function runSimulation(req: SimulationRequest, userId: string): Pro
     impact,
     analysis,
     assumptions,
+    analysisSource,
     computedAt: new Date().toISOString(),
   };
 }

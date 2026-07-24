@@ -164,6 +164,7 @@ export interface SimulationResult {
     confidence:      'high' | 'medium' | 'low';
   };
   assumptions?: string[];
+  analysisSource?: 'ai' | 'standard';
   computedAt: string;
 }
 
