@@ -57,7 +57,7 @@ const SCENARIOS: {
     question: 'What if you buy another property?',
     icon: Building2,
     accentColor: '#8b5cf6',
-    defaultParams: { units: 10, monthlyRevenue: 20000, monthlyExpenses: 7000, propertyName: '' },
+    defaultParams: { units: 10, monthlyRevenue: 20000, monthlyExpenses: 7000 },
   },
 ];
 
@@ -266,16 +266,6 @@ function AcquisitionForm({ value, onChange }: { value: Record<string, unknown>; 
           value={(value.monthlyExpenses as number) ?? ''}
           onChange={(n) => onChange({ ...value, monthlyExpenses: n })}
           placeholder="7,000"
-        />
-      </div>
-      <div>
-        <label className="text-xs font-medium text-slate-400 block mb-1.5">Name This Purchase (optional)</label>
-        <input
-          type="text"
-          value={(value.propertyName as string) ?? ''}
-          placeholder="e.g. Riverside Plaza"
-          onChange={e => onChange({ ...value, propertyName: e.target.value })}
-          className="w-full rounded-lg border border-surface-400/50 bg-surface-200 px-3 py-2 text-sm text-fg placeholder-slate-600 focus:border-brand-500 focus:outline-none"
         />
       </div>
     </div>
