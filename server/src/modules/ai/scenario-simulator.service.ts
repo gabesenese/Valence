@@ -28,7 +28,7 @@ export interface OccupancyDropParams    { percentageDrop: number; propertyId?: s
 export interface TenantDepartureParams  { tenantId: string }
 export interface ExpenseIncreaseParams  { percentageIncrease: number; category?: string; propertyId?: string }
 export interface AcquisitionParams      { units: number; monthlyRevenue: number; monthlyExpenses: number; propertyName: string }
-export interface RentIncreaseParams     { percentageIncrease: number; propertyId?: string }
+export interface RentIncreaseParams     { percentageIncrease: number; propertyId?: string; leaseId?: string }
 
 export interface SimulationResult {
   scenario:        ScenarioType;
@@ -279,12 +279,24 @@ function calcAcquisition(params: AcquisitionParams) {
   };
 }
 
-function calcRentIncrease(
+async function calcRentIncrease(
   params: RentIncreaseParams,
   state: Awaited<ReturnType<typeof getCurrentState>>,
+  userId: string,
 ) {
+  const assumptions: string[] = [];
+  if (params.leaseId) {
+    const lease = await prisma.lease.findFirst({
+      where: { id: params.leaseId, status: 'ACTIVE', deletedAt: null, property: { ownerId: userId, deletedAt: null } },
+      include: { tenant: { select: { name: true } } },
+    });
+    if (!lease) throw new ValidationError('Selected lease was not found or is not active.');
+    const revChange = Number(lease.baseRent) * (params.percentageIncrease / 100);
+    assumptions.push(`Increase applied to a single lease (${lease.tenant.name}, ${fmtMoney(Number(lease.baseRent))}/mo base rent).`);
+    return { revChange, expChange: 0, assumptions };
+  }
   const revChange = state.monthlyRevenue * (params.percentageIncrease / 100);
-  return { revChange, expChange: 0 };
+  return { revChange, expChange: 0, assumptions };
 }
 
 
@@ -511,6 +523,9 @@ function validateRequest(req: SimulationRequest): void {
       break;
     case 'rent_increase':
       assertFinite(p.percentageIncrease, 'Rent increase', 0.1, 100);
+      if (p.leaseId !== undefined && (typeof p.leaseId !== 'string' || !p.leaseId)) {
+        throw new ValidationError('Invalid lease selection.');
+      }
       break;
     case 'tenant_departure':
       if (typeof p.tenantId !== 'string' || !p.tenantId) {
@@ -567,11 +582,22 @@ export async function runSimulation(req: SimulationRequest, userId: string): Pro
       break;
     }
     case 'rent_increase': {
-      const r = calcRentIncrease(req.params as RentIncreaseParams, state);
+      const r = await calcRentIncrease(req.params as RentIncreaseParams, state, userId);
       revChange = r.revChange; expChange = r.expChange;
-      assumptions.push('Assumes all tenants accept the increase with no churn — real-world renewals may reduce the upside.');
+      assumptions.push(...r.assumptions);
+      assumptions.push('Assumes tenants accept the increase with no churn — real-world renewals may reduce the upside.');
       break;
     }
+  }
+
+  // Make the scope of every simulation explicit — portfolio-wide and
+  // property-scoped results look identical without this line.
+  if (propertyId) {
+    const prop = await prisma.property.findFirst({ where: { id: propertyId, ownerId: userId }, select: { name: true } });
+    if (!prop) throw new ValidationError('Selected property was not found.');
+    assumptions.unshift(`Scope: ${prop.name} only.`);
+  } else {
+    assumptions.unshift(`Scope: entire portfolio (${state.activeLeases} active lease${state.activeLeases === 1 ? '' : 's'} across ${state.totalUnits} units).`);
   }
 
   const projRevenue   = state.monthlyRevenue  + revChange;
@@ -629,6 +655,37 @@ export async function runSimulation(req: SimulationRequest, userId: string): Pro
   };
 }
 
+
+/** Dropdown data for the simulator: properties, active leases, and expense categories actually present in the data. */
+export async function getSimulatorOptions(userId: string) {
+  const [properties, leases, categories] = await Promise.all([
+    prisma.property.findMany({
+      where: { ownerId: userId, status: 'ACTIVE', deletedAt: null },
+      select: { id: true, name: true },
+      orderBy: { name: 'asc' },
+    }),
+    prisma.lease.findMany({
+      where: { status: 'ACTIVE', deletedAt: null, property: { ownerId: userId, deletedAt: null } },
+      select: { id: true, leaseNumber: true, baseRent: true, propertyId: true, tenant: { select: { name: true } } },
+      orderBy: { baseRent: 'desc' },
+    }),
+    prisma.financialRecord.findMany({
+      where: { property: { ownerId: userId }, type: 'EXPENSE', category: { not: null }, status: { not: 'VOID' } },
+      select: { category: true },
+      distinct: ['category'],
+    }),
+  ]);
+  return {
+    properties,
+    leases: leases.map((l) => ({
+      id: l.id,
+      label: `${l.tenant.name} · ${l.leaseNumber}`,
+      monthlyRent: Number(l.baseRent),
+      propertyId: l.propertyId,
+    })),
+    expenseCategories: categories.map((c) => c.category as string).sort((a, b) => a.localeCompare(b)),
+  };
+}
 
 export async function getActiveTenantsForSimulator(userId: string) {
   const leases = await prisma.lease.findMany({

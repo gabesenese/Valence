@@ -123,6 +123,12 @@ export interface SimulationRequest {
   params:   Record<string, unknown>;
 }
 
+export interface SimulatorOptions {
+  properties: { id: string; name: string }[];
+  leases: { id: string; label: string; monthlyRent: number; propertyId: string }[];
+  expenseCategories: string[];
+}
+
 export interface SimulationResult {
   scenario:      ScenarioType;
   scenarioLabel: string;
@@ -209,4 +215,7 @@ export const aiService = {
 
   getSimulatorTenants: (): Promise<SimulatorTenant[]> =>
     api.get('/ai/simulate/tenants').then(extractData<SimulatorTenant[]>),
+
+  getSimulatorOptions: (): Promise<SimulatorOptions> =>
+    api.get('/ai/simulate/options').then(extractData<SimulatorOptions>),
 };
