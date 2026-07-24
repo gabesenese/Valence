@@ -124,7 +124,7 @@ export interface SimulationRequest {
 }
 
 export interface SimulatorOptions {
-  properties: { id: string; name: string }[];
+  properties: { id: string; name: string; totalUnits: number; monthlyRevenue: number; monthlyExpenses: number }[];
   leases: { id: string; label: string; monthlyRent: number; propertyId: string }[];
   expenseCategories: string[];
 }
