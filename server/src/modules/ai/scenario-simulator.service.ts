@@ -658,10 +658,14 @@ export async function runSimulation(req: SimulationRequest, userId: string): Pro
 
 /** Dropdown data for the simulator: properties, active leases, and expense categories actually present in the data. */
 export async function getSimulatorOptions(userId: string) {
-  const [properties, leases, categories] = await Promise.all([
+  const now          = new Date();
+  const monthStart   = startOfMonth(now);
+  const threeMoStart = startOfMonth(subMonths(now, 3));
+
+  const [properties, leases, categories, finByProp] = await Promise.all([
     prisma.property.findMany({
       where: { ownerId: userId, status: 'ACTIVE', deletedAt: null },
-      select: { id: true, name: true },
+      select: { id: true, name: true, totalUnits: true },
       orderBy: { name: 'asc' },
     }),
     prisma.lease.findMany({
@@ -674,9 +678,44 @@ export async function getSimulatorOptions(userId: string) {
       select: { category: true },
       distinct: ['category'],
     }),
+    prisma.financialRecord.groupBy({
+      by: ['propertyId', 'type'],
+      where: {
+        property: { ownerId: userId },
+        status: { not: 'VOID' },
+        periodStart: { gte: threeMoStart, lt: monthStart },
+      },
+      _sum: { amount: true },
+    }),
   ]);
+
+  // Trailing-3-month monthly averages per property, with rent roll as the
+  // revenue fallback — used to pre-fill acquisition estimates from a
+  // comparable property the user already owns.
+  const rentRollByProp = new Map<string, number>();
+  for (const l of leases) {
+    rentRollByProp.set(l.propertyId, (rentRollByProp.get(l.propertyId) ?? 0) + Number(l.baseRent));
+  }
+  const finMap = new Map<string, { revenue: number; expenses: number }>();
+  for (const row of finByProp) {
+    const entry = finMap.get(row.propertyId) ?? { revenue: 0, expenses: 0 };
+    const avg = Number(row._sum.amount ?? 0) / 3;
+    if (row.type === 'REVENUE') entry.revenue = avg;
+    if (row.type === 'EXPENSE') entry.expenses = avg;
+    finMap.set(row.propertyId, entry);
+  }
+
   return {
-    properties,
+    properties: properties.map((p) => {
+      const fin = finMap.get(p.id);
+      return {
+        id: p.id,
+        name: p.name,
+        totalUnits: p.totalUnits,
+        monthlyRevenue: Math.round(fin?.revenue || rentRollByProp.get(p.id) || 0),
+        monthlyExpenses: Math.round(fin?.expenses ?? 0),
+      };
+    }),
     leases: leases.map((l) => ({
       id: l.id,
       label: `${l.tenant.name} · ${l.leaseNumber}`,

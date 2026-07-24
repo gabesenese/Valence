@@ -12,14 +12,14 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 const { prismaMock } = vi.hoisted(() => ({
   prismaMock: {
     property: { findMany: vi.fn(), findFirst: vi.fn() },
-    financialRecord: { aggregate: vi.fn() },
+    financialRecord: { aggregate: vi.fn(), findMany: vi.fn(() => Promise.resolve([])), groupBy: vi.fn(() => Promise.resolve([])) },
     lease: { aggregate: vi.fn(), findMany: vi.fn(), findFirst: vi.fn() },
   },
 }));
 
 vi.mock('../infrastructure/database', () => ({ prisma: prismaMock }));
 
-import { runSimulation } from '../modules/ai/scenario-simulator.service';
+import { runSimulation, getSimulatorOptions } from '../modules/ai/scenario-simulator.service';
 
 const USER = 'user-1';
 
@@ -165,5 +165,31 @@ describe('property scoping — explicit in every result', () => {
     await expect(
       runSimulation({ scenario: 'expense_increase', params: { percentageIncrease: 10, propertyId: 'stolen' } }, USER),
     ).rejects.toThrow(/not found/i);
+  });
+});
+
+describe('simulator options — acquisition templates', () => {
+  it('returns per-property trailing averages with rent-roll fallback for revenue', async () => {
+    prismaMock.property.findMany.mockResolvedValue([
+      { id: 'p1', name: 'Riverside Plaza', totalUnits: 6 },
+      { id: 'p2', name: 'Oak Court', totalUnits: 4 },
+    ]);
+    prismaMock.lease.findMany.mockResolvedValue([
+      { id: 'l1', leaseNumber: 'L-1', baseRent: 5_000, propertyId: 'p1', tenant: { name: 'Acme' } },
+      { id: 'l2', leaseNumber: 'L-2', baseRent: 4_000, propertyId: 'p2', tenant: { name: 'Beta' } },
+    ]);
+    prismaMock.financialRecord.findMany.mockResolvedValue([{ category: 'Utilities' }]);
+    prismaMock.financialRecord.groupBy.mockResolvedValue([
+      { propertyId: 'p1', type: 'REVENUE', _sum: { amount: 18_000 } }, // 6k/mo
+      { propertyId: 'p1', type: 'EXPENSE', _sum: { amount: 6_000 } },  // 2k/mo
+      // p2 has no records -> rent-roll fallback for revenue, 0 expenses
+    ]);
+
+    const opts = await getSimulatorOptions(USER);
+    const p1 = opts.properties.find((p) => p.id === 'p1')!;
+    const p2 = opts.properties.find((p) => p.id === 'p2')!;
+    expect(p1).toMatchObject({ totalUnits: 6, monthlyRevenue: 6_000, monthlyExpenses: 2_000 });
+    expect(p2).toMatchObject({ totalUnits: 4, monthlyRevenue: 4_000, monthlyExpenses: 0 });
+    expect(opts.expenseCategories).toEqual(['Utilities']);
   });
 });

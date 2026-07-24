@@ -216,8 +216,33 @@ function RentIncreaseForm({ value, onChange }: { value: Record<string, unknown>;
 }
 
 function AcquisitionForm({ value, onChange }: { value: Record<string, unknown>; onChange: (v: Record<string, unknown>) => void }) {
+  const { data: options } = useSimulatorOptions();
   return (
     <div className="flex flex-col gap-3">
+      <div>
+        <label className="text-xs font-medium text-slate-400 block mb-1.5">Base Estimates On</label>
+        <Select
+          size="md"
+          value={(value.templatePropertyId as string) ?? ''}
+          onChange={(v) => {
+            if (!v) { onChange({ ...value, templatePropertyId: undefined }); return; }
+            const p = options?.properties.find(x => x.id === v);
+            if (!p) return;
+            onChange({
+              ...value,
+              templatePropertyId: v,
+              units: p.totalUnits,
+              monthlyRevenue: p.monthlyRevenue,
+              monthlyExpenses: p.monthlyExpenses,
+            });
+          }}
+          options={[
+            { value: '', label: 'None — enter manually' },
+            ...(options?.properties.map(p => ({ value: p.id, label: `Like ${p.name}` })) ?? []),
+          ]}
+        />
+        <p className="mt-1 text-[11px] text-slate-600">Pre-fills the fields below from that property's actual trailing numbers — edit freely after</p>
+      </div>
       <div>
         <label className="text-xs font-medium text-slate-400 block mb-1.5">Units</label>
         <input
@@ -244,7 +269,7 @@ function AcquisitionForm({ value, onChange }: { value: Record<string, unknown>; 
         />
       </div>
       <div>
-        <label className="text-xs font-medium text-slate-400 block mb-1.5">Property Name (optional)</label>
+        <label className="text-xs font-medium text-slate-400 block mb-1.5">Name This Purchase (optional)</label>
         <input
           type="text"
           value={(value.propertyName as string) ?? ''}
