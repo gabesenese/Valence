@@ -294,11 +294,15 @@ async function calcRentIncrease(
     });
     if (!lease) throw new ValidationError('Selected lease was not found or is not active.');
     const revChange = Number(lease.baseRent) * (params.percentageIncrease / 100);
-    assumptions.push(`Increase applied to a single lease (${lease.tenant.name}, ${fmtMoney(Number(lease.baseRent))}/mo base rent).`);
-    return { revChange, expChange: 0, assumptions };
+    return {
+      revChange,
+      expChange: 0,
+      assumptions,
+      scope: `Scope: single lease — ${lease.tenant.name} (${fmtMoney(Number(lease.baseRent))}/mo base rent).`,
+    };
   }
   const revChange = state.monthlyRevenue * (params.percentageIncrease / 100);
-  return { revChange, expChange: 0, assumptions };
+  return { revChange, expChange: 0, assumptions, scope: undefined };
 }
 
 
@@ -560,6 +564,7 @@ export async function runSimulation(req: SimulationRequest, userId: string): Pro
   let revChange = 0;
   let expChange = 0;
   let occDelta  = 0;
+  let leaseScope: string | undefined;
   const assumptions: string[] = [...state.assumptions];
 
   switch (req.scenario) {
@@ -592,7 +597,7 @@ export async function runSimulation(req: SimulationRequest, userId: string): Pro
     }
     case 'rent_increase': {
       const r = await calcRentIncrease(req.params as RentIncreaseParams, state, userId);
-      revChange = r.revChange; expChange = r.expChange;
+      revChange = r.revChange; expChange = r.expChange; leaseScope = r.scope;
       assumptions.push(...r.assumptions);
       assumptions.push('Assumes tenants accept the increase with no churn — real-world renewals may reduce the upside.');
       break;
@@ -605,6 +610,8 @@ export async function runSimulation(req: SimulationRequest, userId: string): Pro
     const prop = await prisma.property.findFirst({ where: { id: propertyId, ownerId: userId }, select: { name: true } });
     if (!prop) throw new ValidationError('Selected property was not found.');
     assumptions.unshift(`Scope: ${prop.name} only.`);
+  } else if (leaseScope) {
+    assumptions.unshift(leaseScope);
   } else {
     assumptions.unshift(`Scope: entire portfolio (${state.activeLeases} active lease${state.activeLeases === 1 ? '' : 's'} across ${state.totalUnits} units).`);
   }
