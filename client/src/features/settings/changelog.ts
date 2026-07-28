@@ -15,6 +15,31 @@ export const CHANGE_TYPE_LABEL: Record<ChangeType, string> = {
 // Newest first. User-facing release notes — keep the language plain and benefit-led.
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    date: 'July 24, 2026',
+    title: 'A simulator you can trust, numbers that agree everywhere',
+    changes: [
+      { type: 'improved', text: 'The Impact Simulator now shows its work: every result lists the assumptions and estimates it rests on, baselines come from your trailing three complete months (so results don’t swing with the calendar day), and confidence reflects how much real data sits behind the number.' },
+      { type: 'added',    text: 'Choose the scope of any simulation — your entire portfolio, a single property, or one specific lease for rent increases — and the result always states which scope it covers.' },
+      { type: 'added',    text: 'Modeling an acquisition? Start from a property you already own — its unit count and trailing revenue and expenses pre-fill the form as a realistic template you can adjust.' },
+      { type: 'improved', text: 'Simulator results now state where their guidance comes from — analysis written by AI from your computed figures, or standard guidance — and are clearly marked as informational, not financial advice.' },
+      { type: 'improved', text: 'Money fields now read like money — amounts group with thousands separators as you type.' },
+      { type: 'fixed',    text: 'Items sitting in the Trash no longer count toward your metrics. Occupancy, health score, analytics, anomaly scans and tenant counts now agree on every page, even with trashed leases or properties.' },
+      { type: 'improved', text: 'Backups are sturdier: a pre-import snapshot is always completed before the import touches your data, and older snapshots are pruned automatically so they don’t pile up.' },
+      { type: 'improved', text: 'The team list now shows only your own organization’s members, and owners can remove a member in place.' },
+    ],
+  },
+  {
+    date: 'July 12, 2026',
+    title: 'Smoother motion, truer signals',
+    changes: [
+      { type: 'improved', text: 'The whole app moves more smoothly — modals, dropdowns and tab switches animate in and out, stats count up, and Work Queue items cascade into place.' },
+      { type: 'improved', text: 'Occupancy now shows on a continuous color scale — the closer to full, the greener — instead of three flat color buckets.' },
+      { type: 'fixed',    text: 'A property’s page now shows only that property’s alerts — alerts from your other properties and leases no longer leak in.' },
+      { type: 'fixed',    text: 'The lease countdown now tracks the expiry date, matching the risk badge next to it — setting a near renewal date no longer makes a healthy lease look urgent.' },
+      { type: 'fixed',    text: 'The Email Tenant window no longer renders its content flush against the edges.' },
+    ],
+  },
+  {
     date: 'July 11, 2026',
     title: 'Sharper signals, direct action',
     changes: [
