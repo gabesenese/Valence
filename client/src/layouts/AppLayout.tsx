@@ -61,7 +61,7 @@ const NAV_SECTIONS: NavSection[] = [
     ],
   },
   {
-    label: 'Intelligence',
+    label: 'Insights',
     items: [
       { to: '/finance',    icon: DollarSign,      label: 'Finance',     feature: 'finance'                     },
       { to: '/benchmarks', icon: BarChart3,       label: 'Performance', feature: 'performance'                },
