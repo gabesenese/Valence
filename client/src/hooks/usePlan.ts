@@ -30,7 +30,6 @@ export const PLAN_PRICES: Record<Plan, number> = {
 
 const FEATURE_MIN_PLAN: Record<string, Plan> = {
   finance:               'ESSENTIALS',
-  analytics:             'ESSENTIALS',
   alerts:                'ESSENTIALS',
   work_queue:            'PROFESSIONAL',
   integrations:          'PROFESSIONAL',
@@ -39,7 +38,7 @@ const FEATURE_MIN_PLAN: Record<string, Plan> = {
   documents:             'PROFESSIONAL',
   team:                  'PROFESSIONAL',
   automation:            'PROFESSIONAL',
-  performance:           'PROFESSIONAL',
+  performance:           'ESSENTIALS',
   executive_brief:       'EXECUTIVE',
   health_score:          'PROFESSIONAL',
   impact_analysis:       'ESSENTIALS',
