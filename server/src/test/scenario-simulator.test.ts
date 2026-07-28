@@ -5,8 +5,8 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
  * These tests pin: the disclosed expense estimate, category-aware expense
  * increases, multi-lease tenant departures with portfolio-scale occupancy
  * deltas, clamped occupancy drops, input validation, and confidence
- * capping by data quality. GROQ is unset in tests, so the deterministic
- * fallback analysis path runs.
+ * capping by data quality. groq-sdk is mocked to fail so the deterministic
+ * fallback analysis path always runs, even when .env has a live key.
  */
 
 const { prismaMock } = vi.hoisted(() => ({
@@ -18,6 +18,14 @@ const { prismaMock } = vi.hoisted(() => ({
 }));
 
 vi.mock('../infrastructure/database', () => ({ prisma: prismaMock }));
+
+vi.mock('groq-sdk', () => ({
+  default: class {
+    constructor() {
+      throw new Error('groq disabled in tests');
+    }
+  },
+}));
 
 import { runSimulation, getSimulatorOptions } from '../modules/ai/scenario-simulator.service';
 
@@ -140,8 +148,9 @@ describe('rent increase — the upside scenario', () => {
     prismaMock.lease.findFirst.mockResolvedValue({ baseRent: 5_000, tenant: { name: 'Acme Corp' } });
     const res = await runSimulation({ scenario: 'rent_increase', params: { percentageIncrease: 3, leaseId: 'l1' } }, USER);
     expect(res.impact.revenueChange).toBe(150); // 5k * 3%
-    expect(res.assumptions.join(' ')).toMatch(/single lease/i);
-    expect(res.assumptions.join(' ')).toMatch(/Acme Corp/);
+    expect(res.assumptions[0]).toMatch(/single lease/i);
+    expect(res.assumptions[0]).toMatch(/Acme Corp/);
+    expect(res.assumptions.join(' ')).not.toMatch(/entire portfolio/i);
   });
 
   it('rejects a lease that is missing or not owned by the caller', async () => {
