@@ -29,9 +29,13 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm ci
 
       - name: Apply pending migrations
+        working-directory: server
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
-        run: npx prisma migrate deploy --schema server/prisma/schema.prisma
+        run: npx prisma migrate deploy
