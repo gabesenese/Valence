@@ -57,8 +57,8 @@ const TIPS: Record<string, { title: string; body: string }> = {
     body: 'Reach out well before a lease ends — the best renewals aren’t rushed.',
   },
   performance: {
-    title: 'Compare to focus',
-    body: 'See which properties lead and lag, then put attention where it pays.',
+    title: 'Manage the asset, not the money',
+    body: 'Finance tracks the money — here you spot which buildings need attention before it reaches revenue.',
   },
   automation: {
     title: 'Save time',
