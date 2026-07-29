@@ -18,7 +18,6 @@ const LeaseDetailPage = lazy(() => import('@/features/leases/LeaseDetailPage'));
 const PropertiesPage = lazy(() => import('@/features/properties/PropertiesPage'));
 const PropertyDetailPage = lazy(() => import('@/features/properties/PropertyDetailPage'));
 const FinancePage = lazy(() => import('@/features/finance/FinancePage'));
-const AnalyticsPage = lazy(() => import('@/features/analytics/AnalyticsPage'));
 const AlertsPage = lazy(() => import('@/features/alerts/AlertsPage'));
 const TenantsPage = lazy(() => import('@/features/tenants/TenantsPage'));
 const SettingsPage = lazy(() => import('@/features/settings/SettingsPage'));
@@ -82,7 +81,7 @@ export default function App() {
             <Route path="properties" element={<PropertiesPage />} />
             <Route path="properties/:id" element={<PropertyDetailPage />} />
             <Route path="finance" element={<UpgradeGate feature="finance"><FinancePage /></UpgradeGate>} />
-            <Route path="analytics" element={<UpgradeGate feature="analytics"><AnalyticsPage /></UpgradeGate>} />
+            <Route path="analytics" element={<Navigate to="/benchmarks" replace />} />
             <Route path="benchmarks" element={<UpgradeGate feature="performance"><BenchmarksPage /></UpgradeGate>} />
             <Route path="simulator" element={<UpgradeGate feature="impact_analysis"><SimulatorPage /></UpgradeGate>} />
             <Route path="alerts" element={<UpgradeGate feature="alerts"><AlertsPage /></UpgradeGate>} />

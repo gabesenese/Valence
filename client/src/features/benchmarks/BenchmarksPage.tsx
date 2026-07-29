@@ -51,9 +51,7 @@ export default function PortfolioPerformancePage() {
 
   const { highlights, outliers, properties } = data;
 
-  const portfolioRevenue  = properties.reduce((s, p) => s + p.monthlyRevenue, 0);
   const portfolioExpenses = properties.reduce((s, p) => s + p.monthlyExpenses, 0);
-  const portfolioNOI      = portfolioRevenue - portfolioExpenses;
   const hasExpenses       = portfolioExpenses > 0;
   const byNOI = hasExpenses ? [...properties].sort((a, b) => b.noi - a.noi) : [...properties].sort((a, b) => b.monthlyRevenue - a.monthlyRevenue);
 
@@ -139,29 +137,10 @@ export default function PortfolioPerformancePage() {
 
       {properties.length > 0 && (
         <div className="rounded-xl border border-surface-400/30 overflow-hidden">
-          <div className="flex items-center justify-between gap-2 px-4 py-3 border-b border-surface-400/40 bg-surface-200/30">
-            <div className="flex items-center gap-2">
-              <Scale className="h-3.5 w-3.5 text-brand-400" />
-              <span className="text-xs font-semibold text-fg">Profitability by Property</span>
-            </div>
-            <div className="flex items-center gap-4 text-right">
-              <div>
-                <p className="text-xs font-bold tabular-nums text-success">{compactCurrency(portfolioRevenue)}</p>
-                <p className="text-[10px] text-slate-600 uppercase tracking-wider">Revenue</p>
-              </div>
-              <div>
-                <p className={`text-xs font-bold tabular-nums ${hasExpenses ? 'text-danger' : 'text-slate-600'}`}>{hasExpenses ? compactCurrency(portfolioExpenses) : '—'}</p>
-                <p className="text-[10px] text-slate-600 uppercase tracking-wider">Expenses</p>
-              </div>
-              <div>
-                <p className={`text-xs font-bold tabular-nums ${!hasExpenses ? 'text-slate-600' : portfolioNOI >= 0 ? 'text-success' : 'text-danger'}`}>
-                  {hasExpenses
-                    ? <>{compactCurrency(portfolioNOI)} <span className="text-slate-600">({marginPct(portfolioNOI, portfolioRevenue)}%)</span></>
-                    : '—'}
-                </p>
-                <p className="text-[10px] text-slate-600 uppercase tracking-wider">NOI · Margin</p>
-              </div>
-            </div>
+          <div className="flex items-center gap-2 px-4 py-3 border-b border-surface-400/40 bg-surface-200/30">
+            <Scale className="h-3.5 w-3.5 text-brand-400" />
+            <span className="text-xs font-semibold text-fg">Profitability by Property</span>
+            <span className="ml-auto text-[10px] text-slate-600">Ranked by {hasExpenses ? 'NOI' : 'revenue'}</span>
           </div>
           <div className="divide-y divide-surface-400/30">
             {byNOI.map((p, i) => (

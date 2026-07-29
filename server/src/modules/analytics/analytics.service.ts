@@ -1,6 +1,6 @@
 import { prisma } from '../../infrastructure/database';
 import { ACTIVE_LEASE_COUNT, computeOccupancy } from '../metrics/portfolio-metrics';
-import { subMonths, startOfMonth, endOfMonth, format, addDays, differenceInDays } from 'date-fns';
+import { subMonths, startOfMonth, endOfMonth, addDays, differenceInDays } from 'date-fns';
 
 export interface PortfolioInsight {
   id: string;
@@ -239,96 +239,3 @@ export async function getExecutiveSummary(userId: string) {
   };
 }
 
-export async function getLeaseDistribution(userId: string) {
-  const owned = { property: { ownerId: userId }, deletedAt: null };
-  const [byStatus, byRisk, byType] = await Promise.all([
-    prisma.lease.groupBy({ by: ['status'], where: owned, _count: true }),
-    prisma.lease.groupBy({ by: ['renewalRisk'], where: { ...owned, status: 'ACTIVE' }, _count: true }),
-    prisma.lease.groupBy({ by: ['type'], where: owned, _count: true }),
-  ]);
-
-  return { byStatus, byRisk, byType };
-}
-
-export async function getPropertyPerformance(userId: string) {
-  const properties = await prisma.property.findMany({
-    where: { ownerId: userId, status: 'ACTIVE', deletedAt: null },
-    select: {
-      id: true,
-      name: true,
-      code: true,
-      totalUnits: true,
-      _count: ACTIVE_LEASE_COUNT,
-    },
-  });
-
-  const now = new Date();
-  const monthStart = startOfMonth(now);
-
-  const lastMonthStart = startOfMonth(subMonths(now, 1));
-  const lastMonthEnd = endOfMonth(subMonths(now, 1));
-
-  const result = await Promise.all(
-    properties.map(async (p) => {
-      const [revenue, prevRevenue] = await Promise.all([
-        prisma.financialRecord.aggregate({
-          where: { propertyId: p.id, type: 'REVENUE', periodStart: { gte: monthStart }, status: { not: 'VOID' } },
-          _sum: { amount: true },
-        }),
-        prisma.financialRecord.aggregate({
-          where: { propertyId: p.id, type: 'REVENUE', periodStart: { gte: lastMonthStart, lte: lastMonthEnd }, status: { not: 'VOID' } },
-          _sum: { amount: true },
-        }),
-      ]);
-
-      const current = Number(revenue._sum.amount ?? 0);
-      const previous = Number(prevRevenue._sum.amount ?? 0);
-      const revenueDeltaPct = previous > 0 ? Number((((current - previous) / previous) * 100).toFixed(1)) : null;
-
-      return {
-        id: p.id,
-        name: p.name,
-        code: p.code,
-        totalUnits: p.totalUnits,
-        activeLeases: p._count.leases,
-        occupancyRate: p.totalUnits > 0 ? Number(((p._count.leases / p.totalUnits) * 100).toFixed(2)) : 0,
-        monthlyRevenue: current,
-        revenueDeltaPct,
-      };
-    })
-  );
-
-  return result.sort((a, b) => b.monthlyRevenue - a.monthlyRevenue);
-}
-
-export async function getRevenueTrend(months = 12, userId: string) {
-  const now = new Date();
-  const trend: Array<{ month: string; revenue: number; expenses: number; net: number }> = [];
-  const ownedRecord = { property: { ownerId: userId } };
-
-  for (let i = months - 1; i >= 0; i--) {
-    const monthDate = subMonths(now, i);
-    const start = startOfMonth(monthDate);
-    const end = endOfMonth(monthDate);
-
-    const [revenue, expenses] = await Promise.all([
-      prisma.financialRecord.aggregate({
-        where: { ...ownedRecord, type: 'REVENUE', periodStart: { gte: start, lte: end }, status: { not: 'VOID' } },
-        _sum: { amount: true },
-      }),
-      prisma.financialRecord.aggregate({
-        where: { ...ownedRecord, type: 'EXPENSE', periodStart: { gte: start, lte: end }, status: { not: 'VOID' } },
-        _sum: { amount: true },
-      }),
-    ]);
-
-    trend.push({
-      month: format(monthDate, 'MMM yy'),
-      revenue: Number(revenue._sum.amount ?? 0),
-      expenses: Number(expenses._sum.amount ?? 0),
-      net: Number(revenue._sum.amount ?? 0) - Number(expenses._sum.amount ?? 0),
-    });
-  }
-
-  return trend;
-}

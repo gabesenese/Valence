@@ -3,7 +3,7 @@ import { Outlet, NavLink, Link, useLocation, useNavigate } from 'react-router-do
 import { useQuery } from '@tanstack/react-query';
 import {
   FileText, Building2, BarChart3, Bell, DollarSign,
-  LogOut, ChevronLeft, Users, Settings, Inbox, Layers,
+  LogOut, ChevronLeft, Users, Settings, Inbox,
   Wand2, ClipboardList, Heart, FolderOpen, Zap, Lock, Upload, ScrollText, Download,
   UserX, Sparkles, HelpCircle, Trash2, Database, Menu, X,
 } from 'lucide-react';
@@ -29,8 +29,7 @@ const ROUTE_TIP: Record<string, string> = {
   '/tenants': 'tenants',
   '/tasks': 'tasks',
   '/crm': 'crm',
-  '/analytics': 'analytics',
-  '/performance': 'performance',
+  '/benchmarks': 'performance',
   '/automation': 'automation',
   '/alerts': 'alerts',
   '/documents': 'documents',
@@ -65,8 +64,7 @@ const NAV_SECTIONS: NavSection[] = [
     label: 'Intelligence',
     items: [
       { to: '/finance',    icon: DollarSign,      label: 'Finance',     feature: 'finance'                     },
-      { to: '/analytics',  icon: BarChart3,       label: 'Analytics',   feature: 'analytics'                   },
-      { to: '/benchmarks', icon: Layers,          label: 'Performance', feature: 'performance'                },
+      { to: '/benchmarks', icon: BarChart3,       label: 'Performance', feature: 'performance'                },
     ],
   },
   {

@@ -56,10 +56,6 @@ const TIPS: Record<string, { title: string; body: string }> = {
     title: 'Renewals start early',
     body: 'Reach out well before a lease ends — the best renewals aren’t rushed.',
   },
-  analytics: {
-    title: 'Watch what’s moving',
-    body: 'Don’t just read today’s numbers — watch what’s changed since your last visit.',
-  },
   performance: {
     title: 'Compare to focus',
     body: 'See which properties lead and lag, then put attention where it pays.',
