@@ -25,7 +25,7 @@ export function CollectionsWorkspace({ open, leaseId, onClose }: { open: boolean
   const navigate = useNavigate();
   const [done, setDone] = useState<string | null>(null);
 
-  const { data: ctx, isLoading } = useQuery({
+  const { data: ctx, isLoading, isError } = useQuery({
     queryKey: ['finance', 'collections', leaseId],
     queryFn: () => financeService.getCollections(leaseId!),
     enabled: open && !!leaseId,
@@ -74,8 +74,18 @@ export function CollectionsWorkspace({ open, leaseId, onClose }: { open: boolean
 
   return (
     <WorkspaceShell open={open} onClose={handleClose} eyebrow="Collections" title={ctx?.tenantName ?? 'Collections'} subtitle={ctx?.propertyName} meta={meta} footer={footer}>
-      {isLoading || !ctx ? (
+      {isLoading ? (
         <p className="py-8 text-center text-sm text-slate-500">Loading…</p>
+      ) : isError || !ctx ? (
+        <div className="flex flex-1 flex-col items-center justify-center gap-3 py-10 text-center">
+          <p className="text-sm font-medium text-fg">Couldn't load this collections case.</p>
+          <p className="max-w-xs text-xs leading-relaxed text-slate-500">The lease may have been removed or reassigned. Open the lease to review it directly.</p>
+          {leaseId && (
+            <button type="button" onClick={viewLease} className="text-sm font-medium text-brand-300 hover:text-brand-200">
+              View lease →
+            </button>
+          )}
+        </div>
       ) : (
         <>
           <div className="rounded-lg border border-surface-400/30 px-4 py-3">
