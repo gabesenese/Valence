@@ -20,6 +20,7 @@ const clean: HealthInput = {
   overdueBalance: 0,
   flaggedRecords: 0,
   confidence: { level: 'HIGH', basis: 'complete data' },
+  hasData: true,
 };
 
 const dq = (r: ReturnType<typeof computeHealthScore>) => r.factors.find((f) => f.key === 'dataQuality')!;
@@ -50,5 +51,32 @@ describe('computeHealthScore — confidence cap', () => {
     const capped = computeHealthScore(struggling).score;
     const uncapped = computeHealthScore({ ...struggling, confidence: { level: 'HIGH', basis: 'x' } }).score;
     expect(capped).toBe(uncapped);
+  });
+});
+
+describe('computeHealthScore — insufficient data', () => {
+  const empty: HealthInput = {
+    monthlyRevenue: 0,
+    netCurrent: 0,
+    revenueDeltaPct: null,
+    expenseDeltaPct: null,
+    expensesComparable: false,
+    atRisk: { totalAtRisk: 0, leaseCount: 0, highRiskCount: 0, renewalsNotStarted: 0 },
+    overBudgetCount: 0,
+    worstBudgetVariancePct: null,
+    overdueBalance: 0,
+    flaggedRecords: 0,
+    confidence: { level: 'LOW', basis: 'no revenue records' },
+    hasData: false,
+  };
+
+  it('an empty portfolio is flagged insufficient rather than scored "Healthy"', () => {
+    const r = computeHealthScore(empty);
+    expect(r.insufficient).toBe(true);
+  });
+
+  it('once any signal exists the score is no longer insufficient', () => {
+    const r = computeHealthScore({ ...empty, monthlyRevenue: 8_000, hasData: true });
+    expect(r.insufficient).toBe(false);
   });
 });

@@ -101,13 +101,18 @@ export function FinancialIntelligence() {
     0,
   );
 
+  const insufficient = data.health.insufficient;
   const nearTerm = outlook ? outlook.timeline.slice(0, 2).reduce((s, m) => s + m.revenueAtRisk, 0) : 0;
   const atRiskHighlight = data.highlights.find((h) => h.kind === 'REVENUE_AT_RISK');
 
-  const riskText = nearTerm > 0
+  const riskText = insufficient
+    ? 'Not enough data yet to assess portfolio risk.'
+    : nearTerm > 0
     ? `Renewals over the next 60 days may reduce annual revenue by ${compactCurrency(nearTerm * 12)}.`
     : atRiskHighlight ? `${atRiskHighlight.count} lease${atRiskHighlight.count !== 1 ? 's are' : ' is'} approaching renewal.` : 'No material financial risks on the horizon.';
-  const aheadText = nearTerm > 0 ? 'Revenue expected to soften over the next quarter.' : 'Revenue expected to hold steady over the next quarter.';
+  const aheadText = insufficient
+    ? 'Add your leases and revenue to see where the portfolio is heading.'
+    : nearTerm > 0 ? 'Revenue expected to soften over the next quarter.' : 'Revenue expected to hold steady over the next quarter.';
   const outlookSections = [
     { label: 'Biggest risk ahead', value: riskText },
     { label: 'Looking ahead', value: aheadText },
@@ -125,11 +130,11 @@ export function FinancialIntelligence() {
       <div className="rounded-xl border border-surface-400/50 bg-surface-100 px-5 py-4">
         <div className="flex items-center justify-between gap-3">
           <span className="text-[11px] font-semibold uppercase tracking-widest text-slate-500">Portfolio Outlook</span>
-          <span className={`flex items-center gap-1.5 text-sm font-semibold ${band.text}`}>
-            {data.health.band === 'HEALTHY'
+          <span className={`flex items-center gap-1.5 text-sm font-semibold ${insufficient ? 'text-slate-500' : band.text}`}>
+            {!insufficient && (data.health.band === 'HEALTHY'
               ? <Check className="h-4 w-4" />
-              : <AlertTriangle className="h-4 w-4" />}
-            {band.outlook}
+              : <AlertTriangle className="h-4 w-4" />)}
+            {insufficient ? 'Not yet assessed' : band.outlook}
           </span>
         </div>
         <div className="mt-3 grid grid-cols-1 gap-4 border-t border-surface-400/30 pt-3 sm:grid-cols-2">
@@ -205,11 +210,15 @@ export function FinancialIntelligence() {
       <div className="rounded-xl border border-surface-400/50 bg-surface-100 px-5 py-4">
         <div className="flex items-baseline justify-between gap-3">
           <span className="text-[11px] font-semibold uppercase tracking-widest text-slate-500">Portfolio Health</span>
-          <div className="flex items-baseline gap-2">
-            <span className={`text-2xl font-bold tabular-nums ${band.text}`}>{data.health.score}</span>
-            <span className="text-[11px] text-slate-500">/ 100</span>
-            <span className={`text-sm font-semibold ${band.text}`}>{band.label}</span>
-          </div>
+          {insufficient ? (
+            <span className="text-sm font-semibold text-slate-500">Not enough data yet</span>
+          ) : (
+            <div className="flex items-baseline gap-2">
+              <span className={`text-2xl font-bold tabular-nums ${band.text}`}>{data.health.score}</span>
+              <span className="text-[11px] text-slate-500">/ 100</span>
+              <span className={`text-sm font-semibold ${band.text}`}>{band.label}</span>
+            </div>
+          )}
         </div>
         {provisional && (
           <button
@@ -218,27 +227,31 @@ export function FinancialIntelligence() {
             className="group mt-1.5 flex w-full items-center gap-1.5 text-left text-[11px] text-slate-500 transition-colors hover:text-brand-300"
           >
             <AlertTriangle className="h-3 w-3 shrink-0 text-warning" />
-            <span>Provisional{basisLower ? ` — ${basisLower}` : ''}. Add your data to sharpen it.</span>
+            <span>{insufficient ? 'No financial data yet. Import leases and revenue to calculate health.' : `Provisional${basisLower ? ` — ${basisLower}` : ''}. Add your data to sharpen it.`}</span>
             <ArrowRight className="ml-auto h-3 w-3 shrink-0 opacity-0 transition-opacity group-hover:opacity-100" />
           </button>
         )}
-        <p className="mt-2 text-[11px] text-slate-500">What’s driving the score</p>
-        <div className="mt-2 grid grid-cols-1 gap-x-6 gap-y-2 border-t border-surface-400/30 pt-3 sm:grid-cols-2">
-          {factors.map((f) => {
-            const meta = FACTOR_STATUS[f.status];
-            return (
-              <div key={f.key} className="flex items-center justify-between gap-2">
-                <span className="text-xs text-slate-300">{f.label}</span>
-                <span className={`flex items-center gap-1 text-[11px] font-semibold ${meta.text}`}>
-                  {meta.good
-                    ? <Check className="h-3 w-3 shrink-0" />
-                    : <AlertTriangle className="h-3 w-3 shrink-0" />}
-                  {meta.word}
-                </span>
-              </div>
-            );
-          })}
-        </div>
+        {!insufficient && (
+          <>
+            <p className="mt-2 text-[11px] text-slate-500">What’s driving the score</p>
+            <div className="mt-2 grid grid-cols-1 gap-x-6 gap-y-2 border-t border-surface-400/30 pt-3 sm:grid-cols-2">
+              {factors.map((f) => {
+                const meta = FACTOR_STATUS[f.status];
+                return (
+                  <div key={f.key} className="flex items-center justify-between gap-2">
+                    <span className="text-xs text-slate-300">{f.label}</span>
+                    <span className={`flex items-center gap-1 text-[11px] font-semibold ${meta.text}`}>
+                      {meta.good
+                        ? <Check className="h-3 w-3 shrink-0" />
+                        : <AlertTriangle className="h-3 w-3 shrink-0" />}
+                      {meta.word}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        )}
       </div>
 
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 px-1 text-[11px] text-slate-600">

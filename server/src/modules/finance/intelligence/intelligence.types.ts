@@ -55,6 +55,10 @@ export interface HealthScore {
   factors: HealthFactor[];
   reasons: string[];
   confidence: Confidence;
+  // True when the portfolio has no meaningful financial signal yet (no revenue,
+  // expenses, at-risk renewals, or overdue rent). A score on no data is a
+  // fabricated number — the UI shows "Not enough data yet" instead.
+  insufficient: boolean;
 }
 
 export interface ChangeItem {

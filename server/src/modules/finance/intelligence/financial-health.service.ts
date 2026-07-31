@@ -12,6 +12,9 @@ export interface HealthInput {
   overdueBalance: number;
   flaggedRecords: number;
   confidence: Confidence;
+  // False when there is no financial signal at all — the score is meaningless
+  // and the caller should surface "not enough data" rather than a number.
+  hasData: boolean;
 }
 
 const clamp = (n: number) => Math.max(0, Math.min(100, Math.round(n)));
@@ -125,5 +128,6 @@ export function computeHealthScore(input: HealthInput): HealthScore {
     factors,
     reasons: reasons.slice(0, 4),
     confidence: input.confidence,
+    insufficient: !input.hasData,
   };
 }
