@@ -50,6 +50,12 @@ export async function getFinanceIntelligence(userId: string): Promise<FinancialI
     overdueBalance: lateFee.overdueBalance,
     flaggedRecords: summary.flaggedRecords,
     confidence: netMetric.confidence,
+    hasData:
+      period.current.revenue > 0 ||
+      period.previous.revenue > 0 ||
+      atRisk.totalAtRisk > 0 ||
+      lateFee.overdueBalance > 0 ||
+      overBudget.length > 0,
   });
 
   const highlights: Highlight[] = [];

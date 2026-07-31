@@ -427,7 +427,19 @@ export default function WorkQueuePage() {
       !(i.daysUntilExpiry !== null && i.daysUntilExpiry >= 0 && i.daysUntilExpiry <= 7),
   ) ?? [];
 
-  const totalRisk = data?.items.reduce((s, i) => s + i.monthlyRisk, 0) ?? 0;
+  // "Revenue at risk" is renewal exposure — the monthly rent of leases that could
+  // lapse — and must reconcile with Finance's revenue-at-risk figure. Overdue
+  // invoices are collections (a separate line), and one lease that has both a
+  // renewal alert and an overdue invoice must not be counted twice, so we sum
+  // renewal-side items once per lease and exclude OVERDUE_INVOICE.
+  const riskByLease = new Map<string, number>();
+  let unattributedRisk = 0;
+  for (const i of data?.items ?? []) {
+    if (i.type === 'OVERDUE_INVOICE' || i.monthlyRisk <= 0) continue;
+    if (i.leaseId) riskByLease.set(i.leaseId, Math.max(riskByLease.get(i.leaseId) ?? 0, i.monthlyRisk));
+    else unattributedRisk += i.monthlyRisk;
+  }
+  const totalRisk = [...riskByLease.values()].reduce((s, v) => s + v, 0) + unattributedRisk;
   const topItem = critical[0];
 
   const cardProps = { busyId, onProgress: handleProgress, onResolve: handleResolve, onDismiss: handleDismiss };

@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   ArrowRight, Building2, FileText, Users, Bell, Inbox,
-  ChevronRight, CheckCircle2,
+  ChevronLeft, ChevronRight, CheckCircle2,
   Cpu, BarChart3, Shield, Zap, Play, Loader2, BookOpen, Lock, Database,
 } from 'lucide-react';
 import { useAuthStore } from '@/state/auth.store';
@@ -45,6 +45,15 @@ const QUEUE_ITEMS = [
     meta: 'Below 75% threshold · 3 units vacant 60+ days',
     action: 'Review Pricing Strategy',
   },
+];
+
+const SHOTS = [
+  { label: 'Work Queue',      path: 'queue',       src: '/product-shots/work-queue.png',      caption: 'Every morning, your whole portfolio ranked by dollars at risk — each item carrying the one action that clears it.' },
+  { label: 'Leases',          path: 'leases',      src: '/product-shots/leases.png',          caption: 'Every lease from not-started to signed, scored by renewal risk — so an expiry never quietly turns into a vacancy.' },
+  { label: 'Finance',         path: 'finance',     src: '/product-shots/finance.png',         caption: 'Where revenue leaks first — renewals at risk, overdue rent, thinning margin — read as flags to act on, not spreadsheets to decode.' },
+  { label: 'Impact Analysis', path: 'simulator',   src: '/product-shots/impact-analysis.png', caption: 'Model a vacancy, a rent change, or an acquisition before you commit — and see the revenue and NOI impact, with the reasoning.' },
+  { label: 'Alerts',          path: 'alerts',      src: '/product-shots/alerts.png',          caption: 'Every operational risk tracked with full accountability — acknowledge, act, or escalate, with an audit trail on each.' },
+  { label: 'Performance',     path: 'performance', src: '/product-shots/performance.png',     caption: 'Which buildings lead and which lag, side by side, so attention goes where it actually pays.' },
 ];
 
 function QueueMock() {
@@ -162,12 +171,23 @@ export default function LandingPage() {
   const setAuth = useAuthStore((s) => s.setAuth);
   const navigate = useNavigate();
   const [demoLoading, setDemoLoading] = useState(false);
+  const [shotTab, setShotTab] = useState(0);
+  const [shotPaused, setShotPaused] = useState(false);
+  const shotStartX = useRef(0);
+  const shotPrev = () => setShotTab((i) => (i - 1 + SHOTS.length) % SHOTS.length);
+  const shotNext = () => setShotTab((i) => (i + 1) % SHOTS.length);
 
   useEffect(() => {
     if (user) navigate('/queue', { replace: true });
   }, [user, navigate]);
 
   useEffect(() => { eventService.track('visitor'); }, []);
+
+  useEffect(() => {
+    if (shotPaused) return;
+    const t = setTimeout(() => setShotTab((i) => (i + 1) % SHOTS.length), 5000);
+    return () => clearTimeout(t);
+  }, [shotTab, shotPaused]);
 
   if (user) return null;
 
@@ -258,6 +278,118 @@ export default function LandingPage() {
               title="Take Action"
               body="Your Work Queue tells you exactly what to do next. Every item, every day, ordered by what matters most."
             />
+          </div>
+        </div>
+      </section>
+
+      <section className="relative z-10 py-20">
+        <div className="mx-auto max-w-6xl px-6">
+          <div className="mb-10 text-center">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-brand-400">See Inside</p>
+            <h2 className="text-3xl font-bold text-fg">The product, not a pitch</h2>
+            <p className="mx-auto mt-3 max-w-xl text-sm leading-relaxed text-slate-400">
+              This is the actual platform, running on a live demo portfolio. No signup needed to look.
+            </p>
+          </div>
+
+          <div
+            className="mx-auto max-w-5xl"
+            onMouseEnter={() => setShotPaused(true)}
+            onMouseLeave={() => setShotPaused(false)}
+          >
+            <div
+              className="group relative"
+              onPointerDown={(e) => { shotStartX.current = e.clientX; }}
+              onPointerUp={(e) => {
+                const dx = e.clientX - shotStartX.current;
+                if (dx > 60) shotPrev();
+                else if (dx < -60) shotNext();
+              }}
+            >
+              <div className="w-full overflow-hidden rounded-2xl border border-surface-400/40 bg-surface-100 shadow-[0_32px_80px_rgba(0,0,0,0.6)]">
+                <div className="flex items-center justify-between gap-3 border-b border-surface-400/30 bg-surface-200/60 px-4 py-3">
+                  <div className="flex items-center gap-2">
+                    <div className="h-2.5 w-2.5 rounded-full bg-danger/60" />
+                    <div className="h-2.5 w-2.5 rounded-full bg-warning/60" />
+                    <div className="h-2.5 w-2.5 rounded-full bg-success/60" />
+                  </div>
+                  <div className="mx-6 flex-1">
+                    <div className="mx-auto flex h-5 max-w-xs items-center justify-center rounded-md border border-surface-400/30 bg-surface-300/40">
+                      <span className="text-[10px] text-slate-600">app.valence.com/{SHOTS[shotTab].path}</span>
+                    </div>
+                  </div>
+                  <div className="w-14" />
+                </div>
+                <div className="relative aspect-[1440/900] w-full bg-surface-100">
+                  {SHOTS.map((s, i) => (
+                    <img
+                      key={s.src}
+                      src={s.src}
+                      alt={`Valence ${s.label}`}
+                      loading={i === 0 ? 'eager' : 'lazy'}
+                      aria-hidden={i !== shotTab}
+                      draggable={false}
+                      className={cn(
+                        'absolute inset-0 block h-full w-full select-none object-cover object-top transition-opacity duration-500',
+                        i === shotTab ? 'opacity-100' : 'pointer-events-none opacity-0',
+                      )}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={shotPrev}
+                aria-label="Previous screen"
+                className="absolute left-3 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-surface-400/40 bg-surface-100/90 text-slate-400 opacity-0 shadow-lg backdrop-blur transition-all hover:text-fg focus-visible:opacity-100 group-hover:opacity-100"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                onClick={shotNext}
+                aria-label="Next screen"
+                className="absolute right-3 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-surface-400/40 bg-surface-100/90 text-slate-400 opacity-0 shadow-lg backdrop-blur transition-all hover:text-fg focus-visible:opacity-100 group-hover:opacity-100"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
+
+            <p className="mx-auto mt-5 min-h-[2.5rem] max-w-2xl text-center text-sm font-medium leading-relaxed text-slate-300">
+              {SHOTS[shotTab].caption}
+            </p>
+
+            <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
+              {SHOTS.map((s, i) => (
+                <button
+                  key={s.label}
+                  type="button"
+                  onClick={() => setShotTab(i)}
+                  aria-pressed={i === shotTab}
+                  className={cn(
+                    'rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors',
+                    i === shotTab
+                      ? 'bg-brand-600 text-white'
+                      : 'border border-surface-400/40 bg-surface-100 text-slate-400 hover:border-surface-500/60 hover:text-fg',
+                  )}
+                >
+                  {s.label}
+                </button>
+              ))}
+            </div>
+            <div className="mt-7 text-center">
+              <button
+                onClick={handleDemo}
+                disabled={demoLoading}
+                className="inline-flex items-center gap-2 rounded-xl bg-brand-600 px-6 py-3 text-sm font-semibold text-white shadow-glow-brand transition-colors hover:bg-brand-500 disabled:opacity-60"
+              >
+                {demoLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5" />}
+                {demoLoading ? 'Loading demo…' : 'Explore the live demo'}
+                {!demoLoading && <ArrowRight className="h-4 w-4" />}
+              </button>
+              <p className="mt-3 text-xs text-slate-600">Loads instantly with real data · No account needed</p>
+            </div>
           </div>
         </div>
       </section>

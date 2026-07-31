@@ -294,6 +294,7 @@ export interface HealthScore {
   factors: HealthFactor[];
   reasons: string[];
   confidence: Confidence;
+  insufficient: boolean;
 }
 
 export interface ChangeItem {

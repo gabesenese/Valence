@@ -8,25 +8,15 @@ const months = (base: Date, n: number) => {
 };
 
 export class DemoPortfolioFactory {
-  private lnum(userId: string, n: number): string {
-    return `DEMO-${userId.slice(0, 8).toUpperCase()}-${String(n).padStart(3, '0')}`;
-  }
-
   async reset(userId: string) {
-    const prefix = `DEMO-${userId.slice(0, 8).toUpperCase()}-`;
-    const demoLeaseIds = (await prisma.lease.findMany({ where: { leaseNumber: { startsWith: prefix } }, select: { id: true } })).map(l => l.id);
-
     const propIds = (await prisma.property.findMany({ where: { ownerId: userId }, select: { id: true } })).map(p => p.id);
-    const allLeaseIds = [
-      ...(await prisma.lease.findMany({ where: { propertyId: { in: propIds } }, select: { id: true } })).map(l => l.id),
-      ...demoLeaseIds,
-    ].filter((id, i, arr) => arr.indexOf(id) === i);
+    const allLeaseIds = (await prisma.lease.findMany({ where: { propertyId: { in: propIds } }, select: { id: true } })).map(l => l.id);
     const alertIds = (await prisma.alert.findMany({ where: { OR: [{ propertyId: { in: propIds } }, { createdById: userId }] }, select: { id: true } })).map(a => a.id);
 
     await prisma.task.deleteMany({ where: { OR: [{ propertyId: { in: propIds } }, { leaseId: { in: allLeaseIds } }, { alertId: { in: alertIds } }] } });
     await prisma.alert.deleteMany({ where: { id: { in: alertIds } } });
     await prisma.insight.deleteMany({ where: { propertyId: { in: propIds } } });
-    await prisma.financialRecord.deleteMany({ where: { OR: [{ propertyId: { in: propIds } }, { leaseId: { in: demoLeaseIds } }] } });
+    await prisma.financialRecord.deleteMany({ where: { OR: [{ propertyId: { in: propIds } }, { leaseId: { in: allLeaseIds } }] } });
     await prisma.contactLog.deleteMany({ where: { tenant: { ownerId: userId } } });
     await prisma.document.deleteMany({ where: { uploadedById: userId } });
     await prisma.lease.deleteMany({ where: { id: { in: allLeaseIds } } });
@@ -51,8 +41,8 @@ export class DemoPortfolioFactory {
           city: 'Toronto',
           state: 'ON',
           zipCode: 'M5A 1A1',
-          totalUnits: 24,
-          totalSqft: 48000,
+          totalUnits: 7,
+          totalSqft: 13600,
           yearBuilt: 1998,
           purchasePrice: 8_400_000,
           currentValue: 10_200_000,
@@ -67,8 +57,8 @@ export class DemoPortfolioFactory {
           city: 'Toronto',
           state: 'ON',
           zipCode: 'M5V 1J2',
-          totalUnits: 8,
-          totalSqft: 22000,
+          totalUnits: 5,
+          totalSqft: 16800,
           yearBuilt: 2005,
           purchasePrice: 3_800_000,
           currentValue: 4_600_000,
@@ -83,8 +73,8 @@ export class DemoPortfolioFactory {
           city: 'Vancouver',
           state: 'BC',
           zipCode: 'V6B 1A1',
-          totalUnits: 12,
-          totalSqft: 35000,
+          totalUnits: 5,
+          totalSqft: 13100,
           yearBuilt: 2011,
           purchasePrice: 5_600_000,
           currentValue: 7_100_000,
@@ -106,26 +96,26 @@ export class DemoPortfolioFactory {
         ]);
 
       const leases = await Promise.all([
-        tx.lease.create({ data: { leaseNumber: this.lnum(userId, 1),  propertyId: maple.id,    tenantId: meridian.id,     unitNumber: 'Suite 1A', type: 'GROSS', status: 'ACTIVE',   renewalRisk: 'LOW',      startDate: months(now, -18), endDate: months(now, 24),  baseRent: 8_500,  rentEscalation: 0.03,  securityDeposit: 17_000, sqft: 2200, renewalStage: 'NOT_STARTED' } }),
-        tx.lease.create({ data: { leaseNumber: this.lnum(userId, 2),  propertyId: maple.id,    tenantId: peak.id,         unitNumber: 'Suite 2B', type: 'GROSS', status: 'ACTIVE',   renewalRisk: 'MEDIUM',   startDate: months(now, -16), endDate: months(now, 8),   baseRent: 6_200,  rentEscalation: 0.025, securityDeposit: 12_400, sqft: 1600, renewalStage: 'CONTACTED',   lastContactedAt: add(now, -14) } }),
-        tx.lease.create({ data: { leaseNumber: this.lnum(userId, 3),  propertyId: maple.id,    tenantId: harbor.id,       unitNumber: 'Suite 3C', type: 'GROSS', status: 'ACTIVE',   renewalRisk: 'LOW',      startDate: months(now, -6),  endDate: months(now, 36),  baseRent: 9_800,  rentEscalation: 0.03,  securityDeposit: 19_600, sqft: 2800, renewalStage: 'NOT_STARTED' } }),
-        tx.lease.create({ data: { leaseNumber: this.lnum(userId, 4),  propertyId: maple.id,    tenantId: westside.id,     unitNumber: 'Suite 4D', type: 'GROSS', status: 'ACTIVE',   renewalRisk: 'HIGH',     startDate: months(now, -47), endDate: add(now, 45),     baseRent: 7_400,  rentEscalation: 0.02,  securityDeposit: 14_800, sqft: 1900, renewalStage: 'NEGOTIATING', lastContactedAt: add(now, -7)  } }),
-        tx.lease.create({ data: { leaseNumber: this.lnum(userId, 5),  propertyId: maple.id,    tenantId: coretech.id,     unitNumber: 'Suite 5E', type: 'GROSS', status: 'ACTIVE',   renewalRisk: 'LOW',      startDate: months(now, -6),  endDate: months(now, 18),  baseRent: 5_800,  rentEscalation: 0.03,  securityDeposit: 11_600, sqft: 1500, renewalStage: 'NOT_STARTED' } }),
-        tx.lease.create({ data: { leaseNumber: this.lnum(userId, 6),  propertyId: maple.id,    tenantId: metro.id,        unitNumber: 'Suite 6F', type: 'GROSS', status: 'ACTIVE',   renewalRisk: 'MEDIUM',   startDate: months(now, -18), endDate: months(now, 6),   baseRent: 6_500,  rentEscalation: 0.02,  securityDeposit: 13_000, sqft: 1700, renewalStage: 'CONTACTED',   lastContactedAt: add(now, -21) } }),
-        tx.lease.create({ data: { leaseNumber: this.lnum(userId, 7),  propertyId: king.id,     tenantId: sunrise.id,      unitNumber: 'Unit 101', type: 'NET',   status: 'ACTIVE',   renewalRisk: 'CRITICAL', startDate: months(now, -59), endDate: add(now, 30),     baseRent: 12_000, rentEscalation: 0.025, securityDeposit: 24_000, sqft: 3200, renewalStage: 'NEGOTIATING', lastContactedAt: add(now, -3)  } }),
-        tx.lease.create({ data: { leaseNumber: this.lnum(userId, 8),  propertyId: king.id,     tenantId: brighthorizon.id,unitNumber: 'Unit 102', type: 'GROSS', status: 'ACTIVE',   renewalRisk: 'HIGH',     startDate: months(now, -23), endDate: add(now, 90),     baseRent: 4_800,  rentEscalation: 0.02,  securityDeposit: 9_600,  sqft: 1200, renewalStage: 'CONTACTED',   lastContactedAt: add(now, -10) } }),
-        tx.lease.create({ data: { leaseNumber: this.lnum(userId, 9),  propertyId: king.id,     tenantId: axiom.id,        unitNumber: 'Unit 201', type: 'GROSS', status: 'ACTIVE',   renewalRisk: 'LOW',      startDate: months(now, -12), endDate: months(now, 30),  baseRent: 18_000, rentEscalation: 0.03,  securityDeposit: 36_000, sqft: 4800, renewalStage: 'NOT_STARTED' } }),
-        tx.lease.create({ data: { leaseNumber: this.lnum(userId, 10), propertyId: king.id,     tenantId: pacific.id,      unitNumber: 'Unit 202', type: 'GROSS', status: 'ACTIVE',   renewalRisk: 'LOW',      startDate: months(now, -6),  endDate: months(now, 48),  baseRent: 15_500, rentEscalation: 0.03,  securityDeposit: 31_000, sqft: 4200, renewalStage: 'NOT_STARTED' } }),
-        tx.lease.create({ data: { leaseNumber: this.lnum(userId, 11), propertyId: riverside.id,tenantId: meridian.id,     unitNumber: 'Suite A',  type: 'GROSS', status: 'ACTIVE',   renewalRisk: 'LOW',      startDate: months(now, -10), endDate: months(now, 22),  baseRent: 11_000, rentEscalation: 0.03,  securityDeposit: 22_000, sqft: 2900, renewalStage: 'NOT_STARTED' } }),
-        tx.lease.create({ data: { leaseNumber: this.lnum(userId, 12), propertyId: riverside.id,tenantId: peak.id,         unitNumber: 'Suite B',  type: 'GROSS', status: 'ACTIVE',   renewalRisk: 'MEDIUM',   startDate: months(now, -19), endDate: months(now, 5),   baseRent: 8_800,  rentEscalation: 0.02,  securityDeposit: 17_600, sqft: 2300, renewalStage: 'CONTACTED',   lastContactedAt: add(now, -28) } }),
-        tx.lease.create({ data: { leaseNumber: this.lnum(userId, 13), propertyId: riverside.id,tenantId: coretech.id,     unitNumber: 'Suite C',  type: 'GROSS', status: 'ACTIVE',   renewalRisk: 'LOW',      startDate: months(now, -8),  endDate: months(now, 26),  baseRent: 7_200,  rentEscalation: 0.03,  securityDeposit: 14_400, sqft: 1900, renewalStage: 'NOT_STARTED' } }),
-        tx.lease.create({ data: { leaseNumber: this.lnum(userId, 14), propertyId: riverside.id,tenantId: harbor.id,       unitNumber: 'Suite D',  type: 'GROSS', status: 'ACTIVE',   renewalRisk: 'LOW',      startDate: months(now, -4),  endDate: months(now, 36),  baseRent: 13_500, rentEscalation: 0.03,  securityDeposit: 27_000, sqft: 3600, renewalStage: 'NOT_STARTED' } }),
-        tx.lease.create({ data: { leaseNumber: this.lnum(userId, 15), propertyId: riverside.id,tenantId: axiom.id,        unitNumber: 'Suite E',  type: 'GROSS', status: 'EXPIRED',  renewalRisk: 'LOW',      startDate: months(now, -48), endDate: months(now, -12), baseRent: 9_000,  rentEscalation: 0.02,  securityDeposit: 18_000, sqft: 2400, renewalStage: 'NOT_STARTED' } }),
+        tx.lease.create({ data: { leaseNumber: 'MAPLE-1A',  propertyId: maple.id,    tenantId: meridian.id,     unitNumber: 'Suite 1A', type: 'GROSS', status: 'ACTIVE',   renewalRisk: 'LOW',      startDate: months(now, -18), endDate: months(now, 24),  baseRent: 8_500,  rentEscalation: 0.03,  securityDeposit: 17_000, sqft: 2200, renewalStage: 'NOT_STARTED' } }),
+        tx.lease.create({ data: { leaseNumber: 'MAPLE-2B',  propertyId: maple.id,    tenantId: peak.id,         unitNumber: 'Suite 2B', type: 'GROSS', status: 'ACTIVE',   renewalRisk: 'MEDIUM',   startDate: months(now, -16), endDate: months(now, 8),   baseRent: 6_200,  rentEscalation: 0.025, securityDeposit: 12_400, sqft: 1600, renewalStage: 'CONTACTED',   lastContactedAt: add(now, -14) } }),
+        tx.lease.create({ data: { leaseNumber: 'MAPLE-3C',  propertyId: maple.id,    tenantId: harbor.id,       unitNumber: 'Suite 3C', type: 'GROSS', status: 'ACTIVE',   renewalRisk: 'LOW',      startDate: months(now, -6),  endDate: months(now, 36),  baseRent: 9_800,  rentEscalation: 0.03,  securityDeposit: 19_600, sqft: 2800, renewalStage: 'NOT_STARTED' } }),
+        tx.lease.create({ data: { leaseNumber: 'MAPLE-4D',  propertyId: maple.id,    tenantId: westside.id,     unitNumber: 'Suite 4D', type: 'GROSS', status: 'ACTIVE',   renewalRisk: 'HIGH',     startDate: months(now, -47), endDate: add(now, 45),     baseRent: 7_400,  rentEscalation: 0.02,  securityDeposit: 14_800, sqft: 1900, renewalStage: 'NEGOTIATING', lastContactedAt: add(now, -7)  } }),
+        tx.lease.create({ data: { leaseNumber: 'MAPLE-5E',  propertyId: maple.id,    tenantId: coretech.id,     unitNumber: 'Suite 5E', type: 'GROSS', status: 'ACTIVE',   renewalRisk: 'LOW',      startDate: months(now, -6),  endDate: months(now, 18),  baseRent: 5_800,  rentEscalation: 0.03,  securityDeposit: 11_600, sqft: 1500, renewalStage: 'NOT_STARTED' } }),
+        tx.lease.create({ data: { leaseNumber: 'MAPLE-6F',  propertyId: maple.id,    tenantId: metro.id,        unitNumber: 'Suite 6F', type: 'GROSS', status: 'ACTIVE',   renewalRisk: 'MEDIUM',   startDate: months(now, -18), endDate: months(now, 6),   baseRent: 6_500,  rentEscalation: 0.02,  securityDeposit: 13_000, sqft: 1700, renewalStage: 'CONTACTED',   lastContactedAt: add(now, -21) } }),
+        tx.lease.create({ data: { leaseNumber: 'KING-101',  propertyId: king.id,     tenantId: sunrise.id,      unitNumber: 'Unit 101', type: 'NET',   status: 'ACTIVE',   renewalRisk: 'CRITICAL', startDate: months(now, -59), endDate: add(now, 30),     baseRent: 12_000, rentEscalation: 0.025, securityDeposit: 24_000, sqft: 3200, renewalStage: 'NEGOTIATING', lastContactedAt: add(now, -3)  } }),
+        tx.lease.create({ data: { leaseNumber: 'KING-102',  propertyId: king.id,     tenantId: brighthorizon.id,unitNumber: 'Unit 102', type: 'GROSS', status: 'ACTIVE',   renewalRisk: 'HIGH',     startDate: months(now, -23), endDate: add(now, 90),     baseRent: 4_800,  rentEscalation: 0.02,  securityDeposit: 9_600,  sqft: 1200, renewalStage: 'CONTACTED',   lastContactedAt: add(now, -10) } }),
+        tx.lease.create({ data: { leaseNumber: 'KING-201',  propertyId: king.id,     tenantId: axiom.id,        unitNumber: 'Unit 201', type: 'GROSS', status: 'ACTIVE',   renewalRisk: 'LOW',      startDate: months(now, -12), endDate: months(now, 30),  baseRent: 18_000, rentEscalation: 0.03,  securityDeposit: 36_000, sqft: 4800, renewalStage: 'NOT_STARTED' } }),
+        tx.lease.create({ data: { leaseNumber: 'KING-202', propertyId: king.id,     tenantId: pacific.id,      unitNumber: 'Unit 202', type: 'GROSS', status: 'ACTIVE',   renewalRisk: 'LOW',      startDate: months(now, -6),  endDate: months(now, 48),  baseRent: 15_500, rentEscalation: 0.03,  securityDeposit: 31_000, sqft: 4200, renewalStage: 'NOT_STARTED' } }),
+        tx.lease.create({ data: { leaseNumber: 'RIVER-A', propertyId: riverside.id,tenantId: meridian.id,     unitNumber: 'Suite A',  type: 'GROSS', status: 'ACTIVE',   renewalRisk: 'LOW',      startDate: months(now, -10), endDate: months(now, 22),  baseRent: 11_000, rentEscalation: 0.03,  securityDeposit: 22_000, sqft: 2900, renewalStage: 'NOT_STARTED' } }),
+        tx.lease.create({ data: { leaseNumber: 'RIVER-B', propertyId: riverside.id,tenantId: peak.id,         unitNumber: 'Suite B',  type: 'GROSS', status: 'ACTIVE',   renewalRisk: 'MEDIUM',   startDate: months(now, -19), endDate: months(now, 5),   baseRent: 8_800,  rentEscalation: 0.02,  securityDeposit: 17_600, sqft: 2300, renewalStage: 'CONTACTED',   lastContactedAt: add(now, -28) } }),
+        tx.lease.create({ data: { leaseNumber: 'RIVER-C', propertyId: riverside.id,tenantId: coretech.id,     unitNumber: 'Suite C',  type: 'GROSS', status: 'ACTIVE',   renewalRisk: 'LOW',      startDate: months(now, -8),  endDate: months(now, 26),  baseRent: 7_200,  rentEscalation: 0.03,  securityDeposit: 14_400, sqft: 1900, renewalStage: 'NOT_STARTED' } }),
+        tx.lease.create({ data: { leaseNumber: 'RIVER-D', propertyId: riverside.id,tenantId: harbor.id,       unitNumber: 'Suite D',  type: 'GROSS', status: 'ACTIVE',   renewalRisk: 'LOW',      startDate: months(now, -4),  endDate: months(now, 36),  baseRent: 13_500, rentEscalation: 0.03,  securityDeposit: 27_000, sqft: 3600, renewalStage: 'NOT_STARTED' } }),
+        tx.lease.create({ data: { leaseNumber: 'RIVER-E', propertyId: riverside.id,tenantId: axiom.id,        unitNumber: 'Suite E',  type: 'GROSS', status: 'EXPIRED',  renewalRisk: 'LOW',      startDate: months(now, -48), endDate: months(now, -12), baseRent: 9_000,  rentEscalation: 0.02,  securityDeposit: 18_000, sqft: 2400, renewalStage: 'NOT_STARTED' } }),
       ]);
 
-      const westsideLease    = leases[3];  // DEMO-004 — expires in 45 days
-      const sunriseLease     = leases[6];  // DEMO-007 — expires in 30 days, CRITICAL
-      const brightHorizonLease = leases[7]; // DEMO-008 — HIGH risk, 90 days
+      const westsideLease    = leases[3];  // MAPLE-4D — expires in 45 days
+      const sunriseLease     = leases[6];  // KING-101 — expires in 30 days, CRITICAL
+      const brightHorizonLease = leases[7]; // KING-102 — HIGH risk, 90 days
 
       const propRevenue = [
         { prop: maple,    monthly: 44_200 },
@@ -231,7 +221,7 @@ export class DemoPortfolioFactory {
           severity: 'INFO',
           status: 'OPEN',
           title: 'Occupancy Below Target: King Street Centre',
-          description: 'King Street Centre occupancy is at 75%, below the 90% portfolio target. Suite E vacancy requires backfill.',
+          description: 'King Street Centre occupancy is at 80%, below the 90% portfolio target. One retail unit is vacant and requires backfill.',
           propertyId: king.id,
           createdById: userId,
         }}),
