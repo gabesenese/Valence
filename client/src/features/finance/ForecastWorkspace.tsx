@@ -22,6 +22,13 @@ const IMPACT_BADGE: Record<Recommendation['severity'], { label: string; cls: str
   LOW:    { label: 'Low', cls: 'bg-surface-300 text-slate-400' },
 };
 
+// Hover accent tinted by impact level, so the row's weight matches its badge.
+const SEV_HOVER: Record<Recommendation['severity'], string> = {
+  HIGH:   'hover:border-danger/70 hover:bg-danger/[0.11]',
+  MEDIUM: 'hover:border-warning/70 hover:bg-warning/[0.11]',
+  LOW:    'hover:border-slate-500/60 hover:bg-surface-200/60',
+};
+
 const titleCase = (s: string) => s.charAt(0) + s.slice(1).toLowerCase();
 const daysUntil = (iso: string) => Math.max(0, Math.round((new Date(iso).getTime() - Date.now()) / 86_400_000));
 
@@ -152,7 +159,7 @@ export function ForecastWorkspace() {
                   const on = applied.has(a.id);
                   const badge = IMPACT_BADGE[a.severity];
                   return (
-                    <div key={a.id} onMouseEnter={() => setHoverId(a.id)} onMouseLeave={() => setHoverId(null)} className={`group flex items-center gap-3 rounded-lg border-l-2 px-3 py-2.5 transition-colors duration-150 ease-out ${on ? 'border-success/50 bg-success/[0.07]' : 'border-transparent hover:border-brand-500/50 hover:bg-surface-200/40'}`}>
+                    <div key={a.id} onMouseEnter={() => setHoverId(a.id)} onMouseLeave={() => setHoverId(null)} className={`group flex items-center gap-3 rounded-lg border-l-2 px-3 py-2.5 transition-colors duration-150 ease-out ${on ? 'border-success/50 bg-success/[0.07]' : `border-transparent ${SEV_HOVER[a.severity]}`}`}>
                       <button type="button" onClick={() => toggle(a.id)} className="flex min-w-0 flex-1 items-center gap-3 text-left">
                         <span className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border transition-colors ${on ? 'border-success bg-success/20' : 'border-surface-400 group-hover:border-slate-400'}`}>
                           {on && <Check className="h-2.5 w-2.5 text-success" />}

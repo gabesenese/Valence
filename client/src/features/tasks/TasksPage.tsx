@@ -1,5 +1,6 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -77,29 +78,37 @@ function StatusPicker({ status, onChange }: { status: TaskStatus; onChange: (s: 
         <ChevronDown className={`h-3 w-3 opacity-50 transition-transform duration-150 ${open ? 'rotate-180' : ''}`} />
       </button>
 
-      {open && rect && createPortal(
-        <div
-          ref={dropdownRef}
-          style={{ position: 'fixed', top: rect.bottom + 4, left: rect.left, zIndex: 9999 }}
-          className="w-36 overflow-hidden rounded-xl border border-surface-400/60 bg-surface-100 py-1 shadow-2xl shadow-black/60"
-        >
-          {ALL_STATUSES.map((s) => {
-            const c = STATUS_CONFIG[s];
-            return (
-              <button
-                key={s}
-                type="button"
-                onClick={() => { onChange(s); setOpen(false); }}
-                className={`flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs transition-colors hover:bg-surface-300 ${
-                  s === status ? 'text-fg' : 'text-slate-400'
-                }`}
-              >
-                <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${c.dot}`} />
-                {c.label}
-              </button>
-            );
-          })}
-        </div>,
+      {rect && createPortal(
+        <AnimatePresence>
+          {open && (
+            <motion.div
+              ref={dropdownRef}
+              initial={{ opacity: 0, y: -4, scale: 0.96 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -4, scale: 0.96 }}
+              transition={{ duration: 0.16, ease: [0.16, 1, 0.3, 1] }}
+              style={{ position: 'fixed', top: rect.bottom + 4, left: rect.left, zIndex: 9999, transformOrigin: 'top' }}
+              className="w-36 overflow-hidden rounded-xl border border-surface-400/60 bg-surface-100 py-1 shadow-2xl shadow-black/60"
+            >
+              {ALL_STATUSES.map((s) => {
+                const c = STATUS_CONFIG[s];
+                return (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => { onChange(s); setOpen(false); }}
+                    className={`flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs transition-colors hover:bg-surface-300 ${
+                      s === status ? 'text-fg' : 'text-slate-400'
+                    }`}
+                  >
+                    <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${c.dot}`} />
+                    {c.label}
+                  </button>
+                );
+              })}
+            </motion.div>
+          )}
+        </AnimatePresence>,
         document.body,
       )}
     </>

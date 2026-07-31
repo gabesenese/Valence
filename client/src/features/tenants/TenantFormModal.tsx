@@ -187,7 +187,7 @@ export default function TenantFormModal({ open, onClose, tenant }: Props) {
               />
             </div>
             <p className="mt-2 text-xs text-slate-600">
-              300–850 range. Enter the score your business has gathered for this tenant — Valence stores it
+              Scores run from 300 to 850. Enter the score your business has gathered for this tenant. Valence stores it
               for your records and doesn't run credit checks. Source is optional and just notes where it came from.
             </p>
           </div>
@@ -203,16 +203,25 @@ export default function TenantFormModal({ open, onClose, tenant }: Props) {
           />
 
           {isEdit && (
-            <div className="mt-4 flex items-center gap-2">
-              <input
-                type="checkbox"
-                id="isActive"
-                checked={form.isActive}
-                onChange={(e) => setForm(f => ({ ...f, isActive: e.target.checked }))}
-                className="h-4 w-4 rounded border-surface-400 bg-surface-200 accent-brand-500"
-              />
-              <label htmlFor="isActive" className="text-sm text-slate-300">Active tenant</label>
-            </div>
+            <label htmlFor="isActive" className="mt-4 flex w-fit cursor-pointer select-none items-center gap-2">
+              <div className="relative flex items-center">
+                <input
+                  type="checkbox"
+                  id="isActive"
+                  checked={form.isActive}
+                  onChange={(e) => setForm(f => ({ ...f, isActive: e.target.checked }))}
+                  className="sr-only peer"
+                />
+                <div className="flex h-4 w-4 items-center justify-center rounded border border-surface-400 bg-surface-200 transition-colors peer-checked:border-brand-500 peer-checked:bg-brand-600">
+                  {form.isActive && (
+                    <svg className="h-2.5 w-2.5 text-white" viewBox="0 0 10 10" fill="none">
+                      <path d="M1.5 5L4 7.5L8.5 2.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  )}
+                </div>
+              </div>
+              <span className="text-sm text-slate-300">Active tenant</span>
+            </label>
           )}
         </div>
 
