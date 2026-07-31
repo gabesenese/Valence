@@ -525,10 +525,10 @@ export default function LeasesPage() {
                 >
                   {tab.label}
                   {tab.value === 'ACTIVE' && stats && (
-                    <span className="ml-1.5 text-slate-500">{stats.totalActive}</span>
+                    <span className="ml-1.5 opacity-70 tabular-nums">{stats.totalActive}</span>
                   )}
                   {tab.value === 'EXPIRED' && stats && (
-                    <span className="ml-1.5 text-slate-500">
+                    <span className="ml-1.5 opacity-70 tabular-nums">
                       {stats.byStatus.find((s) => s.status === 'EXPIRED')?._count ?? 0}
                     </span>
                   )}

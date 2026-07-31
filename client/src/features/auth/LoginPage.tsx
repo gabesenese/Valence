@@ -166,7 +166,7 @@ export default function LoginPage() {
                 />
                 <div className="h-4 w-4 rounded border border-surface-400 bg-surface-200 transition-colors peer-checked:border-brand-500 peer-checked:bg-brand-600 flex items-center justify-center">
                   {rememberMe && (
-                    <svg className="h-2.5 w-2.5 text-fg" viewBox="0 0 10 10" fill="none">
+                    <svg className="h-2.5 w-2.5 text-white" viewBox="0 0 10 10" fill="none">
                       <path d="M1.5 5L4 7.5L8.5 2.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                   )}
