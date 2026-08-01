@@ -2,6 +2,7 @@ import { Router } from 'express';
 import type { Request, Response, NextFunction } from 'express';
 import { prisma } from '../../infrastructure/database';
 import { authenticate } from '../../middleware/authenticate';
+import { decryptNumber } from '../../security/field-encryption';
 
 const router = Router();
 router.use(authenticate);
@@ -58,7 +59,7 @@ router.get('/tenants', async (req: Request, res: Response, next: NextFunction) =
     });
     send(res, 'tenants.csv', csv(
       ['Name', 'Email', 'Phone', 'Company', 'Credit Score', 'CRM Status', 'Renewal Probability', 'Last Contact', 'Created At'],
-      rows.map((r) => [r.name, r.email, r.phone, r.company, r.creditScore, r.crmStatus, r.renewalProbability, r.lastContactAt?.toISOString().split('T')[0], r.createdAt.toISOString()]),
+      rows.map((r) => [r.name, r.email, r.phone, r.company, decryptNumber(r.creditScore), r.crmStatus, r.renewalProbability, r.lastContactAt?.toISOString().split('T')[0], r.createdAt.toISOString()]),
     ));
   } catch (e) { next(e); }
 });

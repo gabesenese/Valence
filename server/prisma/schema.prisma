@@ -398,7 +398,7 @@ model Tenant {
   phone              String?
   company            String?
   taxId              String?    @map("tax_id")
-  creditScore        Int?               @map("credit_score")
+  creditScore        String?            @map("credit_score")
   creditScoreSource  CreditScoreSource? @map("credit_score_source")
   creditScoreDate    DateTime?          @map("credit_score_date")
   notes              String?

@@ -12,6 +12,7 @@ import { DemoPortfolioFactory } from '../demo/demo.factory';
 import { trackEvent, trackReturnVisit } from '../analytics/funnel.service';
 import { resolveOrganizationId } from '../organization/organization.service';
 import { isTesterEmail } from '../../config/testers';
+import { encryptField, decryptField } from '../../security/field-encryption';
 import type { RegisterInput, LoginInput } from './auth.schemas';
 import type { UserRole, Plan } from '@prisma/client';
 
@@ -120,7 +121,7 @@ export async function login(
       );
       return { mfaRequired: true, mfaToken };
     }
-    const ok = speakeasy.totp.verify({ token: input.totp, secret: user.mfaSecret, encoding: 'base32', window: 1 });
+    const ok = speakeasy.totp.verify({ token: input.totp, secret: decryptField(user.mfaSecret) ?? '', encoding: 'base32', window: 1 });
     if (!ok) throw new UnauthorizedError('Invalid authenticator code');
   }
 
@@ -393,7 +394,7 @@ export async function setupMfa(userId: string): Promise<{ secret: string; otpaut
   if (user.mfaEnabled) throw new ConflictError('MFA is already enabled');
   const generated = speakeasy.generateSecret({ name: `Valence:${user.email}`, issuer: 'Valence' });
   const secret = generated.base32;
-  await prisma.user.update({ where: { id: userId }, data: { mfaSecret: secret, mfaEnabled: false } });
+  await prisma.user.update({ where: { id: userId }, data: { mfaSecret: encryptField(secret), mfaEnabled: false } });
   const otpauth = generated.otpauth_url ?? '';
   const qrCode = await qrcode.toDataURL(otpauth);
   return { secret, otpauth, qrCode };
@@ -404,7 +405,7 @@ export async function enableMfa(userId: string, totp: string): Promise<AuthUser>
   if (!user) throw new NotFoundError('User');
   if (user.mfaEnabled) throw new ConflictError('MFA is already enabled');
   if (!user.mfaSecret) throw new ValidationError('Run MFA setup first');
-  const ok = speakeasy.totp.verify({ token: totp, secret: user.mfaSecret, encoding: 'base32', window: 1 });
+  const ok = speakeasy.totp.verify({ token: totp, secret: decryptField(user.mfaSecret) ?? '', encoding: 'base32', window: 1 });
   if (!ok) throw new UnauthorizedError('Invalid authenticator code');
   const updated = await prisma.user.update({ where: { id: userId }, data: { mfaEnabled: true }, select: USER_SELECT });
   return updated;
@@ -414,7 +415,7 @@ export async function disableMfa(userId: string, totp: string): Promise<AuthUser
   const user = await prisma.user.findUnique({ where: { id: userId }, select: { ...USER_SELECT, mfaSecret: true } });
   if (!user) throw new NotFoundError('User');
   if (!user.mfaEnabled || !user.mfaSecret) throw new ValidationError('MFA is not enabled');
-  const ok = speakeasy.totp.verify({ token: totp, secret: user.mfaSecret, encoding: 'base32', window: 1 });
+  const ok = speakeasy.totp.verify({ token: totp, secret: decryptField(user.mfaSecret) ?? '', encoding: 'base32', window: 1 });
   if (!ok) throw new UnauthorizedError('Invalid authenticator code');
   const updated = await prisma.user.update({
     where: { id: userId },
@@ -444,7 +445,7 @@ export async function verifyMfaChallenge(
   if (!user || !user.isActive) throw new UnauthorizedError('Account inactive');
   if (!user.mfaSecret) throw new UnauthorizedError('MFA not configured');
 
-  const ok = speakeasy.totp.verify({ token: totp, secret: user.mfaSecret, encoding: 'base32', window: 1 });
+  const ok = speakeasy.totp.verify({ token: totp, secret: decryptField(user.mfaSecret) ?? '', encoding: 'base32', window: 1 });
   if (!ok) throw new UnauthorizedError('Invalid authenticator code');
 
   await prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } });

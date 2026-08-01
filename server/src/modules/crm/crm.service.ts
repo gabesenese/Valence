@@ -3,6 +3,7 @@ import { addDays } from 'date-fns';
 import type { CrmStatus, ContactLogType } from '@prisma/client';
 import { sendTenantEmail } from '../../lib/email';
 import { ValidationError, NotFoundError } from '../../utils/errors';
+import { decryptNumber } from '../../security/field-encryption';
 
 const tenantCrmSelect = {
   id: true,
@@ -93,7 +94,7 @@ export async function getCrmTenants(userId: string, opts: {
     data: tenants.map((t) => {
       const expiringSoon = t.leases.filter((l) => l.endDate <= in90).length;
       const totalRent = t.leases.reduce((s, l) => s + Number(l.baseRent), 0);
-      return { ...t, expiringSoon, totalMonthlyRent: totalRent };
+      return { ...t, creditScore: decryptNumber(t.creditScore), expiringSoon, totalMonthlyRent: totalRent };
     }),
     meta: { total, page, limit, pages: Math.ceil(total / limit) },
   };
@@ -135,6 +136,7 @@ export async function getTenantCrmProfile(tenantId: string) {
 
   return {
     ...tenant,
+    creditScore: decryptNumber(tenant.creditScore),
     expiringSoon,
     totalMonthlyRent,
     openAlerts,

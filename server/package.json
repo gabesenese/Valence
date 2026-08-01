@@ -15,6 +15,7 @@
     "db:seed-tester": "tsx src/scripts/seed-tester.ts",
     "db:seed-thin": "tsx src/scripts/seed-thin-account.ts",
     "db:backfill-revenue": "tsx src/scripts/backfill-revenue.ts",
+    "db:backfill-pii": "tsx src/scripts/backfill-pii.ts",
     "db:reconcile-orphan-leases": "tsx src/scripts/reconcile-orphan-leases.ts",
     "db:reconcile-orphan-tasks": "tsx src/scripts/reconcile-orphan-tasks.ts",
     "db:reconcile-orphan-alerts": "tsx src/scripts/reconcile-orphan-alerts.ts",

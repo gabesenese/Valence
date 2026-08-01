@@ -2,6 +2,11 @@ import { prisma } from '../../infrastructure/database';
 import { ACTIVE_LEASE_COUNT } from '../metrics/portfolio-metrics';
 import { NotFoundError, ConflictError } from '../../utils/errors';
 import { trackIfFirstTime } from '../analytics/funnel.service';
+import { encryptField, decryptField, encryptNumber, decryptNumber } from '../../security/field-encryption';
+
+function decryptTenant<T extends { taxId: string | null; creditScore: string | null }>(tenant: T) {
+  return { ...tenant, taxId: decryptField(tenant.taxId), creditScore: decryptNumber(tenant.creditScore) };
+}
 
 export async function getTenants(
   query: { page?: number; limit?: number; search?: string; isActive?: boolean },
@@ -37,7 +42,7 @@ export async function getTenants(
     prisma.tenant.count({ where }),
   ]);
 
-  return { tenants, total };
+  return { tenants: tenants.map(decryptTenant), total };
 }
 
 export type CreditScoreSource = 'MANUAL' | 'EQUIFAX' | 'TRANSUNION';
@@ -67,9 +72,12 @@ export async function createTenant(input: CreateTenantInput, userId: string) {
     const existing = await prisma.tenant.findFirst({ where: { email: input.email, ownerId: userId } });
     if (existing) throw new ConflictError(`A tenant with email "${input.email}" already exists`);
   }
-  const tenant = await prisma.tenant.create({ data: { ...normalizeDates(input), ownerId: userId } });
+  const { taxId, creditScore, ...rest } = normalizeDates(input);
+  const tenant = await prisma.tenant.create({
+    data: { ...rest, ownerId: userId, taxId: encryptField(taxId), creditScore: encryptNumber(creditScore) },
+  });
   void trackIfFirstTime('data_imported', userId, { source: 'manual', entity: 'tenant' });
-  return tenant;
+  return decryptTenant(tenant);
 }
 
 export async function updateTenant(id: string, input: Partial<CreateTenantInput>, userId: string) {
@@ -78,7 +86,11 @@ export async function updateTenant(id: string, input: Partial<CreateTenantInput>
     const conflict = await prisma.tenant.findFirst({ where: { email: input.email, ownerId: userId, NOT: { id } } });
     if (conflict) throw new ConflictError(`A tenant with email "${input.email}" already exists`);
   }
-  return prisma.tenant.update({ where: { id }, data: normalizeDates(input) });
+  const { taxId, creditScore, ...rest } = normalizeDates(input);
+  const data: Record<string, unknown> = { ...rest };
+  if ('taxId' in input) data.taxId = encryptField(taxId);
+  if ('creditScore' in input) data.creditScore = encryptNumber(creditScore);
+  return decryptTenant(await prisma.tenant.update({ where: { id }, data }));
 }
 
 export async function getTenantById(id: string) {
@@ -94,10 +106,10 @@ export async function getTenantById(id: string) {
     },
   });
   if (!tenant || tenant.deletedAt) throw new NotFoundError('Tenant');
-  return tenant;
+  return decryptTenant(tenant);
 }
 
 export async function deleteTenant(id: string) {
   await getTenantById(id);
-  return prisma.tenant.update({ where: { id }, data: { deletedAt: new Date() } });
+  return decryptTenant(await prisma.tenant.update({ where: { id }, data: { deletedAt: new Date() } }));
 }

@@ -17,6 +17,7 @@
 import bcrypt from 'bcryptjs';
 import { prisma } from '../infrastructure/database';
 import { DemoPortfolioFactory } from '../modules/demo/demo.factory';
+import { encryptNumber } from '../security/field-encryption';
 
 const EMAIL = 'thin@valence.dev';
 const PASSWORD = process.env.TESTER_PASSWORD ?? 'ValenceTester!2026';
@@ -65,12 +66,12 @@ async function main() {
     ]);
 
     const tenants = await Promise.all([
-      tx.tenant.create({ data: { ownerId: userId, name: 'Northline Bookkeeping', email: 'hello@northline.ca', company: 'Northline Bookkeeping', creditScore: 740, crmStatus: 'ACTIVE' } }),
-      tx.tenant.create({ data: { ownerId: userId, name: 'Rosa & Sons Grocery', email: 'orders@rosasons.ca', company: 'Rosa & Sons Grocery', creditScore: 690, crmStatus: 'ACTIVE' } }),
-      tx.tenant.create({ data: { ownerId: userId, name: 'Beacon Dental', email: 'front@beacondental.ca', company: 'Beacon Dental', creditScore: 780, crmStatus: 'HIGH_VALUE' } }),
-      tx.tenant.create({ data: { ownerId: userId, name: 'Clover Yoga Studio', email: 'studio@cloveryoga.ca', company: 'Clover Yoga Studio', creditScore: 660, crmStatus: 'AT_RISK' } }),
-      tx.tenant.create({ data: { ownerId: userId, name: 'Maple Leaf Printing', email: 'jobs@mapleleafprint.ca', company: 'Maple Leaf Printing', creditScore: 710, crmStatus: 'ACTIVE' } }),
-      tx.tenant.create({ data: { ownerId: userId, name: 'Harbour Coffee Co.', email: 'hi@harbourcoffee.ca', company: 'Harbour Coffee Co.', creditScore: 700, crmStatus: 'ACTIVE' } }),
+      tx.tenant.create({ data: { ownerId: userId, name: 'Northline Bookkeeping', email: 'hello@northline.ca', company: 'Northline Bookkeeping', creditScore: encryptNumber(740), crmStatus: 'ACTIVE' } }),
+      tx.tenant.create({ data: { ownerId: userId, name: 'Rosa & Sons Grocery', email: 'orders@rosasons.ca', company: 'Rosa & Sons Grocery', creditScore: encryptNumber(690), crmStatus: 'ACTIVE' } }),
+      tx.tenant.create({ data: { ownerId: userId, name: 'Beacon Dental', email: 'front@beacondental.ca', company: 'Beacon Dental', creditScore: encryptNumber(780), crmStatus: 'HIGH_VALUE' } }),
+      tx.tenant.create({ data: { ownerId: userId, name: 'Clover Yoga Studio', email: 'studio@cloveryoga.ca', company: 'Clover Yoga Studio', creditScore: encryptNumber(660), crmStatus: 'AT_RISK' } }),
+      tx.tenant.create({ data: { ownerId: userId, name: 'Maple Leaf Printing', email: 'jobs@mapleleafprint.ca', company: 'Maple Leaf Printing', creditScore: encryptNumber(710), crmStatus: 'ACTIVE' } }),
+      tx.tenant.create({ data: { ownerId: userId, name: 'Harbour Coffee Co.', email: 'hi@harbourcoffee.ca', company: 'Harbour Coffee Co.', creditScore: encryptNumber(700), crmStatus: 'ACTIVE' } }),
     ]);
 
     await Promise.all([
