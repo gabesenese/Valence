@@ -6,6 +6,7 @@ import {
   AlertTriangle, CheckCircle2, RefreshCw, Phone, Check, Mail,
   Send, FileSignature, MessageSquare, Clock, Pencil, Trash2,
   ChevronUp, ChevronDown, Eye, RotateCcw, BellOff, ArrowRight,
+  PlusCircle, Upload,
 } from 'lucide-react';
 import { leasesService, type RenewalStage } from '@/services/leases.service';
 import { Select } from '@/components/ui/Select';
@@ -66,6 +67,8 @@ const stageDirection = (meta: Record<string, unknown> | null): number => {
 };
 
 const ACTION_CONFIG: Record<string, ActionCfg> = {
+  CREATED:              { Icon: PlusCircle,    dot: 'bg-success',      label: () => 'Lease created' },
+  IMPORTED:             { Icon: Upload,        dot: 'bg-success',      label: () => 'Lease imported' },
   RENEWAL_STARTED:      { Icon: RefreshCw,     dot: 'bg-brand-500',    label: () => 'Renewal started' },
   STAGE_ADVANCED:       { Icon: ArrowRight,    dot: 'bg-brand-400',    label: (m) => stageDirection(m) < 0 ? 'Stage moved back' : 'Stage advanced',
                           iconFor: (m) => stageDirection(m) < 0 ? ArrowLeft : ArrowRight,

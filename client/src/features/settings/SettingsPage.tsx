@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Mail, Shield, Bell, Moon, ArrowRight, Zap, CreditCard,
   Trash2, Loader2, Lock, CheckCircle2, Eye, EyeOff,
-  Smartphone, Monitor, X, Download, AlertTriangle,
+  Smartphone, Monitor, X, Download, AlertTriangle, History,
 } from 'lucide-react';
 import { cn } from '@/utils/cn';
 import { useAuthStore } from '@/state/auth.store';
@@ -17,7 +17,16 @@ import { demoService } from '@/services/demo.service';
 import { usersService } from '@/services/users.service';
 import { authService } from '@/services/auth.service';
 import { organizationService } from '@/services/organization.service';
+import { auditService } from '@/services/audit.service';
+import { ACTION_META, DEFAULT_ACTION_META } from '@/utils/auditFormat';
+import { formatRelative } from '@/utils/format';
 import { CHANGELOG, CHANGE_TYPE_LABEL, type ChangeType } from './changelog';
+
+const SECURITY_ACTIONS = new Set(['PASSWORD_CHANGE', 'EMAIL_CHANGE', 'MFA_ENABLED', 'MFA_DISABLED', 'SESSION_REVOKE']);
+
+type SecurityTimelineEntry =
+  | { kind: 'session'; at: Date; device: string; current: boolean }
+  | { kind: 'event'; at: Date; action: string };
 
 
 type Tab = 'account' | 'security' | 'billing' | 'sessions' | 'preferences' | 'changelog' | 'danger';
@@ -81,8 +90,23 @@ export default function SettingsPage() {
   const { data: sessions, refetch: refetchSessions } = useQuery({
     queryKey: ['sessions'],
     queryFn: authService.listSessions,
-    enabled: activeTab === 'sessions',
+    enabled: activeTab === 'sessions' || activeTab === 'security',
   });
+
+  const { data: securityEvents = [] } = useQuery({
+    queryKey: ['security-events'],
+    queryFn: () => auditService.list({ limit: 50 }).then((r) => r.data),
+    enabled: activeTab === 'security',
+  });
+
+  const securityTimeline: SecurityTimelineEntry[] = [
+    ...(sessions ?? []).map((s, i): SecurityTimelineEntry => ({
+      kind: 'session', at: new Date(s.createdAt), device: parseDevice(s.userAgent), current: i === 0,
+    })),
+    ...securityEvents
+      .filter((e) => SECURITY_ACTIONS.has(e.action))
+      .map((e): SecurityTimelineEntry => ({ kind: 'event', at: new Date(e.createdAt), action: e.action })),
+  ].sort((a, b) => b.at.getTime() - a.at.getTime());
 
   const [portalLoading, setPortalLoading] = useState(false);
   const [resetConfirm,  setResetConfirm]  = useState(false);
@@ -405,6 +429,43 @@ export default function SettingsPage() {
                       <p className="text-xs text-slate-500">Require an authenticator code at every sign in.</p>
                     </div>
                     <Button size="sm" onClick={startMfaSetup} loading={mfaLoading}>Set up MFA</Button>
+                  </div>
+                )}
+              </CardBody>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <div className="flex items-center gap-2"><History className="h-4 w-4 text-brand-400" /><CardTitle>Recent Activity</CardTitle></div>
+              </CardHeader>
+              <CardBody>
+                {securityTimeline.length === 0 ? (
+                  <p className="text-sm text-slate-500">No recent security activity.</p>
+                ) : (
+                  <div className="flex flex-col divide-y divide-surface-400/20">
+                    {securityTimeline.slice(0, 20).map((entry, i) => (
+                      <div key={i} className="flex items-center gap-3 py-2.5 first:pt-0 last:pb-0">
+                        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-surface-300/60">
+                          {entry.kind === 'session'
+                            ? <Monitor className="h-3.5 w-3.5 text-slate-400" />
+                            : <Shield className="h-3.5 w-3.5 text-slate-400" />}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          {entry.kind === 'session' ? (
+                            <p className="text-sm text-slate-300">{entry.device}</p>
+                          ) : (
+                            <p className="text-sm text-slate-300">{(ACTION_META[entry.action] ?? DEFAULT_ACTION_META).label}</p>
+                          )}
+                        </div>
+                        {entry.kind === 'session' && entry.current ? (
+                          <span className="shrink-0 inline-flex items-center gap-1.5 rounded-full bg-success/10 border border-success/20 px-2 py-0.5 text-[10px] font-semibold text-success">
+                            <span className="h-1.5 w-1.5 rounded-full bg-success animate-pulse" /> Active
+                          </span>
+                        ) : (
+                          <span className="shrink-0 text-xs text-slate-600">{formatRelative(entry.at)}</span>
+                        )}
+                      </div>
+                    ))}
                   </div>
                 )}
               </CardBody>

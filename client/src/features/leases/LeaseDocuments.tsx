@@ -25,6 +25,11 @@ function formatSize(bytes: number) {
   return `${(bytes / 1_048_576).toFixed(1)} MB`;
 }
 
+function formatUploaded(createdAt: string, uploadedBy: { firstName: string; lastName: string } | null) {
+  const date = new Date(createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  return uploadedBy ? `${uploadedBy.firstName} ${uploadedBy.lastName} · ${date}` : date;
+}
+
 export function LeaseDocuments({ leaseId }: { leaseId: string }) {
   const qc = useQueryClient();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -90,6 +95,7 @@ export function LeaseDocuments({ leaseId }: { leaseId: string }) {
                   <div className="min-w-0">
                     <p className="truncate text-sm text-slate-200">{d.name}</p>
                     <p className="text-xs text-slate-500">{DOC_TYPE_LABEL[d.type]} · {formatSize(d.size)}</p>
+                    <p className="text-[11px] text-slate-600">{formatUploaded(d.createdAt, d.uploadedBy)}</p>
                   </div>
                 </div>
                 <button

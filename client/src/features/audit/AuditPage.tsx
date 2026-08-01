@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Building2, FileText, Users, UserCog, Upload, RefreshCw, ChevronLeft, ChevronRight, ArrowRight } from 'lucide-react';
+import { Upload, RefreshCw, ChevronLeft, ChevronRight, ArrowRight } from 'lucide-react';
 import { auditService, type AuditLogEntry } from '@/services/audit.service';
+import { ACTION_META, DEFAULT_ACTION_META, ENTITY_ICON, DEFAULT_ENTITY_ICON } from '@/utils/auditFormat';
 import { Card, CardBody } from '@/components/ui/Card';
 import { cn } from '@/utils/cn';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -14,24 +15,6 @@ const ENTITY_FILTERS = [
   { key: 'tenant',    label: 'Tenants'    },
   { key: 'user',      label: 'Users'      },
 ];
-
-const ACTION_META: Record<string, { label: string; color: string }> = {
-  CREATE:       { label: 'Created',      color: 'text-success bg-success/10 border-success/20'       },
-  UPDATE:       { label: 'Updated',      color: 'text-brand-300 bg-brand-600/10 border-brand-500/20' },
-  DELETE:       { label: 'Deleted',      color: 'text-danger bg-danger/10 border-danger/20'          },
-  IMPORT:       { label: 'Imported',     color: 'text-amber-300 bg-amber-500/10 border-amber-500/20' },
-  PLAN_CHANGE:  { label: 'Plan change',  color: 'text-purple-300 bg-purple-500/10 border-purple-500/20' },
-  ROLE_CHANGE:  { label: 'Role change',  color: 'text-sky-300 bg-sky-500/10 border-sky-500/20'       },
-  RESTORE:      { label: 'Restored',     color: 'text-teal-300 bg-teal-500/10 border-teal-500/20'    },
-  STAGE_CHANGE: { label: 'Stage moved',  color: 'text-violet-300 bg-violet-500/10 border-violet-500/20' },
-};
-
-const ENTITY_ICON: Record<string, React.ComponentType<{ className?: string }>> = {
-  property: Building2,
-  lease:    FileText,
-  tenant:   Users,
-  user:     UserCog,
-};
 
 
 type ChangeValue = { from: unknown; to: unknown };
@@ -93,8 +76,8 @@ function ChangesDetail({
 
 function AuditRow({ entry }: { entry: AuditLogEntry }) {
   const [expanded, setExpanded] = useState(false);
-  const action = ACTION_META[entry.action] ?? { label: entry.action, color: 'text-slate-400 bg-surface-300/30 border-surface-400/20' };
-  const Icon = ENTITY_ICON[entry.entity] ?? UserCog;
+  const action = ACTION_META[entry.action] ?? { ...DEFAULT_ACTION_META, label: entry.action };
+  const Icon = ENTITY_ICON[entry.entity] ?? DEFAULT_ENTITY_ICON;
   const actor = entry.user ? `${entry.user.firstName} ${entry.user.lastName}` : 'System';
   const hasDetail = entry.changes && Object.keys(entry.changes).length > 0;
   const hasMeta = entry.meta && Object.keys(entry.meta).length > 0;

@@ -1,6 +1,6 @@
 import type { Request, Response, NextFunction } from 'express';
 import * as service from './tenants.service';
-import { logAudit, diffRecords } from '../audit/audit.service';
+import { logAudit, diffRecords, getEntityActivity } from '../audit/audit.service';
 import { sendPaginated, sendSuccess } from '../../utils/response';
 
 export async function list(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -37,5 +37,11 @@ export async function update(req: Request, res: Response, next: NextFunction): P
     const changes = diffRecords(before as unknown as Record<string, unknown>, req.body as Record<string, unknown>);
     void logAudit({ userId: req.user?.id, action: 'UPDATE', entity: 'tenant', entityId: result.id, entityName: result.name, changes });
     sendSuccess(res, result);
+  } catch (err) { next(err); }
+}
+
+export async function activity(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    sendSuccess(res, await getEntityActivity('tenant', req.params.id));
   } catch (err) { next(err); }
 }

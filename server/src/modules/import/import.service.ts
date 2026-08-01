@@ -3,7 +3,7 @@ import { readSheet } from 'read-excel-file/node';
 import { prisma } from '../../infrastructure/database';
 import { PLAN_LIMITS } from '../plans/plans.service';
 import { syncLeaseRevenueSchedule } from '../finance/revenue-schedule.service';
-import { computeRenewalRisk } from '../leases/leases.service';
+import { computeRenewalRisk, logActivity } from '../leases/leases.service';
 import type { Plan, PropertyType, LeaseType, LateFeeType } from '@prisma/client';
 import { EXPENSE_CATEGORY_VALUES } from '../finance/expense-categories';
 import { encryptNumber } from '../../security/field-encryption';
@@ -362,6 +362,7 @@ export async function importLeases(buffer: Buffer, plan: Plan, userId: string, c
         },
       });
       await syncLeaseRevenueSchedule(lease);
+      void logActivity(lease.id, 'IMPORTED', userId);
 
       result.created++;
     } catch (err) {
