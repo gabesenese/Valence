@@ -461,8 +461,8 @@ export default function ImpactAnalysisPage() {
               onClick={() => handleSelect(s.type, s.defaultParams)}
               className={`flex items-center gap-3 rounded-xl border px-4 py-3 text-left transition-colors ${
                 active
-                  ? 'border-brand-500/40 bg-brand-600/10 ring-1 ring-brand-500/20'
-                  : 'border-surface-400/40 bg-surface-100 hover:bg-surface-200/40'
+                  ? 'border-brand-500 bg-brand-500/15 ring-1 ring-brand-500/30'
+                  : 'border-surface-400/40 bg-surface-200 hover:bg-surface-300'
               }`}
             >
               <div
@@ -473,7 +473,7 @@ export default function ImpactAnalysisPage() {
               </div>
               <div>
                 <p className={`text-sm font-semibold ${active ? 'text-brand-300' : 'text-slate-200'}`}>{s.label}</p>
-                <p className="text-[11px] text-slate-500 mt-0.5">{s.question}</p>
+                <p className={`text-[11px] mt-0.5 ${active ? 'text-slate-300' : 'text-slate-400'}`}>{s.question}</p>
               </div>
             </button>
           );
@@ -481,7 +481,7 @@ export default function ImpactAnalysisPage() {
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[280px_1fr]">
-        <div className="rounded-xl border border-surface-400/30 overflow-hidden">
+        <div className="rounded-xl border border-surface-400/30 bg-surface-100 overflow-hidden">
           <div className="px-4 py-3 border-b border-surface-400/40 bg-surface-200/30">
             <span className="text-xs font-semibold text-fg">Parameters</span>
           </div>
