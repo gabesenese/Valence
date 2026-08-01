@@ -23,3 +23,15 @@ export function authorize(...allowedRoles: UserRole[]) {
     next();
   };
 }
+
+/*
+ * Gate for the platform-admin surface. This is a tenancy boundary, not a rank
+ * check: only Valence staff carry `isPlatformStaff`, and it is the one thing
+ * that legitimately reaches across organizations. An organization owner is an
+ * ADMIN of their own org and must never pass this.
+ */
+export function requirePlatformStaff(req: Request, _res: Response, next: NextFunction): void {
+  if (!req.user) return next(new UnauthorizedError());
+  if (!req.user.isPlatformStaff) return next(new ForbiddenError('Platform staff only'));
+  next();
+}

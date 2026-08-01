@@ -1,18 +1,19 @@
 import { prisma } from '../../infrastructure/database';
 import { ACTIVE_LEASE_COUNT, ACTIVE_PROPERTY_WHERE } from '../metrics/portfolio-metrics';
+import { resolveOrganizationId } from '../organization/organization.service';
 import { differenceInDays } from 'date-fns';
-import type { AutomationTrigger, AutomationAction, UserRole } from '@prisma/client';
+import type { AutomationTrigger, AutomationAction } from '@prisma/client';
 import { NotFoundError } from '../../utils/errors';
 
-export type RuleViewer = { id: string; role: UserRole };
+export type RuleViewer = { id: string; isPlatformStaff: boolean };
 
 function ruleOwnerScope(viewer: RuleViewer) {
-  return viewer.role === 'SUPER_ADMIN' ? {} : { createdById: viewer.id };
+  return viewer.isPlatformStaff ? {} : { createdById: viewer.id };
 }
 
 async function assertRuleOwner(id: string, viewer: RuleViewer): Promise<void> {
   const rule = await prisma.automationRule.findUnique({ where: { id }, select: { createdById: true } });
-  if (!rule || (viewer.role !== 'SUPER_ADMIN' && rule.createdById !== viewer.id)) {
+  if (!rule || (!viewer.isPlatformStaff && rule.createdById !== viewer.id)) {
     throw new NotFoundError('Automation rule');
   }
 }
@@ -57,9 +58,22 @@ function resolveAssignee(
   return assignTo; // treat as a literal userId
 }
 
+/*
+ * A literal `assignTo` userId is only honored when it belongs to the rule
+ * owner's organization. Without this a rule could assign tasks to a user in
+ * another tenant. The derived tokens (`lease_owner`, `manager`) are already
+ * safe because they resolve from the owner's own records.
+ */
+async function resolveValidAssignTo(assignTo: string | undefined, ownerId: string): Promise<string | undefined> {
+  if (!assignTo || assignTo === 'lease_owner' || assignTo === 'manager') return assignTo;
+  const organizationId = await resolveOrganizationId(ownerId);
+  const member = await prisma.user.findFirst({ where: { id: assignTo, organizationId }, select: { id: true } });
+  return member ? assignTo : undefined;
+}
+
 
 async function evaluateRule(
-  _ruleId: string,
+  ownerId: string,
   trigger: AutomationTrigger,
   conditions: RuleConditions,
   action: AutomationAction,
@@ -68,6 +82,7 @@ async function evaluateRule(
   const now = new Date();
   let tasksCreated = 0;
   const details: Record<string, unknown> = {};
+  const assignTo = await resolveValidAssignTo(actionConfig.assignTo, ownerId);
 
   if (trigger === 'LEASE_DAYS_REMAINING') {
     const days = conditions.daysRemaining ?? 90;
@@ -77,6 +92,7 @@ async function evaluateRule(
       where: {
         status: 'ACTIVE',
         endDate: { lte: threshold, gte: now },
+        property: { ownerId },
       },
       select: {
         id: true,
@@ -115,7 +131,7 @@ async function evaluateRule(
           .replace('{days}', String(daysLeft));
 
         const assigneeUserId = resolveAssignee(
-          actionConfig.assignTo,
+          assignTo,
           lease.ownerUserId,
           lease.tenant.assignedManagerId,
         );
@@ -148,6 +164,7 @@ async function evaluateRule(
         type: 'REVENUE',
         status: 'PENDING',
         dueDate: { lt: threshold },
+        property: { ownerId },
       },
       select: {
         id: true,
@@ -191,7 +208,7 @@ async function evaluateRule(
           .replace('{days}', String(daysOverdue));
 
         const assigneeUserId = resolveAssignee(
-          actionConfig.assignTo,
+          assignTo,
           rec.lease?.ownerUserId,
           rec.lease?.tenant.assignedManagerId,
         );
@@ -217,7 +234,7 @@ async function evaluateRule(
     const threshold = conditions.occupancyPct ?? 80;
 
     const properties = await prisma.property.findMany({
-      where: ACTIVE_PROPERTY_WHERE,
+      where: { ...ACTIVE_PROPERTY_WHERE, ownerId },
       select: {
         id: true,
         name: true,
@@ -255,7 +272,7 @@ async function evaluateRule(
             title,
             description: `${property.name} occupancy is ${occupancyRate}%, below the ${threshold}% threshold`,
             propertyId: property.id,
-            assigneeUserId: resolveAssignee(actionConfig.assignTo, property.ownerId, undefined),
+            assigneeUserId: resolveAssignee(assignTo, property.ownerId, undefined),
             dueAt: actionConfig.daysUntilDue
               ? new Date(now.getTime() + actionConfig.daysUntilDue * 86400000)
               : undefined,
@@ -272,7 +289,7 @@ async function evaluateRule(
     const expiryWindow = new Date(now.getTime() + 90 * 86400000);
 
     const properties = await prisma.property.findMany({
-      where: ACTIVE_PROPERTY_WHERE,
+      where: { ...ACTIVE_PROPERTY_WHERE, ownerId },
       select: {
         id: true,
         name: true,
@@ -321,7 +338,7 @@ async function evaluateRule(
             title,
             description: `${property.name} risk score is ${riskScore}/100 (threshold: ${threshold})`,
             propertyId: property.id,
-            assigneeUserId: resolveAssignee(actionConfig.assignTo, property.ownerId, undefined),
+            assigneeUserId: resolveAssignee(assignTo, property.ownerId, undefined),
             dueAt: actionConfig.daysUntilDue
               ? new Date(now.getTime() + actionConfig.daysUntilDue * 86400000)
               : undefined,
@@ -414,8 +431,16 @@ export async function runRule(ruleId: string, viewer: RuleViewer): Promise<{
   await assertRuleOwner(ruleId, viewer);
   const rule = await prisma.automationRule.findUniqueOrThrow({ where: { id: ruleId } });
 
+  /*
+   * A rule with no owner cannot be safely scoped to one organization, so it
+   * evaluates against nothing rather than the whole platform.
+   */
+  if (!rule.createdById) {
+    return { tasksCreated: 0, details: { skipped: 'rule has no owner' } };
+  }
+
   const result = await evaluateRule(
-    rule.id,
+    rule.createdById,
     rule.trigger,
     rule.conditions as RuleConditions,
     rule.action,
@@ -443,13 +468,13 @@ export async function runAllRules(): Promise<{ total: number; tasksCreated: numb
   const locked = await acquireJobLock('automation_run', 5 * 60 * 1000);
   if (!locked) return { total: 0, tasksCreated: 0 };
 
-  const rules = await prisma.automationRule.findMany({ where: { isActive: true } });
+  const rules = await prisma.automationRule.findMany({ where: { isActive: true, createdById: { not: null } } });
   let totalTasks = 0;
 
   for (const rule of rules) {
     try {
       const result = await evaluateRule(
-        rule.id,
+        rule.createdById!,
         rule.trigger,
         rule.conditions as RuleConditions,
         rule.action,
@@ -489,7 +514,7 @@ export async function getAutomationLogs(viewer: RuleViewer, ruleId?: string) {
   return prisma.automationLog.findMany({
     where: {
       ...(ruleId ? { ruleId } : {}),
-      ...(viewer.role === 'SUPER_ADMIN' ? {} : { rule: { createdById: viewer.id } }),
+      ...(viewer.isPlatformStaff ? {} : { rule: { createdById: viewer.id } }),
     },
     orderBy: { triggeredAt: 'desc' },
     take: 50,

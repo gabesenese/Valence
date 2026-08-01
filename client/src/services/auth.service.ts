@@ -7,6 +7,7 @@ export interface AuthUser {
   lastName: string;
   role: string;
   plan: import('@/state/auth.store').Plan;
+  isPlatformStaff?: boolean;
   trialEndsAt: string | null;
   emailVerifiedAt: string | null;
   mfaEnabled: boolean;

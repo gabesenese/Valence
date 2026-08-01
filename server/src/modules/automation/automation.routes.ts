@@ -18,7 +18,7 @@ router.use(authenticate);
 
 router.get('/rules', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const rules = await getRules({ id: req.user!.id, role: req.user!.role });
+    const rules = await getRules({ id: req.user!.id, isPlatformStaff: req.user!.isPlatformStaff });
     sendSuccess(res, rules);
   } catch (e) { next(e); }
 });
@@ -55,21 +55,21 @@ router.post('/rules', authorize('ANALYST'), async (req: Request, res: Response, 
 
 router.patch('/rules/:id', authorize('ANALYST'), async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const rule = await updateRule(req.params.id, req.body, { id: req.user!.id, role: req.user!.role });
+    const rule = await updateRule(req.params.id, req.body, { id: req.user!.id, isPlatformStaff: req.user!.isPlatformStaff });
     sendSuccess(res, rule);
   } catch (e) { next(e); }
 });
 
 router.delete('/rules/:id', authorize('ANALYST'), async (req: Request, res: Response, next: NextFunction) => {
   try {
-    await deleteRule(req.params.id, { id: req.user!.id, role: req.user!.role });
+    await deleteRule(req.params.id, { id: req.user!.id, isPlatformStaff: req.user!.isPlatformStaff });
     sendSuccess(res, { deleted: true });
   } catch (e) { next(e); }
 });
 
 router.post('/rules/:id/run', authorize('ANALYST'), async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const result = await runRule(req.params.id, { id: req.user!.id, role: req.user!.role });
+    const result = await runRule(req.params.id, { id: req.user!.id, isPlatformStaff: req.user!.isPlatformStaff });
     sendSuccess(res, result);
   } catch (e) { next(e); }
 });
@@ -77,7 +77,7 @@ router.post('/rules/:id/run', authorize('ANALYST'), async (req: Request, res: Re
 router.get('/logs', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { ruleId } = req.query as { ruleId?: string };
-    const logs = await getAutomationLogs({ id: req.user!.id, role: req.user!.role }, ruleId);
+    const logs = await getAutomationLogs({ id: req.user!.id, isPlatformStaff: req.user!.isPlatformStaff }, ruleId);
     sendSuccess(res, logs);
   } catch (e) { next(e); }
 });

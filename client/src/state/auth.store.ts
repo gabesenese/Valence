@@ -10,6 +10,7 @@ interface AuthUser {
   lastName: string;
   role: string;
   plan: Plan;
+  isPlatformStaff?: boolean;
   addons?: string[];
   trialEndsAt: string | null;
   emailVerifiedAt: string | null;

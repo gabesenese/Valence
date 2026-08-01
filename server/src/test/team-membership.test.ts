@@ -2,9 +2,9 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 /**
  * Team lists must be scoped to the viewer's organization and exclude demo
- * accounts — a SUPER_ADMIN viewing their team must not receive every user
- * on the platform. Removal must free the seat without deleting the
- * account, and must refuse self-removal and Super Admin removal.
+ * accounts: even a SUPER_ADMIN viewing their team must not receive every user
+ * on the platform. Removal must free the seat without deleting the account,
+ * and must refuse self-removal and Super Admin removal.
  */
 
 const { prismaMock } = vi.hoisted(() => ({
@@ -33,7 +33,6 @@ const VIEWER = { id: 'viewer-1', role: 'SUPER_ADMIN' as const };
 
 beforeEach(() => {
   vi.clearAllMocks();
-  // viewer already belongs to org-1
   prismaMock.user.findUnique.mockResolvedValue({ organizationId: 'org-1' });
 });
 
@@ -73,7 +72,7 @@ describe('removeMember — guards and semantics', () => {
     await expect(removeMember('boss', { id: VIEWER.id })).rejects.toThrow(/Super Admin/i);
   });
 
-  it('clears membership, deactivates, and revokes sessions — never deletes', async () => {
+  it('clears membership, deactivates, and revokes sessions, never deletes', async () => {
     prismaMock.user.findFirst.mockResolvedValue({ id: 'target', email: 't@x.com', role: 'ANALYST' });
     await removeMember('target', { id: VIEWER.id });
     expect(prismaMock.user.update).toHaveBeenCalledWith(

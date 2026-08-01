@@ -27,11 +27,11 @@ export default function RegisterPage({ trial = false }: { trial?: boolean }) {
     try {
       const result = await authService.register(form);
       setAuth(result.user, result.tokens.accessToken, result.tokens.refreshToken);
-      if (trial && result.user.role !== 'SUPER_ADMIN') {
+      if (trial && !result.user.isPlatformStaff) {
         const claimed = await authService.claimTrial().catch(() => null);
         if (claimed) setAuth(claimed.user, claimed.tokens.accessToken, claimed.tokens.refreshToken);
       }
-      navigate(result.user.role === 'SUPER_ADMIN' ? '/admin' : '/activate');
+      navigate(result.user.isPlatformStaff ? '/admin' : '/activate');
     } catch (err: unknown) {
       const data = (err as { response?: { data?: { message?: string; error?: string } } })?.response?.data;
       if (data?.message === 'Validation failed' && data?.error) {

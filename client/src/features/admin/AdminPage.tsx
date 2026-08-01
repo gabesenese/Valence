@@ -120,7 +120,7 @@ export default function AdminPage() {
   useEffect(() => {
     if (!user) {
       navigate('/auth/login', { state: { from: { pathname: '/admin' } }, replace: true });
-    } else if (user.role !== 'SUPER_ADMIN') {
+    } else if (!user.isPlatformStaff) {
       navigate('/queue', { replace: true });
     }
   }, [user, navigate]);

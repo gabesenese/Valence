@@ -72,6 +72,7 @@ export async function updateUserRole(req: Request, res: Response, next: NextFunc
     const user = await authService.updateUserRole(
       req.params.id,
       role as import('@prisma/client').UserRole,
+      { id: req.user!.id, isPlatformStaff: req.user!.isPlatformStaff },
     );
     sendSuccess(res, user);
   } catch (err) {
@@ -91,7 +92,9 @@ export async function removeMember(req: Request, res: Response, next: NextFuncti
 export async function setUserActive(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const { isActive } = req.body as { isActive: boolean };
-    const user = await authService.setUserActive(req.params.id, isActive);
+    const user = await authService.setUserActive(req.params.id, isActive, {
+      id: req.user!.id, isPlatformStaff: req.user!.isPlatformStaff,
+    });
     sendSuccess(res, user);
   } catch (err) {
     next(err);
@@ -101,7 +104,9 @@ export async function setUserActive(req: Request, res: Response, next: NextFunct
 export async function setUserPlan(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const { plan } = req.body as { plan: import('@prisma/client').Plan };
-    await authService.setPlan(req.params.id, plan);
+    await authService.setPlan(req.params.id, plan, {
+      id: req.user!.id, isPlatformStaff: req.user!.isPlatformStaff,
+    });
     sendSuccess(res, { plan });
   } catch (err) {
     next(err);
