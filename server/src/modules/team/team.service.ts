@@ -6,6 +6,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { prisma } from '../../infrastructure/database';
 import { env } from '../../config/env';
 import { ConflictError, NotFoundError, UnauthorizedError } from '../../utils/errors';
+import { logAudit } from '../audit/audit.service';
 import type { UserRole } from '@prisma/client';
 
 
@@ -23,10 +24,12 @@ export async function createInvite(email: string, role: UserRole, invitedById: s
   const token = crypto.randomBytes(32).toString('hex');
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
-  return prisma.invite.create({
+  const invite = await prisma.invite.create({
     data: { email: normalEmail, role, token, invitedById, expiresAt },
     include: { invitedBy: { select: { firstName: true, lastName: true } } },
   });
+  void logAudit({ userId: invitedById, action: 'INVITE', entity: 'invite', entityId: invite.id, entityName: normalEmail, changes: { role } });
+  return invite;
 }
 
 export async function listInvites(invitedById: string) {
@@ -41,6 +44,7 @@ export async function revokeInvite(id: string, invitedById: string) {
   const invite = await prisma.invite.findFirst({ where: { id, invitedById } });
   if (!invite) throw new NotFoundError('Invite');
   await prisma.invite.delete({ where: { id } });
+  void logAudit({ userId: invitedById, action: 'INVITE_REVOKE', entity: 'invite', entityId: id, entityName: invite.email });
 }
 
 export async function validateInviteToken(token: string) {

@@ -87,7 +87,7 @@ export function computePriorityScore(input: PriorityInput): { score: number; why
 }
 
 
-async function logActivity(
+export async function logActivity(
   leaseId: string,
   actionType: string,
   actorUserId?: string | null,
@@ -575,6 +575,7 @@ export async function createLease(input: CreateLeaseInput, userId?: string) {
     await syncLeaseRevenueSchedule(created, tx);
     return created;
   });
+  void logActivity(lease.id, 'CREATED', userId);
   if (userId) void trackIfFirstTime('data_imported', userId, { source: 'manual', entity: 'lease' });
   return lease;
 }

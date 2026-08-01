@@ -103,3 +103,4 @@ test_acc.md
 /server/uploads/documents/*
 !/server/uploads/documents/.gitkeep
 prospects.csv
+.env*

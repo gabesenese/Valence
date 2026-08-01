@@ -6,6 +6,7 @@ import { leasesService } from '@/services/leases.service';
 import { tasksService } from '@/services/tasks.service';
 import { WorkspaceShell, WorkspaceSection, WorkspaceRecommendation, type WorkspaceMeta } from '@/components/ui/WorkspaceShell';
 import { EmailTenantModal } from '@/features/crm/EmailTenantModal';
+import { DatePicker } from '@/components/ui/DatePicker';
 import { formatCurrency, compactCurrency, formatDate } from '@/utils/format';
 
 const titleCase = (s: string) => s.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
@@ -16,6 +17,7 @@ export function RenewalWorkspace({ open, leaseId, onClose }: { open: boolean; le
   const navigate = useNavigate();
   const [done, setDone] = useState<string | null>(null);
   const [emailOpen, setEmailOpen] = useState(false);
+  const [pickingDate, setPickingDate] = useState(false);
 
   const { data: lease, isLoading, isError } = useQuery({
     queryKey: ['lease', leaseId],
@@ -25,17 +27,15 @@ export function RenewalWorkspace({ open, leaseId, onClose }: { open: boolean; le
 
   const after = (msg: string) => () => { qc.invalidateQueries(); setDone(msg); };
 
-  const followUpTarget = new Date(Date.now() + 14 * 86_400_000);
-
   const startRenewal = useMutation({ mutationFn: () => leasesService.startRenewal(leaseId!), onSuccess: after('Renewal started') });
   const markContacted = useMutation({ mutationFn: () => leasesService.markContacted(leaseId!), onSuccess: after('Marked contacted') });
   const createTask = useMutation({ mutationFn: () => tasksService.create({ title: `Renewal — ${lease?.tenant.name ?? 'lease'}`, leaseId: leaseId! }), onSuccess: after('Task created') });
   const scheduleFollowUp = useMutation({
-    mutationFn: () => leasesService.setRenewalDateAction(leaseId!, followUpTarget.toISOString()),
-    onSuccess: after(`Follow-up scheduled for ${formatDate(followUpTarget.toISOString())}`),
+    mutationFn: (date: string) => leasesService.setRenewalDateAction(leaseId!, date),
+    onSuccess: (_data, date) => { qc.invalidateQueries(); setDone(`Follow-up scheduled for ${formatDate(date)}`); setPickingDate(false); },
   });
 
-  function handleClose() { setDone(null); setEmailOpen(false); onClose(); }
+  function handleClose() { setDone(null); setEmailOpen(false); setPickingDate(false); onClose(); }
   function openLease() { handleClose(); navigate(`/leases/${leaseId}`); }
 
   const pending = startRenewal.isPending || markContacted.isPending || createTask.isPending || scheduleFollowUp.isPending;
@@ -70,7 +70,6 @@ export function RenewalWorkspace({ open, leaseId, onClose }: { open: boolean; le
 
   const secondary = [
     notStarted ? { label: 'Mark contacted', run: () => markContacted.mutate() } : null,
-    { label: scheduledAt ? 'Reschedule follow-up' : 'Schedule follow-up', run: () => scheduleFollowUp.mutate() },
     { label: 'Create task', run: () => createTask.mutate() },
     { label: 'View lease', run: openLease },
   ].filter((a): a is { label: string; run: () => void } => a !== null);
@@ -143,6 +142,37 @@ export function RenewalWorkspace({ open, leaseId, onClose }: { open: boolean; le
 
           <WorkspaceSection label="Actions">
             <div className="flex flex-col">
+              {pickingDate ? (
+                <div className="flex items-center justify-between gap-3 border-b border-surface-400/20 py-2.5 last:border-0">
+                  <span className="shrink-0 text-sm text-slate-300">{scheduledAt ? 'Reschedule follow-up' : 'Schedule follow-up'}</span>
+                  <div className="flex items-center gap-2">
+                    <DatePicker
+                      value={scheduledAt ? new Date(scheduledAt).toISOString().slice(0, 10) : ''}
+                      onChange={(date) => scheduleFollowUp.mutate(date)}
+                      disabled={scheduleFollowUp.isPending}
+                      placeholder="Pick a date"
+                      className="w-40"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setPickingDate(false)}
+                      className="text-xs text-slate-500 hover:text-slate-300"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setPickingDate(true)}
+                  disabled={pending}
+                  className="group flex items-center justify-between border-b border-surface-400/20 py-2.5 text-left text-sm text-slate-300 transition-colors last:border-0 hover:text-brand-300 disabled:opacity-50"
+                >
+                  {scheduledAt ? 'Reschedule follow-up' : 'Schedule follow-up'}
+                  <ArrowRight className="h-3.5 w-3.5 text-slate-500 transition-transform group-hover:translate-x-0.5 group-hover:text-brand-300" />
+                </button>
+              )}
               {secondary.map((a) => (
                 <button
                   key={a.label}

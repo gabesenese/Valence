@@ -243,11 +243,17 @@ export async function updateUserRole(
   actor: ManageActor,
 ) {
   await assertManageableInOrg(targetUserId, actor);
-  return prisma.user.update({
+  const before = await prisma.user.findUnique({ where: { id: targetUserId }, select: { role: true } });
+  const user = await prisma.user.update({
     where: { id: targetUserId },
     data: { role },
     select: { id: true, email: true, firstName: true, lastName: true, role: true, isActive: true },
   });
+  void logAudit({
+    userId: actor.id, action: 'ROLE_CHANGE', entity: 'user', entityId: targetUserId, entityName: user.email,
+    changes: { role: { from: before?.role, to: role } },
+  });
+  return user;
 }
 
 export async function setUserActive(targetUserId: string, isActive: boolean, actor: ManageActor) {
@@ -301,6 +307,7 @@ export async function changeEmail(userId: string, newEmail: string, currentPassw
     select: USER_SELECT,
   });
   void sendEmailVerificationLink(userId, newEmail);
+  void logAudit({ userId, action: 'EMAIL_CHANGE', entity: 'user', entityId: userId, entityName: newEmail });
   return updated;
 }
 
@@ -311,6 +318,7 @@ export async function changePassword(userId: string, currentPassword: string, ne
   if (!valid) throw new UnauthorizedError('Current password is incorrect');
   const passwordHash = await bcrypt.hash(newPassword, env.BCRYPT_ROUNDS);
   await prisma.user.update({ where: { id: userId }, data: { passwordHash } });
+  void logAudit({ userId, action: 'PASSWORD_CHANGE', entity: 'user', entityId: userId });
 }
 
 export async function claimTrial(userId: string): Promise<{ user: AuthUser; tokens: TokenPair }> {
@@ -408,6 +416,7 @@ export async function enableMfa(userId: string, totp: string): Promise<AuthUser>
   const ok = speakeasy.totp.verify({ token: totp, secret: decryptField(user.mfaSecret) ?? '', encoding: 'base32', window: 1 });
   if (!ok) throw new UnauthorizedError('Invalid authenticator code');
   const updated = await prisma.user.update({ where: { id: userId }, data: { mfaEnabled: true }, select: USER_SELECT });
+  void logAudit({ userId, action: 'MFA_ENABLED', entity: 'user', entityId: userId });
   return updated;
 }
 
@@ -422,6 +431,7 @@ export async function disableMfa(userId: string, totp: string): Promise<AuthUser
     data: { mfaEnabled: false, mfaSecret: null },
     select: USER_SELECT,
   });
+  void logAudit({ userId, action: 'MFA_DISABLED', entity: 'user', entityId: userId });
   return updated;
 }
 
@@ -468,10 +478,12 @@ export async function revokeSession(userId: string, sessionId: string): Promise<
   const session = await prisma.refreshToken.findFirst({ where: { id: sessionId, userId } });
   if (!session) throw new NotFoundError('Session');
   await prisma.refreshToken.update({ where: { id: sessionId }, data: { revokedAt: new Date() } });
+  void logAudit({ userId, action: 'SESSION_REVOKE', entity: 'session', entityId: sessionId, meta: { userAgent: session.userAgent, ipAddress: session.ipAddress } });
 }
 
 export async function revokeAllSessions(userId: string): Promise<void> {
   await prisma.refreshToken.updateMany({ where: { userId, revokedAt: null }, data: { revokedAt: new Date() } });
+  void logAudit({ userId, action: 'SESSION_REVOKE', entity: 'session', meta: { all: true } });
 }
 
 

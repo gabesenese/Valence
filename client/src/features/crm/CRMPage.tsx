@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { crmService, type CrmTenant, type CrmStatus, type ContactLogType, type CrmTenantProfile } from '@/services/crm.service';
 import { usersService } from '@/services/users.service';
+import { auditService } from '@/services/audit.service';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -138,6 +139,13 @@ function TenantPanel({ tenant, onClose }: { tenant: CrmTenant; onClose: () => vo
     queryFn: () => crmService.getTenantProfile(tenant.id),
   });
   const { data: users = [] } = useQuery({ queryKey: ['users'], queryFn: usersService.listUsers });
+  const { data: activity = [] } = useQuery({
+    queryKey: ['tenant-activity', tenant.id],
+    queryFn: () => auditService.getEntityActivity('tenants', tenant.id),
+  });
+
+  const createdEntry = activity.find((a) => a.action === 'CREATE' || a.action === 'IMPORT');
+  const lastEditEntry = [...activity].reverse().find((a) => a.action === 'UPDATE');
 
   const updateMutation = useMutation({
     mutationFn: () => crmService.updateTenant(tenant.id, {
@@ -189,6 +197,24 @@ function TenantPanel({ tenant, onClose }: { tenant: CrmTenant; onClose: () => vo
                 <Clock className="h-3.5 w-3.5 text-slate-600 shrink-0" />
                 Last contact: {formatDate(tenant.lastContactAt)}
               </div>
+              {(createdEntry || lastEditEntry) && (
+                <p className="text-[11px] text-slate-600">
+                  {createdEntry && (
+                    <>
+                      {createdEntry.action === 'IMPORT' ? 'Imported' : 'Created'}
+                      {createdEntry.user ? ` by ${createdEntry.user.firstName} ${createdEntry.user.lastName}` : ''}
+                      {' · '}{formatDate(createdEntry.createdAt)}
+                    </>
+                  )}
+                  {lastEditEntry && (
+                    <>
+                      {createdEntry ? '  ·  ' : ''}
+                      Edited{lastEditEntry.user ? ` by ${lastEditEntry.user.firstName} ${lastEditEntry.user.lastName}` : ''}
+                      {' '}{formatTimeAgo(lastEditEntry.createdAt)}
+                    </>
+                  )}
+                </p>
+              )}
             </div>
 
             <div className="grid grid-cols-3 gap-3">

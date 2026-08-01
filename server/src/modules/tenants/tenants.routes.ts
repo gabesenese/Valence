@@ -12,6 +12,7 @@ router.use(authenticate);
 
 router.get('/', controller.list);
 router.get('/:id', requireOwner('tenant'), controller.show);
+router.get('/:id/activity', requireOwner('tenant'), controller.activity);
 router.post('/', authorize('ANALYST'), validate(createTenantSchema), controller.create);
 router.patch('/:id', authorize('ANALYST'), requireOwner('tenant'), validate(updateTenantSchema), controller.update);
 
