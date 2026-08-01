@@ -27,6 +27,7 @@ interface AuthUser {
   lastName: string;
   role: UserRole;
   plan: Plan;
+  isPlatformStaff: boolean;
   addons: string[];
   trialEndsAt: Date | null;
   emailVerifiedAt: Date | null;
@@ -42,7 +43,7 @@ interface SessionMeta {
 
 const USER_SELECT = {
   id: true, email: true, firstName: true, lastName: true,
-  role: true, plan: true, addons: true, trialEndsAt: true,
+  role: true, plan: true, isPlatformStaff: true, addons: true, trialEndsAt: true,
   emailVerifiedAt: true, mfaEnabled: true, isDemo: true,
   alertEmailOptIn: true,
 } as const;
@@ -84,7 +85,7 @@ export async function register(input: RegisterInput, meta?: SessionMeta): Promis
       passwordHash,
       firstName: input.firstName,
       lastName: input.lastName,
-      ...(isOwner ? { role: 'SUPER_ADMIN' } : {}),
+      ...(isOwner ? { role: 'SUPER_ADMIN', isPlatformStaff: true } : {}),
     },
     select: USER_SELECT,
   });
@@ -216,10 +217,31 @@ export async function removeMember(targetUserId: string, actor: { id: string }) 
   return user;
 }
 
+/*
+ * Actor context for account-management mutations. Platform staff act globally
+ * (the intended cross-org admin surface); everyone else is confined to their
+ * own organization. Driving the scope off the caller's real staff status,
+ * rather than an optional argument, means a call site can never accidentally
+ * fall back to a platform-wide mutation.
+ */
+export type ManageActor = { id: string; isPlatformStaff: boolean };
+
+async function assertManageableInOrg(targetUserId: string, actor: ManageActor): Promise<void> {
+  if (actor.isPlatformStaff) return;
+  const organizationId = await resolveOrganizationId(actor.id);
+  const target = await prisma.user.findFirst({
+    where: { id: targetUserId, organizationId },
+    select: { id: true },
+  });
+  if (!target) throw new NotFoundError('Member');
+}
+
 export async function updateUserRole(
   targetUserId: string,
   role: UserRole,
+  actor: ManageActor,
 ) {
+  await assertManageableInOrg(targetUserId, actor);
   return prisma.user.update({
     where: { id: targetUserId },
     data: { role },
@@ -227,7 +249,8 @@ export async function updateUserRole(
   });
 }
 
-export async function setUserActive(targetUserId: string, isActive: boolean) {
+export async function setUserActive(targetUserId: string, isActive: boolean, actor: ManageActor) {
+  await assertManageableInOrg(targetUserId, actor);
   const user = await prisma.user.update({
     where: { id: targetUserId },
     data: { isActive },
@@ -239,9 +262,10 @@ export async function setUserActive(targetUserId: string, isActive: boolean) {
   return user;
 }
 
-export async function setPlan(targetUserId: string, plan: Plan, actorId?: string) {
+export async function setPlan(targetUserId: string, plan: Plan, actor: ManageActor) {
+  await assertManageableInOrg(targetUserId, actor);
   const user = await prisma.user.update({ where: { id: targetUserId }, data: { plan }, select: USER_SELECT });
-  void logAudit({ userId: actorId, action: 'PLAN_CHANGE', entity: 'user', entityId: targetUserId, entityName: user.email, changes: { plan } });
+  void logAudit({ userId: actor.id, action: 'PLAN_CHANGE', entity: 'user', entityId: targetUserId, entityName: user.email, changes: { plan } });
   return user;
 }
 

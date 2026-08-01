@@ -6,7 +6,7 @@ import os from 'os';
 import v8 from 'node:v8';
 import { prisma } from '../../infrastructure/database';
 import { authenticate } from '../../middleware/authenticate';
-import { authorize } from '../../middleware/authorize';
+import { requirePlatformStaff } from '../../middleware/authorize';
 import { env } from '../../config/env';
 import { sendSuccess } from '../../utils/response';
 import { ForbiddenError, NotFoundError } from '../../utils/errors';
@@ -22,14 +22,24 @@ import { dismissAlert } from '../alerts/alerts.service';
 const router = Router();
 
 function requireAdminSecret(req: Request, _res: Response, next: NextFunction) {
-  if (!env.PLATFORM_ADMIN_SECRET) return next();
+  if (!env.PLATFORM_ADMIN_SECRET) {
+    /*
+     * Fail closed in production: the global admin surface must never be gated
+     * by role alone. In development an unset secret stays permissive for local
+     * use.
+     */
+    if (env.NODE_ENV === 'production') {
+      return next(new ForbiddenError('Platform admin secret is not configured'));
+    }
+    return next();
+  }
   if (req.headers['x-admin-secret'] !== env.PLATFORM_ADMIN_SECRET) {
     return next(new ForbiddenError('Invalid admin secret'));
   }
   next();
 }
 
-router.use(authenticate, authorize('SUPER_ADMIN'), requireAdminSecret);
+router.use(authenticate, requirePlatformStaff, requireAdminSecret);
 
 
 router.get('/funnel', async (req: Request, res: Response, next: NextFunction) => {
@@ -98,7 +108,7 @@ router.get('/analytics', async (_req: Request, res: Response, next: NextFunction
     const payingByPlan = await prisma.user.groupBy({
       by: ['plan'], _count: { _all: true },
       where: {
-        isActive: true, isDemo: false, role: { not: 'SUPER_ADMIN' },
+        isActive: true, isDemo: false, isPlatformStaff: false,
         OR: [{ trialEndsAt: null }, { trialEndsAt: { lt: now } }],
         NOT: INTERNAL_EMAIL.map((d) => ({ email: { contains: d } })),
       },
@@ -280,15 +290,17 @@ router.get('/revenue', async (_req: Request, res: Response, next: NextFunction) 
     const now = new Date();
     const planPrices: Record<string, number> = { ESSENTIALS: 149, PROFESSIONAL: 499, EXECUTIVE: 1500 };
 
-    // Real paying customers only. There's no Stripe subscription record yet and
-    // `plan` defaults to ESSENTIALS on free signup, so exclude demo accounts,
-    // internal staff (SUPER_ADMIN), and internal/test email domains — otherwise
-    // test accounts and the owner inflate MRR/profit.
+    /*
+     * Real paying customers only. There's no Stripe subscription record yet and
+     * `plan` defaults to ESSENTIALS on free signup, so exclude demo accounts,
+     * internal staff (isPlatformStaff), and internal/test email domains, otherwise
+     * test accounts and the owner inflate MRR/profit.
+     */
     const INTERNAL_EMAIL = ['@test.com', '@demo.com', '@valence.dev', '@admin.com', 'valenceos.ca', 'idor-test', 'privaterelay.appleid.com', 'bru.dotac@gmail.com'];
     const realAccount: Prisma.UserWhereInput = {
       isActive: true,
       isDemo: false,
-      role: { not: 'SUPER_ADMIN' },
+      isPlatformStaff: false,
       NOT: INTERNAL_EMAIL.map((d) => ({ email: { contains: d } })),
     };
     // Paying = a real account that isn't currently inside a trial window.
@@ -409,7 +421,9 @@ router.get('/users', async (req: Request, res: Response, next: NextFunction) => 
 
 router.patch('/users/:id/plan', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const user = await authService.setPlan(req.params.id, req.body.plan);
+    const user = await authService.setPlan(req.params.id, req.body.plan, {
+      id: req.user!.id, isPlatformStaff: req.user!.isPlatformStaff,
+    });
     sendSuccess(res, user);
   } catch (err) { next(err); }
 });
@@ -417,7 +431,9 @@ router.patch('/users/:id/plan', async (req: Request, res: Response, next: NextFu
 
 router.patch('/users/:id/role', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const user = await authService.updateUserRole(req.params.id, req.body.role);
+    const user = await authService.updateUserRole(req.params.id, req.body.role, {
+      id: req.user!.id, isPlatformStaff: req.user!.isPlatformStaff,
+    });
     sendSuccess(res, user);
   } catch (err) { next(err); }
 });
@@ -425,7 +441,9 @@ router.patch('/users/:id/role', async (req: Request, res: Response, next: NextFu
 
 router.patch('/users/:id/active', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const user = await authService.setUserActive(req.params.id, req.body.isActive);
+    const user = await authService.setUserActive(req.params.id, req.body.isActive, {
+      id: req.user!.id, isPlatformStaff: req.user!.isPlatformStaff,
+    });
     sendSuccess(res, user);
   } catch (err) { next(err); }
 });

@@ -3,7 +3,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 /**
  * Regression guard for the automation tenant-isolation fix. Rules and their logs
  * must be scoped to the account that created them; mutations must reject a rule
- * the caller does not own. SUPER_ADMIN (platform staff) sees across accounts.
+ * the caller does not own. Platform staff (isPlatformStaff) see across accounts.
  */
 
 const { prismaMock } = vi.hoisted(() => ({
@@ -23,8 +23,8 @@ vi.mock('../infrastructure/database', () => ({ prisma: prismaMock }));
 import { getRules, updateRule, deleteRule, getAutomationLogs } from '../modules/automation/automation.service';
 import { NotFoundError } from '../utils/errors';
 
-const OWNER = { id: 'user-A', role: 'ANALYST' as const };
-const STAFF = { id: 'staff', role: 'SUPER_ADMIN' as const };
+const OWNER = { id: 'user-A', isPlatformStaff: false };
+const STAFF = { id: 'staff', isPlatformStaff: true };
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -40,7 +40,7 @@ describe('automation — account scoping (tenant isolation)', () => {
     expect(prismaMock.automationRule.findMany.mock.calls[0][0].where).toEqual({ createdById: OWNER.id });
   });
 
-  it('does not scope the rule list for SUPER_ADMIN staff', async () => {
+  it('does not scope the rule list for platform staff', async () => {
     await getRules(STAFF);
     expect(prismaMock.automationRule.findMany.mock.calls[0][0].where).toEqual({});
   });
@@ -70,7 +70,7 @@ describe('automation — account scoping (tenant isolation)', () => {
     expect(prismaMock.automationLog.findMany.mock.calls[0][0].where).toEqual({ rule: { createdById: OWNER.id } });
   });
 
-  it('does not scope automation logs for SUPER_ADMIN staff', async () => {
+  it('does not scope automation logs for platform staff', async () => {
     await getAutomationLogs(STAFF, 'rule-1');
     expect(prismaMock.automationLog.findMany.mock.calls[0][0].where).toEqual({ ruleId: 'rule-1' });
   });

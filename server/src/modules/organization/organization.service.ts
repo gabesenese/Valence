@@ -38,12 +38,21 @@ export async function transferOwnership(fromUserId: string, toUserId: string) {
     throw new UnauthorizedError('Cannot transfer ownership to yourself');
   }
 
-  const toUser = await prisma.user.findUnique({ where: { id: toUserId } });
+  /*
+   * The recipient must be an active member of the caller's own organization so
+   * that ownership can never cross a tenant boundary.
+   */
+  const organizationId = await resolveOrganizationId(fromUserId);
+  const toUser = await prisma.user.findFirst({
+    where: { id: toUserId, organizationId },
+    select: { id: true, isActive: true },
+  });
   if (!toUser) throw new NotFoundError('User');
   if (!toUser.isActive) throw new UnauthorizedError('Cannot transfer ownership to an inactive user');
 
   await prisma.$transaction([
     prisma.user.update({ where: { id: toUserId }, data: { role: 'SUPER_ADMIN' } }),
     prisma.user.update({ where: { id: fromUserId }, data: { role: 'ADMIN' } }),
+    prisma.organization.update({ where: { id: organizationId }, data: { ownerId: toUserId } }),
   ]);
 }

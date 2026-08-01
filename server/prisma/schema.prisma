@@ -201,6 +201,7 @@ model User {
   mfaEnabled       Boolean   @default(false) @map("mfa_enabled")
   isActive         Boolean   @default(true) @map("is_active")
   isDemo           Boolean   @default(false) @map("is_demo")
+  isPlatformStaff  Boolean   @default(false) @map("is_platform_staff")
   organizationId   String?   @map("organization_id")
   seenTips         String[]  @default([]) @map("seen_tips")
   lastLoginAt      DateTime? @map("last_login_at")

@@ -8,6 +8,7 @@ declare global {
         email: string;
         role: UserRole;
         plan: Plan;
+        isPlatformStaff: boolean;
         trialEndsAt: string | null;
         firstName: string;
         lastName: string;
