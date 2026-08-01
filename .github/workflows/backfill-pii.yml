@@ -1,0 +1,35 @@
+name: Backfill PII Encryption
+
+# One-time maintenance job for the M2 field-encryption rollout: encrypts any
+# tenant taxId/creditScore and user mfaSecret rows still left as plaintext.
+# Manually triggered only, never on push. Safe to re-run: the script is
+# idempotent and skips rows that are already encrypted.
+#
+# Requires repository secrets DATABASE_URL and PII_ENC_KEY matching the
+# values configured on the valence-server Vercel project.
+
+on:
+  workflow_dispatch:
+
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run PII backfill
+        working-directory: server
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          PII_ENC_KEY: ${{ secrets.PII_ENC_KEY }}
+          # Unused by this script; only present to satisfy env schema validation.
+          JWT_SECRET: unused-placeholder-value-not-a-real-secret-000000
+          JWT_REFRESH_SECRET: unused-placeholder-value-not-a-real-secret-000000
+        run: npx tsx src/scripts/backfill-pii.ts
