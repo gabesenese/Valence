@@ -520,7 +520,7 @@ export default function AutomationPage() {
           <span className="text-sm font-semibold text-fg">Automation Rules</span>
           <span className="text-xs text-slate-500">{activeCount} active · {rules.length} total</span>
         </div>
-        {canEdit && (
+        {canEdit && rules.length > 0 && (
           <Button size="sm" onClick={() => setShowCreate(true)}>
             <Plus className="h-4 w-4" />
             New Rule
