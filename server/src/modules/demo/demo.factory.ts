@@ -1,4 +1,5 @@
 import { prisma } from '../../infrastructure/database';
+import { encryptNumber } from '../../security/field-encryption';
 
 const add = (base: Date, days: number) => new Date(base.getTime() + days * 86_400_000);
 const months = (base: Date, n: number) => {
@@ -83,16 +84,16 @@ export class DemoPortfolioFactory {
 
       const [meridian, peak, harbor, sunrise, westside, coretech, brighthorizon, axiom, metro, pacific] =
         await Promise.all([
-          tx.tenant.create({ data: { ownerId: userId, name: 'Meridian Analytics Group',   email: 'leasing@meridiananalytics.com',   company: 'Meridian Analytics Group',   creditScore: 820, crmStatus: 'HIGH_VALUE' } }),
-          tx.tenant.create({ data: { ownerId: userId, name: 'Peak Solutions LLC',         email: 'info@peaksolutions.com',          company: 'Peak Solutions LLC',         creditScore: 765, crmStatus: 'ACTIVE'     } }),
-          tx.tenant.create({ data: { ownerId: userId, name: 'Harbor Medical Partners',    email: 'leasing@harbormed.com',           company: 'Harbor Medical Partners',    creditScore: 798, crmStatus: 'HIGH_VALUE' } }),
-          tx.tenant.create({ data: { ownerId: userId, name: 'Sunrise Retail Co.',         email: 'retail@sunriseco.com',            company: 'Sunrise Retail Co.',         creditScore: 680, crmStatus: 'AT_RISK'    } }),
-          tx.tenant.create({ data: { ownerId: userId, name: 'Westside Legal Associates',  email: 'admin@westsidelegal.com',         company: 'Westside Legal Associates',  creditScore: 750, crmStatus: 'ACTIVE'     } }),
-          tx.tenant.create({ data: { ownerId: userId, name: 'CoreTech Systems',           email: 'facilities@coretech.io',          company: 'CoreTech Systems',           creditScore: 810, crmStatus: 'ACTIVE'     } }),
-          tx.tenant.create({ data: { ownerId: userId, name: 'Bright Horizon Café',        email: 'ops@brighthorizoncafe.com',       company: 'Bright Horizon Café',        creditScore: 650, crmStatus: 'AT_RISK'    } }),
-          tx.tenant.create({ data: { ownerId: userId, name: 'Axiom Capital Group',        email: 'leasing@axiomcapital.com',        company: 'Axiom Capital Group',        creditScore: 835, crmStatus: 'HIGH_VALUE' } }),
-          tx.tenant.create({ data: { ownerId: userId, name: 'Metro Community Health',     email: 'admin@metrocommunityhealth.org',  company: 'Metro Community Health',     creditScore: 775, crmStatus: 'ACTIVE'     } }),
-          tx.tenant.create({ data: { ownerId: userId, name: 'Pacific Trade Ventures',     email: 'leasing@pacifictrade.com',        company: 'Pacific Trade Ventures',     creditScore: 790, crmStatus: 'ACTIVE'     } }),
+          tx.tenant.create({ data: { ownerId: userId, name: 'Meridian Analytics Group',   email: 'leasing@meridiananalytics.com',   company: 'Meridian Analytics Group',   creditScore: encryptNumber(820), crmStatus: 'HIGH_VALUE' } }),
+          tx.tenant.create({ data: { ownerId: userId, name: 'Peak Solutions LLC',         email: 'info@peaksolutions.com',          company: 'Peak Solutions LLC',         creditScore: encryptNumber(765), crmStatus: 'ACTIVE'     } }),
+          tx.tenant.create({ data: { ownerId: userId, name: 'Harbor Medical Partners',    email: 'leasing@harbormed.com',           company: 'Harbor Medical Partners',    creditScore: encryptNumber(798), crmStatus: 'HIGH_VALUE' } }),
+          tx.tenant.create({ data: { ownerId: userId, name: 'Sunrise Retail Co.',         email: 'retail@sunriseco.com',            company: 'Sunrise Retail Co.',         creditScore: encryptNumber(680), crmStatus: 'AT_RISK'    } }),
+          tx.tenant.create({ data: { ownerId: userId, name: 'Westside Legal Associates',  email: 'admin@westsidelegal.com',         company: 'Westside Legal Associates',  creditScore: encryptNumber(750), crmStatus: 'ACTIVE'     } }),
+          tx.tenant.create({ data: { ownerId: userId, name: 'CoreTech Systems',           email: 'facilities@coretech.io',          company: 'CoreTech Systems',           creditScore: encryptNumber(810), crmStatus: 'ACTIVE'     } }),
+          tx.tenant.create({ data: { ownerId: userId, name: 'Bright Horizon Café',        email: 'ops@brighthorizoncafe.com',       company: 'Bright Horizon Café',        creditScore: encryptNumber(650), crmStatus: 'AT_RISK'    } }),
+          tx.tenant.create({ data: { ownerId: userId, name: 'Axiom Capital Group',        email: 'leasing@axiomcapital.com',        company: 'Axiom Capital Group',        creditScore: encryptNumber(835), crmStatus: 'HIGH_VALUE' } }),
+          tx.tenant.create({ data: { ownerId: userId, name: 'Metro Community Health',     email: 'admin@metrocommunityhealth.org',  company: 'Metro Community Health',     creditScore: encryptNumber(775), crmStatus: 'ACTIVE'     } }),
+          tx.tenant.create({ data: { ownerId: userId, name: 'Pacific Trade Ventures',     email: 'leasing@pacifictrade.com',        company: 'Pacific Trade Ventures',     creditScore: encryptNumber(790), crmStatus: 'ACTIVE'     } }),
         ]);
 
       const leases = await Promise.all([

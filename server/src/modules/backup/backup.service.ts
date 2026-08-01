@@ -1,6 +1,7 @@
 import { prisma } from '../../infrastructure/database';
 import { logger } from '../../utils/logger';
 import { logAudit } from '../audit/audit.service';
+import { encryptField } from '../../security/field-encryption';
 
 const MAX_AUTOMATED_BACKUPS = 30;
 export const MAX_MANUAL_BACKUPS = 10;
@@ -20,7 +21,7 @@ interface SnapshotProperty {
 
 interface SnapshotTenant {
   id: string; name: string; email?: string | null; phone?: string | null;
-  company?: string | null; creditScore?: number | null; notes?: string | null;
+  company?: string | null; creditScore?: string | number | null; notes?: string | null;
   isActive?: boolean; deletedAt?: string | null;
 }
 
@@ -216,7 +217,8 @@ export async function restoreBackup(id: string, userId: string) {
           create: {
             id: t.id, name: t.name, email: t.email ?? undefined,
             phone: t.phone ?? undefined, company: t.company ?? undefined,
-            creditScore: t.creditScore ?? undefined, notes: t.notes ?? undefined,
+            creditScore: t.creditScore == null ? undefined : encryptField(String(t.creditScore)),
+            notes: t.notes ?? undefined,
             isActive: t.isActive ?? true,
             deletedAt: t.deletedAt ? new Date(t.deletedAt) : null,
             ownerId: userId,
@@ -224,7 +226,8 @@ export async function restoreBackup(id: string, userId: string) {
           update: {
             name: t.name, email: t.email ?? undefined,
             phone: t.phone ?? undefined, company: t.company ?? undefined,
-            creditScore: t.creditScore ?? undefined, notes: t.notes ?? undefined,
+            creditScore: t.creditScore == null ? undefined : encryptField(String(t.creditScore)),
+            notes: t.notes ?? undefined,
             isActive: t.isActive ?? true,
             deletedAt: t.deletedAt ? new Date(t.deletedAt) : null,
             ownerId: userId,

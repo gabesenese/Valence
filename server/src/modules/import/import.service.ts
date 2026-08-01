@@ -6,6 +6,7 @@ import { syncLeaseRevenueSchedule } from '../finance/revenue-schedule.service';
 import { computeRenewalRisk } from '../leases/leases.service';
 import type { Plan, PropertyType, LeaseType, LateFeeType } from '@prisma/client';
 import { EXPENSE_CATEGORY_VALUES } from '../finance/expense-categories';
+import { encryptNumber } from '../../security/field-encryption';
 
 export interface ImportResult {
   created: number;
@@ -202,7 +203,7 @@ export async function importTenants(buffer: Buffer, userId: string, columnMap?: 
           ...(row.email && { email: row.email.trim() }),
           ...(row.phone && { phone: row.phone.trim() }),
           ...(row.company && { company: row.company.trim() }),
-          ...(row.creditScore && { creditScore: parseInt(row.creditScore) }),
+          ...(row.creditScore && { creditScore: encryptNumber(parseInt(row.creditScore)) }),
           ...(row.notes && { notes: row.notes.trim() }),
         },
       });
