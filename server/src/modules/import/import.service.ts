@@ -75,6 +75,34 @@ function toDate(val: string, field: string): string {
   return d.toISOString();
 }
 
+// Strips currency symbols, thousands separators, and stray whitespace so
+// spreadsheet-formatted numbers ("$54,300.00", "1,500.00 CAD", "(500.00)" for
+// accounting-style negatives) parse correctly instead of parseFloat silently
+// truncating at the first comma (parseFloat("54,300") === 54).
+function cleanNumeric(val: string): string {
+  let s = val.trim();
+  let negative = false;
+  if (/^\(.*\)$/.test(s)) {
+    negative = true;
+    s = s.slice(1, -1);
+  }
+  s = s.replace(/[^0-9.-]/g, '');
+  if (negative && !s.startsWith('-')) s = `-${s}`;
+  return s;
+}
+
+function parseMoney(val: string, field: string): number {
+  const n = parseFloat(cleanNumeric(val));
+  if (!Number.isFinite(n)) throw new Error(`${field} must be a valid number: "${val}"`);
+  return n;
+}
+
+function parseCount(val: string, field: string): number {
+  const n = parseInt(cleanNumeric(val), 10);
+  if (!Number.isFinite(n)) throw new Error(`${field} must be a whole number: "${val}"`);
+  return n;
+}
+
 
 const VALID_PROPERTY_TYPES = ['RESIDENTIAL', 'COMMERCIAL', 'MIXED_USE', 'INDUSTRIAL', 'RETAIL', 'OFFICE'];
 
@@ -107,6 +135,13 @@ export async function importProperties(buffer: Buffer, plan: Plan, userId: strin
 
       const normalType = VALID_PROPERTY_TYPES.includes(type.toUpperCase()) ? type.toUpperCase() : 'RESIDENTIAL';
       const normalCode = code.toUpperCase().trim();
+      const parsedTotalUnits = parseCount(totalUnits, 'totalUnits');
+      if (parsedTotalUnits <= 0) throw new Error('totalUnits must be greater than 0');
+      const parsedTotalSqft   = totalSqft ? parseMoney(totalSqft, 'totalSqft') : undefined;
+      const parsedYearBuilt   = row.yearBuilt ? parseCount(row.yearBuilt, 'yearBuilt') : undefined;
+      const parsedPurchasePrice = row.purchasePrice ? parseMoney(row.purchasePrice, 'purchasePrice') : undefined;
+      const parsedCurrentValue  = row.currentValue ? parseMoney(row.currentValue, 'currentValue') : undefined;
+
       const existing = await prisma.property.findFirst({ where: { code: normalCode, ownerId: userId, deletedAt: null } });
 
       if (existing) {
@@ -120,11 +155,11 @@ export async function importProperties(buffer: Buffer, plan: Plan, userId: strin
             state: state.toUpperCase().trim(),
             zipCode: zipCode.trim(),
             ...(row.country && { country: row.country.trim() }),
-            totalUnits: parseInt(totalUnits),
-            totalSqft: totalSqft ? parseFloat(totalSqft) : existing.totalSqft,
-            ...(row.yearBuilt && { yearBuilt: parseInt(row.yearBuilt) }),
-            ...(row.purchasePrice && { purchasePrice: parseFloat(row.purchasePrice) }),
-            ...(row.currentValue && { currentValue: parseFloat(row.currentValue) }),
+            totalUnits: parsedTotalUnits,
+            totalSqft: parsedTotalSqft ?? existing.totalSqft,
+            ...(parsedYearBuilt !== undefined && { yearBuilt: parsedYearBuilt }),
+            ...(parsedPurchasePrice !== undefined && { purchasePrice: parsedPurchasePrice }),
+            ...(parsedCurrentValue !== undefined && { currentValue: parsedCurrentValue }),
             ...(row.purchaseDate && { purchaseDate: new Date(row.purchaseDate) }),
           },
         });
@@ -149,11 +184,11 @@ export async function importProperties(buffer: Buffer, plan: Plan, userId: strin
           state: state.toUpperCase().trim(),
           zipCode: zipCode.trim(),
           country: row.country?.trim() || 'CA',
-          totalUnits: parseInt(totalUnits),
-          totalSqft: totalSqft ? parseFloat(totalSqft) : 0,
-          ...(row.yearBuilt && { yearBuilt: parseInt(row.yearBuilt) }),
-          ...(row.purchasePrice && { purchasePrice: parseFloat(row.purchasePrice) }),
-          ...(row.currentValue && { currentValue: parseFloat(row.currentValue) }),
+          totalUnits: parsedTotalUnits,
+          totalSqft: parsedTotalSqft ?? 0,
+          ...(parsedYearBuilt !== undefined && { yearBuilt: parsedYearBuilt }),
+          ...(parsedPurchasePrice !== undefined && { purchasePrice: parsedPurchasePrice }),
+          ...(parsedCurrentValue !== undefined && { currentValue: parsedCurrentValue }),
           ...(row.purchaseDate && { purchaseDate: new Date(row.purchaseDate) }),
         },
       });
@@ -203,7 +238,7 @@ export async function importTenants(buffer: Buffer, userId: string, columnMap?: 
           ...(row.email && { email: row.email.trim() }),
           ...(row.phone && { phone: row.phone.trim() }),
           ...(row.company && { company: row.company.trim() }),
-          ...(row.creditScore && { creditScore: encryptNumber(parseInt(row.creditScore)) }),
+          ...(row.creditScore && { creditScore: encryptNumber(parseCount(row.creditScore, 'creditScore')) }),
           ...(row.notes && { notes: row.notes.trim() }),
         },
       });
@@ -243,7 +278,7 @@ function parseLateFee(row: Record<string, string>): {
 
   const num = (val: string | undefined, lo: number, hi: number): number | undefined => {
     if (!val?.trim()) return undefined;
-    const n = parseFloat(val);
+    const n = parseFloat(cleanNumeric(val));
     if (!Number.isFinite(n)) return undefined;
     return Math.min(hi, Math.max(lo, n));
   };
@@ -342,21 +377,29 @@ export async function importLeases(buffer: Buffer, plan: Plan, userId: string, c
         throw new Error(`type must be one of: ${VALID_LEASE_TYPES.join(', ')}`);
       }
 
-      const leaseEndDate = new Date(toDate(endDate, 'endDate'));
+      const leaseStartDate = new Date(toDate(startDate, 'startDate'));
+      const leaseEndDate   = new Date(toDate(endDate, 'endDate'));
+      if (leaseEndDate <= leaseStartDate) {
+        throw new Error(`endDate ("${endDate}") must be after startDate ("${startDate}")`);
+      }
+
+      const parsedBaseRent = parseMoney(baseRent, 'baseRent');
+      if (parsedBaseRent <= 0) throw new Error('baseRent must be greater than 0');
+
       const lease = await prisma.lease.create({
         data: {
           leaseNumber: leaseNumber.trim(),
           propertyId: property.id,
           tenantId,
-          startDate: new Date(toDate(startDate, 'startDate')),
+          startDate: leaseStartDate,
           endDate: leaseEndDate,
           renewalRisk: computeRenewalRisk(leaseEndDate),
-          baseRent: parseFloat(baseRent),
+          baseRent: parsedBaseRent,
           type: leaseType as LeaseType,
           ...(row.unitNumber && { unitNumber: row.unitNumber.trim() }),
-          ...(row.rentEscalation && { rentEscalation: parseFloat(row.rentEscalation) }),
-          ...(row.securityDeposit && { securityDeposit: parseFloat(row.securityDeposit) }),
-          ...(row.sqft && { sqft: parseFloat(row.sqft) }),
+          ...(row.rentEscalation && { rentEscalation: parseMoney(row.rentEscalation, 'rentEscalation') }),
+          ...(row.securityDeposit && { securityDeposit: parseMoney(row.securityDeposit, 'securityDeposit') }),
+          ...(row.sqft && { sqft: parseMoney(row.sqft, 'sqft') }),
           ...parseLateFee(row),
           ...(row.notes && { notes: row.notes.trim() }),
         },
@@ -392,8 +435,8 @@ export async function importExpenses(buffer: Buffer, userId: string, columnMap?:
       const property = await prisma.property.findFirst({ where: { code: propertyCode.toUpperCase().trim(), ownerId: userId, deletedAt: null } });
       if (!property) throw new Error(`Property with code "${propertyCode}" not found`);
 
-      const parsedAmount = parseFloat(amount);
-      if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) throw new Error('amount must be a positive number');
+      const parsedAmount = parseMoney(amount, 'amount');
+      if (parsedAmount <= 0) throw new Error('amount must be greater than 0');
 
       const periodStart = new Date(toDate(date, 'date'));
       const rawCategory = row.category ? row.category.toUpperCase().trim().replace(/\s+/g, '_') : 'OTHER';
