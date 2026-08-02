@@ -113,6 +113,27 @@ export default function SettingsPage() {
   const [resetLoading,  setResetLoading]  = useState(false);
   const [resetDone,     setResetDone]     = useState(false);
 
+  const [deleteOrgConfirm, setDeleteOrgConfirm] = useState(false);
+  const [deleteOrgEmail,   setDeleteOrgEmail]   = useState('');
+  const [deleteOrgLoading, setDeleteOrgLoading] = useState(false);
+  const [deleteOrgError,   setDeleteOrgError]   = useState('');
+  const [deleteOrgDone,    setDeleteOrgDone]    = useState(false);
+  const logout = useAuthStore((s) => s.logout);
+
+  const deleteOrganization = async () => {
+    setDeleteOrgLoading(true);
+    setDeleteOrgError('');
+    try {
+      await organizationService.deleteOrganization(deleteOrgEmail);
+      setDeleteOrgDone(true);
+      setTimeout(() => { logout(); navigate('/auth/login'); }, 1500);
+    } catch (err: unknown) {
+      setDeleteOrgError((err as Error).message || 'Failed to delete organization.');
+    } finally {
+      setDeleteOrgLoading(false);
+    }
+  };
+
   const [firstName,     setFirstName]     = useState(user?.firstName ?? '');
   const [lastName,      setLastName]      = useState(user?.lastName  ?? '');
   const [profileSaving, setProfileSaving] = useState(false);
@@ -776,19 +797,46 @@ export default function SettingsPage() {
               </CardBody>
             </Card>
 
-            <Card className="opacity-60">
+            <Card>
               <CardBody>
                 <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <div className="flex items-center gap-2 mb-0.5">
-                      <p className="text-sm font-semibold text-fg">Delete Organization</p>
-                      <span className="rounded-full bg-surface-300 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-slate-500">Coming Soon</span>
-                    </div>
-                    <p className="text-xs text-slate-500">Permanently removes your organization, all data, and cancels billing.</p>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold text-fg">Delete Organization</p>
+                    <p className="text-xs text-slate-500 mt-0.5">Permanently removes your organization, all data, and cancels billing at the end of your current period.</p>
+                    {deleteOrgDone && <p className="text-xs text-success mt-2">Organization deleted. Signing you out…</p>}
+                    {deleteOrgConfirm && !deleteOrgDone && (
+                      <div className="mt-3 flex flex-col gap-2">
+                        <label className="text-xs font-medium uppercase tracking-wider text-slate-400">Type your email to confirm</label>
+                        <input
+                          type="email"
+                          value={deleteOrgEmail}
+                          onChange={(e) => { setDeleteOrgEmail(e.target.value); setDeleteOrgError(''); }}
+                          placeholder={user?.email}
+                          className={inputCls}
+                        />
+                        {deleteOrgError && <p className="text-xs text-danger">{deleteOrgError}</p>}
+                      </div>
+                    )}
                   </div>
-                  <button disabled className="shrink-0 inline-flex items-center gap-1.5 rounded-lg border border-danger/20 px-3 py-1.5 text-xs font-semibold text-danger/40 cursor-not-allowed">
-                    <Trash2 className="h-3.5 w-3.5" /> Delete
-                  </button>
+                  <div className="shrink-0">
+                    {!deleteOrgConfirm ? (
+                      <button onClick={() => setDeleteOrgConfirm(true)}
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-danger/30 bg-danger/10 hover:bg-danger/20 px-3 py-1.5 text-xs font-semibold text-danger transition-colors">
+                        <Trash2 className="h-3.5 w-3.5" /> Delete
+                      </button>
+                    ) : !deleteOrgDone && (
+                      <div className="flex flex-wrap items-center gap-2">
+                        <button
+                          onClick={deleteOrganization}
+                          disabled={deleteOrgLoading || deleteOrgEmail.trim().toLowerCase() !== user?.email.toLowerCase()}
+                          className="inline-flex items-center gap-1 rounded-lg bg-danger hover:bg-danger/80 px-3 py-1.5 text-xs font-semibold text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                        >
+                          {deleteOrgLoading && <Loader2 className="h-3 w-3 animate-spin" />} Delete Organization
+                        </button>
+                        <button onClick={() => { setDeleteOrgConfirm(false); setDeleteOrgEmail(''); setDeleteOrgError(''); }} className="text-xs text-slate-500 hover:text-slate-300 transition-colors">Cancel</button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </CardBody>
             </Card>

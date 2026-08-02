@@ -85,6 +85,22 @@ export async function createCheckoutSession(
   return session.url!;
 }
 
+/*
+ * Cancels billing at the end of the current period rather than immediately,
+ * so the user keeps access through what they already paid for. Silently
+ * no-ops if Stripe isn't configured or the user has no paying subscription
+ * (FREE plan, never checked out) — account deletion must not fail on that.
+ */
+export async function cancelSubscription(user: UserInfo): Promise<void> {
+  if (!env.STRIPE_SECRET_KEY) return;
+  const stripe = getStripe();
+  const list = await stripe.customers.list({ email: user.email, limit: 1 });
+  const customer = list.data[0];
+  if (!customer) return;
+  const subs = await stripe.subscriptions.list({ customer: customer.id, status: 'active', limit: 10 });
+  await Promise.all(subs.data.map((s) => stripe.subscriptions.update(s.id, { cancel_at_period_end: true })));
+}
+
 export async function createPortalSession(user: UserInfo, returnUrl: string): Promise<string> {
   const stripe = getStripe();
   const customer = await getOrCreateCustomer(stripe, user);
