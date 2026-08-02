@@ -2,6 +2,7 @@ import { Router } from 'express';
 import type { Request, Response, NextFunction } from 'express';
 import { authenticate } from '../../middleware/authenticate';
 import { authorize } from '../../middleware/authorize';
+import { blockDemo } from '../../middleware/blockDemo';
 import { sendSuccess } from '../../utils/response';
 import * as orgService from './organization.service';
 
@@ -14,7 +15,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
   } catch (e) { next(e); }
 });
 
-router.patch('/', authorize('ANALYST'), async (req: Request, res: Response, next: NextFunction) => {
+router.patch('/', authorize('ANALYST'), blockDemo, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { name, industry, timezone, currency } = req.body as {
       name?: string;
@@ -26,7 +27,7 @@ router.patch('/', authorize('ANALYST'), async (req: Request, res: Response, next
   } catch (e) { next(e); }
 });
 
-router.post('/transfer-ownership', authorize('ADMIN'), async (req: Request, res: Response, next: NextFunction) => {
+router.post('/transfer-ownership', authorize('ADMIN'), blockDemo, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { toUserId } = req.body as { toUserId: string };
     await orgService.transferOwnership(req.user!.id, toUserId);
@@ -40,7 +41,7 @@ router.post('/transfer-ownership', authorize('ADMIN'), async (req: Request, res:
  * hold — only the platform owner's account does). deleteOrganization enforces
  * the real check itself.
  */
-router.post('/delete', async (req: Request, res: Response, next: NextFunction) => {
+router.post('/delete', blockDemo, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { confirmEmail } = req.body as { confirmEmail: string };
     await orgService.deleteOrganization(req.user!.id, confirmEmail);

@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import type { Request, Response, NextFunction } from 'express';
 import { authenticate } from '../../middleware/authenticate';
+import { blockDemo } from '../../middleware/blockDemo';
 import { resolveEffectivePlan } from '../../middleware/planGate';
 import { sendSuccess } from '../../utils/response';
 import { assertPropertyOwner } from '../../utils/ownership';
@@ -18,15 +19,15 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
   try { sendSuccess(res, await service.listIntegrations(req.user!.id)); } catch (e) { next(e); }
 });
 
-router.get('/:provider/authorize', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/:provider/authorize', blockDemo, async (req: Request, res: Response, next: NextFunction) => {
   try { sendSuccess(res, await service.getAuthorizeUrl(req.user!.id, effectivePlan(req), req.params.provider)); } catch (e) { next(e); }
 });
 
-router.post('/:provider/connect', async (req: Request, res: Response, next: NextFunction) => {
+router.post('/:provider/connect', blockDemo, async (req: Request, res: Response, next: NextFunction) => {
   try { sendSuccess(res, await service.connectIntegration(req.user!.id, effectivePlan(req), req.params.provider, req.body?.config)); } catch (e) { next(e); }
 });
 
-router.post('/:provider/sync', async (req: Request, res: Response, next: NextFunction) => {
+router.post('/:provider/sync', blockDemo, async (req: Request, res: Response, next: NextFunction) => {
   try { sendSuccess(res, await service.syncIntegration(req.user!.id, effectivePlan(req), req.params.provider)); } catch (e) { next(e); }
 });
 
@@ -38,7 +39,7 @@ router.get('/:provider/mapping-queue', async (req: Request, res: Response, next:
   try { sendSuccess(res, await getMappingQueue(req.user!.id, req.params.provider)); } catch (e) { next(e); }
 });
 
-router.post('/:provider/mappings', async (req: Request, res: Response, next: NextFunction) => {
+router.post('/:provider/mappings', blockDemo, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { sourceType, sourceValue, propertyId } = req.body ?? {};
     if (propertyId) await assertPropertyOwner(propertyId, req.user!.id);
@@ -46,7 +47,7 @@ router.post('/:provider/mappings', async (req: Request, res: Response, next: Nex
   } catch (e) { next(e); }
 });
 
-router.post('/:provider/assign', async (req: Request, res: Response, next: NextFunction) => {
+router.post('/:provider/assign', blockDemo, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { propertyId, untaggedOnly, sourceType, sourceValue } = req.body ?? {};
     if (propertyId) await assertPropertyOwner(propertyId, req.user!.id);
@@ -54,7 +55,7 @@ router.post('/:provider/assign', async (req: Request, res: Response, next: NextF
   } catch (e) { next(e); }
 });
 
-router.delete('/:provider', async (req: Request, res: Response, next: NextFunction) => {
+router.delete('/:provider', blockDemo, async (req: Request, res: Response, next: NextFunction) => {
   try { sendSuccess(res, await service.disconnectIntegration(req.user!.id, req.params.provider)); } catch (e) { next(e); }
 });
 

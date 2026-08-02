@@ -4,6 +4,7 @@ import * as controller from './auth.controller';
 import { validate } from '../../middleware/validate';
 import { authenticate } from '../../middleware/authenticate';
 import { authorize } from '../../middleware/authorize';
+import { blockDemo } from '../../middleware/blockDemo';
 import { blockWhileImpersonating } from '../../middleware/impersonation';
 import { registerSchema, loginSchema, refreshSchema } from './auth.schemas';
 
@@ -29,21 +30,21 @@ router.get(   '/me',                      authenticate, controller.getMe);
 router.post(  '/claim-trial',             authenticate, controller.claimTrial);
 router.patch( '/me',                      authenticate, controller.updateProfile);
 router.patch( '/me/preferences',          authenticate, controller.updatePreferences);
-router.patch( '/me/email',                authenticate, blockWhileImpersonating, controller.changeEmail);
-router.patch( '/me/password',             authenticate, blockWhileImpersonating, controller.changePassword);
+router.patch( '/me/email',                authenticate, blockWhileImpersonating, blockDemo, controller.changeEmail);
+router.patch( '/me/password',             authenticate, blockWhileImpersonating, blockDemo, controller.changePassword);
 router.post(  '/me/resend-verification',  authenticate, controller.resendVerification);
-router.post(  '/mfa/setup',               authenticate, blockWhileImpersonating, controller.setupMfa);
-router.post(  '/mfa/enable',              authenticate, blockWhileImpersonating, controller.enableMfa);
-router.post(  '/mfa/disable',             authenticate, blockWhileImpersonating, controller.disableMfa);
+router.post(  '/mfa/setup',               authenticate, blockWhileImpersonating, blockDemo, controller.setupMfa);
+router.post(  '/mfa/enable',              authenticate, blockWhileImpersonating, blockDemo, controller.enableMfa);
+router.post(  '/mfa/disable',             authenticate, blockWhileImpersonating, blockDemo, controller.disableMfa);
 router.get(   '/sessions',                authenticate, controller.listSessions);
-router.delete('/sessions/all',            authenticate, controller.revokeAllSessions);
-router.delete('/sessions/:id',            authenticate, controller.revokeSession);
+router.delete('/sessions/all',            authenticate, blockDemo, controller.revokeAllSessions);
+router.delete('/sessions/:id',            authenticate, blockDemo, controller.revokeSession);
 
 
 router.get(   '/users',          authenticate,                              controller.listUsers);
-router.patch( '/users/:id/role', authenticate, authorize('SUPER_ADMIN'), controller.updateUserRole);
-router.patch( '/users/:id/active', authenticate, authorize('SUPER_ADMIN'), controller.setUserActive);
-router.delete('/users/:id/membership', authenticate, authorize('SUPER_ADMIN'), controller.removeMember);
-router.patch( '/users/:id/plan', authenticate, authorize('SUPER_ADMIN'),   controller.setUserPlan);
+router.patch( '/users/:id/role', authenticate, authorize('SUPER_ADMIN'), blockDemo, controller.updateUserRole);
+router.patch( '/users/:id/active', authenticate, authorize('SUPER_ADMIN'), blockDemo, controller.setUserActive);
+router.delete('/users/:id/membership', authenticate, authorize('SUPER_ADMIN'), blockDemo, controller.removeMember);
+router.patch( '/users/:id/plan', authenticate, authorize('SUPER_ADMIN'),   blockDemo, controller.setUserPlan);
 
 export { router as authRouter };

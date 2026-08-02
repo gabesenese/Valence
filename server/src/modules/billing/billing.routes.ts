@@ -2,6 +2,7 @@ import { Router } from 'express';
 import type { Request, Response, NextFunction } from 'express';
 import type { Plan } from '@prisma/client';
 import { authenticate } from '../../middleware/authenticate';
+import { blockDemo } from '../../middleware/blockDemo';
 import { sendSuccess } from '../../utils/response';
 import { env } from '../../config/env';
 import { trackEvent } from '../analytics/funnel.service';
@@ -11,7 +12,7 @@ const router = Router();
 
 const VALID_PLANS: Plan[] = ['ESSENTIALS', 'PROFESSIONAL', 'EXECUTIVE'];
 
-router.post('/checkout', authenticate, async (req: Request, res: Response, next: NextFunction) => {
+router.post('/checkout', authenticate, blockDemo, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { plan } = req.body as { plan?: Plan };
     if (!plan || !VALID_PLANS.includes(plan)) {
@@ -32,7 +33,7 @@ router.post('/checkout', authenticate, async (req: Request, res: Response, next:
   }
 });
 
-router.post('/portal', authenticate, async (req: Request, res: Response, next: NextFunction) => {
+router.post('/portal', authenticate, blockDemo, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const u = req.user!;
     const url = await createPortalSession(

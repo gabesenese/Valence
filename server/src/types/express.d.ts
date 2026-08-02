@@ -9,6 +9,7 @@ declare global {
         role: UserRole;
         plan: Plan;
         isPlatformStaff: boolean;
+        isDemo: boolean;
         trialEndsAt: string | null;
         firstName: string;
         lastName: string;

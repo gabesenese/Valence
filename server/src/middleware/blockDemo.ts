@@ -1,17 +1,13 @@
 import type { Request, Response, NextFunction } from 'express';
-import { prisma } from '../infrastructure/database';
 import { ForbiddenError, UnauthorizedError } from '../utils/errors';
 
-export async function blockDemo(req: Request, _res: Response, next: NextFunction): Promise<void> {
+// authenticate() re-checks isDemo against the DB on every request, so this is
+// a plain, no-extra-query check — never trust a value carried on the JWT
+// alone. Must run after authenticate() on any route it guards.
+export function blockDemo(req: Request, _res: Response, next: NextFunction): void {
   if (!req.user) return next(new UnauthorizedError());
-  try {
-    const user = await prisma.user.findUnique({ where: { id: req.user.id }, select: { isDemo: true } });
-    if (user?.isDemo) {
-      next(new ForbiddenError('This action is not available in the demo portfolio.'));
-      return;
-    }
-    next();
-  } catch (err) {
-    next(err);
+  if (req.user.isDemo) {
+    return next(new ForbiddenError('This action is not available in the demo portfolio.'));
   }
+  next();
 }

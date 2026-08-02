@@ -42,7 +42,7 @@ router.post('/invites', authorize('ADMIN', 'SUPER_ADMIN'), blockDemo, async (req
   } catch (e) { next(e); }
 });
 
-router.delete('/invites/:id', authorize('ADMIN', 'SUPER_ADMIN'), async (req: Request, res: Response, next: NextFunction) => {
+router.delete('/invites/:id', authorize('ADMIN', 'SUPER_ADMIN'), blockDemo, async (req: Request, res: Response, next: NextFunction) => {
   try {
     await teamService.revokeInvite(req.params.id, req.user!.id);
     sendSuccess(res, { message: 'Invite revoked' });
