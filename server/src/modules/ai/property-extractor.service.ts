@@ -1,5 +1,4 @@
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const pdfParse = require('pdf-parse') as (buf: Buffer) => Promise<{ text: string }>;
+import { extractText, getDocumentProxy } from 'unpdf';
 
 let _groq: import('groq-sdk').default | null = null;
 function groq() {
@@ -29,7 +28,8 @@ export async function extractPropertyFromPDF(pdfBuffer: Buffer): Promise<Extract
     throw new Error('AI extraction is not configured on this server.');
   }
 
-  const { text } = await pdfParse(pdfBuffer);
+  const pdf = await getDocumentProxy(new Uint8Array(pdfBuffer));
+  const { text } = await extractText(pdf, { mergePages: true });
 
   const response = await groq().chat.completions.create({
     model: 'llama-3.3-70b-versatile',

@@ -107,9 +107,9 @@ export default function PropertyImportModal({ open, onClose, onConfirm }: Props)
         {stage === 'upload' && (
           <>
             <p className="text-sm text-slate-500 mb-4">
-              Upload a property document — offering memorandum, appraisal, or data
-              sheet. Claude will extract the building details and pre-fill the
-              property record — you'll review before anything is saved.
+              Upload a property document: offering memorandum, appraisal, or data
+              sheet. AI will extract the building details and pre-fill the
+              property record. You'll review before anything is saved.
             </p>
 
             {/* Drop zone */}
