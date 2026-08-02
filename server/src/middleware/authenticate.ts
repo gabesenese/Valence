@@ -26,6 +26,10 @@ export function tryAuthenticate(req: Request, _res: Response, next: NextFunction
       req.user = {
         id: payload.sub, email: payload.email, role: payload.role,
         plan: payload.plan ?? 'ESSENTIALS', isPlatformStaff: false,
+        // Never re-checked against the DB on this lightweight path — routes
+        // that need an authoritative isDemo (anything gated by blockDemo)
+        // always chain the real authenticate() below, which overwrites this.
+        isDemo: false,
         trialEndsAt: payload.trialEndsAt ?? null,
         firstName: payload.firstName, lastName: payload.lastName,
         impersonatedBy: payload.impersonatedBy,
@@ -57,7 +61,7 @@ export async function authenticate(req: Request, _res: Response, next: NextFunct
      */
     const user = await prisma.user.findUnique({
       where: { id: payload.sub },
-      select: { isActive: true, role: true, plan: true, isPlatformStaff: true, trialEndsAt: true },
+      select: { isActive: true, role: true, plan: true, isPlatformStaff: true, isDemo: true, trialEndsAt: true },
     });
     if (!user || !user.isActive) {
       return next(new UnauthorizedError('Session is no longer valid'));
@@ -68,6 +72,7 @@ export async function authenticate(req: Request, _res: Response, next: NextFunct
       role: user.role,
       plan: user.plan,
       isPlatformStaff: user.isPlatformStaff,
+      isDemo: user.isDemo,
       trialEndsAt: user.trialEndsAt?.toISOString() ?? null,
       firstName: payload.firstName,
       lastName: payload.lastName,
