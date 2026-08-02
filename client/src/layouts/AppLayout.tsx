@@ -358,7 +358,7 @@ export function AppLayout() {
             <div className="flex items-center gap-2.5">
               <Sparkles className="h-4 w-4 text-brand-400 shrink-0" />
               <span className="text-xs font-medium text-brand-300">
-                You're exploring a demo portfolio — data resets automatically after 2 hours.
+                You're exploring a demo portfolio — it's discarded when you sign out, or automatically after 2 hours.
               </span>
             </div>
             <Link
