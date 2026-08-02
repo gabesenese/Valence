@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
+import { persist, createJSONStorage, type StateStorage } from 'zustand/middleware';
 
 export type Plan = 'FREE' | 'ESSENTIALS' | 'PROFESSIONAL' | 'EXECUTIVE';
 
@@ -39,6 +39,48 @@ interface AuthState {
   startImpersonation: (user: AuthUser, token: string) => void;
   stopImpersonation: () => void;
 }
+
+/**
+ * A demo session must not outlive the tab: it lives in sessionStorage instead
+ * of localStorage, so closing the tab signs it out automatically rather than
+ * leaving a live demo portfolio reachable from a fresh visit.
+ */
+const demoAwareStorage: StateStorage = {
+  getItem: (name) => sessionStorage.getItem(name) ?? localStorage.getItem(name),
+  setItem: (name, value) => {
+    const isDemo = (() => {
+      try {
+        return !!JSON.parse(value)?.state?.user?.isDemo;
+      } catch {
+        return false;
+      }
+    })();
+    if (isDemo) {
+      localStorage.removeItem(name);
+      sessionStorage.setItem(name, value);
+    } else {
+      sessionStorage.removeItem(name);
+      localStorage.setItem(name, value);
+    }
+  },
+  removeItem: (name) => {
+    localStorage.removeItem(name);
+    sessionStorage.removeItem(name);
+  },
+};
+
+(function migrateExistingDemoSessionOutOfLocalStorage() {
+  const existing = localStorage.getItem('valence-auth');
+  if (!existing) return;
+  try {
+    if (JSON.parse(existing)?.state?.user?.isDemo) {
+      localStorage.removeItem('valence-auth');
+      sessionStorage.setItem('valence-auth', existing);
+    }
+  } catch {
+    localStorage.removeItem('valence-auth');
+  }
+})();
 
 export const useAuthStore = create<AuthState>()(
   persist(
@@ -86,7 +128,7 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'valence-auth',
-      storage: createJSONStorage(() => localStorage),
+      storage: createJSONStorage(() => demoAwareStorage),
       partialize: (state) => ({
         user: state.user,
         accessToken: state.accessToken,
