@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import type { Request, Response, NextFunction } from 'express';
-import { ZipArchive } from 'archiver';
+import archiver from 'archiver';
 import { prisma } from '../../infrastructure/database';
 import { authenticate } from '../../middleware/authenticate';
 import { decryptField, decryptNumber } from '../../security/field-encryption';
@@ -137,7 +137,7 @@ router.get('/bundle', async (req: Request, res: Response, next: NextFunction) =>
     res.setHeader('Content-Type', 'application/zip');
     res.setHeader('Content-Disposition', `attachment; filename="valence-export-${new Date().toISOString().slice(0, 10)}.zip"`);
 
-    const archive = new ZipArchive({ zlib: { level: 9 } });
+    const archive = archiver('zip', { zlib: { level: 9 } });
     archive.on('error', (err: Error) => next(err));
     archive.pipe(res);
 
