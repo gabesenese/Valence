@@ -15,6 +15,28 @@ export interface ImportResult {
   errors: Array<{ row: number; message: string }>;
   currentCount?: number;
   planLimit?: number;
+  totalRows: number;
+  backupId: string;
+}
+
+export interface SavedImportMapping {
+  columnMap: Record<string, string>;
+  defaults: Record<string, string>;
+}
+
+export interface HealthFinding {
+  id: string;
+  label: string;
+  detail: string;
+}
+
+export interface ImportHealthReport {
+  duplicateTenants: HealthFinding[];
+  overlappingLeases: HealthFinding[];
+  expiredActiveLeases: HealthFinding[];
+  propertiesWithNoLeases: HealthFinding[];
+  overLeasedProperties: HealthFinding[];
+  totalFindings: number;
 }
 
 export interface CsvPreview {
@@ -81,6 +103,21 @@ export const importService = {
   leases:     (file: File, columnMap?: Record<string, string>, defaults?: Record<string, string>) => postCsv('/import/leases',     file, columnMap, defaults),
   expenses:   (file: File, columnMap?: Record<string, string>, defaults?: Record<string, string>) => postCsv('/import/expenses',   file, columnMap, defaults),
 };
+
+export async function getSavedMapping(type: 'properties' | 'tenants' | 'leases' | 'expenses'): Promise<SavedImportMapping | null> {
+  const res = await api.get(`/import/mapping/${type}`);
+  return (res.data as { data: SavedImportMapping | null }).data;
+}
+
+export async function getImportHealth(): Promise<ImportHealthReport> {
+  const res = await api.get('/import/health');
+  return (res.data as { data: ImportHealthReport }).data;
+}
+
+export async function undoImport(backupId: string): Promise<{ deleted: Record<string, number>; reverted: Record<string, unknown> }> {
+  const res = await api.post(`/import/undo/${backupId}`);
+  return (res.data as { data: { deleted: Record<string, number>; reverted: Record<string, unknown> } }).data;
+}
 
 
 export const TEMPLATES = {

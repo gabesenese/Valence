@@ -1,7 +1,7 @@
 import { prisma } from '../../infrastructure/database';
 
 export type AuditAction =
-  | 'CREATE' | 'UPDATE' | 'DELETE' | 'IMPORT' | 'PLAN_CHANGE' | 'ROLE_CHANGE'
+  | 'CREATE' | 'UPDATE' | 'DELETE' | 'IMPORT' | 'IMPORT_UNDO' | 'PLAN_CHANGE' | 'ROLE_CHANGE'
   | 'RESTORE' | 'IMPERSONATE' | 'STAGE_CHANGE'
   | 'INVITE' | 'INVITE_REVOKE' | 'PASSWORD_CHANGE' | 'EMAIL_CHANGE'
   | 'MFA_ENABLED' | 'MFA_DISABLED' | 'SESSION_REVOKE' | 'EXPORT';

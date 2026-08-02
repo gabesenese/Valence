@@ -239,6 +239,7 @@ model User {
   ownedTenants       Tenant[]        @relation("TenantOwner")
   sentInvites        Invite[]        @relation("InvitedBy")
   backups            Backup[]
+  importMappings     ImportMapping[]
   integrations       Integration[]
   organization       Organization?   @relation("OrgMembers", fields: [organizationId], references: [id], onDelete: SetNull)
 
@@ -892,6 +893,20 @@ model Backup {
 
   @@index([userId, createdAt])
   @@map("backups")
+}
+
+model ImportMapping {
+  id         String   @id @default(uuid())
+  userId     String   @map("user_id")
+  importType String   @map("import_type")
+  columnMap  Json     @map("column_map")
+  defaults   Json     @default("{}")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, importType])
+  @@map("import_mappings")
 }
 
 enum ChangeEventType {

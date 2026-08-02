@@ -6,7 +6,10 @@ import {
   Building2, FileText, Paperclip, Sparkles, ChevronRight, ArrowLeft,
   Loader2, TrendingUp, BookOpen, ChevronDown, Info, Zap, ArrowRight, Wallet,
 } from 'lucide-react';
-import { importService, parseCsvPreview, downloadTemplate, TEMPLATES, type ImportResult, type CsvPreview } from '@/services/import.service';
+import {
+  importService, parseCsvPreview, downloadTemplate, TEMPLATES, getSavedMapping, getImportHealth, undoImport,
+  type ImportResult, type CsvPreview, type ImportHealthReport,
+} from '@/services/import.service';
 import { FIELD_DEFS, autoSuggest, type FieldDef, type ImportTab } from './import.mapping';
 import { documentsService } from '@/services/documents.service';
 import { analyticsService } from '@/services/analytics.service';
@@ -450,10 +453,12 @@ function CsvStep({
   tab,
   result,
   onResult,
+  onUndone,
 }: {
   tab: ImportTab;
   result: ImportResult | null;
   onResult: (r: ImportResult) => void;
+  onUndone: () => void;
 }) {
   const [phase,        setPhase]        = useState<Phase>(result ? 'done' : 'upload');
   const [file,         setFile]         = useState<File | null>(null);
@@ -464,7 +469,25 @@ function CsvStep({
   const [loading,      setLoading]      = useState(false);
   const [dragging,     setDragging]     = useState(false);
   const [error,        setError]        = useState<string | null>(null);
+  const [undoing,      setUndoing]      = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const handleUndo = async () => {
+    if (!result) return;
+    setUndoing(true);
+    try {
+      await undoImport(result.backupId);
+      setFile(null);
+      setPreview(null);
+      setError(null);
+      setPhase('upload');
+      onUndone();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not undo this import');
+    } finally {
+      setUndoing(false);
+    }
+  };
 
   const handleFile = useCallback(async (f: File) => {
     setError(null);
@@ -477,6 +500,24 @@ function CsvStep({
       setAutoMatched(new Set(Object.keys(suggested)));
       setDefaults({});
       setPhase('mapping');
+
+      // A returning user's CSV shape rarely changes month to month — apply
+      // their last confirmed mapping on top of the auto-guess, but only for
+      // columns that actually exist in THIS file (a saved mapping can point
+      // at a header name from a different export).
+      try {
+        const saved = await getSavedMapping(tab);
+        if (saved) {
+          const merged = { ...suggested };
+          const fromSaved = new Set<string>();
+          for (const [field, col] of Object.entries(saved.columnMap)) {
+            if (prev.headers.includes(col)) { merged[field] = col; fromSaved.add(field); }
+          }
+          setMapping(merged);
+          setAutoMatched(new Set([...Object.keys(suggested), ...fromSaved]));
+          if (Object.keys(saved.defaults).length) setDefaults(saved.defaults);
+        }
+      } catch { /* saved-mapping lookup is a nice-to-have, never blocks import */ }
     } catch {
       setError('Could not read CSV headers — check the file is a valid UTF-8 CSV');
     }
@@ -512,6 +553,11 @@ function CsvStep({
 
     return (
       <div className="flex flex-col gap-4">
+        {error && (
+          <div className="flex items-center gap-2 rounded-lg border border-danger/20 bg-danger/10 px-4 py-3 text-sm text-danger">
+            <XCircle className="h-4 w-4 shrink-0" /> {error}
+          </div>
+        )}
         <div className={cn('grid gap-3', hasUpdates ? 'grid-cols-4' : 'grid-cols-3')}>
           {[
             { label: 'Created',  value: result.created,        icon: CheckCircle, color: 'text-success' },
@@ -560,12 +606,24 @@ function CsvStep({
           </div>
         )}
 
-        <p className="text-xs text-slate-500">
-          {result.created > 0 || (result.updated ?? 0) > 0
-            ? [result.created > 0 && `${result.created} created`, (result.updated ?? 0) > 0 && `${result.updated} updated`].filter(Boolean).join(', ') + '.'
-            : 'No records were imported.'}{' '}
-          Continue to the next step or re-import to fix errors.
-        </p>
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-xs text-slate-500">
+            {result.totalRows > 0
+              ? `Imported ${result.created + result.updated}/${result.totalRows} rows (${Math.round(((result.created + result.updated) / result.totalRows) * 100)}%). `
+              : 'No records were imported. '}
+            Continue to the next step or re-import to fix errors.
+          </p>
+          {(result.created > 0 || result.updated > 0) && (
+            <button
+              onClick={() => void handleUndo()}
+              disabled={undoing}
+              className="shrink-0 inline-flex items-center gap-1.5 rounded-lg border border-danger/20 bg-danger/5 hover:bg-danger/10 disabled:opacity-50 px-2.5 py-1.5 text-xs font-medium text-danger transition-colors"
+            >
+              {undoing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
+              Undo this import
+            </button>
+          )}
+        </div>
       </div>
     );
   }
@@ -758,12 +816,21 @@ const COMPUTE_ITEMS = [
   'Building benchmarks',
 ];
 
+const HEALTH_CATEGORIES: Array<{ key: keyof ImportHealthReport; title: string; href: string }> = [
+  { key: 'duplicateTenants',       title: 'Possible duplicate tenants',            href: '/tenants' },
+  { key: 'overlappingLeases',      title: 'Overlapping leases',                    href: '/leases' },
+  { key: 'expiredActiveLeases',    title: 'Expired leases still marked Active',    href: '/leases' },
+  { key: 'propertiesWithNoLeases', title: 'Properties with no leases yet',         href: '/properties' },
+  { key: 'overLeasedProperties',   title: 'Properties with more leases than units', href: '/properties' },
+];
+
 function IntelligenceStep() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const [phase, setPhase]         = useState<'computing' | 'ready'>('computing');
   const [doneCount, setDoneCount] = useState(0);
   const [summary, setSummary]     = useState<{ properties: number; leases: number; alerts: number } | null>(null);
+  const [health, setHealth]       = useState<ImportHealthReport | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -777,6 +844,10 @@ function IntelligenceStep() {
         const s = await analyticsService.getSummary();
         if (!cancelled) setSummary({ properties: s.properties.total, leases: s.leases.active, alerts: s.alerts.open });
       } catch { /* show without numbers */ }
+      try {
+        const h = await getImportHealth();
+        if (!cancelled) setHealth(h);
+      } catch { /* health report is a bonus, never blocks arrival */ }
       qc.invalidateQueries();
       if (!cancelled) setPhase('ready');
     };
@@ -836,6 +907,36 @@ function IntelligenceStep() {
           ))}
         </div>
       )}
+
+      {health && health.totalFindings > 0 && (
+        <div className="w-full max-w-md rounded-xl border border-warning/20 bg-warning/5 text-left overflow-hidden">
+          <div className="flex items-center gap-2 border-b border-warning/20 px-4 py-2.5">
+            <AlertCircle className="h-3.5 w-3.5 text-warning shrink-0" />
+            <p className="text-xs font-semibold text-warning">
+              {health.totalFindings} thing{health.totalFindings !== 1 ? 's' : ''} worth a look
+            </p>
+          </div>
+          <div className="divide-y divide-warning/10">
+            {HEALTH_CATEGORIES.filter((c) => (health[c.key] as unknown[]).length > 0).map((c) => {
+              const findings = health[c.key] as { id: string; label: string; detail: string }[];
+              return (
+                <button
+                  key={c.key}
+                  onClick={() => navigate(c.href)}
+                  className="flex w-full items-start justify-between gap-3 px-4 py-2.5 text-left hover:bg-warning/10 transition-colors"
+                >
+                  <div className="min-w-0">
+                    <p className="text-xs font-medium text-fg">{c.title}</p>
+                    <p className="text-[11px] text-slate-500 truncate">{findings[0].label}</p>
+                  </div>
+                  <span className="shrink-0 rounded bg-warning/15 px-1.5 py-0.5 text-[10px] font-bold text-warning">{findings.length}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       <button
         onClick={() => navigate('/queue')}
         className="inline-flex items-center gap-2 rounded-xl bg-brand-600 hover:bg-brand-500 px-6 py-3 text-sm font-semibold text-white transition-colors"
@@ -914,13 +1015,13 @@ export default function ImportPage() {
           )}
 
           {current.id === 'properties' && (
-            <CsvStep tab="properties" result={state.properties} onResult={(r) => setState((s) => ({ ...s, properties: r }))} />
+            <CsvStep tab="properties" result={state.properties} onResult={(r) => setState((s) => ({ ...s, properties: r }))} onUndone={() => setState((s) => ({ ...s, properties: null }))} />
           )}
           {current.id === 'leases' && (
-            <CsvStep tab="leases" result={state.leases} onResult={(r) => setState((s) => ({ ...s, leases: r }))} />
+            <CsvStep tab="leases" result={state.leases} onResult={(r) => setState((s) => ({ ...s, leases: r }))} onUndone={() => setState((s) => ({ ...s, leases: null }))} />
           )}
           {current.id === 'expenses' && (
-            <CsvStep tab="expenses" result={state.expenses} onResult={(r) => setState((s) => ({ ...s, expenses: r }))} />
+            <CsvStep tab="expenses" result={state.expenses} onResult={(r) => setState((s) => ({ ...s, expenses: r }))} onUndone={() => setState((s) => ({ ...s, expenses: null }))} />
           )}
           {current.id === 'documents' && (
             <DocumentsStep count={state.documents} onCount={(n) => setState((s) => ({ ...s, documents: n }))} />

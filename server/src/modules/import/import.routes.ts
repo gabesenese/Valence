@@ -3,7 +3,10 @@ import multer from 'multer';
 import { authenticate } from '../../middleware/authenticate';
 import { authorize } from '../../middleware/authorize';
 import { uploadLimiter } from '../../middleware/rateLimits';
-import { importPropertiesHandler, importTenantsHandler, importLeasesHandler, importExpensesHandler } from './import.controller';
+import {
+  importPropertiesHandler, importTenantsHandler, importLeasesHandler, importExpensesHandler,
+  getMappingHandler, getHealthHandler, undoImportHandler,
+} from './import.controller';
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -21,6 +24,11 @@ const upload = multer({
 export const importRouter = Router();
 
 importRouter.use(authenticate);
+
+importRouter.get('/mapping/:type', getMappingHandler);
+importRouter.get('/health', getHealthHandler);
+importRouter.post('/undo/:backupId', authorize('ANALYST'), undoImportHandler);
+
 importRouter.use(uploadLimiter);
 
 importRouter.post('/properties', authorize('ANALYST'), upload.single('csv'), importPropertiesHandler);
