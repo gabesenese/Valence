@@ -86,7 +86,15 @@ export async function register(input: RegisterInput, meta?: SessionMeta): Promis
       passwordHash,
       firstName: input.firstName,
       lastName: input.lastName,
-      ...(isOwner ? { role: 'SUPER_ADMIN', isPlatformStaff: true } : {}),
+      /*
+       * A fresh signup owns their own organization from the moment it's
+       * lazily created (Organization.ownerId = self), so they need ADMIN
+       * from day one to invite teammates or manage their org — the schema
+       * default of ANALYST would leave every real customer permanently
+       * unable to do either.
+       */
+      role: isOwner ? 'SUPER_ADMIN' : 'ADMIN',
+      ...(isOwner ? { isPlatformStaff: true } : {}),
     },
     select: USER_SELECT,
   });
@@ -204,8 +212,14 @@ export async function removeMember(targetUserId: string, actor: { id: string }) 
     select: { id: true, email: true, role: true },
   });
   if (!target) throw new NotFoundError('Member');
-  if (target.role === 'SUPER_ADMIN') {
-    throw new ConflictError('Transfer ownership or change their role before removing a Super Admin.');
+  /*
+   * Ownership is Organization.ownerId, not a role label — a role-based check
+   * would stop protecting the real owner the moment they're anything other
+   * than SUPER_ADMIN (which is every normal customer today).
+   */
+  const org = await prisma.organization.findUnique({ where: { id: organizationId }, select: { ownerId: true } });
+  if (org?.ownerId === targetUserId) {
+    throw new ConflictError('Transfer ownership before removing the organization owner.');
   }
 
   const user = await prisma.user.update({
