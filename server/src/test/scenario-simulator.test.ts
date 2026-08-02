@@ -118,6 +118,17 @@ describe('occupancy drop — cannot lose more than you have', () => {
   });
 });
 
+describe('occupancy drop — a small percentage never becomes a silent no-op', () => {
+  it('rounds a sub-unit request up to 1 unit lost instead of reporting $0 impact', async () => {
+    seedPortfolio(); // 10 total units, no financial records -> rent-roll fallback (40k / 4 leases)
+    // 2% of 10 units = 0.2 units, which used to round(0.2) = 0 and silently report no impact.
+    const res = await runSimulation({ scenario: 'occupancy_drop', params: { percentageDrop: 2 } }, USER);
+    expect(res.impact.revenueChange).toBe(-10_000); // 1 unit * (40k rent roll / 4 leases)
+    expect(res.impact.occupancyChange).toBe(-10); // 1/10 units
+    expect(res.assumptions.join(' ')).toMatch(/rounded up to 1 unit/i);
+  });
+});
+
 describe('input validation — garbage never burns a metered credit', () => {
   it.each([
     [{ scenario: 'occupancy_drop', params: { percentageDrop: -5 } }],

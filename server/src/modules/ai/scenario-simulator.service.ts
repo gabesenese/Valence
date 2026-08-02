@@ -192,7 +192,18 @@ async function calcOccupancyDrop(
   state: Awaited<ReturnType<typeof getCurrentState>>,
 ) {
   const assumptions: string[] = [];
-  const requestedUnits = Math.round(state.totalUnits * (params.percentageDrop / 100));
+  const rawRequestedUnits = state.totalUnits * (params.percentageDrop / 100);
+  let requestedUnits = Math.round(rawRequestedUnits);
+  /*
+   * A nonzero requested drop must never silently round down to a no-op — on
+   * a small portfolio (e.g. 5 units), a 5pp drop is a 0.25-unit request that
+   * rounds to zero, which used to report a confident "+$0/year" with no
+   * explanation. Round up to at least one unit instead and disclose it.
+   */
+  if (requestedUnits === 0 && rawRequestedUnits > 0) {
+    requestedUnits = 1;
+    assumptions.push(`A ${params.percentageDrop}pp drop is less than one unit on this ${state.totalUnits}-unit portfolio — rounded up to 1 unit lost.`);
+  }
   // You can't vacate more units than are occupied. Clamp, and say so.
   const lostUnits = Math.min(requestedUnits, state.occupiedUnits);
   if (lostUnits < requestedUnits) {
