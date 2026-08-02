@@ -166,6 +166,24 @@ export async function refresh(token: string, meta?: SessionMeta): Promise<TokenP
 }
 
 export async function logout(token: string): Promise<void> {
+  const stored = await prisma.refreshToken.findUnique({
+    where: { token },
+    select: { userId: true, user: { select: { isDemo: true } } },
+  });
+
+  /*
+   * A demo account is a disposable, one-shot artifact — nobody signs back
+   * into it. Purge it the moment its one and only user signs out instead of
+   * waiting for the hourly cleanup cron; that cron stays as the safety net
+   * for tabs closed without signing out.
+   */
+  if (stored?.user.isDemo) {
+    try {
+      await purgeDemoAccount(stored.userId);
+      return;
+    } catch { /* fall through to a plain revoke below */ }
+  }
+
   await prisma.refreshToken.updateMany({
     where: { token, revokedAt: null },
     data: { revokedAt: new Date() },
@@ -527,6 +545,16 @@ export async function demoLogin(meta?: SessionMeta): Promise<{ user: AuthUser; t
   return { user, tokens };
 }
 
+async function purgeDemoAccount(userId: string): Promise<void> {
+  await new DemoPortfolioFactory().reset(userId);
+  await prisma.$transaction([
+    prisma.refreshToken.deleteMany({ where: { userId } }),
+    prisma.usageRecord.deleteMany({ where: { userId } }),
+    prisma.auditLog.deleteMany({ where: { userId } }),
+  ]);
+  await prisma.user.delete({ where: { id: userId } });
+}
+
 export async function cleanupDemoAccounts(): Promise<number> {
   const cutoff = new Date(Date.now() - 2 * 60 * 60 * 1000);
   const stale = await prisma.user.findMany({
@@ -534,17 +562,10 @@ export async function cleanupDemoAccounts(): Promise<number> {
     select: { id: true },
   });
 
-  const factory = new DemoPortfolioFactory();
   let cleaned = 0;
   for (const { id } of stale) {
     try {
-      await factory.reset(id);
-      await prisma.$transaction([
-        prisma.refreshToken.deleteMany({ where: { userId: id } }),
-        prisma.usageRecord.deleteMany({ where: { userId: id } }),
-        prisma.auditLog.deleteMany({ where: { userId: id } }),
-      ]);
-      await prisma.user.delete({ where: { id } });
+      await purgeDemoAccount(id);
       cleaned++;
     } catch { /* skip if already gone */ }
   }
