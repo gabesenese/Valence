@@ -34,4 +34,18 @@ router.post('/transfer-ownership', authorize('ADMIN'), async (req: Request, res:
   } catch (e) { next(e); }
 });
 
+/*
+ * No role gate beyond authentication: ownership is a per-user Organization.ownerId
+ * relationship, not the SUPER_ADMIN role (which self-registered customers never
+ * hold — only the platform owner's account does). deleteOrganization enforces
+ * the real check itself.
+ */
+router.post('/delete', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { confirmEmail } = req.body as { confirmEmail: string };
+    await orgService.deleteOrganization(req.user!.id, confirmEmail);
+    sendSuccess(res, { message: 'Organization deleted' });
+  } catch (e) { next(e); }
+});
+
 export { router as organizationRouter };

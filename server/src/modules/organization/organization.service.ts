@@ -1,5 +1,8 @@
 import { prisma } from '../../infrastructure/database';
-import { NotFoundError, UnauthorizedError } from '../../utils/errors';
+import { NotFoundError, UnauthorizedError, ConflictError, ValidationError } from '../../utils/errors';
+import { DemoPortfolioFactory } from '../demo/demo.factory';
+import { cancelSubscription } from '../billing/billing.service';
+import { logAudit } from '../audit/audit.service';
 
 export async function getOrganization(userId: string) {
   let org = await prisma.organization.findUnique({ where: { ownerId: userId } });
@@ -66,4 +69,39 @@ export async function transferOwnership(fromUserId: string, toUserId: string) {
     prisma.user.update({ where: { id: fromUserId }, data: { role: 'ADMIN' } }),
     prisma.organization.update({ where: { id: organizationId }, data: { ownerId: toUserId } }),
   ]);
+}
+
+/*
+ * Self-service organization deletion: wipes the owner's portfolio, cancels
+ * billing at period end, and deactivates the account rather than hard-deleting
+ * it — deactivation is reversible by support and keeps audit-log attribution
+ * intact for anything the owner touched historically.
+ */
+export async function deleteOrganization(userId: string, confirmEmail: string): Promise<void> {
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: { email: true } });
+  if (!user) throw new NotFoundError('User');
+  if (confirmEmail.trim().toLowerCase() !== user.email.toLowerCase()) {
+    throw new ValidationError('Email confirmation does not match your account email.');
+  }
+
+  const organizationId = await resolveOrganizationId(userId);
+  const org = await prisma.organization.findUnique({ where: { id: organizationId }, select: { ownerId: true } });
+  if (!org || org.ownerId !== userId) {
+    throw new UnauthorizedError('Only the organization owner can delete the organization.');
+  }
+
+  const otherMembers = await prisma.user.count({
+    where: { organizationId, id: { not: userId }, isActive: true },
+  });
+  if (otherMembers > 0) {
+    throw new ConflictError('Remove your team members before deleting the organization.');
+  }
+
+  await new DemoPortfolioFactory().reset(userId);
+  await cancelSubscription({ id: userId, email: user.email, firstName: '', lastName: '' });
+
+  await prisma.user.update({ where: { id: userId }, data: { isActive: false } });
+  await prisma.refreshToken.updateMany({ where: { userId, revokedAt: null }, data: { revokedAt: new Date() } });
+
+  void logAudit({ userId, action: 'DELETE', entity: 'organization', entityId: organizationId, entityName: user.email });
 }

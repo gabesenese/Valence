@@ -19,4 +19,7 @@ export const organizationService = {
 
   transferOwnership: (toUserId: string) =>
     api.post('/organization/transfer-ownership', { toUserId }).then(extractData<{ message: string }>),
+
+  deleteOrganization: (confirmEmail: string) =>
+    api.post('/organization/delete', { confirmEmail }).then(extractData<{ message: string }>),
 };
