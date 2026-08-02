@@ -113,8 +113,8 @@ export default function LeaseImportModal({ open, onClose, onConfirm }: Props) {
         {stage === 'upload' && (
           <>
             <p className="text-sm text-slate-500 mb-4">
-              Upload a signed lease PDF. Claude will extract the key terms and
-              pre-fill the lease record — you'll review before anything is saved.
+              Upload a signed lease PDF. AI will extract the key terms and
+              pre-fill the lease record. You'll review before anything is saved.
             </p>
 
             {/* Drop zone */}
