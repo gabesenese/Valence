@@ -40,6 +40,13 @@ interface SnapshotFinancialRecord {
   paidDate?: string | null; description?: string | null; category?: string | null;
 }
 
+export interface ImportedIds {
+  properties: string[];
+  tenants: string[];
+  leases: string[];
+  financialRecords: string[];
+}
+
 interface BackupSnapshot {
   version: string;
   exportedAt: string;
@@ -49,6 +56,11 @@ interface BackupSnapshot {
     leases: SnapshotLease[];
     financialRecords: SnapshotFinancialRecord[];
   };
+  // Only present on 'import'-trigger backups (attached after the import
+  // completes, since the ids created by it aren't known beforehand). Lets
+  // undoImport() delete exactly the rows this import created, on top of the
+  // snapshot's own revert-in-place restore of rows that already existed.
+  importedIds?: ImportedIds;
 }
 
 function isBackupSnapshot(v: unknown): v is BackupSnapshot {
@@ -307,6 +319,72 @@ export async function restoreBackup(id: string, userId: string) {
 
   void logAudit({ userId, action: 'RESTORE', entity: 'backup', entityId: id, meta: { ...restored, skipped } });
   return { ...restored, skipped };
+}
+
+
+// Called once an import finishes, so the pre-import snapshot also knows which
+// rows THIS import created (not knowable when the snapshot was captured,
+// since that happens before the import runs).
+export async function attachImportCreatedIds(backupId: string, userId: string, createdIds: ImportedIds): Promise<void> {
+  const backup = await getBackup(backupId, userId);
+  const snapshot = backup.snapshot as unknown as BackupSnapshot;
+  await prisma.backup.update({
+    where: { id: backupId },
+    data: { snapshot: { ...snapshot, importedIds: createdIds } as object },
+  });
+}
+
+export async function undoImport(backupId: string, userId: string) {
+  const backup = await getBackup(backupId, userId);
+  if (backup.trigger !== 'import') throw new Error('This backup was not created by an import');
+
+  const snapshot = backup.snapshot as unknown as BackupSnapshot;
+  const createdIds = snapshot.importedIds;
+  if (!createdIds) throw new Error('This import predates undo support and cannot be undone automatically');
+
+  // Delete exactly what this import created, children first for FK safety,
+  // always re-scoped to the caller's own records even though the ids were
+  // captured from that same import.
+  const deleted = { properties: 0, tenants: 0, leases: 0, financialRecords: 0 };
+
+  // A lease import also generates revenue-schedule FinancialRecords via
+  // syncLeaseRevenueSchedule, which aren't in the tracked id list (they're a
+  // side effect, not something the import loop itself creates). Deleting them
+  // by leaseId, in addition to the explicitly tracked ids, both keeps the FK
+  // chain clean and avoids leaving orphaned revenue rows behind.
+  const financialRecordWhere = createdIds.leases.length
+    ? { property: { ownerId: userId }, OR: [{ id: { in: createdIds.financialRecords } }, { leaseId: { in: createdIds.leases } }] }
+    : { id: { in: createdIds.financialRecords }, property: { ownerId: userId } };
+  if (createdIds.financialRecords.length || createdIds.leases.length) {
+    const res = await prisma.financialRecord.deleteMany({ where: financialRecordWhere });
+    deleted.financialRecords = res.count;
+  }
+  if (createdIds.leases.length) {
+    const res = await prisma.lease.deleteMany({
+      where: { id: { in: createdIds.leases }, property: { ownerId: userId } },
+    });
+    deleted.leases = res.count;
+  }
+  if (createdIds.tenants.length) {
+    const res = await prisma.tenant.deleteMany({
+      where: { id: { in: createdIds.tenants }, ownerId: userId },
+    });
+    deleted.tenants = res.count;
+  }
+  if (createdIds.properties.length) {
+    const res = await prisma.property.deleteMany({
+      where: { id: { in: createdIds.properties }, ownerId: userId },
+    });
+    deleted.properties = res.count;
+  }
+
+  // Revert anything the import UPDATED (rows that already existed) back to
+  // its pre-import values. Rows just deleted above are absent from the
+  // snapshot's own data by definition, so this can't recreate them.
+  const reverted = await restoreBackup(backupId, userId);
+
+  void logAudit({ userId, action: 'IMPORT_UNDO', entity: 'backup', entityId: backupId, meta: { deleted, reverted } });
+  return { deleted, reverted };
 }
 
 

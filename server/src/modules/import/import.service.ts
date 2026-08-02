@@ -8,6 +8,17 @@ import type { Plan, PropertyType, LeaseType, LateFeeType } from '@prisma/client'
 import { EXPENSE_CATEGORY_VALUES } from '../finance/expense-categories';
 import { encryptNumber } from '../../security/field-encryption';
 
+export interface ImportedIds {
+  properties: string[];
+  tenants: string[];
+  leases: string[];
+  financialRecords: string[];
+}
+
+function emptyImportedIds(): ImportedIds {
+  return { properties: [], tenants: [], leases: [], financialRecords: [] };
+}
+
 export interface ImportResult {
   created: number;
   updated: number;
@@ -15,6 +26,8 @@ export interface ImportResult {
   errors: Array<{ row: number; message: string }>;
   currentCount?: number;
   planLimit?: number;
+  totalRows: number;
+  createdIds: ImportedIds;
 }
 
 export type ColumnMap = Record<string, string>; 
@@ -116,6 +129,8 @@ export async function importProperties(buffer: Buffer, plan: Plan, userId: strin
     created: 0, updated: 0, skipped: 0, errors: [],
     currentCount: startCount,
     planLimit: limit === Infinity ? undefined : limit,
+    totalRows: rows.length,
+    createdIds: emptyImportedIds(),
   };
 
   for (let i = 0; i < rows.length; i++) {
@@ -173,7 +188,7 @@ export async function importProperties(buffer: Buffer, plan: Plan, userId: strin
         continue;
       }
 
-      await prisma.property.create({
+      const createdProperty = await prisma.property.create({
         data: {
           ownerId: userId,
           name: name.trim(),
@@ -194,6 +209,7 @@ export async function importProperties(buffer: Buffer, plan: Plan, userId: strin
       });
       netNewCreated++;
       result.created++;
+      result.createdIds.properties.push(createdProperty.id);
     } catch (err) {
       result.errors.push({ row: rowNum, message: err instanceof Error ? err.message : 'Unknown error' });
       result.skipped++;
@@ -206,7 +222,7 @@ export async function importProperties(buffer: Buffer, plan: Plan, userId: strin
 
 export async function importTenants(buffer: Buffer, userId: string, columnMap?: ColumnMap, defaults?: FieldDefaults): Promise<ImportResult> {
   const rows = await parseRows(buffer);
-  const result: ImportResult = { created: 0, updated: 0, skipped: 0, errors: [] };
+  const result: ImportResult = { created: 0, updated: 0, skipped: 0, errors: [], totalRows: rows.length, createdIds: emptyImportedIds() };
 
   for (let i = 0; i < rows.length; i++) {
     const rowNum = i + 2;
@@ -231,7 +247,7 @@ export async function importTenants(buffer: Buffer, userId: string, columnMap?: 
         }
       }
 
-      await prisma.tenant.create({
+      const createdTenant = await prisma.tenant.create({
         data: {
           ownerId: userId,
           name: row.name.trim(),
@@ -244,6 +260,7 @@ export async function importTenants(buffer: Buffer, userId: string, columnMap?: 
       });
 
       result.created++;
+      result.createdIds.tenants.push(createdTenant.id);
     } catch (err) {
       result.errors.push({ row: rowNum, message: err instanceof Error ? err.message : 'Unknown error' });
       result.skipped++;
@@ -295,25 +312,25 @@ function parseLateFee(row: Record<string, string>): {
   return out;
 }
 
-async function resolveTenant(name: string, userId: string, email?: string): Promise<string> {
+async function resolveTenant(name: string, userId: string, email?: string): Promise<{ id: string; created: boolean }> {
   if (email) {
     const byEmail = await prisma.tenant.findFirst({ where: { email: email.trim(), ownerId: userId } });
-    if (byEmail) return byEmail.id;
+    if (byEmail) return { id: byEmail.id, created: false };
     const created = await prisma.tenant.create({ data: { ownerId: userId, name: name.trim(), email: email.trim() } });
-    return created.id;
+    return { id: created.id, created: true };
   }
 
   const byName = await prisma.tenant.findFirst({
     where: { ownerId: userId, name: { equals: name.trim(), mode: 'insensitive' } },
   });
-  if (byName) return byName.id;
+  if (byName) return { id: byName.id, created: false };
   const created = await prisma.tenant.create({ data: { ownerId: userId, name: name.trim() } });
-  return created.id;
+  return { id: created.id, created: true };
 }
 
 export async function importLeases(buffer: Buffer, plan: Plan, userId: string, columnMap?: ColumnMap, defaults?: FieldDefaults): Promise<ImportResult> {
   const rows = await parseRows(buffer);
-  const result: ImportResult = { created: 0, updated: 0, skipped: 0, errors: [] };
+  const result: ImportResult = { created: 0, updated: 0, skipped: 0, errors: [], totalRows: rows.length, createdIds: emptyImportedIds() };
   const limit = PLAN_LIMITS[plan].leases;
   const startCount = await prisma.lease.count({ where: { property: { ownerId: userId } } });
   const propLimit = PLAN_LIMITS[plan].properties;
@@ -361,6 +378,7 @@ export async function importLeases(buffer: Buffer, plan: Plan, userId: string, c
           },
         });
         propCount++;
+        result.createdIds.properties.push(property.id);
       }
 
       const existingLease = await prisma.lease.findUnique({ where: { leaseNumber_propertyId: { leaseNumber: leaseNumber.trim(), propertyId: property.id } } });
@@ -370,7 +388,9 @@ export async function importLeases(buffer: Buffer, plan: Plan, userId: string, c
         continue;
       }
 
-      const tenantId = await resolveTenant(tenantName, userId, row.tenantEmail || undefined);
+      const resolvedTenant = await resolveTenant(tenantName, userId, row.tenantEmail || undefined);
+      const tenantId = resolvedTenant.id;
+      if (resolvedTenant.created) result.createdIds.tenants.push(tenantId);
 
       const leaseType = row.type ? row.type.toUpperCase() : 'GROSS';
       if (!VALID_LEASE_TYPES.includes(leaseType)) {
@@ -404,6 +424,7 @@ export async function importLeases(buffer: Buffer, plan: Plan, userId: string, c
           ...(row.notes && { notes: row.notes.trim() }),
         },
       });
+      result.createdIds.leases.push(lease.id);
       await syncLeaseRevenueSchedule(lease);
       void logActivity(lease.id, 'IMPORTED', userId);
 
@@ -420,7 +441,7 @@ export async function importLeases(buffer: Buffer, plan: Plan, userId: string, c
 
 export async function importExpenses(buffer: Buffer, userId: string, columnMap?: ColumnMap, defaults?: FieldDefaults): Promise<ImportResult> {
   const rows = await parseRows(buffer);
-  const result: ImportResult = { created: 0, updated: 0, skipped: 0, errors: [] };
+  const result: ImportResult = { created: 0, updated: 0, skipped: 0, errors: [], totalRows: rows.length, createdIds: emptyImportedIds() };
 
   for (let i = 0; i < rows.length; i++) {
     const rowNum = i + 2;
@@ -442,7 +463,7 @@ export async function importExpenses(buffer: Buffer, userId: string, columnMap?:
       const rawCategory = row.category ? row.category.toUpperCase().trim().replace(/\s+/g, '_') : 'OTHER';
       const category = EXPENSE_CATEGORY_VALUES.includes(rawCategory) ? rawCategory : 'OTHER';
 
-      await prisma.financialRecord.create({
+      const createdRecord = await prisma.financialRecord.create({
         data: {
           propertyId: property.id,
           type: 'EXPENSE',
@@ -457,6 +478,7 @@ export async function importExpenses(buffer: Buffer, userId: string, columnMap?:
       });
 
       result.created++;
+      result.createdIds.financialRecords.push(createdRecord.id);
     } catch (err) {
       result.errors.push({ row: rowNum, message: err instanceof Error ? err.message : 'Unknown error' });
       result.skipped++;
