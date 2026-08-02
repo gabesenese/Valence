@@ -26,7 +26,7 @@ router.patch('/', authorize('ANALYST'), async (req: Request, res: Response, next
   } catch (e) { next(e); }
 });
 
-router.post('/transfer-ownership', authorize('SUPER_ADMIN'), async (req: Request, res: Response, next: NextFunction) => {
+router.post('/transfer-ownership', authorize('ADMIN'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { toUserId } = req.body as { toUserId: string };
     await orgService.transferOwnership(req.user!.id, toUserId);

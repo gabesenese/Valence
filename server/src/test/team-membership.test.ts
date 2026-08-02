@@ -4,7 +4,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
  * Team lists must be scoped to the viewer's organization and exclude demo
  * accounts: even a SUPER_ADMIN viewing their team must not receive every user
  * on the platform. Removal must free the seat without deleting the account,
- * and must refuse self-removal and Super Admin removal.
+ * and must refuse self-removal and removal of the organization owner.
  */
 
 const { prismaMock } = vi.hoisted(() => ({
@@ -67,13 +67,15 @@ describe('removeMember — guards and semantics', () => {
     expect(where).toEqual({ id: 'stranger', organizationId: 'org-1' });
   });
 
-  it('refuses removing a Super Admin', async () => {
-    prismaMock.user.findFirst.mockResolvedValue({ id: 'boss', email: 'b@x.com', role: 'SUPER_ADMIN' });
-    await expect(removeMember('boss', { id: VIEWER.id })).rejects.toThrow(/Super Admin/i);
+  it('refuses removing the organization owner, regardless of their role label', async () => {
+    prismaMock.user.findFirst.mockResolvedValue({ id: 'boss', email: 'b@x.com', role: 'ADMIN' });
+    prismaMock.organization.findUnique.mockResolvedValue({ ownerId: 'boss' });
+    await expect(removeMember('boss', { id: VIEWER.id })).rejects.toThrow(/organization owner/i);
   });
 
   it('clears membership, deactivates, and revokes sessions, never deletes', async () => {
     prismaMock.user.findFirst.mockResolvedValue({ id: 'target', email: 't@x.com', role: 'ANALYST' });
+    prismaMock.organization.findUnique.mockResolvedValue({ ownerId: 'someone-else' });
     await removeMember('target', { id: VIEWER.id });
     expect(prismaMock.user.update).toHaveBeenCalledWith(
       expect.objectContaining({ where: { id: 'target' }, data: { organizationId: null, isActive: false } }),

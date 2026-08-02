@@ -38,11 +38,22 @@ export async function transferOwnership(fromUserId: string, toUserId: string) {
     throw new UnauthorizedError('Cannot transfer ownership to yourself');
   }
 
+  const organizationId = await resolveOrganizationId(fromUserId);
+  /*
+   * The caller must actually be the current owner. Without this, any
+   * ADMIN-level member of the org (not just its owner) could hand ownership
+   * to someone else, since resolveOrganizationId only resolves the caller's
+   * own org membership, not whether they own it.
+   */
+  const org = await prisma.organization.findUnique({ where: { id: organizationId }, select: { ownerId: true } });
+  if (org?.ownerId !== fromUserId) {
+    throw new UnauthorizedError('Only the organization owner can transfer ownership');
+  }
+
   /*
    * The recipient must be an active member of the caller's own organization so
    * that ownership can never cross a tenant boundary.
    */
-  const organizationId = await resolveOrganizationId(fromUserId);
   const toUser = await prisma.user.findFirst({
     where: { id: toUserId, organizationId },
     select: { id: true, isActive: true },
