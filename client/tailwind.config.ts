@@ -9,7 +9,7 @@ export default {
         brand: {
           50: '#eef2ff',
           100: '#e0e7ff',
-          200: '#c7d2fe',
+          200: 'rgb(var(--brand-200) / <alpha-value>)',
           300: 'rgb(var(--brand-300) / <alpha-value>)',
           400: 'rgb(var(--brand-400) / <alpha-value>)',
           500: '#6366f1',
