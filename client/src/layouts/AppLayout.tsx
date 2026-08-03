@@ -171,7 +171,7 @@ export function AppLayout() {
           sidebarCollapsed ? 'lg:w-[60px]' : 'lg:w-[220px]',
         )}
       >
-        <div className={cn('flex h-14 items-center border-b border-surface-400/40 px-4', isCollapsed && 'justify-center px-0')}>
+        <div className={cn('flex h-14 items-center overflow-hidden border-b border-surface-400/40 px-4', isCollapsed && 'justify-center px-0')}>
           <div className={cn('flex items-center gap-2.5', !isCollapsed && 'flex-1')}>
             <Logo className="h-8 w-5 shrink-0" />
             {!isCollapsed && (
@@ -188,7 +188,7 @@ export function AppLayout() {
           </button>
         </div>
 
-        <nav className="flex-1 overflow-y-auto p-2">
+        <nav className="flex-1 overflow-x-hidden overflow-y-auto p-2">
           <ul className="flex flex-col gap-0">
             {NAV_SECTIONS.map((section, si) => (
               <li key={section.label}>
@@ -266,7 +266,7 @@ export function AppLayout() {
           </ul>
         </nav>
 
-        <div className="border-t border-surface-400/40 p-2">
+        <div className="overflow-hidden border-t border-surface-400/40 p-2">
           {!isCollapsed && user && (
             <div className="mb-2 rounded-lg px-3 py-2">
               <p className="truncate text-xs font-medium text-slate-300">{user.firstName} {user.lastName}</p>

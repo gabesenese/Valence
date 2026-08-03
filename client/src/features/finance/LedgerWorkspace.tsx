@@ -390,7 +390,7 @@ export function LedgerWorkspace() {
                   const sel = selectedKey === `history:${e.id}`;
                   return (
                     <div key={e.id} className={`border-b border-l-[3px] border-surface-400/10 transition-colors ${sel ? `border-l-yellow-500 ${SELECTED_FILL}` : 'border-l-transparent'}`}>
-                      <button type="button" onClick={() => activateEvent(e)} className="flex w-full items-center gap-3 py-2.5 pl-2.5 pr-4 text-left transition-colors hover:bg-surface-200/30">
+                      <button type="button" onClick={() => activateEvent(e)} className={`flex w-full items-center gap-3 py-2.5 pl-2.5 pr-4 text-left transition-colors ${sel ? '' : 'hover:bg-surface-200/30'}`}>
                         <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md ${danger ? 'bg-danger/10 text-danger' : 'bg-surface-200/70 text-slate-400'}`}>
                           <Icon className="h-3.5 w-3.5" />
                         </span>
@@ -439,7 +439,7 @@ export function LedgerWorkspace() {
                   const sel = selectedKey === `history:${e.id}`;
                   return (
                     <Fragment key={e.id}>
-                      <tr className={`cursor-pointer transition-colors hover:bg-surface-200/30 ${sel ? 'bg-yellow-400/20' : ''}`} onClick={() => selectEvent(e)}>
+                      <tr className={`cursor-pointer transition-colors ${sel ? 'bg-yellow-400/20' : 'hover:bg-surface-200/30'}`} onClick={() => selectEvent(e)}>
                         <td className={`border-l-[3px] px-4 py-2.5 text-sm text-slate-200 ${sel ? 'border-yellow-500' : 'border-transparent'}`}>{eventTitle(e)}</td>
                         <td className="px-4 py-2.5 text-sm text-slate-400">{e.property.name}</td>
                         <td className="px-4 py-2.5 text-sm text-slate-400">{e.type === 'REVENUE' ? 'Revenue' : 'Expense'}</td>
@@ -453,7 +453,7 @@ export function LedgerWorkspace() {
                         <td className="px-4 py-2.5 text-sm text-slate-500">{formatDate(e.date)}</td>
                       </tr>
                       {sel && (
-                        <tr className="bg-yellow-400/10">
+                        <tr className="bg-yellow-400/20">
                           <td colSpan={7} className="border-l-[3px] border-yellow-500 px-4 pb-3 pt-1">
                             <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
                               {eventActions(e).map((a) => (
