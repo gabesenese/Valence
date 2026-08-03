@@ -166,7 +166,7 @@ export function AppLayout() {
       )}
       <aside
         className={cn(
-          'fixed inset-y-0 left-0 z-40 flex w-[220px] flex-col border-r border-surface-400/40 bg-surface-50 transition-[width,transform] duration-300 ease-in-out lg:static lg:z-auto',
+          'fixed inset-y-0 left-0 z-40 flex w-[220px] flex-col border-r border-surface-400/40 bg-surface-50 transition-transform duration-200 lg:static lg:z-auto',
           mobileNavOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0',
           sidebarCollapsed ? 'lg:w-[60px]' : 'lg:w-[220px]',
         )}
