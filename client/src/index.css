@@ -150,3 +150,13 @@
     box-shadow: 0 0 0 2px rgb(var(--brand-400) / 0.55);
   }
 }
+
+.theme-transitioning,
+.theme-transitioning *,
+.theme-transitioning *::before,
+.theme-transitioning *::after {
+  transition-property: background-color, border-color, color, fill, stroke, box-shadow !important;
+  transition-duration: 400ms !important;
+  transition-timing-function: ease-in-out !important;
+  transition-delay: 0s !important;
+}

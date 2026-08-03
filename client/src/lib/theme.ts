@@ -15,9 +15,25 @@ export function resolveTheme(theme: Theme): ResolvedTheme {
   return theme;
 }
 
+let themeTransitionTimeout: number | undefined;
+
 export function applyTheme(theme: Theme): void {
   const resolved = resolveTheme(theme);
-  document.documentElement.classList.toggle('dark', resolved === 'dark');
+  const root = document.documentElement;
+  const isChanging = root.classList.contains('dark') !== (resolved === 'dark');
+  const reducedMotion =
+    typeof window !== 'undefined' &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  if (isChanging && !reducedMotion) {
+    root.classList.add('theme-transitioning');
+    window.clearTimeout(themeTransitionTimeout);
+    themeTransitionTimeout = window.setTimeout(() => {
+      root.classList.remove('theme-transitioning');
+    }, 400);
+  }
+
+  root.classList.toggle('dark', resolved === 'dark');
   try {
     localStorage.setItem(THEME_STORAGE_KEY, theme);
   } catch {
