@@ -90,6 +90,14 @@ const NAV_SECTIONS: NavSection[] = [
   },
 ];
 
+function collapsibleLabel(collapsed: boolean, extra?: string) {
+  return cn(
+    'overflow-hidden whitespace-nowrap transition-[opacity,max-width] ease-in-out',
+    collapsed ? 'max-w-0 opacity-0 duration-100' : 'max-w-[180px] opacity-100 duration-200 delay-100',
+    extra,
+  );
+}
+
 export function AppLayout() {
   const user              = useAuthStore((s) => s.user);
   const refreshToken      = useAuthStore((s) => s.refreshToken);
@@ -166,17 +174,17 @@ export function AppLayout() {
       )}
       <aside
         className={cn(
-          'fixed inset-y-0 left-0 z-40 flex w-[220px] flex-col border-r border-surface-400/40 bg-surface-50 transition-transform duration-200 lg:static lg:z-auto',
+          'fixed inset-y-0 left-0 z-40 flex w-[220px] flex-col border-r border-surface-400/40 bg-surface-50 transition-[width,transform] duration-200 ease-in-out lg:static lg:z-auto',
           mobileNavOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0',
           sidebarCollapsed ? 'lg:w-[60px]' : 'lg:w-[220px]',
         )}
       >
         <div className={cn('flex h-14 items-center overflow-hidden border-b border-surface-400/40 px-4', isCollapsed && 'justify-center px-0')}>
-          <div className={cn('flex items-center gap-2.5', !isCollapsed && 'flex-1')}>
+          <div className={cn('flex items-center', isCollapsed ? 'gap-0' : 'flex-1 gap-2.5')}>
             <Logo className="h-8 w-5 shrink-0" />
-            {!isCollapsed && (
-              <span className="text-sm font-bold tracking-tight text-fg">Valence</span>
-            )}
+            <span className={collapsibleLabel(isCollapsed, 'text-sm font-bold tracking-tight text-fg')}>
+              Valence
+            </span>
           </div>
           <button
             type="button"
@@ -220,18 +228,16 @@ export function AppLayout() {
                               navigate('/pricing');
                             }}
                             className={cn(
-                              'flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors duration-100 text-slate-600 hover:bg-surface-200/50 hover:text-slate-500',
-                              isCollapsed && 'justify-center px-0 py-2.5',
+                              'flex w-full items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors duration-100 text-slate-600 hover:bg-surface-200/50 hover:text-slate-500',
+                              isCollapsed ? 'justify-center gap-0 px-0 py-2.5' : 'gap-3',
                             )}
                             title={isCollapsed ? `${label} — ${needed ? PLAN_LABELS[needed] : ''} plan` : undefined}
                           >
                             <Icon className="h-4 w-4 shrink-0" />
-                            {!isCollapsed && (
-                              <>
-                                <span className="flex-1 text-left">{label}</span>
-                                <Lock className="h-3 w-3 shrink-0 text-slate-700" />
-                              </>
-                            )}
+                            <span className={collapsibleLabel(isCollapsed, 'flex flex-1 items-center justify-between gap-2')}>
+                              <span className="text-left">{label}</span>
+                              <Lock className="h-3 w-3 shrink-0 text-slate-700" />
+                            </span>
                           </button>
                         </li>
                       );
@@ -244,18 +250,18 @@ export function AppLayout() {
                           end={exact}
                           className={({ isActive }) =>
                             cn(
-                              'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors duration-100',
+                              'flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors duration-100',
                               isActive
                                 ? 'bg-brand-600/20 text-brand-300 shadow-inner'
                                 : 'text-slate-500 hover:bg-surface-200 hover:text-slate-200',
-                              isCollapsed && 'justify-center px-0 py-2.5',
+                              isCollapsed ? 'justify-center gap-0 px-0 py-2.5' : 'gap-3',
                             )
                           }
                           onClick={() => closeMobileNav()}
                           title={isCollapsed ? label : undefined}
                         >
                           <Icon className="h-4 w-4 shrink-0" />
-                          {!isCollapsed && label}
+                          <span className={collapsibleLabel(isCollapsed)}>{label}</span>
                         </NavLink>
                       </li>
                     );
@@ -290,13 +296,13 @@ export function AppLayout() {
             type="button"
             onClick={handleLogout}
             className={cn(
-              'flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-slate-500 transition-colors hover:bg-danger/10 hover:text-danger',
-              isCollapsed && 'justify-center px-0 py-2.5',
+              'flex w-full items-center rounded-lg px-3 py-2 text-sm text-slate-500 transition-colors hover:bg-danger/10 hover:text-danger',
+              isCollapsed ? 'justify-center gap-0 px-0 py-2.5' : 'gap-3',
             )}
             title="Sign out"
           >
             <LogOut className="h-4 w-4 shrink-0" />
-            {!isCollapsed && 'Sign out'}
+            <span className={collapsibleLabel(isCollapsed)}>Sign out</span>
           </button>
         </div>
 
