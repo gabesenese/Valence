@@ -85,9 +85,11 @@ bugs.md
 *.png
 *.svg
 !client/public/*.svg
-# Marketing product screenshots referenced by the landing page carousel — must ship
+# Marketing product screenshots referenced by the landing page. These must ship,
+# including the per-theme subfolders.
 !client/public/product-shots/
 !client/public/product-shots/*.png
+!client/public/product-shots/**/*.png
 
 ## Mockups
 mockups/

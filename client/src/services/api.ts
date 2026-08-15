@@ -55,7 +55,7 @@ api.interceptors.response.use(
       }
     }
     const message = error.response?.data?.message ?? error.message;
-    return Promise.reject(new Error(message));
+    return Promise.reject(Object.assign(new Error(message), { status: error.response?.status }));
   }
 );
 
