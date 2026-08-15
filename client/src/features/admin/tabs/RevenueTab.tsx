@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Loader2 } from 'lucide-react';
 import { adminService } from '@/services/admin.service';
 import { formatCurrency, compactCurrency } from '@/utils/format';
+import { DEV_ADMIN_FIXTURES_ACTIVE, FAKE_REVENUE } from '../devFixtures';
 
 const PLAN_BAR: Record<string, string> = {
   EXECUTIVE: 'bg-amber-400',
@@ -10,11 +11,13 @@ const PLAN_BAR: Record<string, string> = {
 };
 
 export function RevenueTab({ secret }: { secret: string }) {
-  const { data } = useQuery({
+  const { data: liveData } = useQuery({
     queryKey: ['admin', 'revenue', secret],
     queryFn: () => adminService.getRevenue(secret),
     staleTime: 60_000,
+    enabled: !DEV_ADMIN_FIXTURES_ACTIVE,
   });
+  const data = DEV_ADMIN_FIXTURES_ACTIVE ? FAKE_REVENUE : liveData;
 
   if (!data) {
     return <div className="flex items-center justify-center py-24 text-xs text-slate-500"><Loader2 className="h-4 w-4 animate-spin mr-2" />Loading revenue…</div>;

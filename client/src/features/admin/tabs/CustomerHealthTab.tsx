@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { Loader2 } from 'lucide-react';
 import { adminService, type HealthAccount } from '@/services/admin.service';
+import { DEV_ADMIN_FIXTURES_ACTIVE, FAKE_HEALTH } from '../devFixtures';
 
 const BAND: Record<string, { label: string; bar: string; pill: string }> = {
   healthy: { label: 'Healthy', bar: 'bg-success', pill: 'text-success bg-success/10' },
@@ -60,11 +61,13 @@ function HealthCard({ a }: { a: HealthAccount }) {
 }
 
 export function CustomerHealthTab({ secret }: { secret: string }) {
-  const { data } = useQuery({
+  const { data: liveData } = useQuery({
     queryKey: ['admin', 'customer-health', secret],
     queryFn: () => adminService.getCustomerHealth(secret),
     staleTime: 60_000,
+    enabled: !DEV_ADMIN_FIXTURES_ACTIVE,
   });
+  const data = DEV_ADMIN_FIXTURES_ACTIVE ? FAKE_HEALTH : liveData;
 
   if (!data) {
     return <div className="flex items-center justify-center py-24 text-xs text-slate-500"><Loader2 className="h-4 w-4 animate-spin mr-2" />Loading customer health…</div>;

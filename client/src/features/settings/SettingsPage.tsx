@@ -394,7 +394,7 @@ export default function SettingsPage() {
                     </div>
                   ))}
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-medium uppercase tracking-wider text-slate-400">Confirm new password</label>
+                    <label className="text-xs font-medium uppercase tracking-wider text-slate-400">Confirm password</label>
                     <input type="password" value={confirmPw} placeholder="••••••••" onChange={(e) => { setConfirmPw(e.target.value); setPwSaved(false); }} className={inputCls} />
                   </div>
                 </div>
