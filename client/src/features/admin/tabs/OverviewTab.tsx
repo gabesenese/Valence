@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { TrendingUp, DollarSign, Users, AlertTriangle, Activity } from 'lucide-react';
 import { adminService } from '@/services/admin.service';
 import { cn } from '@/utils/cn';
+import { DEV_ADMIN_FIXTURES_ACTIVE, FAKE_ANALYTICS, FAKE_FUNNEL } from '../devFixtures';
 
 function fmt(n: number) { return n >= 1000 ? `$${(n / 1000).toFixed(1)}k` : `$${n}`; }
 
@@ -23,11 +24,13 @@ const STEP_LABELS: Record<string, string> = {
 };
 
 function FunnelSection({ secret }: { secret: string }) {
-  const { data } = useQuery({
+  const { data: liveData } = useQuery({
     queryKey: ['admin', 'funnel', secret],
     queryFn: () => adminService.getFunnel(secret),
     staleTime: 60_000,
+    enabled: !DEV_ADMIN_FIXTURES_ACTIVE,
   });
+  const data = DEV_ADMIN_FIXTURES_ACTIVE ? FAKE_FUNNEL : liveData;
   if (!data) return null;
   const maxUnique = Math.max(...data.map((s) => (s as { uniqueUsers?: number }).uniqueUsers ?? s.count), 1);
   return (
@@ -68,13 +71,15 @@ function FunnelSection({ secret }: { secret: string }) {
 }
 
 export function OverviewTab({ secret }: { secret: string }) {
-  const { data, isLoading } = useQuery({
+  const { data: liveData, isLoading } = useQuery({
     queryKey: ['admin', 'analytics', secret],
     queryFn: () => adminService.getAnalytics(secret),
     staleTime: 60_000,
+    enabled: !DEV_ADMIN_FIXTURES_ACTIVE,
   });
+  const data = DEV_ADMIN_FIXTURES_ACTIVE ? FAKE_ANALYTICS : liveData;
 
-  if (isLoading || !data) {
+  if ((isLoading && !DEV_ADMIN_FIXTURES_ACTIVE) || !data) {
     return <div className="flex items-center justify-center py-24 text-xs text-slate-500">Loading analytics…</div>;
   }
 

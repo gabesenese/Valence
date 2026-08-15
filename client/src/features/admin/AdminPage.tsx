@@ -8,6 +8,7 @@ import {
 import { adminService } from '@/services/admin.service';
 import { useAuthStore } from '@/state/auth.store';
 import { cn } from '@/utils/cn';
+import { DEV_ADMIN_FIXTURES_ACTIVE, FAKE_STATS } from './devFixtures';
 import { OverviewTab } from './tabs/OverviewTab';
 import { UsersTab } from './tabs/UsersTab';
 import { ActivityTab } from './tabs/ActivityTab';
@@ -130,12 +131,13 @@ export default function AdminPage() {
     if (stored) setSecret(stored);
   }, []);
 
-  const { data: stats } = useQuery({
+  const { data: liveStats } = useQuery({
     queryKey: ['admin', 'stats', secret],
     queryFn: () => adminService.getStats(secret!),
-    enabled: !!secret,
+    enabled: !!secret && !DEV_ADMIN_FIXTURES_ACTIVE,
     staleTime: 60_000,
   });
+  const stats = DEV_ADMIN_FIXTURES_ACTIVE ? FAKE_STATS : liveStats;
 
   if (!secret) return <SecretGate onUnlock={setSecret} />;
 

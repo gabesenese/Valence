@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { Loader2 } from 'lucide-react';
 import { adminService, type AdoptionAccount } from '@/services/admin.service';
+import { DEV_ADMIN_FIXTURES_ACTIVE, FAKE_ADOPTION } from '../devFixtures';
 
 function usedPill(active: boolean, label: string) {
   return active
@@ -9,11 +10,13 @@ function usedPill(active: boolean, label: string) {
 }
 
 export function AdoptionTab({ secret }: { secret: string }) {
-  const { data } = useQuery({
+  const { data: liveData } = useQuery({
     queryKey: ['admin', 'adoption', secret],
     queryFn: () => adminService.getAdoption(secret),
     staleTime: 60_000,
+    enabled: !DEV_ADMIN_FIXTURES_ACTIVE,
   });
+  const data = DEV_ADMIN_FIXTURES_ACTIVE ? FAKE_ADOPTION : liveData;
 
   if (!data) {
     return <div className="flex items-center justify-center py-24 text-xs text-slate-500"><Loader2 className="h-4 w-4 animate-spin mr-2" />Loading adoption…</div>;
